@@ -2,6 +2,8 @@
 
 #include "Scene/SceneManager.h"
 
+#include "../Framework/Font/KdFont.h"
+
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // エントリーポイント
 // アプリケーションはこの関数から進行する
@@ -216,6 +218,33 @@ bool Application::Init(int w, int h)
 	//ShowCursor(false);
 
 	return true;
+
+	// Input
+	// 1. キーボード用のコレクターを作成
+	auto keyboardDevice = std::make_unique<KdInputCollector>();
+
+	// ボタンの登録: "Jump" アクションに [スペースキー] を割り当て
+	keyboardDevice->AddButton("Jump", new KdInputButtonForWindows(VK_SPACE));
+
+	// ボタンの登録: "Attack" アクションに [Zキー] または [左クリック] を割り当て (複数登録可能)
+	keyboardDevice->AddButton("Attack", new KdInputButtonForWindows({ 'Z', VK_LBUTTON }));
+
+	// 軸（2Dベクトル）の登録: "Move" アクションに [W, D, S, A] を割り当て
+	// 引数の順序: 上(Up), 右(Right), 下(Down), 左(Left)
+	//keyboardDevice->AddButton("Move", new KdInputAxisForWindows({ 'W', 'D', 'S', 'A' }));
+
+
+	// 2. マウス移動用のコレクターを作成
+	auto mouseDevice = std::make_unique<KdInputCollector>();
+
+	// 軸の登録: "Look" アクションにマウスの移動量を割り当て
+	mouseDevice->AddAxis("Look", new KdInputAxisForWindowsMouse());
+
+
+	// 3. マネージャーにデバイスを登録
+	// ※内部で unique_ptr に変換されて管理されます
+	KdInputManager::Instance().AddDevice("Keyboard", keyboardDevice);
+	KdInputManager::Instance().AddDevice("Mouse", mouseDevice);
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -306,6 +335,8 @@ void Application::Execute()
 	{
 		// 処理開始時間Get
 		m_fpsController.UpdateStartTime();
+		// 入力情報取得
+		KdInputManager::Instance().Update();
 
 		// ゲーム終了指定があるときはループ終了
 		if (m_endFlag)

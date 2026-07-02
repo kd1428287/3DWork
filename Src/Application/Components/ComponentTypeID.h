@@ -1,32 +1,22 @@
 ﻿#pragma once
-#include <cstddef>
 
-//=============================================================================
-// ComponentTypeID
-//
-// コンポーネントの型ごとに一意なIDを払い出すユーティリティ。
-// RTTIを使わず、テンプレートの静的変数の初期化順を利用して
-// コンパイル時に近い形でIDを確定させる。
-//
-// 使い方:
-//   size_t id = ComponentTypeID::Get<TransformComponent>();
-//
-// 同じ型に対しては常に同じIDが返る。
-// Registryがコンポーネントのストレージを配列で管理する際の添字になる。
-//=============================================================================
-class ComponentTypeID
-{
-public:
-	template<class T>
-	static size_t Get()
-	{
-		// 型ごとに静的変数が1つ生成されるため、型ごとに異なるアドレスを持つ
-		static const size_t id = s_counter++;
-		return id;
+// ============================================================
+// コンポーネントの型ごとに一意なIDを発行する仕組み。
+// typeid(RTTI)を使わず、テンプレートの静的ローカル変数を利用して
+// コンパイル時に近い形で型ごとの連番IDを割り当てる。
+// ============================================================
+using ComponentTypeId = std::size_t;
+
+namespace detail {
+	inline ComponentTypeId NextComponentTypeId() {
+		static ComponentTypeId counter = 0;
+		return counter++;
 	}
+}  // namespace detail
 
-	static size_t Count() { return s_counter; }
-
-private:
-	inline static size_t s_counter = 0;
-};
+// T ごとに一意なIDを返す。初回呼び出し時に採番され、以降は同じ値を返す。
+template <typename T>
+ComponentTypeId GetComponentTypeId() {
+	static const ComponentTypeId id = detail::NextComponentTypeId();
+	return id;
+}

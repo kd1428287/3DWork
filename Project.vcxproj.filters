@@ -109,6 +109,21 @@
     <Filter Include="Src\Application\Core">
       <UniqueIdentifier>{4c867e74-16db-400e-ad7a-4d2c6e7090b7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\Components\CardEffect">
+      <UniqueIdentifier>{9296e67c-4d9f-43d5-95d2-ceca92a3bd1d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Factories">
+      <UniqueIdentifier>{07e1a4df-64c0-4cff-a650-d77aa5f361aa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Components\Card">
+      <UniqueIdentifier>{315fe755-2e84-4ab7-86b4-17ea57c6d740}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\System\EventBus">
+      <UniqueIdentifier>{3a097c5e-aa3b-407e-a1d6-002e0aa30c39}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\System\EventBus\Event">
+      <UniqueIdentifier>{f7a6f339-c56e-4197-a8aa-3a40de628ba1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -297,10 +312,10 @@
     <ClInclude Include="Src\Application\Components\ComponentBase.h">
       <Filter>Src\Application\Components</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Core\Registry.h">
+    <ClInclude Include="Src\Application\Core\ObjectManager.h">
       <Filter>Src\Application\Core</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Core\Entity.h">
+    <ClInclude Include="Src\Application\Core\GameObject.h">
       <Filter>Src\Application\Core</Filter>
     </ClInclude>
     <ClInclude Include="Src\Application\Core\EntityManager.h">
@@ -309,11 +324,41 @@
     <ClInclude Include="Src\Application\Components\ComponentTypeID.h">
       <Filter>Src\Application\Components</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Systems\SystemBase.h">
-      <Filter>Src\Application\System</Filter>
+    <ClInclude Include="Src\Application\Components\Transform\TransformComponent.h">
+      <Filter>Src\Application\Components\Transform</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Core\SystemManager.h">
-      <Filter>Src\Application\Core</Filter>
+    <ClInclude Include="Src\Application\Factories\CardFactory.h">
+      <Filter>Src\Application\Factories</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Card\CardIdentityComponent.h">
+      <Filter>Src\Application\Components\Card</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Card\CardLatencyComponent.h">
+      <Filter>Src\Application\Components\Card</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Card\CardStateComponent.h">
+      <Filter>Src\Application\Components\Card</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Card\CardEffectComponent.h">
+      <Filter>Src\Application\Components\Card</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Transform\MovementComponent.h">
+      <Filter>Src\Application\Components\Transform</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Transform\TweenMoveComponent.h">
+      <Filter>Src\Application\Components\Transform</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Card\CardInteractionComponent.h">
+      <Filter>Src\Application\Components\Card</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Card\CardDefinition.h">
+      <Filter>Src\Application\Components\Card</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Systems\EventBus\EventBus.h">
+      <Filter>Src\Application\System\EventBus</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Systems\EventBus\Event\Event.h">
+      <Filter>Src\Application\System\EventBus\Event</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

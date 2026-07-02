@@ -121,8 +121,8 @@
 //===============================================
 #include "Framework/KdFramework.h"
 
-#include "Application/Core/Entity.h"
-#include "Application/Core/EntityManager.h"   
 #include "Application/Components/ComponentTypeID.h" 
 #include "Application/Components/ComponentBase.h"   
-#include "Application/Systems/SystemBase.h"      
+#include "Application/Core/GameObject.h"
+#include "Application/Core/ObjectManager.h"   
+#include "Application/Systems/EventBus/EventBus.h"
