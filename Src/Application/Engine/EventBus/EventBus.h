@@ -14,7 +14,7 @@ class Event;
 class EventBus
 {
 private:
-	std::atomic<bool> m_destroyed{ false };  // アトミックに変更（マルチスレッドから安全に参照するため）
+	std::atomic<bool> m_destroyed{ false };
 	using HandlerFunction = std::function<void(const Event&)>;
 
 	// IDと関数をペアにして保持する
@@ -37,13 +37,6 @@ public:
 		m_destroyed.store(true, std::memory_order_release); // 破棄前にフラグを立てる
 		std::lock_guard<std::mutex> lock(m_mutex);
 		subscribers.clear();
-	}
-
-	// シングルトンとして利用する場合の取得口
-	// ※ LOCALEVENT マクロはこれを呼び出す
-	static EventBus& Instance() {
-		static EventBus instance;
-		return instance;
 	}
 
 	// 戻り値として SubscriptionId を返すようにする
@@ -125,7 +118,7 @@ public:
 
 class GlobalEventBus
 {
-public:  // ← 抜けていた public 指定子を追加（これがないと Instance() が private になり呼び出せない）
+public:
 	static EventBus& Instance()
 	{
 		static EventBus instance;
@@ -136,7 +129,6 @@ private:
 	~GlobalEventBus() = default;
 };
 
-#define LOCALEVENT EventBus::Instance()
 #define GLOBALEVENT GlobalEventBus::Instance()
 
 class ScopedSubscriber {

@@ -94,9 +94,6 @@
     <Filter Include="Src\Application\Entity">
       <UniqueIdentifier>{12bb2ae1-85a5-48c8-8ba2-6d43a612fd9f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Src\Application\System">
-      <UniqueIdentifier>{d76c9efe-3c07-4fb7-baa9-ecc96a417acb}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Src\Application\Components\Transform">
       <UniqueIdentifier>{89ccf71c-7317-4bfb-802f-0ff4a520db0f}</UniqueIdentifier>
     </Filter>
@@ -118,11 +115,20 @@
     <Filter Include="Src\Application\Components\Card">
       <UniqueIdentifier>{315fe755-2e84-4ab7-86b4-17ea57c6d740}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Src\Application\System\EventBus">
+    <Filter Include="Src\Application\Engine">
+      <UniqueIdentifier>{d76c9efe-3c07-4fb7-baa9-ecc96a417acb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Engine\EventBus">
       <UniqueIdentifier>{3a097c5e-aa3b-407e-a1d6-002e0aa30c39}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Src\Application\System\EventBus\Event">
+    <Filter Include="Src\Application\Engine\EventBus\Event">
       <UniqueIdentifier>{f7a6f339-c56e-4197-a8aa-3a40de628ba1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Systems">
+      <UniqueIdentifier>{8ca1c632-ec5e-46f8-b11c-c36c3953e4f1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Systems\Card">
+      <UniqueIdentifier>{bc6a68aa-81e2-4c0f-b178-99a2c6f587a0}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -354,11 +360,17 @@
     <ClInclude Include="Src\Application\Components\Card\CardDefinition.h">
       <Filter>Src\Application\Components\Card</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Systems\EventBus\EventBus.h">
-      <Filter>Src\Application\System\EventBus</Filter>
+    <ClInclude Include="Src\Application\Components\Card\Hand.h">
+      <Filter>Src\Application\Components\Card</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Systems\EventBus\Event\Event.h">
-      <Filter>Src\Application\System\EventBus\Event</Filter>
+    <ClInclude Include="Src\Application\Engine\EventBus\EventBus.h">
+      <Filter>Src\Application\Engine\EventBus</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Engine\EventBus\Event\Event.h">
+      <Filter>Src\Application\Engine\EventBus\Event</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Systems\Card\HandSystem.h">
+      <Filter>Src\Application\Systems\Card</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

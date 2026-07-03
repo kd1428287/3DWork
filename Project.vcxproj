@@ -279,6 +279,7 @@
     <ClInclude Include="Src\Application\Components\Card\CardEffectComponent.h" />
     <ClInclude Include="Src\Application\Components\Card\CardStateComponent.h" />
     <ClInclude Include="Src\Application\Components\Card\CardIdentityComponent.h" />
+    <ClInclude Include="Src\Application\Components\Card\Hand.h" />
     <ClInclude Include="Src\Application\Components\ComponentBase.h" />
     <ClInclude Include="Src\Application\Components\ComponentTypeID.h" />
     <ClInclude Include="Src\Application\Components\Transform\MovementComponent.h" />
@@ -287,6 +288,8 @@
     <ClInclude Include="Src\Application\Core\GameObject.h" />
     <ClInclude Include="Src\Application\Core\EntityManager.h" />
     <ClInclude Include="Src\Application\Core\ObjectManager.h" />
+    <ClInclude Include="Src\Application\Engine\EventBus\EventBus.h" />
+    <ClInclude Include="Src\Application\Engine\EventBus\Event\Event.h" />
     <ClInclude Include="Src\Application\Factories\CardFactory.h" />
     <ClInclude Include="Src\Application\GameObject\Camera\CameraBase.h" />
     <ClInclude Include="Src\Application\GameObject\Camera\FPSCamera\FPSCamera.h" />
@@ -296,8 +299,7 @@
     <ClInclude Include="Src\Application\Scene\GameScene\GameScene.h" />
     <ClInclude Include="Src\Application\Scene\SceneManager.h" />
     <ClInclude Include="Src\Application\Scene\TitleScene\TitleScene.h" />
-    <ClInclude Include="Src\Application\Systems\EventBus\EventBus.h" />
-    <ClInclude Include="Src\Application\Systems\EventBus\Event\Event.h" />
+    <ClInclude Include="Src\Application\Systems\Card\HandSystem.h" />
     <ClInclude Include="Src\Framework\Direct3D\KdMaterial.h" />
     <ClInclude Include="Src\Framework\Direct3D\Polygon\KdPolygon.h" />
     <ClInclude Include="Src\Framework\Direct3D\Polygon\KdSquarePolygon.h" />

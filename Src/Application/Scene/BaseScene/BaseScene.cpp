@@ -148,5 +148,7 @@ void BaseScene::Event()
 
 void BaseScene::Init()
 {
-	// 各シーンで必要な内容を実装(オーバーライド)する
+	m_localBus = std::make_unique<EventBus>();
+
+	objManager_ = std::make_unique<ObjectManager>(m_localBus);
 }

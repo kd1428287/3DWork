@@ -8,9 +8,11 @@
 // ============================================================
 class ObjectManager {
 public:
+	ObjectManager(EventBus* eventBus = nullptr) : eventBus_(eventBus) {};
+
 	// 新しいGameObjectを生成してObjectManagerに登録する。
 	GameObject* Instantiate(const std::string& name = "GameObject") {
-		auto obj = std::make_unique<GameObject>(name);
+		auto obj = std::make_unique<GameObject>(name,eventBus_);
 		GameObject* rawPtr = obj.get();
 		objects_.push_back(std::move(obj));
 		return rawPtr;
@@ -48,7 +50,7 @@ private:
 
 		pendingDestroy_.clear();
 	}
-
+	EventBus* eventBus_ = nullptr;
 	std::vector<std::unique_ptr<GameObject>> objects_;
 	std::vector<GameObject*> pendingDestroy_;
 };

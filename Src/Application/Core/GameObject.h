@@ -1,6 +1,4 @@
 ﻿#pragma once
-//#include "Application/Components/ComponentTypeID.h" 
-//#include "Application/Components/ComponentBase.h"   
 
 // ============================================================
 // GameObject: コンポーネントの入れ物。
@@ -10,7 +8,10 @@
 // ============================================================
 class GameObject {
 public:
-	explicit GameObject(std::string name = "GameObject") : name_(std::move(name)) {}
+	// eventBusはowner_と同様に「非所有の参照」。
+	// Sceneが所有するLocalEventBusを、生成時に一度だけ紐付ける。
+	explicit GameObject(std::string name = "GameObject", EventBus* eventBus = nullptr)
+		: name_(std::move(name)), eventBus_(eventBus) {}
 
 	// GameObjectはポインタ経由で管理される前提のため、コピー禁止
 	GameObject(const GameObject&) = delete;
@@ -110,9 +111,15 @@ public:
 	bool IsActive() const { return active_; }
 	void SetActive(bool active) { active_ = active; }
 
+	// コンポーネントはここ経由でバスにアクセスする:
+	//   GetOwner()->GetEventBus()->Publish(...)
+	// バスを持たないGameObject(テスト用など)ではnullptrを返す。
+	EventBus* GetEventBus() const { return eventBus_; }
+
 private:
 	std::string name_;
 	bool active_ = true;
+	EventBus* eventBus_ = nullptr;
 
 	std::unordered_map<ComponentTypeId, std::unique_ptr<ComponentBase>> components_;
 	std::vector<ComponentTypeId> componentOrder_;  // Update順を安定させるため
