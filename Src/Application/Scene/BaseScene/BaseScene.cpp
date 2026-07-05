@@ -148,7 +148,7 @@ void BaseScene::Event()
 
 void BaseScene::Init()
 {
-	m_localBus = std::make_unique<EventBus>();
+	localBus_ = std::make_unique<EventBus>();
 
-	objManager_ = std::make_unique<ObjectManager>(m_localBus);
+	objManager_ = std::make_unique<ObjectManager>(localBus_);
 }

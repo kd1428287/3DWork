@@ -231,7 +231,13 @@ bool Application::Init(int w, int h)
 
 	// 軸（2Dベクトル）の登録: "Move" アクションに [W, D, S, A] を割り当て
 	// 引数の順序: 上(Up), 右(Right), 下(Down), 左(Left)
-	keyboardDevice->AddButton("Move", new KdInputButtonForWindows({ 'W', 'D', 'S', 'A' }));
+	auto cross = std::make_shared<KdInputAxisForWindows>(
+		new KdInputButtonForWindows({ 'W',VK_UP }),
+		new KdInputButtonForWindows({ 'D',VK_RIGHT }),
+		new KdInputButtonForWindows({ 'S',VK_DOWN }),
+		new KdInputButtonForWindows({ 'A',VK_LEFT })
+	);
+	keyboardDevice->AddAxis("Move", cross);
 
 
 	// 2. マウス移動用のコレクターを作成

@@ -130,6 +130,18 @@
     <Filter Include="Src\Application\Systems\Card">
       <UniqueIdentifier>{bc6a68aa-81e2-4c0f-b178-99a2c6f587a0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\Components\Tags">
+      <UniqueIdentifier>{20eb6742-9f10-4111-ab19-58f8907e74a8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Components\Render">
+      <UniqueIdentifier>{601302c8-803c-45ff-9e86-b4ad29bea01a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Systems\Input">
+      <UniqueIdentifier>{23393297-63bd-42f6-9c48-2394d2530cc8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Components\Player">
+      <UniqueIdentifier>{2a01be33-c85e-4e3e-b4e2-f7a356fd08ac}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -371,6 +383,33 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Systems\Card\HandSystem.h">
       <Filter>Src\Application\Systems\Card</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Tags\TagInterfaces.h">
+      <Filter>Src\Application\Components\Tags</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Tags\IRenderable.h">
+      <Filter>Src\Application\Components\Tags</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Render\MeshRenderComponent.h">
+      <Filter>Src\Application\Components\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Factories\GameObjectFactory.h">
+      <Filter>Src\Application\Factories</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Card\CardSelectionComponent.h">
+      <Filter>Src\Application\Components\Card</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Systems\Card\CardSelectionSystem.h">
+      <Filter>Src\Application\Systems\Card</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Systems\Input\InputSystem.h">
+      <Filter>Src\Application\Systems\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Player\PlayerInputComponent.h">
+      <Filter>Src\Application\Components\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Player\IMovementSource.h">
+      <Filter>Src\Application\Components\Player</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

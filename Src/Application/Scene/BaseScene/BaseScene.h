@@ -37,6 +37,6 @@ protected :
 	// 全オブジェクトのアドレスをリストで管理
 	std::list<std::shared_ptr<KdGameObject>> m_objList;
 
-	std::unique_ptr<EventBus> m_localBus;
+	std::unique_ptr<EventBus> localBus_;
 	std::unique_ptr<ObjectManager> objManager_ = nullptr;
 };
