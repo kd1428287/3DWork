@@ -8,6 +8,10 @@
 #include <utility>
 #include <vector>
 
+#include "SceneContext.h"
+
+class EventBus;
+
 // ============================================================
 // GameObject: コンポーネントの入れ物。
 // 型ごとに1インスタンスまで(Unityの基本挙動と同様)を前提とする。
@@ -19,8 +23,8 @@
 // ============================================================
 class GameObject {
 public:
-	explicit GameObject(std::string name = "GameObject", EventBus* eventBus = nullptr)
-		: name_(std::move(name)), eventBus_(eventBus) {
+	explicit GameObject(std::string name = "GameObject", SceneContext* context = nullptr)
+		: name_(std::move(name)), context_(context) {
 	}
 
 	GameObject(const GameObject&) = delete;
@@ -43,9 +47,9 @@ public:
 		components_[id] = std::move(component);
 		componentOrder_.push_back(id);
 
-		// TがKD_TAG_INTERFACESに列挙されたどのタグを実装しているかを
+		// TがTAG_INTERFACESに列挙されたどのタグを実装しているかを
 		// コンパイル時に判定し、該当するものだけタグレジストリに登録する。
-		RegisterTags<T, KD_TAG_INTERFACES>(rawPtr, base);
+		RegisterTags<T, TAG_INTERFACES>(rawPtr, base);
 
 		rawPtr->Awake();
 		return rawPtr;
@@ -72,7 +76,7 @@ public:
 		ComponentBase* comp = it->second.get();
 		it->second->OnDestroy();
 
-		UnregisterTags<T, KD_TAG_INTERFACES>(comp);
+		UnregisterTags<T, TAG_INTERFACES>(comp);
 
 		components_.erase(it);
 		componentOrder_.erase(
@@ -81,6 +85,16 @@ public:
 	}
 
 	// --- ライフサイクル駆動 ----------------------------------------
+
+	void PreUpdate(float deltaTime) {
+		if (!active_) return;
+		for (const auto id : componentOrder_) {
+			ComponentBase* comp = components_[id].get();
+			if (comp->IsEnabled()) {
+				comp->PreUpdate(deltaTime);
+			}
+		}
+	}
 
 	void Update(float deltaTime) {
 		if (!active_) return;
@@ -95,12 +109,12 @@ public:
 		}
 	}
 
-	void LateUpdate(float deltaTime) {
+	void PostUpdate(float deltaTime) {
 		if (!active_) return;
 		for (const auto id : componentOrder_) {
 			ComponentBase* comp = components_[id].get();
 			if (comp->IsEnabled()) {
-				comp->LateUpdate(deltaTime);
+				comp->PostUpdate(deltaTime);
 			}
 		}
 	}
@@ -109,6 +123,7 @@ public:
 	// IRenderableというタグの、それぞれのメソッドをForEachTaggedで回すだけ。
 	// 新しいパスを増やしても、ForEachTaggedの呼び出しを1行足すだけでよい。
 
+	void PreDraw() { ForEachTagged<IRenderable>(&IRenderable::PreDraw); }
 	void GenerateDepthMapFromLight() { ForEachTagged<IRenderable>(&IRenderable::GenerateDepthMapFromLight); }
 	void DrawUnLit() { ForEachTagged<IRenderable>(&IRenderable::DrawUnLit); }
 	void DrawLit() { ForEachTagged<IRenderable>(&IRenderable::DrawLit); }
@@ -136,7 +151,8 @@ public:
 	bool IsActive() const { return active_; }
 	void SetActive(bool active) { active_ = active; }
 
-	EventBus* GetEventBus() const { return eventBus_; }
+	EventBus* GetEventBus() const { return context_->eventBus; }
+	SceneContext* GetContext() const { return context_; }
 
 	// --- 汎用タグ走査 --------------------------------------------------
 	// TagInterfaces.hに列挙した任意のタグについて、実装コンポーネントの
@@ -164,7 +180,7 @@ private:
 	};
 
 	// --- タグ登録/解除の汎用実装(可変長テンプレート + fold式) -----------
-	// KD_TAG_INTERFACESに列挙された型それぞれについて、
+	// TAG_INTERFACESに列挙された型それぞれについて、
 	// Tがそれを実装しているかをコンパイル時に判定して登録する。
 	// 新しいタグを増やしてもここは一切変更不要。
 
@@ -213,7 +229,7 @@ private:
 
 	std::string name_;
 	bool active_ = true;
-	EventBus* eventBus_ = nullptr;
+	SceneContext* context_ = nullptr;
 
 	std::unordered_map<ComponentTypeId, std::unique_ptr<ComponentBase>> components_;
 	std::vector<ComponentTypeId> componentOrder_;

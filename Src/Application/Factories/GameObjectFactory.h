@@ -16,7 +16,7 @@
 template <typename... Args>
 class GameObjectFactory {
 public:
-	using CreatorFunc = std::function<GameObject* (World&, Args...)>;
+	using CreatorFunc = std::function<GameObject* (ObjectManager&, Args...)>;
 
 	// 生成ロジックを登録する。同じキーで再登録すると上書きされる。
 	void Register(const std::string& key, CreatorFunc creator) {
@@ -24,10 +24,10 @@ public:
 	}
 
 	// 登録済みキーからGameObjectを生成する。未登録ならnullptr。
-	GameObject* Create(const std::string& key, World& world, Args... args) const {
+	GameObject* Create(const std::string& key, ObjectManager& objectManager, Args... args) const {
 		auto it = creators_.find(key);
 		if (it == creators_.end()) return nullptr;
-		return it->second(world, args...);
+		return it->second(objectManager, args...);
 	}
 
 	bool IsRegistered(const std::string& key) const {

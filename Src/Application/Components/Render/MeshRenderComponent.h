@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <string>
 #include <utility>
+#include "../Transform/TransformComponent.h"
 
 // ============================================================
 // サンプル描画コンポーネント: 陰影のある3Dメッシュを描画する想定。
@@ -20,6 +21,16 @@ public:
 	void GenerateDepthMapFromLight() override {
 		std::printf("  [ShadowPass] %s(%s) の影を描く\n",
 			GetOwner()->GetName().c_str(), meshName_.c_str());
+
+		TransformComponent* trans = GetOwner()->GetComponent<TransformComponent>();
+		Math::Matrix mat =
+			Math::Matrix::CreateScale(trans->scale) *
+			Math::Matrix::CreateFromYawPitchRoll(trans->rotation) *
+			Math::Matrix::CreateTranslation(trans->position);
+		KdShaderManager::Instance().m_StandardShader.DrawModel(
+			*KdAssets::Instance().m_modeldatas.GetData(meshName_),
+			mat
+		);
 	}
 
 	void DrawLit() override {

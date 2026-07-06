@@ -37,7 +37,7 @@ public:
 	}
 
 	GameObject* CreateCard(ObjectManager& objectManager, const std::string& cardId, int ownerPlayerId) {
-		return registry_.Create(cardId, ObjectManager, ownerPlayerId);
+		return registry_.Create(cardId, objectManager, ownerPlayerId);
 	}
 
 	bool IsKnownCard(const std::string& cardId) const {

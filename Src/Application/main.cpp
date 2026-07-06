@@ -209,15 +209,13 @@ bool Application::Init(int w, int h)
 	//===================================================================
 	// フォント初期化
 	//===================================================================
-	KdFontManager::Instance().Init(GetWindowHandle());
+	//KdFontManager::Instance().Init(GetWindowHandle());
 
 	//===================================================================
 	// ゲーム固有の初期化
 	//===================================================================
 	// 例えばカーソルを消したい場合
 	//ShowCursor(false);
-
-	return true;
 
 	// Input
 	// 1. キーボード用のコレクターを作成
@@ -231,11 +229,13 @@ bool Application::Init(int w, int h)
 
 	// 軸（2Dベクトル）の登録: "Move" アクションに [W, D, S, A] を割り当て
 	// 引数の順序: 上(Up), 右(Right), 下(Down), 左(Left)
+	auto up = std::make_shared<KdInputButtonForWindows>(std::vector<int>{ 'W',VK_UP });
+	auto right = std::make_shared<KdInputButtonForWindows>(std::vector<int>{ 'D',VK_RIGHT });
+	auto down = std::make_shared<KdInputButtonForWindows>(std::vector<int>{ 'S',VK_DOWN });
+	auto left = std::make_shared<KdInputButtonForWindows>(std::vector<int>{ 'A',VK_LEFT });
+
 	auto cross = std::make_shared<KdInputAxisForWindows>(
-		new KdInputButtonForWindows({ 'W',VK_UP }),
-		new KdInputButtonForWindows({ 'D',VK_RIGHT }),
-		new KdInputButtonForWindows({ 'S',VK_DOWN }),
-		new KdInputButtonForWindows({ 'A',VK_LEFT })
+		up,right,down,left
 	);
 	keyboardDevice->AddAxis("Move", cross);
 
@@ -251,6 +251,8 @@ bool Application::Init(int w, int h)
 	// ※内部で unique_ptr に変換されて管理されます
 	KdInputManager::Instance().AddDevice("Keyboard", keyboardDevice);
 	KdInputManager::Instance().AddDevice("Mouse", mouseDevice);
+
+	return true;
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -270,6 +272,8 @@ void Application::UpdateThreadMain()
 
 		// 終了要求が来ていたら抜ける
 		if (m_threadExit) { break; }
+
+		KdInputManager::Instance().Update();
 
 		//=========================================
 		//

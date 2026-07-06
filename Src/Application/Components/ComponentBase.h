@@ -21,10 +21,12 @@ public:
 	virtual void Awake() {}
 	// 最初のUpdateの前に一度だけ呼ばれる(他コンポーネントの参照解決などに使う)
 	virtual void Start() {}
+	// Update前
+	virtual void PreUpdate(float deltaTime) { (void)deltaTime; }
 	// 毎フレーム呼ばれる
 	virtual void Update(float deltaTime) { (void)deltaTime; }
 	// Update後、描画前などに呼ばれる
-	virtual void LateUpdate(float deltaTime) { (void)deltaTime; }
+	virtual void PostUpdate(float deltaTime) { (void)deltaTime; }
 	// コンポーネントが破棄される直前に呼ばれる
 	virtual void OnDestroy() {}
 

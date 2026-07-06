@@ -19,6 +19,7 @@ class IRenderable {
 public:
 	virtual ~IRenderable() = default;
 
+	virtual void PreDraw() {};
 	// 光を遮るオブジェクト(影を落とす側)としてシャドウマップに描く
 	virtual void GenerateDepthMapFromLight() {}
 	// 陰影のないオブジェクト(背景など)

@@ -1,5 +1,7 @@
 ﻿#pragma once
 #include "IRenderable.h"
+#include "ICollidable.h"
+#include "CameraTarget.h"
 // 新しいタグインターフェースを増やしたくなったら、
 // #include を足した上で下のマクロにカンマ区切りで追加するだけでよい。
 // GameObject.h自体は一切変更不要。
@@ -12,4 +14,4 @@
 // どれを実装しているかをコンパイル時に判定し、該当するものだけ
 // 内部のタグレジストリに登録する。
 // ============================================================
-#define TAG_INTERFACES IRenderable	//, IDebugPrintable
+#define TAG_INTERFACES IRenderable,ICollidable,CameraTarget

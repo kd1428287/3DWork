@@ -4,6 +4,9 @@
 #include <string>
 #include <vector>
 
+#include "GameObject.h"
+#include "../Engine/EventBus/EventBus.h"
+#include "SceneContext.h"
 // ============================================================
 // ObjectManager: GameObjectの集合を管理する。
 //
@@ -16,12 +19,12 @@ class ObjectManager {
 public:
 	// eventBusはSceneが所有するものへの非所有参照。
 	// nullptrのままでも動作する(イベントバスを使わない場合)。
-	explicit ObjectManager(EventBus* eventBus = nullptr) : eventBus_(eventBus) {}
+	explicit ObjectManager(EventBus* eventBus = nullptr) { context_.eventBus = eventBus; }
 
 	// 新しいGameObjectを生成してObjectManagerに登録する。
 	// 生成と同時にSceneのイベントバスを紐付ける。
 	GameObject* Instantiate(const std::string& name = "GameObject") {
-		auto obj = std::make_unique<GameObject>(name, eventBus_);
+		auto obj = std::make_unique<GameObject>(name, context_);
 		GameObject* rawPtr = obj.get();
 		objects_.push_back(std::move(obj));
 		return rawPtr;
@@ -34,15 +37,21 @@ public:
 
 	// --- 各フェーズ(それぞれ独立して呼び出し可能) --------------------
 
+	void PreUpdate(float deltaTime) {
+		for (auto& obj : objects_) {
+			obj->PreUpdate(deltaTime);
+		}
+	}
+
 	void Update(float deltaTime) {
 		for (auto& obj : objects_) {
 			obj->Update(deltaTime);
 		}
 	}
 
-	void LateUpdate(float deltaTime) {
+	void PostUpdate(float deltaTime) {
 		for (auto& obj : objects_) {
-			obj->LateUpdate(deltaTime);
+			obj->PostUpdate(deltaTime);
 		}
 	}
 
@@ -101,5 +110,5 @@ public:
 private:
 	std::vector<std::unique_ptr<GameObject>> objects_;
 	std::vector<GameObject*> pendingDestroy_;
-	EventBus* eventBus_ = nullptr;
+	SceneContext context_;  // World(Sceneの相当物)がこの実体を所有する
 };

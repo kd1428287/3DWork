@@ -10,7 +10,7 @@ enum class CardType
 
 // これはComponentではない。読み込み専用のマスターデータ。
 struct CardDefinition {
-	std::string cardId;      // "card_001" など
+	int cardId = 0;      
 	std::string name;
 	CardType type;
 	int cost = 0;

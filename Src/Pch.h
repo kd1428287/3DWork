@@ -125,6 +125,6 @@
 #include "Application/Components/ComponentBase.h"   
 #include "Application/Components/Tags/TagInterfaces.h"   
 
+#include "Application/Engine/EventBus/EventBus.h"
 #include "Application/Core/GameObject.h"
 #include "Application/Core/ObjectManager.h"   
-#include "Application/Engine/EventBus/EventBus.h"
