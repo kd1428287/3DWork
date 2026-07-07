@@ -24,7 +24,7 @@ public:
 	// 新しいGameObjectを生成してObjectManagerに登録する。
 	// 生成と同時にSceneのイベントバスを紐付ける。
 	GameObject* Instantiate(const std::string& name = "GameObject") {
-		auto obj = std::make_unique<GameObject>(name, context_);
+		auto obj = std::make_unique<GameObject>(name, &context_);
 		GameObject* rawPtr = obj.get();
 		objects_.push_back(std::move(obj));
 		return rawPtr;
@@ -58,6 +58,7 @@ public:
 	// --- 描画パス(それぞれ独立して呼び出し可能) ------------------------
 	// 呼ぶ順序はBaseScene::Draw()側が決める。ObjectManagerはただ転送するだけ。
 
+	void PreDraw() { for (auto& obj : objects_) obj->PreDraw(); }
 	void GenerateDepthMapFromLight() { for (auto& obj : objects_) obj->GenerateDepthMapFromLight(); }
 	void DrawUnLit() { for (auto& obj : objects_) obj->DrawUnLit(); }
 	void DrawLit() { for (auto& obj : objects_) obj->DrawLit(); }

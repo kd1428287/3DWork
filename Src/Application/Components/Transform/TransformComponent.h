@@ -9,6 +9,7 @@ public:
 	explicit TransformComponent(GameObject* owner) : ComponentBase(owner) {}
 
 	Math::Vector3 position;
-	Math::Vector3 rotation;
-	Math::Vector3 scale{ 1.0f, 1.0f, 1.0f };
+	/*Math::Vector3 rotation;
+	Math::Vector3 scale{ 1.0f, 1.0f, 1.0f };*/
+	Math::Matrix matrix;
 };

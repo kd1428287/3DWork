@@ -1,5 +1,4 @@
 ﻿#pragma once
-//#include "KdInputTestStub.h"  // 実際のプロジェクトでは "KdInput.h" に置き換える
 #include "../../Components/Player/PlayerInputComponent.h"
 
 // ============================================================

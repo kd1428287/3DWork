@@ -11,15 +11,12 @@ public:
 		: ComponentBase(owner), spriteName_(std::move(spriteName)) {}
 
 	void DrawSprite() override {
-		TransformComponent* trans = GetOwner()->GetComponent<TransformComponent>();
-		Math::Matrix mat =
-			Math::Matrix::CreateScale(trans->scale) *
-			Math::Matrix::CreateFromYawPitchRoll(trans->rotation) *
-			Math::Matrix::CreateTranslation(trans->position);
-		KdShaderManager::Instance().m_spriteShader.SetMatrix(mat);
+		/*TransformComponent* trans = GetOwner()->GetComponent<TransformComponent>();
+		if (!trans)return;
+		KdShaderManager::Instance().m_spriteShader.SetMatrix(trans->matrix);
 		KdShaderManager::Instance().m_spriteShader.DrawTex(
 			KdAssets::Instance().m_textures.GetData(spriteName_).get(),0,0
-		);
+		);*/
 	}
 
 private:

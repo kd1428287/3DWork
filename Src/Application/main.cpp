@@ -225,7 +225,14 @@ bool Application::Init(int w, int h)
 	keyboardDevice->AddButton("Jump", new KdInputButtonForWindows(VK_SPACE));
 
 	// ボタンの登録: "Attack" アクションに [Zキー] または [左クリック] を割り当て (複数登録可能)
-	keyboardDevice->AddButton("Attack", new KdInputButtonForWindows({ 'Z', VK_LBUTTON }));
+	keyboardDevice->AddButton("Enter", new KdInputButtonForWindows({ 'Z', VK_LBUTTON }));
+
+	std::string buff;
+	for (int i = 0; i < 10; i++)
+	{
+		buff = std::to_string(i) + "key";
+		keyboardDevice->AddButton(buff, new KdInputButtonForWindows('0' + i));
+	}
 
 	// 軸（2Dベクトル）の登録: "Move" アクションに [W, D, S, A] を割り当て
 	// 引数の順序: 上(Up), 右(Right), 下(Down), 左(Left)
@@ -241,16 +248,16 @@ bool Application::Init(int w, int h)
 
 
 	// 2. マウス移動用のコレクターを作成
-	auto mouseDevice = std::make_unique<KdInputCollector>();
+	//auto mouseDevice = std::make_unique<KdInputCollector>();
 
 	// 軸の登録: "Look" アクションにマウスの移動量を割り当て
-	mouseDevice->AddAxis("Look", new KdInputAxisForWindowsMouse());
+	keyboardDevice->AddAxis("Look", new KdInputAxisForWindowsMouse());
 
 
 	// 3. マネージャーにデバイスを登録
 	// ※内部で unique_ptr に変換されて管理されます
 	KdInputManager::Instance().AddDevice("Keyboard", keyboardDevice);
-	KdInputManager::Instance().AddDevice("Mouse", mouseDevice);
+	//KdInputManager::Instance().AddDevice("Mouse", mouseDevice);
 
 	return true;
 }

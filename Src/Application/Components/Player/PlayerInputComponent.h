@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "IMovementSource.h"
+#include "../Transform/IMovementSource.h"
 
 // ============================================================
 // 手動操作用コンポーネント。

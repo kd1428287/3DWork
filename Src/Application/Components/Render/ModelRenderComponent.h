@@ -4,7 +4,6 @@
 #include <utility>
 #include "../Transform/TransformComponent.h"
 
-
 class ModelRenderComponent : public ComponentBase, public IRenderable {
 public:
 	ModelRenderComponent(GameObject* owner, std::string modelName)
@@ -12,13 +11,9 @@ public:
 
 	void GenerateDepthMapFromLight() override {
 		TransformComponent* trans = GetOwner()->GetComponent<TransformComponent>();
-		Math::Matrix mat =
-			Math::Matrix::CreateScale(trans->scale) *
-			Math::Matrix::CreateFromYawPitchRoll(trans->rotation) *
-			Math::Matrix::CreateTranslation(trans->position);
 		KdShaderManager::Instance().m_StandardShader.DrawModel(
 			*KdAssets::Instance().m_modeldatas.GetData(modelName_),
-			mat
+			trans->matrix
 		);
 	}
 

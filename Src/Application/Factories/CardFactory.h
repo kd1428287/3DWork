@@ -5,6 +5,9 @@
 #include "../Components/Card/CardDefinition.h"
 #include "../Components/Card/CardIdentityComponent.h"
 #include "../Components/Card/CardSelectionComponent.h"
+#include "../Components/Card/CardInteractionComponent.h"
+#include "../Components/Card/CardRenderComponent.h"
+#include "../Components/Card/CardStateComponent.h"
 #include "GameObjectFactory.h"
 
 // ============================================================
@@ -29,8 +32,11 @@ public:
 				GameObject* card = objectManager.Instantiate(defPtr->name);
 				card->AddComponent<CardIdentityComponent>(defPtr, ownerPlayerId);
 				card->AddComponent<CardSelectionComponent>();
-				// 必要に応じて CardStateComponent, CardRenderComponent なども
-				// ここでまとめて付与していく
+				card->AddComponent<CardInteractionComponent>();
+				card->AddComponent<CardRenderComponent>();	//ファイルパス
+				card->AddComponent<CardStateComponent>();
+				card->AddComponent<TransformComponent>();
+				// 必要に応じてここでまとめて付与していく
 				return card;
 				});
 		}

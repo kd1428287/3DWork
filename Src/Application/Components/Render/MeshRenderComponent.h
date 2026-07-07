@@ -23,13 +23,9 @@ public:
 			GetOwner()->GetName().c_str(), meshName_.c_str());
 
 		TransformComponent* trans = GetOwner()->GetComponent<TransformComponent>();
-		Math::Matrix mat =
-			Math::Matrix::CreateScale(trans->scale) *
-			Math::Matrix::CreateFromYawPitchRoll(trans->rotation) *
-			Math::Matrix::CreateTranslation(trans->position);
 		KdShaderManager::Instance().m_StandardShader.DrawModel(
 			*KdAssets::Instance().m_modeldatas.GetData(meshName_),
-			mat
+			trans->matrix
 		);
 	}
 

@@ -148,6 +148,12 @@
     <Filter Include="Src\Application\Components\Collider">
       <UniqueIdentifier>{234f345c-e677-463e-b5be-a12315de649c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\Factories\Game">
+      <UniqueIdentifier>{8ec3fc00-5331-4006-95f9-60ecab92fd60}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Systems\Player">
+      <UniqueIdentifier>{4b85f44b-07a2-4ad9-b77f-117dcf2db6a8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -411,13 +417,7 @@
     <ClInclude Include="Src\Application\Components\Player\PlayerInputComponent.h">
       <Filter>Src\Application\Components\Player</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\Player\IMovementSource.h">
-      <Filter>Src\Application\Components\Player</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Components\Tags\ICollidable.h">
-      <Filter>Src\Application\Components\Tags</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\Tags\CameraTarget.h">
       <Filter>Src\Application\Components\Tags</Filter>
     </ClInclude>
     <ClInclude Include="Src\Application\Core\SceneContext.h">
@@ -438,8 +438,23 @@
     <ClInclude Include="Src\Application\Components\Collider\ColliderComponent.h">
       <Filter>Src\Application\Components\Collider</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\Camera\CameraRenderComponent.h">
+    <ClInclude Include="Src\Application\Components\Camera\CameraViewComponent.h">
       <Filter>Src\Application\Components\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Tags\ICameraTarget.h">
+      <Filter>Src\Application\Components\Tags</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Camera\CameraFollowComponent.h">
+      <Filter>Src\Application\Components\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Camera\CameraTargetComponent.h">
+      <Filter>Src\Application\Components\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Transform\IMovementSource.h">
+      <Filter>Src\Application\Components\Transform</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Factories\Game\PlayerFactory.h">
+      <Filter>Src\Application\Factories\Game</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

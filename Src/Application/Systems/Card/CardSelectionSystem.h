@@ -1,10 +1,6 @@
 ﻿#pragma once
-#include "CardEvents.h"
-#include "CardSelectionComponent.h"
-#include "Hand.h"
-#include "LocalEventBus.h"
-#include "MockInputManager.h"
-
+#include "../../Components/Card/CardSelectionComponent.h"
+#include "HandSystem.h"
 // ============================================================
 // カード選択システム。
 //
@@ -19,17 +15,20 @@
 //
 // 選択結果(CardSelectedEvent)はイベントバスで発行する。
 // 「誰がこの選択に興味を持つか」(UIハイライト、効果対象決定、
-// 演出システムなど)はCardSelectionSystム側では関知しないため。
+// 演出システムなど)はCardSelectionSystm側では関知しないため。
 // ============================================================
 class CardSelectionSystem {
 public:
-	CardSelectionSystem(Hand& hand, LocalEventBus& bus) : hand_(hand), bus_(bus) {}
+	CardSelectionSystem(HandSystem& hand, EventBus& bus) : hand_(hand), bus_(bus) {}
 
 	void Update(float /*deltaTime*/) {
-		auto& input = MockInputManager::Instance();
-		if (input.IsPress(KeyCode::Num1)) SelectByIndex(0);
-		if (input.IsPress(KeyCode::Num2)) SelectByIndex(1);
-		if (input.IsPress(KeyCode::Num3)) SelectByIndex(2);
+		auto& input = KdInputManager::Instance();
+		std::string buff;
+		for (int i = 0; i < 10; i++)
+		{
+			buff = std::to_string(i) + "key";
+			if (input.IsPress(buff))SelectByIndex(i);
+		}
 	}
 
 	void SelectByIndex(std::size_t index) {
@@ -45,7 +44,10 @@ public:
 		selection->SetActive(true);
 		currentActive_ = card;
 
-		bus_.Publish(CardSelectedEvent{ card, previous });
+		auto event = Events::Card::CardSelectedEvent();
+		event.card = card;
+		event.previous = previous;
+		bus_.publish(event);
 	}
 
 private:
@@ -60,7 +62,7 @@ private:
 		return previous;
 	}
 
-	Hand& hand_;
-	LocalEventBus& bus_;
+	HandSystem& hand_;
+	EventBus& bus_;
 	GameObject* currentActive_ = nullptr;
 };

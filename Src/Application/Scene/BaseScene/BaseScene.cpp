@@ -22,7 +22,7 @@ void BaseScene::PostUpdate()
 
 void BaseScene::PreDraw()
 {
-	objManager_->DrawSprite();
+	objManager_->PreDraw();
 }
 
 void BaseScene::Draw()
@@ -75,6 +75,8 @@ void BaseScene::DrawSprite()
 	KdShaderManager::Instance().m_spriteShader.Begin();
 	{
 		objManager_->DrawSprite();
+
+		KdShaderManager::Instance().m_spriteShader.SetMatrix(Math::Matrix::Identity);
 	}
 	KdShaderManager::Instance().m_spriteShader.End();
 }

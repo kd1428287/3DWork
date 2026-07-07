@@ -274,7 +274,9 @@
     <ClInclude Include="..\Library\tinygltf\stb_image_write.h" />
     <ClInclude Include="..\Library\tinygltf\tiny_gltf.h" />
     <ClInclude Include="Src\Application\Components\Camera\CameraComponent.h" />
-    <ClInclude Include="Src\Application\Components\Camera\CameraRenderComponent.h" />
+    <ClInclude Include="Src\Application\Components\Camera\CameraFollowComponent.h" />
+    <ClInclude Include="Src\Application\Components\Camera\CameraViewComponent.h" />
+    <ClInclude Include="Src\Application\Components\Camera\CameraTargetComponent.h" />
     <ClInclude Include="Src\Application\Components\Card\CardDefinition.h" />
     <ClInclude Include="Src\Application\Components\Card\CardInteractionComponent.h" />
     <ClInclude Include="Src\Application\Components\Card\CardLatencyComponent.h" />
@@ -287,15 +289,15 @@
     <ClInclude Include="Src\Application\Components\Collider\ColliderComponent.h" />
     <ClInclude Include="Src\Application\Components\ComponentBase.h" />
     <ClInclude Include="Src\Application\Components\ComponentTypeID.h" />
-    <ClInclude Include="Src\Application\Components\Player\IMovementSource.h" />
     <ClInclude Include="Src\Application\Components\Player\PlayerInputComponent.h" />
     <ClInclude Include="Src\Application\Components\Render\MeshRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Render\ModelRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Render\SpriteRenderComponent.h" />
-    <ClInclude Include="Src\Application\Components\Tags\CameraTarget.h" />
+    <ClInclude Include="Src\Application\Components\Tags\ICameraTarget.h" />
     <ClInclude Include="Src\Application\Components\Tags\ICollidable.h" />
     <ClInclude Include="Src\Application\Components\Tags\IRenderable.h" />
     <ClInclude Include="Src\Application\Components\Tags\TagInterfaces.h" />
+    <ClInclude Include="Src\Application\Components\Transform\IMovementSource.h" />
     <ClInclude Include="Src\Application\Components\Transform\MovementComponent.h" />
     <ClInclude Include="Src\Application\Components\Transform\TransformComponent.h" />
     <ClInclude Include="Src\Application\Components\Transform\TweenMoveComponent.h" />
@@ -306,6 +308,7 @@
     <ClInclude Include="Src\Application\Engine\EventBus\Event\Event.h" />
     <ClInclude Include="Src\Application\Factories\CardFactory.h" />
     <ClInclude Include="Src\Application\Factories\GameObjectFactory.h" />
+    <ClInclude Include="Src\Application\Factories\Game\PlayerFactory.h" />
     <ClInclude Include="Src\Application\GameObject\Camera\CameraBase.h" />
     <ClInclude Include="Src\Application\GameObject\Camera\FPSCamera\FPSCamera.h" />
     <ClInclude Include="Src\Application\GameObject\Camera\TPSCamera\TPSCamera.h" />
