@@ -16,7 +16,7 @@ public:
 	{
 		if (!camera_ || !transform_) { return; }
 
-		camera_->GetCamera().SetCameraMatrix(transform_->matrix);
+		camera_->GetCamera().SetCameraMatrix(transform_->GetWorldMatrix());
 		//camera_->GetCamera().SetCameraMatrix(Math::Matrix::Identity);
 		camera_->GetCamera().SetToShader();
 	}

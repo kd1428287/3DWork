@@ -12,7 +12,6 @@ public:
 	Math::Quaternion rotation = Math::Quaternion::Identity;
 	Math::Vector3    scale{ 1.0f, 1.0f, 1.0f };
 
-	// Matrixは「保持するもの」ではなく「必要な時に都度作るもの」にする
 	Math::Matrix GetWorldMatrix() const {
 		return Math::Matrix::CreateScale(scale)
 			* Math::Matrix::CreateFromQuaternion(rotation)

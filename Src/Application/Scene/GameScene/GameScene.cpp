@@ -48,18 +48,16 @@ void GameScene::Init()
 		auto* groundModel = ground->AddComponent<ModelRenderComponent>(
 			"Asset/Models/SkySphere/skySphere.gltf"
 		);
-		//groundTrans->position = { 0.f,0.f,i - 5.f };
-		groundTrans->position = { 0.f,-10.f,0.f };
-		groundTrans->matrix =
-			Math::Matrix::CreateScale(1) *
-			Math::Matrix::CreateTranslation({ 0,-10,0 });
+		groundTrans->position = { 0.f,0.f,i - 5.f };
 	}
+
 	auto* player = objManager_->Instantiate("Player");
 	player->AddComponent<TransformComponent>();
 	auto* playerTarget = player->AddComponent<CameraTargetComponent>();
 	auto* input = player->AddComponent<PlayerInputComponent>();
 	auto* move = player->AddComponent<MovementComponent>(2.0f);
 	move->SetMovementSource(input);
+
 	// --- カメラ: CameraComponent(カメラであること) + CameraFollowComponent(追従) ---
 	GameObject* camera = objManager_->Instantiate("MainCamera");
 	camera->AddComponent<TransformComponent>();

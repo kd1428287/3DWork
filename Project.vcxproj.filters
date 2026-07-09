@@ -76,18 +76,6 @@
     <Filter Include="Src\Application\Scene\TitleScene">
       <UniqueIdentifier>{6036b8f3-498e-401e-865a-f8632985b816}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Src\Application\GameObject">
-      <UniqueIdentifier>{362e80f9-8c3b-4a87-9e83-f0e4b6d570f6}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Src\Application\GameObject\Camera">
-      <UniqueIdentifier>{cedad702-e70f-4d1b-9fdc-88426f7f436b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Src\Application\GameObject\Camera\TPSCamera">
-      <UniqueIdentifier>{9627eb29-8018-4836-9747-bf807b6c4dfa}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Src\Application\GameObject\Camera\FPSCamera">
-      <UniqueIdentifier>{cd662ee1-c913-4e31-addc-42ef89e2668c}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Src\Application\Components">
       <UniqueIdentifier>{99dbbfc7-973c-4679-a913-0852b84c021c}</UniqueIdentifier>
     </Filter>
@@ -330,15 +318,6 @@
     <ClInclude Include="Src\Application\Scene\BaseScene\BaseScene.h">
       <Filter>Src\Application\Scene\BaseScene</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\GameObject\Camera\CameraBase.h">
-      <Filter>Src\Application\GameObject\Camera</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\GameObject\Camera\TPSCamera\TPSCamera.h">
-      <Filter>Src\Application\GameObject\Camera\TPSCamera</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\GameObject\Camera\FPSCamera\FPSCamera.h">
-      <Filter>Src\Application\GameObject\Camera\FPSCamera</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Components\ComponentBase.h">
       <Filter>Src\Application\Components</Filter>
     </ClInclude>
@@ -455,9 +434,6 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Factories\Game\PlayerFactory.h">
       <Filter>Src\Application\Factories\Game</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\GameObject\SkySphere\SkySphere.h">
-      <Filter>Src\Application\GameObject</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -604,18 +580,6 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Scene\BaseScene\BaseScene.cpp">
       <Filter>Src\Application\Scene\BaseScene</Filter>
-    </ClCompile>
-    <ClCompile Include="Src\Application\GameObject\Camera\CameraBase.cpp">
-      <Filter>Src\Application\GameObject\Camera</Filter>
-    </ClCompile>
-    <ClCompile Include="Src\Application\GameObject\Camera\TPSCamera\TPSCamera.cpp">
-      <Filter>Src\Application\GameObject\Camera\TPSCamera</Filter>
-    </ClCompile>
-    <ClCompile Include="Src\Application\GameObject\Camera\FPSCamera\FPSCamera.cpp">
-      <Filter>Src\Application\GameObject\Camera\FPSCamera</Filter>
-    </ClCompile>
-    <ClCompile Include="Src\Application\GameObject\SkySphere\SkySphere.cpp">
-      <Filter>Src\Application\GameObject</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

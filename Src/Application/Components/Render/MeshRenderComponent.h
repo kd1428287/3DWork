@@ -19,14 +19,14 @@ public:
 	}
 
 	void GenerateDepthMapFromLight() override {
-		std::printf("  [ShadowPass] %s(%s) の影を描く\n",
+		/*std::printf("  [ShadowPass] %s(%s) の影を描く\n",
 			GetOwner()->GetName().c_str(), meshName_.c_str());
 
 		TransformComponent* trans = GetOwner()->GetComponent<TransformComponent>();
 		KdShaderManager::Instance().m_StandardShader.DrawModel(
 			*KdAssets::Instance().m_modeldatas.GetData(meshName_),
 			trans->matrix
-		);
+		);*/
 	}
 
 	void DrawLit() override {

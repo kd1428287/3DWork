@@ -42,10 +42,6 @@ public:
 		transform_->position.x += v.x * speed_ * deltaTime;
 		transform_->position.y += v.y * speed_ * deltaTime;
 		transform_->position.z += v.z * speed_ * deltaTime;
-
-		// 一時的
-		transform_->matrix =
-			Math::Matrix::CreateTranslation(transform_->position);
 	}
 
 	// 動きの決定方法(手動入力 / AI など)を差し替える。

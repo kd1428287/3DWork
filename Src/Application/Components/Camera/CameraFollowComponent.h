@@ -49,8 +49,6 @@ public:
 		const Math::Vector3    targetPos = target_->GetTargetPosition();
 
 		// ローカルオフセットを対象の向きで回転させ、ワールド空間のオフセットにする。
-		// クォータニオンは常に純粋な回転(スケール/せん断を含まない)なので、
-		// 以前のMatrix版で必要だったUp/Right/Forwardの手動正規化は不要になった。
 		const Math::Vector3 worldOffset =
 			Math::Vector3::Transform(localOffset_, targetRotation);
 
