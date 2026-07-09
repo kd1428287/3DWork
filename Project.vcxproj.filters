@@ -456,6 +456,9 @@
     <ClInclude Include="Src\Application\Factories\Game\PlayerFactory.h">
       <Filter>Src\Application\Factories\Game</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\GameObject\SkySphere\SkySphere.h">
+      <Filter>Src\Application\GameObject</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -610,6 +613,9 @@
     </ClCompile>
     <ClCompile Include="Src\Application\GameObject\Camera\FPSCamera\FPSCamera.cpp">
       <Filter>Src\Application\GameObject\Camera\FPSCamera</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\GameObject\SkySphere\SkySphere.cpp">
+      <Filter>Src\Application\GameObject</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

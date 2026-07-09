@@ -14,20 +14,20 @@
 // ============================================================
 class CameraTargetComponent : public ComponentBase, public ICameraTarget {
 public:
-    explicit CameraTargetComponent(GameObject* owner) : ComponentBase(owner) {}
+	explicit CameraTargetComponent(GameObject* owner) : ComponentBase(owner) {}
 
-    void Start() override {
-        transform_ = GetOwner()->GetComponent<TransformComponent>();
-    }
+	void Start() override {
+		transform_ = GetOwner()->GetComponent<TransformComponent>();
+	}
 
-    Math::Vector3 GetTargetPosition() const override {
-        return transform_ ? transform_->position : Math::Vector3{};
-    }
+	Math::Vector3 GetTargetPosition() const override {
+		return transform_ ? transform_->position : Math::Vector3::Zero;
+	}
 
-	Math::Matrix GetTargetMatrix() const override {
-		return transform_ ? transform_->matrix : Math::Matrix{};
+	Math::Quaternion GetTargetRotation() const override {
+		return transform_ ? transform_->rotation : Math::Quaternion::Identity;
 	}
 
 private:
-    TransformComponent* transform_ = nullptr;
+	TransformComponent* transform_ = nullptr;
 };

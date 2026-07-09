@@ -267,45 +267,6 @@ bool Application::Init(int w, int h)
 // 「Update」の手番が回ってきたら1フレーム分の更新処理を行い、
 // 終わったら手番を「Render」に渡してまた自分の番を待つ、を繰り返す
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void Application::UpdateThreadMain()
-{
-	while (!m_threadExit)
-	{
-		// 自分(Update)の手番になるまで待機
-		{
-			std::unique_lock<std::mutex> lock(m_syncMutex);
-			m_cvUpdate.wait(lock, [this] { return m_turn == FrameTurn::Update || m_threadExit.load(); });
-		}
-
-		// 終了要求が来ていたら抜ける
-		if (m_threadExit) { break; }
-
-		KdInputManager::Instance().Update();
-
-		//=========================================
-		//
-		// アプリケーション更新処理
-		//
-		//=========================================
-		KdBeginUpdate();
-		{
-			PreUpdate();
-
-			Update();
-
-			PostUpdate();
-		}
-		KdPostUpdate();
-
-		// 更新完了 -> 描画(メイン)スレッドに手番を渡す
-		{
-			std::lock_guard<std::mutex> lock(m_syncMutex);
-			m_turn = FrameTurn::Render;
-		}
-		m_cvRender.notify_one();
-	}
-}
-
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // アプリケーション実行
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -328,37 +289,18 @@ void Application::Execute()
 	// 時間
 	m_fpsController.Init();
 
-	//===================================================================
-	// Updateスレッド起動
-	// 以後、更新処理(Update系)はこのスレッド、
-	// ウィンドウメッセージ処理と描画処理(Render系)はメインスレッドで並行して動く
-	//===================================================================
-	m_threadExit = false;
-	m_turn = FrameTurn::Update;
-	m_updateThread = std::thread(&Application::UpdateThreadMain, this);
-
-	// Updateスレッドへ終了を通知するヘルパー
-	auto RequestUpdateThreadExit = [this]()
-		{
-			{
-				std::lock_guard<std::mutex> lock(m_syncMutex);
-				m_threadExit = true;
-			}
-			m_cvUpdate.notify_one();
-		};
-
-	// メインスレッドループ(ウィンドウメッセージ処理 + 描画)
+	// ループ
 	while (1)
 	{
 		// 処理開始時間Get
 		m_fpsController.UpdateStartTime();
-		// 入力情報取得
-		KdInputManager::Instance().Update();
+
+		std::string str = "Breakneck Delivery FPS: " + std::to_string(Application::Instance().GetNowFPS());
+		SetWindowTextA(m_window.GetWndHandle(), str.c_str());
 
 		// ゲーム終了指定があるときはループ終了
 		if (m_endFlag)
 		{
-			RequestUpdateThreadExit();
 			break;
 		}
 
@@ -374,7 +316,6 @@ void Application::Execute()
 		// ウィンドウが破棄されてるならループ終了
 		if (m_window.IsCreated() == false)
 		{
-			RequestUpdateThreadExit();
 			break;
 		}
 
@@ -389,13 +330,22 @@ void Application::Execute()
 
 		//=========================================
 		//
-		// Updateスレッドの完了(=自分の手番)を待つ
+		// アプリケーション更新処理
 		//
 		//=========================================
+
+		KdBeginUpdate();
 		{
-			std::unique_lock<std::mutex> lock(m_syncMutex);
-			m_cvRender.wait(lock, [this] { return m_turn == FrameTurn::Render; });
+
+
+			PreUpdate();
+
+			Update();
+
+			PostUpdate();
+
 		}
+		KdPostUpdate();
 
 		//=========================================
 		//
@@ -413,18 +363,6 @@ void Application::Execute()
 
 			DrawSprite();
 		}
-
-		// この時点でゲームオブジェクト(Scene)の読み取りは完了しているので、
-		// 次フレームのUpdateスレッドを先行して動かして良い
-		// (この後のKdPostDrawはImGui描画とPresentのみでゲームデータは参照しない想定)
-		{
-			std::lock_guard<std::mutex> lock(m_syncMutex);
-			m_turn = FrameTurn::Update;
-		}
-		m_cvUpdate.notify_one();
-
-		// ImGuiのレンダリングとPresent(Vsync待ちを含む)
-		// -> ここが次フレームのUpdateスレッド処理と並行して実行される
 		KdPostDraw();
 
 		//=========================================
@@ -435,17 +373,6 @@ void Application::Execute()
 
 		m_fpsController.Update();
 	}
-
-	// Updateスレッドの終了を待つ
-	if (m_updateThread.joinable())
-	{
-		m_updateThread.join();
-	}
-
-	//===================================================================
-	// アプリケーション解放
-	//===================================================================
-	Release();
 }
 
 // アプリケーション終了

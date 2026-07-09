@@ -16,7 +16,7 @@
 // ============================================================
 class ICameraTarget {
 public:
-    virtual ~ICameraTarget() = default;
-    virtual Math::Vector3 GetTargetPosition() const = 0;
-	virtual Math::Matrix GetTargetMatrix() const = 0;
+	virtual ~ICameraTarget() = default;
+	virtual Math::Vector3    GetTargetPosition() const = 0;
+	virtual Math::Quaternion GetTargetRotation() const = 0;
 };

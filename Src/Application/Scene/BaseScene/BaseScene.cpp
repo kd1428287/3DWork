@@ -18,11 +18,19 @@ void BaseScene::Update()
 void BaseScene::PostUpdate()
 {
 	objManager_->PostUpdate(Application::Instance().GetDeltaTime());
+	for (auto& obj : m_objList)
+	{
+		obj->PostUpdate();
+	}
 }
 
 void BaseScene::PreDraw()
 {
 	objManager_->PreDraw();
+	for (auto& obj : m_objList)
+	{
+		obj->PreDraw();
+	}
 }
 
 void BaseScene::Draw()
@@ -47,7 +55,11 @@ void BaseScene::Draw()
 	// 陰影のあるオブジェクト(光源の影響を受けるオブジェクト)はBeginとEndの間にまとめてDrawする
 	KdShaderManager::Instance().m_StandardShader.BeginLit();
 	{
-		objManager_->DrawUnLit();
+		objManager_->DrawLit();
+		for (auto& obj : m_objList)
+		{
+			obj->DrawUnLit();
+		}
 	}
 	KdShaderManager::Instance().m_StandardShader.EndLit();
 

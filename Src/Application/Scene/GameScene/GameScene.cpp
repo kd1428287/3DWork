@@ -41,24 +41,25 @@ void GameScene::Init()
 {
 	BaseScene::Init();
 
-
-	auto* ground = objManager_->Instantiate("Ground");
-	auto* groundTrans = ground->AddComponent<TransformComponent>();
-	auto* groundModel = ground->AddComponent<ModelRenderComponent>(
-		"Asset/Models/Terrains/Ground/Terrain.gltf"
-	);
-	groundTrans->position = { 0,0.f,0.f };
-	groundTrans->matrix =
-		Math::Matrix::CreateScale(1.f) * 
-		Math::Matrix::CreateTranslation(groundTrans->position);
-
+	for (int i = 0; i < 9; i++)
+	{
+		auto* ground = objManager_->Instantiate("Ground");
+		auto* groundTrans = ground->AddComponent<TransformComponent>();
+		auto* groundModel = ground->AddComponent<ModelRenderComponent>(
+			"Asset/Models/SkySphere/skySphere.gltf"
+		);
+		//groundTrans->position = { 0.f,0.f,i - 5.f };
+		groundTrans->position = { 0.f,-10.f,0.f };
+		groundTrans->matrix =
+			Math::Matrix::CreateScale(1) *
+			Math::Matrix::CreateTranslation({ 0,-10,0 });
+	}
 	auto* player = objManager_->Instantiate("Player");
 	player->AddComponent<TransformComponent>();
 	auto* playerTarget = player->AddComponent<CameraTargetComponent>();
 	auto* input = player->AddComponent<PlayerInputComponent>();
 	auto* move = player->AddComponent<MovementComponent>(2.0f);
 	move->SetMovementSource(input);
-
 	// --- カメラ: CameraComponent(カメラであること) + CameraFollowComponent(追従) ---
 	GameObject* camera = objManager_->Instantiate("MainCamera");
 	camera->AddComponent<TransformComponent>();
@@ -66,7 +67,9 @@ void GameScene::Init()
 	auto* follow = camera->AddComponent<CameraFollowComponent>();
 	camera->AddComponent<CameraViewComponent>();
 	follow->SetTarget(playerTarget);
-	follow->SetLocalOffset({ 0.0f, 0.0f, -5.0f });
+	follow->SetLocalOffset({ 0.0f, 0.0f, 0.0f });
+
+	
 
 	// system
 	inputSystem_ = std::make_unique<InputSystem>();

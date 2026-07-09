@@ -50,6 +50,13 @@ public:
         }
     }
 
+	void PostUpdate(float dt)override
+	{
+		camera_->SetCameraMatrix(transform_->GetWorldMatrix());
+		//camera_->GetCamera().SetCameraMatrix(Math::Matrix::Identity);
+		camera_->SetToShader();
+	}
+
     Math::Vector3 GetPosition() const { return transform_ ? transform_->position : Math::Vector3{}; }
 	KdCamera& GetCamera() const { return *camera_; }
 

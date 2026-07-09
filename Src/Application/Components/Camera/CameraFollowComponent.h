@@ -25,39 +25,45 @@
 // ============================================================
 class CameraFollowComponent : public ComponentBase {
 public:
-    explicit CameraFollowComponent(GameObject* owner) : ComponentBase(owner) {}
+	explicit CameraFollowComponent(GameObject* owner) : ComponentBase(owner) {}
 
-    void Start() override {
-        transform_ = GetOwner()->GetComponent<TransformComponent>();
-    }
+	void Start() override {
+		transform_ = GetOwner()->GetComponent<TransformComponent>();
+	}
 
-    void SetTarget(ICameraTarget* target) { target_ = target; }
-    void SetLocalOffset(const Math::Vector3& offset) { localOffset_ = offset; }
+	void SetTarget(ICameraTarget* target) { target_ = target; }
+	void SetLocalOffset(const Math::Vector3& offset) { localOffset_ = offset; }
 
-    // Update(移動・入力解決)が全て終わった後に追従先を読みたいため、
-    // LateUpdateで計算する(移動した直後のプレイヤーを"遅れて"追う、
-    // という映像的な違和感を避けられる)。
-    void PostUpdate(float /*deltaTime*/) override {
-        if (transform_ == nullptr || target_ == nullptr) return;
+	// 追従対象の向きにもカメラを合わせたい場合はtrue(三人称カメラ等)。
+	// オフセットだけ追従先の向きに乗せて、カメラ自身の向きは
+	// 別のロジック(LookAt等)に任せたい場合はfalseにする。
+	void SetFollowRotation(bool follow) { followRotation_ = follow; }
 
-		Math::Matrix mat = target_->GetTargetMatrix();
-		mat.Up().Normalize();
-		mat.Right().Normalize();
-		mat.Forward().Normalize();
+	// Update(移動・入力解決)が全て終わった後に追従先を読みたいため、
+	// PostUpdateで計算する(移動した直後の対象を"遅れて"追う、
+	// という映像的な違和感を避けられる)。
+	void PostUpdate(float /*deltaTime*/) override {
+		if (transform_ == nullptr || target_ == nullptr) return;
 
-		Math::Vector3 worldOffset = Math::Vector3::Transform(
-			localOffset_, Math::Quaternion::CreateFromRotationMatrix(mat));
-	
-        const Math::Vector3 targetPos = target_->GetTargetPosition();
-        transform_->position = {
-            targetPos.x + worldOffset.x,
-            targetPos.y + worldOffset.y,
-            targetPos.z + worldOffset.z,
-        };
-    }
+		const Math::Quaternion targetRotation = target_->GetTargetRotation();
+		const Math::Vector3    targetPos = target_->GetTargetPosition();
+
+		// ローカルオフセットを対象の向きで回転させ、ワールド空間のオフセットにする。
+		// クォータニオンは常に純粋な回転(スケール/せん断を含まない)なので、
+		// 以前のMatrix版で必要だったUp/Right/Forwardの手動正規化は不要になった。
+		const Math::Vector3 worldOffset =
+			Math::Vector3::Transform(localOffset_, targetRotation);
+
+		transform_->position = targetPos + worldOffset;
+
+		if (followRotation_) {
+			transform_->rotation = targetRotation;
+		}
+	}
 
 private:
-    TransformComponent* transform_ = nullptr;
-    ICameraTarget* target_ = nullptr;
-    Math::Vector3 localOffset_{0.0f, 0.0f, -10.0f};
+	TransformComponent* transform_ = nullptr;
+	ICameraTarget* target_ = nullptr;
+	Math::Vector3 localOffset_{ 0.0f, 0.0f, -10.0f };
+	bool followRotation_ = true;
 };
