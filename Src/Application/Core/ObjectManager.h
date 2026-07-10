@@ -1,12 +1,5 @@
 ﻿#pragma once
-#include <algorithm>
-#include <memory>
-#include <string>
-#include <vector>
 
-#include "GameObject.h"
-#include "../Engine/EventBus/EventBus.h"
-#include "SceneContext.h"
 // ============================================================
 // ObjectManager: GameObjectの集合を管理する。
 //
@@ -22,7 +15,7 @@ public:
 	explicit ObjectManager(EventBus* eventBus = nullptr) { context_.eventBus = eventBus; }
 
 	// 新しいGameObjectを生成してObjectManagerに登録する。
-	// 生成と同時にSceneのイベントバスを紐付ける。
+	// 生成と同時にSceneContext(イベントバス・アクティブカメラ等)を紐付ける。
 	GameObject* Instantiate(const std::string& name = "GameObject") {
 		auto obj = std::make_unique<GameObject>(name, &context_);
 		GameObject* rawPtr = obj.get();
@@ -67,22 +60,30 @@ public:
 	void DrawSprite() { for (auto& obj : objects_) obj->DrawSprite(); }
 	void DrawDebug() { for (auto& obj : objects_) obj->DrawDebug(); }
 
-	// 破棄予約されたGameObjectをまとめて削除する。
+	// 破棄予約されたGameObjectをまとめて削除し、続けて生き残った
+	// 各GameObjectのコンポーネント付け外し予約も反映する。
 	// Scene側が「このフレームの処理は全部終わった」と判断した
 	// タイミング(例: PostUpdateの最後)で明示的に呼ぶ。
 	void Flush() {
-		if (pendingDestroy_.empty()) return;
+		if (!pendingDestroy_.empty()) {
+			objects_.erase(
+				std::remove_if(objects_.begin(), objects_.end(),
+					[this](const std::unique_ptr<GameObject>& obj) {
+						return std::find(pendingDestroy_.begin(),
+							pendingDestroy_.end(),
+							obj.get()) != pendingDestroy_.end();
+					}),
+				objects_.end());
 
-		objects_.erase(
-			std::remove_if(objects_.begin(), objects_.end(),
-				[this](const std::unique_ptr<GameObject>& obj) {
-					return std::find(pendingDestroy_.begin(),
-						pendingDestroy_.end(),
-						obj.get()) != pendingDestroy_.end();
-				}),
-			objects_.end());
+			pendingDestroy_.clear();
+		}
 
-		pendingDestroy_.clear();
+		// GameObject単位の破棄とは独立して、各GameObject内で予約された
+		// コンポーネントの付け外し(RequestAddComponent/RequestRemoveComponent)
+		// もここでまとめて反映する。
+		for (auto& obj : objects_) {
+			obj->FlushComponentChanges();
+		}
 	}
 
 	std::size_t GetObjectCount() const { return objects_.size(); }
@@ -111,5 +112,5 @@ public:
 private:
 	std::vector<std::unique_ptr<GameObject>> objects_;
 	std::vector<GameObject*> pendingDestroy_;
-	SceneContext context_;  // World(Sceneの相当物)がこの実体を所有する
+	SceneContext context_;  // ObjectManager(Sceneの相当物)がこの実体を所有する
 };

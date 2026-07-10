@@ -14,13 +14,30 @@ public:
 		);
 	}
 
+	void SetModel(std::string modelName)
+	{
+		spModel_ = std::make_shared<KdModelWork>(
+			KdAssets::Instance().m_modeldatas.GetData(modelName)
+		);
+	}
+
+	void SetModel(const std::shared_ptr<KdModelData>& model)
+	{
+		spModel_ = std::make_shared<KdModelWork>(model);
+	}
+
+	void SetModel(const std::shared_ptr<KdModelWork>& model)
+	{
+		spModel_ = model;
+	}
+
 	void Start()override
 	{
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
 	}
 
 	void GenerateDepthMapFromLight() override {
-		if (!spModel_)return;
+		if (!spModel_ || !transform_)return;
 		//TransformComponent* trans = GetOwner()->GetComponent<TransformComponent>();
 		KdShaderManager::Instance().m_StandardShader.DrawModel(
 			*spModel_,

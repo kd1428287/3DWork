@@ -1,35 +1,29 @@
 ﻿#pragma once
+#include <memory>
 #include <string>
-#include <unordered_map>
 
-#include "../../Components/Player/PlayerInputComponent.h"
-#include "../../Components/Transform/MovementComponent.h"
-#include "../../Components/Camera/CameraTargetComponent.h"
-#include "../GameObjectFactory.h"
+// 前方宣言でコンパイル時間を短縮
+class GameObject;
+class ObjectManager;
 
+// ============================================================
+// プレイヤー（自機）の生成に特化したファクトリークラス。
+// 無駄なレジストリを排除し、明快な単一責任を持つ。
+// ============================================================
 class PlayerFactory {
 public:
-	// カード定義データベースを受け取り、登録できるものを全て登録しておく。
-	// database自体は所有しない(この後変更されない前提)。
-	explicit PlayerFactory() {
-		registry_.Register(0, [](ObjectManager& objectManager, int ownerPlayerId) {
-			GameObject* player = objectManager.Instantiate("player");
-			player->AddComponent<TransformComponent>();
-			player->AddComponent<MovementComponent>();
-			player->AddComponent<CameraTargetComponent>();
-			// 必要に応じてここでまとめて付与していく
-			return player;
-			});
-	}
+	PlayerFactory() = default;
+	~PlayerFactory() = default;
 
-	GameObject* CreatePlayer(ObjectManager& objectManager, const std::string& PlayerId, int ownerPlayerId) {
-		return registry_.Create(PlayerId, objectManager, ownerPlayerId);
-	}
+	// コピー・ムーブ禁止
+	PlayerFactory(const PlayerFactory&) = delete;
+	PlayerFactory& operator=(const PlayerFactory&) = delete;
 
-	bool IsKnownPlayer(const std::string& PlayerId) const {
-		return registry_.IsRegistered(PlayerId);
-	}
-
-private:
-	GameObjectFactory<int> registry_;
+	/**
+	 * @brief プレイヤーキャラクターを生成し、必要なコンポーネントをアタッチして返す
+	 * @param objectManager オブジェクト管理システム
+	 * @param ownerPlayerId マルチプレイ等を見据えたプレイヤー識別ID（不要なら削除可）
+	 * @return 生成されたGameObjectのスマートポインタ
+	 */
+	GameObject* CreatePlayer(ObjectManager& objectManager, int ownerPlayerId = 0);
 };

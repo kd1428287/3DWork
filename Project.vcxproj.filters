@@ -79,9 +79,6 @@
     <Filter Include="Src\Application\Components">
       <UniqueIdentifier>{99dbbfc7-973c-4679-a913-0852b84c021c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Src\Application\Entity">
-      <UniqueIdentifier>{12bb2ae1-85a5-48c8-8ba2-6d43a612fd9f}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Src\Application\Components\Transform">
       <UniqueIdentifier>{89ccf71c-7317-4bfb-802f-0ff4a520db0f}</UniqueIdentifier>
     </Filter>
@@ -580,6 +577,9 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Scene\BaseScene\BaseScene.cpp">
       <Filter>Src\Application\Scene\BaseScene</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Factories\Game\PlayerFactory.cpp">
+      <Filter>Src\Application\Factories\Game</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

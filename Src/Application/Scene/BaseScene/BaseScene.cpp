@@ -1,6 +1,9 @@
 ﻿#include "BaseScene.h"
 #include "../../main.h"
 
+BaseScene::BaseScene() = default;
+BaseScene::~BaseScene() = default;
+
 void BaseScene::PreUpdate()
 {
 	objManager_->PreUpdate(Application::Instance().GetDeltaTime());

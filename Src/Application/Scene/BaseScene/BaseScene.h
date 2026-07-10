@@ -4,8 +4,8 @@ class BaseScene
 {
 public :
 
-	BaseScene()			 { Init(); }
-	virtual ~BaseScene() {}
+	BaseScene();
+	virtual ~BaseScene();
 
 	virtual void PreUpdate();
 	virtual void Update();

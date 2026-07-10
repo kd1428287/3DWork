@@ -236,13 +236,13 @@ bool Application::Init(int w, int h)
 
 	// 軸（2Dベクトル）の登録: "Move" アクションに [W, D, S, A] を割り当て
 	// 引数の順序: 上(Up), 右(Right), 下(Down), 左(Left)
-	auto up = std::make_shared<KdInputButtonForWindows>(std::vector<int>{ 'W',VK_UP });
-	auto right = std::make_shared<KdInputButtonForWindows>(std::vector<int>{ 'D',VK_RIGHT });
-	auto down = std::make_shared<KdInputButtonForWindows>(std::vector<int>{ 'S',VK_DOWN });
-	auto left = std::make_shared<KdInputButtonForWindows>(std::vector<int>{ 'A',VK_LEFT });
+	auto up = std::make_shared<KdInputButtonForWindows>(std::vector<int>{ 'W', VK_UP });
+	auto right = std::make_shared<KdInputButtonForWindows>(std::vector<int>{ 'D', VK_RIGHT });
+	auto down = std::make_shared<KdInputButtonForWindows>(std::vector<int>{ 'S', VK_DOWN });
+	auto left = std::make_shared<KdInputButtonForWindows>(std::vector<int>{ 'A', VK_LEFT });
 
 	auto cross = std::make_shared<KdInputAxisForWindows>(
-		up,right,down,left
+		up, right, down, left
 	);
 	keyboardDevice->AddAxis("Move", cross);
 
@@ -336,14 +336,11 @@ void Application::Execute()
 
 		KdBeginUpdate();
 		{
-
-
 			PreUpdate();
 
 			Update();
 
 			PostUpdate();
-
 		}
 		KdPostUpdate();
 
