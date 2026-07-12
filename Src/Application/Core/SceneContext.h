@@ -19,4 +19,10 @@ class CameraComponent;
 struct SceneContext {
 	EventBus* eventBus = nullptr;
 	CameraComponent* activeCamera = nullptr;
+
+	// スケールされていない、フレームの生の経過時間。
+	// 個々のGameObjectのtimeScale_の影響を受けないため、
+	// 「効果自体の残り時間」のカウントに使う。
+	// (対象がスローされていても、効果の持続時間は実時間で進むようにするため)
+	float unscaledDeltaTime = 0.0f;
 };

@@ -20,7 +20,8 @@ public:
 	// 増えるたびにGameObject自体を変更しなくて済むよう、
 	// 1つのポインタにまとめて持つ。
 	explicit GameObject(std::string name = "GameObject", SceneContext* context = nullptr)
-		: name_(std::move(name)), context_(context) {}
+		: name_(std::move(name)), context_(context) {
+	}
 
 	GameObject(const GameObject&) = delete;
 	GameObject& operator=(const GameObject&) = delete;
@@ -118,6 +119,7 @@ public:
 
 	void PreUpdate(float deltaTime) {
 		if (!active_) return;
+		const float scaledDeltaTime = deltaTime * timeScale_;
 		for (const auto id : componentOrder_) {
 			ComponentBase* comp = components_[id].get();
 			if (!comp->IsEnabled()) continue;
@@ -125,25 +127,27 @@ public:
 				comp->Start();
 				comp->started_ = true;
 			}
-			comp->PreUpdate(deltaTime);
+			comp->PreUpdate(scaledDeltaTime);
 		}
 	}
 
 	void Update(float deltaTime) {
 		if (!active_) return;
+		const float scaledDeltaTime = deltaTime * timeScale_;
 		for (const auto id : componentOrder_) {
 			ComponentBase* comp = components_[id].get();
 			if (!comp->IsEnabled()) continue;
-			comp->Update(deltaTime);
+			comp->Update(scaledDeltaTime);
 		}
 	}
 
 	void PostUpdate(float deltaTime) {
 		if (!active_) return;
+		const float scaledDeltaTime = deltaTime * timeScale_;
 		for (const auto id : componentOrder_) {
 			ComponentBase* comp = components_[id].get();
 			if (comp->IsEnabled()) {
-				comp->PostUpdate(deltaTime);
+				comp->PostUpdate(scaledDeltaTime);
 			}
 		}
 	}
@@ -179,6 +183,12 @@ public:
 
 	bool IsActive() const { return active_; }
 	void SetActive(bool active) { active_ = active; }
+
+	// このGameObject単体の時間の流れる速さ。1.0が通常、0.0で完全停止。
+	// 「スロウ」「毒による鈍化」など、対象個別の時間操作に使う。
+	// 負の値は逆再生的な挙動になってしまうため0.0未満はクランプする。
+	float GetTimeScale() const { return timeScale_; }
+	void SetTimeScale(float timeScale) { timeScale_ = std::max(0.0f, timeScale); }
 
 	// Sceneが持つ非所有参照の束そのものにアクセスしたい場合はこちら。
 	// 例: GetOwner()->GetContext()->activeCamera
@@ -260,6 +270,7 @@ private:
 	std::string name_;
 	bool active_ = true;
 	SceneContext* context_ = nullptr;
+	float timeScale_ = 1.0f;
 
 	std::unordered_map<ComponentTypeId, std::unique_ptr<ComponentBase>> components_;
 	std::vector<ComponentTypeId> componentOrder_;

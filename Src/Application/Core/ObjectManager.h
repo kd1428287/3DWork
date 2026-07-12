@@ -31,6 +31,11 @@ public:
 	// --- 各フェーズ(それぞれ独立して呼び出し可能) --------------------
 
 	void PreUpdate(float deltaTime) {
+		// フレーム先頭で生の(スケールされていない)経過時間を記録しておく。
+		// 各GameObjectのtimeScale_に関わらず、効果の持続時間カウントなどは
+		// 常にこの値を参照する。
+		context_.unscaledDeltaTime = deltaTime;
+
 		for (auto& obj : objects_) {
 			obj->PreUpdate(deltaTime);
 		}

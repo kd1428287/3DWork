@@ -8,7 +8,6 @@
 #include "../../Factories/Game/PlayerFactory.h"
 
 // component
-#include "../../Components/Card/CardDefinition.h"
 #include "../../Components/Render/ModelRenderComponent.h"
 
 // プレイヤー
@@ -44,8 +43,6 @@ void GameScene::Event()
 			SceneManager::SceneType::Title
 		);
 	}
-
-	cardSelectionSystem_->Update(0);
 }
 
 void GameScene::Init()
@@ -59,7 +56,7 @@ void GameScene::Init()
 	auto* groundModel = ground->AddComponent<ModelRenderComponent>(
 		"Asset/Models/Terrains/Ground/Terrain.gltf"
 	);
-	groundTrans->position = { 0.f,-1.f,0.f };
+	groundTrans->position = { 0.f,0.f,0.f };
 	//}
 
 	/*auto* player = objManager_->Instantiate("Player");
@@ -80,21 +77,11 @@ void GameScene::Init()
 	auto* follow = camera->AddComponent<CameraFollowComponent>();
 	camera->AddComponent<CameraViewComponent>();
 	follow->SetTarget(player->GetComponent<CameraTargetComponent>());
-	follow->SetLocalOffset({ 0.0f, 1.0f, -10.0f });
+	follow->SetLocalOffset({ 0.0f, 1.0f, -5.0f });
 
 	
 
 	// system
 	inputSystem_ = std::make_unique<InputSystem>();
 	inputSystem_->RegisterPlayer(player->GetComponent<PlayerInputComponent>());
-	handSystem_ = std::make_unique<HandSystem>();
-	cardSelectionSystem_ = std::make_unique<CardSelectionSystem>(*handSystem_, *localBus_);
-
-	CardDefinition def;
-	std::unordered_map<std::string, CardDefinition> map;
-	map.emplace("Attack", def);
-	cardFactory_ = std::make_unique<CardFactory>(
-		map
-	);
-	cardFactory_->CreateCard(*objManager_, "Attack", 0);
 }

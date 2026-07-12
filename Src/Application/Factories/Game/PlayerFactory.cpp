@@ -14,9 +14,10 @@ GameObject* PlayerFactory::CreatePlayer(ObjectManager& objectManager, int ownerP
 	if (!player) return nullptr;
 
 	// 2. コンポーネントをアタッチ
-	player->AddComponent<TransformComponent>();
+	player->AddComponent<TransformComponent>() ->scale = { 0.01f,0.01f,0.01f };
 	player->AddComponent<ModelRenderComponent>(
-		"Asset/Models/Character/Base/final low poly character  rigged.gltf"
+		"Asset/Models/Character/Player/Walking.gltf"
+		//"Asset/Models/Character/Player/a.gltf"
 	);
 
 	// 3. 入力と移動の依存関係の注入

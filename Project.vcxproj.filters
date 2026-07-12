@@ -91,14 +91,8 @@
     <Filter Include="Src\Application\Core">
       <UniqueIdentifier>{4c867e74-16db-400e-ad7a-4d2c6e7090b7}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Src\Application\Components\CardEffect">
-      <UniqueIdentifier>{9296e67c-4d9f-43d5-95d2-ceca92a3bd1d}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Src\Application\Factories">
       <UniqueIdentifier>{07e1a4df-64c0-4cff-a650-d77aa5f361aa}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Src\Application\Components\Card">
-      <UniqueIdentifier>{315fe755-2e84-4ab7-86b4-17ea57c6d740}</UniqueIdentifier>
     </Filter>
     <Filter Include="Src\Application\Engine">
       <UniqueIdentifier>{d76c9efe-3c07-4fb7-baa9-ecc96a417acb}</UniqueIdentifier>
@@ -111,9 +105,6 @@
     </Filter>
     <Filter Include="Src\Application\Systems">
       <UniqueIdentifier>{8ca1c632-ec5e-46f8-b11c-c36c3953e4f1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Src\Application\Systems\Card">
-      <UniqueIdentifier>{bc6a68aa-81e2-4c0f-b178-99a2c6f587a0}</UniqueIdentifier>
     </Filter>
     <Filter Include="Src\Application\Components\Tags">
       <UniqueIdentifier>{20eb6742-9f10-4111-ab19-58f8907e74a8}</UniqueIdentifier>
@@ -138,6 +129,9 @@
     </Filter>
     <Filter Include="Src\Application\Systems\Player">
       <UniqueIdentifier>{4b85f44b-07a2-4ad9-b77f-117dcf2db6a8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Components\Effect">
+      <UniqueIdentifier>{72c076b7-7a2b-4330-9d34-3dffccb8ab76}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -330,44 +324,17 @@
     <ClInclude Include="Src\Application\Components\Transform\TransformComponent.h">
       <Filter>Src\Application\Components\Transform</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Factories\CardFactory.h">
-      <Filter>Src\Application\Factories</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\Card\CardIdentityComponent.h">
-      <Filter>Src\Application\Components\Card</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\Card\CardLatencyComponent.h">
-      <Filter>Src\Application\Components\Card</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\Card\CardStateComponent.h">
-      <Filter>Src\Application\Components\Card</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\Card\CardEffectComponent.h">
-      <Filter>Src\Application\Components\Card</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Components\Transform\MovementComponent.h">
       <Filter>Src\Application\Components\Transform</Filter>
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Transform\TweenMoveComponent.h">
       <Filter>Src\Application\Components\Transform</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\Card\CardInteractionComponent.h">
-      <Filter>Src\Application\Components\Card</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\Card\CardDefinition.h">
-      <Filter>Src\Application\Components\Card</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\Card\Hand.h">
-      <Filter>Src\Application\Components\Card</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Engine\EventBus\EventBus.h">
       <Filter>Src\Application\Engine\EventBus</Filter>
     </ClInclude>
     <ClInclude Include="Src\Application\Engine\EventBus\Event\Event.h">
       <Filter>Src\Application\Engine\EventBus\Event</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Systems\Card\HandSystem.h">
-      <Filter>Src\Application\Systems\Card</Filter>
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Tags\TagInterfaces.h">
       <Filter>Src\Application\Components\Tags</Filter>
@@ -380,12 +347,6 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Factories\GameObjectFactory.h">
       <Filter>Src\Application\Factories</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\Card\CardSelectionComponent.h">
-      <Filter>Src\Application\Components\Card</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Systems\Card\CardSelectionSystem.h">
-      <Filter>Src\Application\Systems\Card</Filter>
     </ClInclude>
     <ClInclude Include="Src\Application\Systems\Input\InputSystem.h">
       <Filter>Src\Application\Systems\Input</Filter>
@@ -404,9 +365,6 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Render\SpriteRenderComponent.h">
       <Filter>Src\Application\Components\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\Card\CardRenderComponent.h">
-      <Filter>Src\Application\Components\Card</Filter>
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Camera\CameraComponent.h">
       <Filter>Src\Application\Components\Camera</Filter>
@@ -431,6 +389,12 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Factories\Game\PlayerFactory.h">
       <Filter>Src\Application\Factories\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Effect\SlowEffectComponent.h">
+      <Filter>Src\Application\Components\Effect</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Player\PlayerStatusController.h">
+      <Filter>Src\Application\Components\Player</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
