@@ -1,305 +1,135 @@
 ﻿#pragma once
+#include "PlayerCombatTypes.h"
+#include "PlayerInputComponent.h"
+#include "../Movement/MovementComponent.h" // 既存の依存として
+#include "PlayerState.h"
 
-#include "ComponentBase.h"
-#include "../Objects/GameObject.h"
-
-// ============================================================
-// 移動軸。
-// CombatStateがNone以外の間(攻撃/回避/怯み中)は参照されない想定。
-// その間の位置移動は、各モーション側が直接扱う
-// (Walk/Runの入力に頼らず、回避なら固定軌道で動く、等)。
-// ============================================================
-enum class MovementState
-{
-	Stand = 0,
-	Walk,
-	Run,
-};
-
-// ============================================================
-// 戦闘軸。
-// 「予備動作→判定中→硬直→(None or 次の行動へキャンセル)」という
-// 攻撃1サイクルと、対称な回避のサイクルを持つ。
-// 怯みはこのサイクルの外から割り込んでくる特別な状態として扱う。
-// ============================================================
-enum class CombatState
-{
-	None = 0,
-	AttackWindup,
-	AttackActive,
-	AttackRecovery,
-	Evade,
-	EvadeRecovery,
-	StaggerSmall,
-	StaggerLarge,
-};
-
-// ============================================================
-// 攻撃1つ分の時間的定義。技ごとにインスタンスを用意してRequestAttack()に渡す。
-// ============================================================
-struct AttackMoveData
-{
-	float windupDuration = 0.2f;
-	float activeDuration = 0.15f;
-	float recoveryDuration = 0.3f;
-
-	// recoveryDuration内で、ここから先は回避によるキャンセルを許可する
-	// 開始タイミング(秒)。recoveryDuration以上の値にすればキャンセル不可の技になる。
-	float recoveryEvadeCancelStart = 0.15f;
-};
-
-// ============================================================
-// 回避1つ分の時間的定義。
-// ============================================================
-struct EvadeMoveData
-{
-	float activeDuration = 0.25f;    // 無敵が乗っている実移動フェーズ
-	float recoveryDuration = 0.15f;  // 後隙(無敵切れ)
-
-	// activeDuration内で、ここから先が「ジャスト回避」の成立窓。
-	float justWindowStart = 0.05f;
-	float justWindowEnd = 0.15f;
-};
-
-// 入力バッファに積める行動の種類。今はEvadeのみだが、
-// 将来コンボ継続キャンセル等を増やす場合はここに足していく。
-enum class PendingActionType
-{
-	None = 0,
-	Evade,
-};
-
-// ============================================================
-// PlayerStatusController
-// 移動軸/戦闘軸の2軸を1つのコンポーネントで管理する。
-// 相互の制約(攻撃中はRunできない、等)を頻繁に参照し合うため、
-// あえて分離せずここに集約している。
-// ============================================================
 class PlayerStatusController : public ComponentBase
 {
 public:
 	explicit PlayerStatusController(GameObject* owner) : ComponentBase(owner) {}
 
-	// --- 移動軸: 参照/要求 ------------------------------------------
+	void Start() override
+	{
+		inputComponent_ = GetOwner()->GetComponent<PlayerInputComponent>();
+		movementComponent_ = GetOwner()->GetComponent<MovementComponent>();
 
+		// 初期状態のセット
+		currentState_ = &stateNone_;
+	}
+
+	// --- 移動軸: 参照 --------------------------------------------------
 	MovementState GetMovementState() const { return movementState_; }
 
-	// 移動要求。戦闘軸がNone以外の間は無視する
-	// (攻撃/回避モーション側が位置移動を専有するため)。
-	void RequestMove(MovementState desired)
-	{
-		if (combatState_ != CombatState::None) return;
-		movementState_ = desired;
+	// --- 戦闘軸: 参照 (現在のStateに委譲) ------------------------------
+	CombatState GetCombatState() const { return currentState_->GetDetailedState(); }
+	float GetCombatElapsed() const { return currentState_->GetElapsed(); }
+
+	bool IsAttacking() const {
+		auto state = GetCombatState();
+		return state == CombatState::AttackWindup || state == CombatState::AttackActive || state == CombatState::AttackRecovery;
 	}
 
-	// --- 戦闘軸: 参照 --------------------------------------------------
-
-	CombatState GetCombatState() const { return combatState_; }
-	float GetCombatElapsed() const { return elapsed_; }
-
-	bool IsAttacking() const
-	{
-		return combatState_ == CombatState::AttackWindup
-			|| combatState_ == CombatState::AttackActive
-			|| combatState_ == CombatState::AttackRecovery;
+	bool IsEvading() const {
+		auto state = GetCombatState();
+		return state == CombatState::Evade || state == CombatState::EvadeRecovery;
 	}
 
-	bool IsEvading() const
-	{
-		return combatState_ == CombatState::Evade
-			|| combatState_ == CombatState::EvadeRecovery;
+	bool IsGuarding() const { return GetCombatState() == CombatState::Guard; }
+
+	bool IsStaggered() const {
+		auto state = GetCombatState();
+		return state == CombatState::StaggerSmall || state == CombatState::StaggerLarge;
 	}
 
-	bool IsStaggered() const
-	{
-		return combatState_ == CombatState::StaggerSmall
-			|| combatState_ == CombatState::StaggerLarge;
-	}
+	// ジャスト判定もState側に委譲
+	bool IsInJustEvadeWindow() const { return currentState_->IsInJustEvadeWindow(this); }
+	bool IsInParryWindow() const { return currentState_->IsInParryWindow(this); }
 
-	// 現在、被弾判定に対して「ジャスト回避」が成立する窓の中にいるか。
-	// 実際の当たり判定(衝突検出)は外部の被弾解決システムが持つため、
-	// ヒット発生時にこちらへ問い合わせてもらう想定。
-	bool IsInJustEvadeWindow() const
-	{
-		if (combatState_ != CombatState::Evade) return false;
-		return elapsed_ >= currentEvade_.justWindowStart
-			&& elapsed_ <= currentEvade_.justWindowEnd;
-	}
+	// --- 戦闘軸: 実行可否 (現在のStateに委譲) --------------------------
+	bool CanStartAttack() const { return currentState_->CanStartAttack(this); }
+	bool CanStartEvade() const { return currentState_->CanStartEvade(this); }
 
-	// --- 戦闘軸: 行動要求 --------------------------------------------
+	// --- データ取得 (Stateが判定に使うため) ----------------------------
+	const AttackMoveData& GetCurrentAttackData() const { return currentAttack_; }
+	const EvadeMoveData& GetCurrentEvadeData() const { return currentEvade_; }
+	const GuardMoveData& GetCurrentGuardData() const { return currentGuard_; }
 
-	// 攻撃要求。Noneの時だけ即座に開始する。
-	// (硬直中からのコンボ継続キャンセルは今回のスコープ外。
-	//  必要になったらRequestEvade()と同じ形でバッファに積める)
-	void RequestAttack(const AttackMoveData& move)
-	{
-		if (combatState_ != CombatState::None) return;
+	// --- 状態遷移 (State内部から、あるいはControllerから呼ばれる) -------
+	void ChangeStateToGuard() { TransitionTo(&stateGuard_); }
+	void ChangeStateToNone() { TransitionTo(&stateNone_); }
+
+	bool TryStartAttack(const AttackMoveData& move) {
+		if (!CanStartAttack()) return false;
 		currentAttack_ = move;
-		ChangeCombatState(CombatState::AttackWindup);
-	}
-
-	// 回避要求。
-	// - Noneなら即座に開始
-	// - AttackRecoveryでキャンセル猶予が既に開いていればそこから即座に開始
-	// - それ以外(猶予未到達のAttackRecovery含む)は、ごく短い猶予
-	//   (kInputBufferDuration)だけ「予約」しておき、Updateで猶予が
-	//   開いた瞬間に自動消費する。バッファが短いため、Windup/Active中の
-	//   入力は実質的に無効(シビア寄りの仕様)になる。
-	void RequestEvade(const EvadeMoveData& move)
-	{
-		if (TryBeginEvadeNow(move)) return;
-
-		pendingAction_ = PendingActionType::Evade;
-		pendingEvadeMove_ = move;
-		pendingBufferElapsed_ = 0.0f;
-	}
-
-	// 外部の被弾解決システムから、怯みを直接割り込ませるためのAPI。
-	// Stagerは予備動作/判定/硬直のサイクルを持たず、即座に遷移する。
-	void ApplyStagger(bool isLarge, float duration)
-	{
-		ChangeCombatState(isLarge ? CombatState::StaggerLarge : CombatState::StaggerSmall);
-		staggerDuration_ = duration;
-		// 怯みは全ての予約入力を握り潰す
-		pendingAction_ = PendingActionType::None;
-	}
-
-	// --- ライフサイクル -------------------------------------------------
-
-	void Update(float deltaTime) override
-	{
-		UpdatePendingInput(deltaTime);
-		UpdateCombatState(deltaTime);
-	}
-
-private:
-	// --- 内部: 回避開始可否 ----------------------------------------------
-
-	bool CanStartEvade() const
-	{
-		if (combatState_ == CombatState::None) return true;
-		if (combatState_ == CombatState::AttackRecovery)
-		{
-			return elapsed_ >= currentAttack_.recoveryEvadeCancelStart;
-		}
-		return false;
-	}
-
-	bool TryBeginEvadeNow(const EvadeMoveData& move)
-	{
-		if (!CanStartEvade()) return false;
-		currentEvade_ = move;
-		ChangeCombatState(CombatState::Evade);
+		TransitionTo(&stateAttack_);
 		return true;
 	}
 
-	// --- 内部: 入力バッファ(浅め) ------------------------------------------
-
-	void UpdatePendingInput(float deltaTime)
-	{
-		if (pendingAction_ == PendingActionType::None) return;
-
-		pendingBufferElapsed_ += deltaTime;
-		if (pendingBufferElapsed_ > kInputBufferDuration)
-		{
-			// 猶予切れ。入力は破棄する(シビア寄りの仕様)。
-			pendingAction_ = PendingActionType::None;
-			return;
-		}
-
-		if (pendingAction_ == PendingActionType::Evade)
-		{
-			if (TryBeginEvadeNow(pendingEvadeMove_))
-			{
-				pendingAction_ = PendingActionType::None;
-			}
-		}
+	bool TryStartEvade(const EvadeMoveData& move) {
+		if (!CanStartEvade()) return false;
+		currentEvade_ = move;
+		TransitionTo(&stateEvade_);
+		return true;
 	}
 
-	// --- 内部: 戦闘軸の時間経過 ------------------------------------------
+	void ApplyStagger(bool isLarge, float duration) {
+		stateStagger_.Setup(isLarge, duration);
+		TransitionTo(&stateStagger_);
+	}
 
-	void UpdateCombatState(float deltaTime)
+	// --- ライフサイクル --------------------------------------------------
+	void Update(float deltaTime) override
 	{
-		if (combatState_ == CombatState::None) return;
+		if (inputComponent_ != nullptr) {
+			HandleMovementInput(*inputComponent_);
+			HandleActionInput(*inputComponent_);
+		}
 
-		elapsed_ += deltaTime;
+		UpdateMovementState(deltaTime);
 
-		switch (combatState_)
-		{
-		case CombatState::AttackWindup:
-			if (elapsed_ >= currentAttack_.windupDuration)
-			{
-				ChangeCombatState(CombatState::AttackActive);
-			}
-			break;
-
-		case CombatState::AttackActive:
-			if (elapsed_ >= currentAttack_.activeDuration)
-			{
-				ChangeCombatState(CombatState::AttackRecovery);
-			}
-			break;
-
-		case CombatState::AttackRecovery:
-			if (elapsed_ >= currentAttack_.recoveryDuration)
-			{
-				ChangeCombatState(CombatState::None);
-			}
-			break;
-
-		case CombatState::Evade:
-			if (elapsed_ >= currentEvade_.activeDuration)
-			{
-				ChangeCombatState(CombatState::EvadeRecovery);
-			}
-			break;
-
-		case CombatState::EvadeRecovery:
-			if (elapsed_ >= currentEvade_.recoveryDuration)
-			{
-				ChangeCombatState(CombatState::None);
-			}
-			break;
-
-		case CombatState::StaggerSmall:
-		case CombatState::StaggerLarge:
-			if (elapsed_ >= staggerDuration_)
-			{
-				ChangeCombatState(CombatState::None);
-			}
-			break;
-
-		default:
-			break;
+		// 戦闘状態の更新は現在のStateに丸投げ
+		if (currentState_) {
+			currentState_->Update(this, deltaTime);
 		}
 	}
 
-	// 状態が実際に変わった時だけelapsed_をリセットする共通処理。
-	// (Enter/Exit相当のフック差し込みが必要になったらここに足す)
-	void ChangeCombatState(CombatState next)
-	{
-		if (next == combatState_) return;
-		combatState_ = next;
-		elapsed_ = 0.0f;
+private:
+	void TransitionTo(IPlayerState* nextState) {
+		if (currentState_ == nextState) return;
+		if (currentState_) currentState_->Exit(this);
+		currentState_ = nextState;
+		currentState_->Enter(this);
 	}
 
-	// --- 移動軸 -----------------------------------------------------
+	void HandleMovementInput(const PlayerInputComponent& input);
+	void HandleActionInput(PlayerInputComponent& input);
+	void ApplyMovementState(MovementState state);
+	void UpdateMovementState(float deltaTime);
+
+	// 兄弟コンポーネント
+	PlayerInputComponent* inputComponent_ = nullptr;
+	MovementComponent* movementComponent_ = nullptr;
+
+	// --- 移動データ ---
 	MovementState movementState_ = MovementState::Stand;
+	float walkSpeed_ = 2.0f;
+	float runSpeed_ = 5.0f;
 
-	// --- 戦闘軸 -----------------------------------------------------
-	CombatState combatState_ = CombatState::None;
-	float elapsed_ = 0.0f;
-
+	// --- 戦闘データ ---
 	AttackMoveData currentAttack_;
 	EvadeMoveData currentEvade_;
-	float staggerDuration_ = 0.0f;
+	GuardMoveData currentGuard_;
+	
+	//EvadeMovementSource evadeSource_;
+	IMovementSource* originalSource_ = nullptr; // 元の入力ソースを退避用
 
-	// --- 入力バッファ(浅め) ---------------------------------------------
-	// 「キャンセル猶予がまだ開いていない攻撃硬直中」に来た回避入力を、
-	// ごく短時間だけ覚えておいて猶予が開いた瞬間に自動消費する。
-	static constexpr float kInputBufferDuration = 0.1f;
+	// --- Stateインスタンス (メモリ断片化を防ぐため実体をメンバで持つ) ---
+	StateNone    stateNone_;
+	StateAttack  stateAttack_;
+	StateEvade   stateEvade_;
+	StateGuard   stateGuard_;
+	StateStagger stateStagger_;
 
-	PendingActionType pendingAction_ = PendingActionType::None;
-	EvadeMoveData pendingEvadeMove_;
-	float pendingBufferElapsed_ = 0.0f;
+	IPlayerState* currentState_ = nullptr; // 現在アクティブなState
 };

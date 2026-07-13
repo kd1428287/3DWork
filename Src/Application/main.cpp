@@ -222,10 +222,17 @@ bool Application::Init(int w, int h)
 	auto keyboardDevice = std::make_unique<KdInputCollector>();
 
 	// ボタンの登録: "Jump" アクションに [スペースキー] を割り当て
-	keyboardDevice->AddButton("Jump", new KdInputButtonForWindows(VK_SPACE));
+	keyboardDevice->AddButton("Evade", new KdInputButtonForWindows(VK_SPACE));
 
 	// ボタンの登録: "Attack" アクションに [Zキー] または [左クリック] を割り当て (複数登録可能)
-	keyboardDevice->AddButton("Enter", new KdInputButtonForWindows({ 'Z', VK_LBUTTON }));
+	keyboardDevice->AddButton("Attack", new KdInputButtonForWindows({ 'Z', VK_LBUTTON }));
+
+
+	keyboardDevice->AddButton("Guard", new KdInputButtonForWindows({ VK_RBUTTON }));
+
+	keyboardDevice->AddButton("Dash", new KdInputButtonForWindows({ VK_LSHIFT }));
+
+
 
 	std::string buff;
 	for (int i = 0; i < 10; i++)
@@ -294,8 +301,9 @@ void Application::Execute()
 	{
 		// 処理開始時間Get
 		m_fpsController.UpdateStartTime();
+		KdDebugGUI::Instance().ClearLog();
 
-		std::string str = "Breakneck Delivery FPS: " + std::to_string(Application::Instance().GetNowFPS());
+		std::string str = "3D_Action FPS: " + std::to_string(Application::Instance().GetNowFPS());
 		SetWindowTextA(m_window.GetWndHandle(), str.c_str());
 
 		// ゲーム終了指定があるときはループ終了

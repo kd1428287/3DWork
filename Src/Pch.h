@@ -129,3 +129,6 @@
 #include "Application/Engine/EventBus/Event/Event.h"
 #include "Application/Core/GameObject.h"
 #include "Application/Core/ObjectManager.h"   
+
+#include "Application/Components/Transform/TransformComponent.h"   
+

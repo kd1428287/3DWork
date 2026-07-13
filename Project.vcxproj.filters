@@ -133,6 +133,12 @@
     <Filter Include="Src\Application\Components\Effect">
       <UniqueIdentifier>{72c076b7-7a2b-4330-9d34-3dffccb8ab76}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\Components\Movement">
+      <UniqueIdentifier>{b03a6c53-6e87-4c3b-809f-5921056f1cb6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Factories\Common">
+      <UniqueIdentifier>{5fc73e95-3f73-4850-8256-7031b1c387db}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -324,12 +330,6 @@
     <ClInclude Include="Src\Application\Components\Transform\TransformComponent.h">
       <Filter>Src\Application\Components\Transform</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\Transform\MovementComponent.h">
-      <Filter>Src\Application\Components\Transform</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\Transform\TweenMoveComponent.h">
-      <Filter>Src\Application\Components\Transform</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Engine\EventBus\EventBus.h">
       <Filter>Src\Application\Engine\EventBus</Filter>
     </ClInclude>
@@ -384,9 +384,6 @@
     <ClInclude Include="Src\Application\Components\Camera\CameraTargetComponent.h">
       <Filter>Src\Application\Components\Camera</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\Transform\IMovementSource.h">
-      <Filter>Src\Application\Components\Transform</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Factories\Game\PlayerFactory.h">
       <Filter>Src\Application\Factories\Game</Filter>
     </ClInclude>
@@ -395,6 +392,27 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Player\PlayerStatusController.h">
       <Filter>Src\Application\Components\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Player\PlayerCombatTypes.h">
+      <Filter>Src\Application\Components\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Movement\IMovementSource.h">
+      <Filter>Src\Application\Components\Movement</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Movement\MovementComponent.h">
+      <Filter>Src\Application\Components\Movement</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Movement\TweenMoveComponent.h">
+      <Filter>Src\Application\Components\Movement</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Movement\VelocityComponent.h">
+      <Filter>Src\Application\Components\Movement</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Player\PlayerState.h">
+      <Filter>Src\Application\Components\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Factories\Common\CameraFactory.h">
+      <Filter>Src\Application\Factories\Common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -544,6 +562,12 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Factories\Game\PlayerFactory.cpp">
       <Filter>Src\Application\Factories\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\Player\PlayerStatusController.cpp">
+      <Filter>Src\Application\Components\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Factories\Common\CameraFactory.cpp">
+      <Filter>Src\Application\Factories\Common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

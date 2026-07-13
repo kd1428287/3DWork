@@ -114,6 +114,17 @@ public:
 		return result;
 	}
 
+	// 指定した名前を持つオブジェクトを一括取得する。
+	std::vector<GameObject*> FindName(const std::string& name) {
+		std::vector<GameObject*> result;
+		for (auto& obj : objects_) {
+			if (obj->GetName() == name) {
+				result.push_back(obj.get());
+			}
+		}
+		return result;
+	}
+
 private:
 	std::vector<std::unique_ptr<GameObject>> objects_;
 	std::vector<GameObject*> pendingDestroy_;

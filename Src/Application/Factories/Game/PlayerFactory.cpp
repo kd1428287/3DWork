@@ -1,10 +1,12 @@
 ﻿#include "PlayerFactory.h"
 
 #include "../../Components/Transform/TransformComponent.h"
-#include "../../Components/Transform/MovementComponent.h"
+#include "../../Components/Movement/MovementComponent.h"
+#include "../../Components/Movement/VelocityComponent.h"
 #include "../../Components/Player/PlayerInputComponent.h"
 #include "../../Components/Camera/CameraTargetComponent.h"
 #include "../../Components/Render/ModelRenderComponent.h"
+#include "../../Components/Player/PlayerStatusController.h"
 
 GameObject* PlayerFactory::CreatePlayer(ObjectManager& objectManager, int ownerPlayerId)
 {
@@ -14,15 +16,17 @@ GameObject* PlayerFactory::CreatePlayer(ObjectManager& objectManager, int ownerP
 	if (!player) return nullptr;
 
 	// 2. コンポーネントをアタッチ
-	player->AddComponent<TransformComponent>() ->scale = { 0.01f,0.01f,0.01f };
+	player->AddComponent<TransformComponent>();//->scale = { 0.01f,0.01f,0.01f };
 	player->AddComponent<ModelRenderComponent>(
-		"Asset/Models/Character/Player/Walking.gltf"
-		//"Asset/Models/Character/Player/a.gltf"
+		//"Asset/Models/Character/Player/Walking.gltf"
+		"Asset/Models/Character/Player/box.gltf"
 	);
+	player->AddComponent<PlayerStatusController>();
+	player->AddComponent<VelocityComponent>();
 
 	// 3. 入力と移動の依存関係の注入
 	auto* input = player->AddComponent<PlayerInputComponent>();
-	auto* move = player->AddComponent<MovementComponent>();
+	auto* move = player->AddComponent<MovementComponent>(2.0f);
 	move->SetMovementSource(input); // 参照関係の構築
 
 	player->AddComponent<CameraTargetComponent>();

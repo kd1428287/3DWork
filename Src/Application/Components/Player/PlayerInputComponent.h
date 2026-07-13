@@ -1,15 +1,12 @@
 ﻿#pragma once
 #include <vector>
-#include "../Transform/IMovementSource.h"
+#include "PlayerCombatTypes.h"
+#include "../Movement/IMovementSource.h"
 
-enum class ActionCommand {
-	Attack,
-	Guard,  // 押しっぱなしでガード
-	Parry,  // 押した瞬間にトリガーされる判定用
-	Evade
-};
-
-struct BufferedInput {
+// 先行入力バッファの1エントリ。Attack/Evadeのようなタップ入力のみを扱う。
+// パリィはGuard開始直後の時間窓として表現するため、ここには含まれない。
+struct BufferedInput
+{
 	ActionCommand command;
 	float timeRemaining; // 先行入力が有効な残り時間（秒、例: 0.2秒）
 };
@@ -33,14 +30,31 @@ public:
 	}
 
 	// --- 外部（InputSystemなど）から毎フレーム入力を注入する関数 ---
+
 	void SetMoveDirection(Math::Vector3 direction) { moveDirection_ = direction; }
+
+	// Guard/Dashは「押されている間ずっと」の継続状態。
+	// PushCommand(先行入力バッファ)とは性質が違うため、都度上書きするだけにする。
+	void SetGuardHeld(bool held) { guardHeld_ = held; }
+	void SetDashHeld(bool held) { dashHeld_ = held; }
 
 	// ボタンが押された瞬間に呼ばれる（バッファにキューイング）
 	void PushCommand(ActionCommand command, float bufferTime = 0.2f) {
 		inputBuffer_.push_back({ command, bufferTime });
 	}
 
-	// --- 外部（StateやCombatComponentなど）が「先行入力があるか」確認し、消費する関数 ---
+	// --- 外部（PlayerStatusControllerなど）が先行入力を確認/消費する関数 ---
+
+	// 覗き見用。実行可能かどうかを先に判定してからConsumeCommand()を
+	// 呼びたい場合に使う。これを経由せずいきなりConsumeCommand()を呼ぶと、
+	// まだ猶予が残っている入力を実行不可なタイミングで誤って消費してしまう。
+	bool HasCommand(ActionCommand command) const {
+		for (const auto& input : inputBuffer_) {
+			if (input.command == command) return true;
+		}
+		return false;
+	}
+
 	bool ConsumeCommand(ActionCommand command) {
 		for (auto it = inputBuffer_.begin(); it != inputBuffer_.end(); ++it) {
 			if (it->command == command) {
@@ -51,6 +65,17 @@ public:
 		return false;
 	}
 
+	bool IsGuardHeld() const { return guardHeld_; }
+	bool IsDashHeld() const { return dashHeld_; }
+
+	// 移動方向とDashキーの状態から、今フレームの移動意思をMovementStateとして
+	// 解決する。キーボード操作前提のため、アナログの傾き量ではなく
+	// Dashキーが押されているか否かでWalk/Runを切り替える。
+	MovementState GetDesiredMovementState() const {
+		if (moveDirection_.LengthSquared() <= 0.0f) return MovementState::Stand;
+		return dashHeld_ ? MovementState::Run : MovementState::Walk;
+	}
+
 	// IMovementSourceの実装
 	Math::Vector3 GetDesiredVelocity(float /*deltaTime*/) override {
 		return moveDirection_;
@@ -58,5 +83,7 @@ public:
 
 private:
 	Math::Vector3 moveDirection_;
-	std::vector<BufferedInput> inputBuffer_; // 先行入力バッファ
+	bool dashHeld_ = false;
+	bool guardHeld_ = false;
+	std::vector<BufferedInput> inputBuffer_; // 先行入力バッファ(Attack/Evadeのみ)
 };

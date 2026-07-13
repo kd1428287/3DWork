@@ -12,8 +12,8 @@
 
 // プレイヤー
 #include "../../Components/Player/PlayerInputComponent.h"
-#include "../../Components//Transform/IMovementSource.h"
-#include "../../Components/Transform/MovementComponent.h"
+#include "../../Components/Movement/IMovementSource.h"
+#include "../../Components/Movement/MovementComponent.h"
 
 // カメラ
 #include "../../Components/Camera/CameraComponent.h"
