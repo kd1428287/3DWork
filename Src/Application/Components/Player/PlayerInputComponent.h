@@ -3,12 +3,19 @@
 #include "PlayerCombatTypes.h"
 #include "../Movement/IMovementSource.h"
 
+#include "../Camera/CameraComponent.h"
+
 // 先行入力バッファの1エントリ。Attack/Evadeのようなタップ入力のみを扱う。
 // パリィはGuard開始直後の時間窓として表現するため、ここには含まれない。
 struct BufferedInput
 {
 	ActionCommand command;
 	float timeRemaining; // 先行入力が有効な残り時間（秒、例: 0.2秒）
+
+	// このコマンドが積まれた瞬間の移動入力方向(正規化済み)のスナップショット。
+	// 方向を使わないコマンド(Attack等)では単に無視される。
+	// バッファ滞留中に入力方向が変わっても、積まれた瞬間の意図がブレないようにする。
+	Math::Vector3 direction = Math::Vector3::Zero;
 };
 
 class PlayerInputComponent : public ComponentBase, public IMovementSource {
@@ -31,7 +38,10 @@ public:
 
 	// --- 外部（InputSystemなど）から毎フレーム入力を注入する関数 ---
 
-	void SetMoveDirection(Math::Vector3 direction) { moveDirection_ = direction; }
+	void SetMoveDirection(Math::Vector3 direction) { 
+		moveDirection_ = direction;
+		//GetOwner()->GetContext()->activeCamera->GetRotation();
+	}
 
 	// Guard/Dashは「押されている間ずっと」の継続状態。
 	// PushCommand(先行入力バッファ)とは性質が違うため、都度上書きするだけにする。
@@ -39,8 +49,17 @@ public:
 	void SetDashHeld(bool held) { dashHeld_ = held; }
 
 	// ボタンが押された瞬間に呼ばれる（バッファにキューイング）
+	// この瞬間のmoveDirection_を正規化してスナップショットしておく
+	// (Evadeの回避方向など、方向を伴うコマンド向け)。
 	void PushCommand(ActionCommand command, float bufferTime = 0.2f) {
-		inputBuffer_.push_back({ command, bufferTime });
+		Math::Vector3 dir = moveDirection_;
+		if (dir.LengthSquared() > kDirectionEpsilon) {
+			dir.Normalize();
+		}
+		else {
+			dir = Math::Vector3::Zero;
+		}
+		inputBuffer_.push_back({ command, bufferTime, dir });
 	}
 
 	// --- 外部（PlayerStatusControllerなど）が先行入力を確認/消費する関数 ---
@@ -65,6 +84,18 @@ public:
 		return false;
 	}
 
+	// 方向スナップショットも合わせて取り出したい場合(Evade等)はこちら。
+	bool ConsumeCommand(ActionCommand command, Math::Vector3& outDirection) {
+		for (auto it = inputBuffer_.begin(); it != inputBuffer_.end(); ++it) {
+			if (it->command == command) {
+				outDirection = it->direction;
+				inputBuffer_.erase(it);
+				return true;
+			}
+		}
+		return false;
+	}
+
 	bool IsGuardHeld() const { return guardHeld_; }
 	bool IsDashHeld() const { return dashHeld_; }
 
@@ -77,7 +108,7 @@ public:
 	}
 
 	// IMovementSourceの実装
-	Math::Vector3 GetDesiredVelocity(float /*deltaTime*/) override {
+	Math::Vector3 GetDesiredVelocity() override {
 		return moveDirection_;
 	}
 

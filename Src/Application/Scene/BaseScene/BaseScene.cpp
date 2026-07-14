@@ -21,19 +21,12 @@ void BaseScene::Update()
 void BaseScene::PostUpdate()
 {
 	objManager_->PostUpdate(Application::Instance().GetDeltaTime());
-	for (auto& obj : m_objList)
-	{
-		obj->PostUpdate();
-	}
+	objManager_->Flush();
 }
 
 void BaseScene::PreDraw()
 {
 	objManager_->PreDraw();
-	for (auto& obj : m_objList)
-	{
-		obj->PreDraw();
-	}
 }
 
 void BaseScene::Draw()

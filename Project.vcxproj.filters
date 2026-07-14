@@ -121,9 +121,6 @@
     <Filter Include="Src\Application\Components\Camera">
       <UniqueIdentifier>{d7c593ea-159e-4013-ade0-20ef175a8a5e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Src\Application\Components\Collider">
-      <UniqueIdentifier>{234f345c-e677-463e-b5be-a12315de649c}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Src\Application\Factories\Game">
       <UniqueIdentifier>{8ec3fc00-5331-4006-95f9-60ecab92fd60}</UniqueIdentifier>
     </Filter>
@@ -138,6 +135,18 @@
     </Filter>
     <Filter Include="Src\Application\Factories\Common">
       <UniqueIdentifier>{5fc73e95-3f73-4850-8256-7031b1c387db}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Components\Collision">
+      <UniqueIdentifier>{234f345c-e677-463e-b5be-a12315de649c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Data">
+      <UniqueIdentifier>{8d27fb7d-4857-4427-a649-d06bd7c344da}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Data\Game">
+      <UniqueIdentifier>{b0b732cb-686c-43b7-a379-6be54d9124e4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Components\Enemy">
+      <UniqueIdentifier>{7e0f5fc8-7e9f-414c-927b-a5acfb1b76f8}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -369,9 +378,6 @@
     <ClInclude Include="Src\Application\Components\Camera\CameraComponent.h">
       <Filter>Src\Application\Components\Camera</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\Collider\ColliderComponent.h">
-      <Filter>Src\Application\Components\Collider</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Components\Camera\CameraViewComponent.h">
       <Filter>Src\Application\Components\Camera</Filter>
     </ClInclude>
@@ -413,6 +419,27 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Factories\Common\CameraFactory.h">
       <Filter>Src\Application\Factories\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Factories\Game\TerrainFactory.h">
+      <Filter>Src\Application\Factories\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Collision\RigidbodyComponent.h">
+      <Filter>Src\Application\Components\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Systems\CameraSystem.h">
+      <Filter>Src\Application\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Systems\CollisionSystem.h">
+      <Filter>Src\Application\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Factories\Game\EnemyFactory.h">
+      <Filter>Src\Application\Factories\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Enemy\EnemyStateController.h">
+      <Filter>Src\Application\Components\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Camera\CameraOrbitComponent.h">
+      <Filter>Src\Application\Components\Camera</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -569,6 +596,9 @@
     <ClCompile Include="Src\Application\Factories\Common\CameraFactory.cpp">
       <Filter>Src\Application\Factories\Common</Filter>
     </ClCompile>
+    <ClCompile Include="Src\Application\Factories\Game\TerrainFactory.cpp">
+      <Filter>Src\Application\Factories\Game</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Src\Framework\Shader\inc_KdCommon.hlsli">
@@ -582,6 +612,12 @@
     </None>
     <None Include="Src\Framework\Shader\StandardShader\inc_KdStandardShader.hlsli">
       <Filter>Src\Framework\Shader\StandardShader</Filter>
+    </None>
+    <None Include="Asset\Data\Game\EnemyData.json">
+      <Filter>Data\Game</Filter>
+    </None>
+    <None Include="Asset\Data\Game\EnemySchema.json">
+      <Filter>Data\Game</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

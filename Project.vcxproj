@@ -275,12 +275,14 @@
     <ClInclude Include="..\Library\tinygltf\tiny_gltf.h" />
     <ClInclude Include="Src\Application\Components\Camera\CameraComponent.h" />
     <ClInclude Include="Src\Application\Components\Camera\CameraFollowComponent.h" />
+    <ClInclude Include="Src\Application\Components\Camera\CameraOrbitComponent.h" />
     <ClInclude Include="Src\Application\Components\Camera\CameraViewComponent.h" />
     <ClInclude Include="Src\Application\Components\Camera\CameraTargetComponent.h" />
-    <ClInclude Include="Src\Application\Components\Collider\ColliderComponent.h" />
+    <ClInclude Include="Src\Application\Components\Collision\RigidbodyComponent.h" />
     <ClInclude Include="Src\Application\Components\ComponentBase.h" />
     <ClInclude Include="Src\Application\Components\ComponentTypeID.h" />
     <ClInclude Include="Src\Application\Components\Effect\SlowEffectComponent.h" />
+    <ClInclude Include="Src\Application\Components\Enemy\EnemyStateController.h" />
     <ClInclude Include="Src\Application\Components\Movement\IMovementSource.h" />
     <ClInclude Include="Src\Application\Components\Movement\MovementComponent.h" />
     <ClInclude Include="Src\Application\Components\Movement\TweenMoveComponent.h" />
@@ -304,12 +306,16 @@
     <ClInclude Include="Src\Application\Engine\EventBus\Event\Event.h" />
     <ClInclude Include="Src\Application\Factories\Common\CameraFactory.h" />
     <ClInclude Include="Src\Application\Factories\GameObjectFactory.h" />
+    <ClInclude Include="Src\Application\Factories\Game\EnemyFactory.h" />
+    <ClInclude Include="Src\Application\Factories\Game\TerrainFactory.h" />
     <ClInclude Include="Src\Application\Factories\Game\PlayerFactory.h" />
     <ClInclude Include="Src\Application\main.h" />
     <ClInclude Include="Src\Application\Scene\BaseScene\BaseScene.h" />
     <ClInclude Include="Src\Application\Scene\GameScene\GameScene.h" />
     <ClInclude Include="Src\Application\Scene\SceneManager.h" />
     <ClInclude Include="Src\Application\Scene\TitleScene\TitleScene.h" />
+    <ClInclude Include="Src\Application\Systems\CameraSystem.h" />
+    <ClInclude Include="Src\Application\Systems\CollisionSystem.h" />
     <ClInclude Include="Src\Application\Systems\Input\InputSystem.h" />
     <ClInclude Include="Src\Framework\Direct3D\KdMaterial.h" />
     <ClInclude Include="Src\Framework\Direct3D\Polygon\KdPolygon.h" />
@@ -362,6 +368,7 @@
     <ClCompile Include="Src\Application\Components\Player\PlayerStatusController.cpp" />
     <ClCompile Include="Src\Application\Factories\Common\CameraFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\Game\PlayerFactory.cpp" />
+    <ClCompile Include="Src\Application\Factories\Game\TerrainFactory.cpp" />
     <ClCompile Include="Src\Application\main.cpp" />
     <ClCompile Include="Src\Application\Scene\BaseScene\BaseScene.cpp" />
     <ClCompile Include="Src\Application\Scene\GameScene\GameScene.cpp" />
@@ -412,6 +419,8 @@
     <ClCompile Include="src\Framework\Window\KdWindow.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Asset\Data\Game\EnemyData.json" />
+    <None Include="Asset\Data\Game\EnemySchema.json" />
     <None Include="Src\Framework\Shader\inc_KdCommon.hlsli" />
     <None Include="Src\Framework\Shader\PostProcessShader\inc_KdPostProcessShader.hlsli" />
     <None Include="Src\Framework\Shader\SpriteShader\inc_KdSpriteShader.hlsli" />
@@ -493,4 +502,9 @@
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
+  <ProjectExtensions>
+    <VisualStudio>
+      <UserProperties Asset_4Data_4Game_4EnemyData_1json__JsonSchema="EnemySchema.json" Asset_4Data_4Game_4EnemySchema_1json__JsonSchema="" />
+    </VisualStudio>
+  </ProjectExtensions>
 </Project>

@@ -63,6 +63,7 @@ class StateEvade : public IPlayerState {
 public:
 	void Enter(PlayerStatusController* controller) override;
 	void Update(PlayerStatusController* controller, float deltaTime) override;
+	void Exit(PlayerStatusController* controller) override;
 
 	CombatState GetDetailedState() const override { return phase_; }
 	float GetElapsed() const override { return elapsed_; }

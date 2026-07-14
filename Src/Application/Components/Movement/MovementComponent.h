@@ -40,7 +40,7 @@ public:
 		// 通常の入力移動は一時停止する(位置の二重書き換えを避けるため)。
 		if (velocityComponent_ != nullptr && velocityComponent_->IsMoving()) return;
 
-		const Math::Vector3 v = source_->GetDesiredVelocity(deltaTime);
+		const Math::Vector3 v = source_->GetDesiredVelocity();
 		transform_->position.x += v.x * speed_ * deltaTime;
 		transform_->position.y += v.y * speed_ * deltaTime;
 		transform_->position.z += v.z * speed_ * deltaTime;

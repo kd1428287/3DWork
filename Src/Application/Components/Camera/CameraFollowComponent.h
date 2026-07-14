@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "../Tags/ICameraTarget.h"
 #include "../Transform/TransformComponent.h"
+#include "CameraOrbitComponent.h"
 
 // ============================================================
 // カメラの追従"ロジック"だけを持つコンポーネント。
@@ -22,6 +23,12 @@
 // カメラの追従対象は通常1つ(プレイヤー等)で、生成タイミングも
 // 決まっているため、シーン全体を毎フレーム検索するより効率的かつ、
 // 「今どこを追っているか」がコード上明示的で分かりやすい。
+//
+// CameraOrbitComponent(マウスによる軌道回転)が同じGameObjectに
+// 付いている場合、オフセットの回転には対象の向きではなくこちらの
+// 軌道角度を使う。これにより「対象がどちらを向いていても、
+// マウスでカメラだけ自由に回せる」三人称カメラになる(任意添付。
+// 無ければ従来通り対象の向きにオフセットが追従する)。
 // ============================================================
 class CameraFollowComponent : public ComponentBase {
 public:
@@ -29,6 +36,9 @@ public:
 
 	void Start() override {
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
+
+		// 無くてもよい(任意)。存在する場合のみマウス軌道回転を優先して使う。
+		orbit_ = GetOwner()->GetComponent<CameraOrbitComponent>();
 	}
 
 	void SetTarget(ICameraTarget* target) { target_ = target; }
@@ -45,22 +55,27 @@ public:
 	void PostUpdate(float /*deltaTime*/) override {
 		if (transform_ == nullptr || target_ == nullptr) return;
 
-		const Math::Quaternion targetRotation = target_->GetTargetRotation();
-		const Math::Vector3    targetPos = target_->GetTargetPosition();
+		// CameraOrbitComponentがあればマウス軌道回転を、無ければ従来通り
+		// 対象自身の向きをオフセットの回転基準にする。
+		const Math::Quaternion offsetRotation =
+			(orbit_ != nullptr) ? orbit_->GetOrbitRotation() : target_->GetTargetRotation();
 
-		// ローカルオフセットを対象の向きで回転させ、ワールド空間のオフセットにする。
+		const Math::Vector3 targetPos = target_->GetTargetPosition();
+
+		// ローカルオフセットを回転基準で回転させ、ワールド空間のオフセットにする。
 		const Math::Vector3 worldOffset =
-			Math::Vector3::Transform(localOffset_, targetRotation);
+			Math::Vector3::Transform(localOffset_, offsetRotation);
 
 		transform_->position = targetPos + worldOffset;
 
 		if (followRotation_) {
-			transform_->rotation = targetRotation;
+			transform_->rotation = offsetRotation;
 		}
 	}
 
 private:
 	TransformComponent* transform_ = nullptr;
+	CameraOrbitComponent* orbit_ = nullptr; // 無くてもよい(任意)
 	ICameraTarget* target_ = nullptr;
 	Math::Vector3 localOffset_{ 0.0f, 0.0f, -10.0f };
 	bool followRotation_ = true;

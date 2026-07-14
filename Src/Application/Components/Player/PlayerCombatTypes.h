@@ -47,6 +47,10 @@ enum class CombatState
 // Guardは押しっぱなしの継続状態なのでここには含めない
 // (IsGuardHeld()で都度参照する)。パリィもGuard開始に内包されるため
 // 独立したコマンドを持たない。
+// ゼロベクトル判定に使う共通の閾値。入力方向の正規化可否や
+// 「実質無入力かどうか」の判定など、複数箇所で同じ基準を使いたいためここに置く。
+constexpr float kDirectionEpsilon = 0.0001f;
+
 enum class ActionCommand
 {
 	Attack,
@@ -63,9 +67,14 @@ struct AttackMoveData
 	float activeDuration = 0.15f;
 	float recoveryDuration = 0.3f;
 
+	float stepDistance = 0.5f; //	攻撃入力時対象方向か入力方向に移動
+	float stepDuration = 0.1f; //	踏み込み速度
+
 	// recoveryDuration内で、ここから先は回避によるキャンセルを許可する
 	// 開始タイミング(秒)。recoveryDuration以上にすればキャンセル不可の技になる。
 	float recoveryEvadeCancelStart = 0.15f;
+
+	Math::Vector3 stepDirection = Math::Vector3::Zero;
 };
 
 struct EvadeMoveData
@@ -76,6 +85,15 @@ struct EvadeMoveData
 	// activeDuration内で、ここから先が「ジャスト回避」の成立窓。
 	float justWindowStart = 0.05f;
 	float justWindowEnd = 0.15f;
+
+	// 回避で移動する距離。TweenMoveComponentでの決め打ち軌道に使う。
+	float evadeDistance = 3.0f;
+
+	// 回避方向。入力バッファに積まれた瞬間の移動入力を正規化して
+	// スナップショットしたもの(PlayerInputComponent::PushCommand参照)。
+	// 無入力(ゼロベクトル)の場合は、使う側(StateEvade::Enter)で
+	// モデルの向いている方向にフォールバックする。
+	Math::Vector3 evadeDirection = Math::Vector3::Zero;
 };
 
 struct GuardMoveData

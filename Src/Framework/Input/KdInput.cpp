@@ -236,9 +236,9 @@ bool KdInputCollector::IsSomethingInput()
 	for (auto& button : m_spButtons)
 	{
 		if (!button.second) { continue; }
-		
+
 		// 入力を受け付けていたら「True」
-		if (button.second->GetState() != KdInputButtonBase::State::Free ) { return true; }
+		if (button.second->GetState() != KdInputButtonBase::State::Free) { return true; }
 	}
 
 	for (auto& axis : m_spAxes)
@@ -362,7 +362,7 @@ void KdInputCollector::Release()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 KdInputButtonForWindows::KdInputButtonForWindows(int keyCode)
 {
-	m_keyCodes.push_back(keyCode); 
+	m_keyCodes.push_back(keyCode);
 }
 
 KdInputButtonForWindows::KdInputButtonForWindows(std::initializer_list<int> keyCodeList)
@@ -496,7 +496,7 @@ KdInputAxisForWindows::KdInputAxisForWindows(const std::vector<int>& upCodes, co
 
 KdInputAxisForWindows::KdInputAxisForWindows(const std::shared_ptr<KdInputButtonBase> upButton,
 	const std::shared_ptr<KdInputButtonBase> rightButton,
-	const std::shared_ptr<KdInputButtonBase> downButton, 
+	const std::shared_ptr<KdInputButtonBase> downButton,
 	const std::shared_ptr<KdInputButtonBase> leftButton)
 {
 	m_spDirButtons.push_back(upButton);
@@ -526,10 +526,10 @@ void KdInputAxisForWindows::Update()
 		dirButton->Update();
 	}
 
-	if (m_spDirButtons[Up]->GetState())		{ m_axis.y += 1.0f; }
-	if (m_spDirButtons[Right]->GetState())	{ m_axis.x += 1.0f; }
-	if (m_spDirButtons[Down]->GetState())	{ m_axis.y -= 1.0f; }
-	if (m_spDirButtons[Left]->GetState())	{ m_axis.x -= 1.0f; }
+	if (m_spDirButtons[Up]->GetState()) { m_axis.y += 1.0f; }
+	if (m_spDirButtons[Right]->GetState()) { m_axis.x += 1.0f; }
+	if (m_spDirButtons[Down]->GetState()) { m_axis.y -= 1.0f; }
+	if (m_spDirButtons[Left]->GetState()) { m_axis.x -= 1.0f; }
 }
 
 
@@ -609,5 +609,50 @@ void KdInputAxisForWindowsMouse::Update()
 		m_prevMousePos = nowPos;
 	}
 
+	// 閉じ込めモードが有効なら、このフレームのデルタを確定させた後、
+	// カーソルをウィンドウ中央へ戻す。RecenterCursor()内でm_prevMousePosも
+	// 中央位置に上書きするため、次フレームの差分計算はそこを基準に行われる。
+	// (needUpdatePrevPosがfalseの時=固定ボタン押下中は、そもそも軸の中心を
+	//  更新しない設計と矛盾するため、その間はセンタリングをスキップする)
+	if (m_confineEnabled && needUpdatePrevPos)
+	{
+		RecenterCursor();
+	}
+
 	m_beginFrame = false;
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// カーソルをウィンドウ中央へ強制的に戻す(閉じ込め/再センタリング用)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void KdInputAxisForWindowsMouse::RecenterCursor()
+{
+	if (!m_confineHwnd) { return; }
+
+	RECT rect;
+	GetClientRect(m_confineHwnd, &rect);
+
+	POINT center{ (rect.right - rect.left) / 2, (rect.bottom - rect.top) / 2 };
+	ClientToScreen(m_confineHwnd, &center);
+
+	SetCursorPos(center.x, center.y);
+
+	// 次フレームの差分計算がこの中央位置を基準にするよう合わせておく
+	m_prevMousePos = center;
+}
+
+void KdInputAxisForWindowsMouse::SetConfineToWindowCenter(HWND hwnd, bool enable)
+{
+	m_confineHwnd = hwnd;
+	m_confineEnabled = enable;
+
+	if (m_confineEnabled)
+	{
+		// 有効化した瞬間の生ポジションと中央位置がズレていると、
+		// 次のUpdate()で巨大な移動量が発生してカメラが一瞬で暴れる。
+		// それを避けるため、有効化時に一度センタリングしてから
+		// 「開始フレーム」として扱い、直後の1フレームは移動量を0にする。
+		RecenterCursor();
+		m_beginFrame = true;
+	}
 }

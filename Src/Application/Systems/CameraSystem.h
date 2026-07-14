@@ -1,12 +1,5 @@
-#pragma once
-#include <cstdlib>
-
-#include "CameraComponent.h"
-#include "CameraEvents.h"
-#include "LocalEventBus.h"
-#include "SceneContext.h"
-#include "TransformComponent.h"
-
+﻿#pragma once
+#include "../Components/Camera/CameraComponent.h"
 // ============================================================
 // カメラの切り替え・シェイクなど、「Sceneに1つだけの、カメラに関する
 // 動的な調整」を担うシステム。
@@ -32,10 +25,11 @@
 // ============================================================
 class CameraSystem {
 public:
-    CameraSystem(SceneContext& context, LocalEventBus& bus) : context_(context), bus_(bus) {
-        shakeSub_ = bus_.Subscribe<CameraShakeRequestEvent>([this](const CameraShakeRequestEvent& e) {
+    CameraSystem(SceneContext& context) : context_(context) {
+		shakeSub_ = context_.eventBus->subscribe<T>([this]() {});
+			/*Subscribe<CameraShakeRequestEvent>([this](const CameraShakeRequestEvent& e) {
             Shake(e.intensity, e.duration);
-        });
+        });*/
     }
 
     ~CameraSystem() {
@@ -57,7 +51,7 @@ public:
         }
     }
 
-    void LateUpdate(float deltaTime) {
+    void PostUpdate(float deltaTime) {
         if (remaining_ <= 0.0f) return;
 
         CameraComponent* camera = context_.activeCamera;
@@ -74,13 +68,13 @@ public:
     }
 
 private:
-    static Vector3 RandomOffset(float intensity) {
+    static Math::Vector3 RandomOffset(float intensity) {
         auto randRange = []() { return (std::rand() / static_cast<float>(RAND_MAX)) * 2.0f - 1.0f; };
-        return Vector3{randRange(), randRange(), 0.0f} * intensity;
+        return Math::Vector3{randRange(), randRange(), 0.0f} * intensity;
     }
 
     SceneContext& context_;
-    LocalEventBus& bus_;
+ 
     SubscriptionId shakeSub_ = 0;
 
     float intensity_ = 0.0f;

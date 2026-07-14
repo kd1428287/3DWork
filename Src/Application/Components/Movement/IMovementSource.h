@@ -16,5 +16,5 @@ public:
 	// 「このフレームでどちらに、どれくらいの強さで動きたいか」を返す。
 	// 戻り値は通常 -1.0〜1.0 程度の方向ベクトル(正規化された入力)を想定し、
 	// 実際の速度への変換(speedを掛ける等)はMovementComponent側で行う。
-	virtual Math::Vector3 GetDesiredVelocity(float deltaTime) = 0;
+	virtual Math::Vector3 GetDesiredVelocity() = 0;
 };

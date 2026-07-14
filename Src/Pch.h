@@ -48,6 +48,7 @@
 #include <mutex>
 #include <future>
 #include <fileSystem>
+#include <xinput.h>
 
 //===============================================
 //

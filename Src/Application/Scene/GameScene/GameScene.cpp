@@ -6,6 +6,7 @@
 
 // factory
 #include "../../Factories/Game/PlayerFactory.h"
+#include "../../Factories/Common/CameraFactory.h"
 
 // component
 #include "../../Components/Render/ModelRenderComponent.h"
@@ -49,39 +50,21 @@ void GameScene::Init()
 {
 	BaseScene::Init();
 
-	//for (int i = 0; i < 9; i++)
-	//{
 	auto* ground = objManager_->Instantiate("Ground");
 	auto* groundTrans = ground->AddComponent<TransformComponent>();
 	auto* groundModel = ground->AddComponent<ModelRenderComponent>(
 		"Asset/Models/Terrains/Ground/Terrain.gltf"
 	);
 	groundTrans->position = { 0.f,0.f,0.f };
-	//}
-
-	/*auto* player = objManager_->Instantiate("Player");
-	player->AddComponent<TransformComponent>();
-	auto* playerTarget = player->AddComponent<CameraTargetComponent>();
-	auto* input = player->AddComponent<PlayerInputComponent>();
-	auto* move = player->AddComponent<MovementComponent>(2.0f);
-	move->SetMovementSource(input);*/
 	
 	playerFactory_ = std::make_unique<PlayerFactory>();
 	auto* player = playerFactory_->CreatePlayer(*objManager_);
 	
-
-	// --- カメラ: CameraComponent(カメラであること) + CameraFollowComponent(追従) ---
-	GameObject* camera = objManager_->Instantiate("MainCamera");
-	camera->AddComponent<TransformComponent>();
-	auto* camComp = camera->AddComponent<CameraComponent>();
-	auto* follow = camera->AddComponent<CameraFollowComponent>();
-	camera->AddComponent<CameraViewComponent>();
-	follow->SetTarget(player->GetComponent<CameraTargetComponent>());
-	follow->SetLocalOffset({ 0.0f, 1.0f, -5.0f });
-
-	
+	cameraFactory_ = std::make_unique<CameraFactory>();
+	auto* camera = cameraFactory_->CreateCamera(*objManager_, player->GetComponent<CameraTargetComponent>());
 
 	// system
 	inputSystem_ = std::make_unique<InputSystem>();
 	inputSystem_->RegisterPlayer(player->GetComponent<PlayerInputComponent>());
+	inputSystem_->RegisterCameraOrbit(camera->GetComponent<CameraOrbitComponent>());
 }

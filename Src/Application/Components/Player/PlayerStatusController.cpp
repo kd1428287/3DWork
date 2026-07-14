@@ -1,4 +1,5 @@
 ﻿#include "PlayerStatusController.h"
+#include "../Movement/TweenMoveComponent.h"
 
 // =================================================================
 // 各Stateの具体的なロジック実装
@@ -8,22 +9,47 @@
 void StateAttack::Enter(PlayerStatusController* controller) {
 	phase_ = CombatState::AttackWindup;
 	elapsed_ = 0.0f;
-	 KdDebugGUI::Instance().AddLog("AttackWindup"); // 必要なら
+
+	GameObject* owner = controller->GetOwner();
+	TransformComponent* transform = owner->GetComponent<TransformComponent>();
+	const auto& data = controller->GetCurrentAttackData();
+
+	if (transform != nullptr) {
+		const Math::Vector3 from = transform->position;
+
+		// 無入力(棒立ち)での回避は、モデルの向いている方向へフォールバックする。
+		// (バッファ時点でゼロベクトルだった場合のみ。方向自体は既に
+		// PlayerInputComponent::PushCommand側で正規化済み)
+		Math::Vector3 dir = data.stepDirection;
+		if (dir.LengthSquared() <= kDirectionEpsilon) {
+			dir = transform->GetForward();
+		}
+
+		const Math::Vector3 to = from + dir * data.stepDistance;
+		const float duration = data.windupDuration;
+
+		owner->RequestAddComponent<TweenMoveComponent>(from, to, duration);
+	}
+
+	KdDebugGUI::Instance().AddLog("AttackWindup"); // 必要なら
 }
 
 void StateAttack::Update(PlayerStatusController* controller, float deltaTime) {
 	elapsed_ += deltaTime;
 	const auto& data = controller->GetCurrentAttackData();
 
+	KdDebugGUI::Instance().AddLog("Attack"); 
+
 	if (phase_ == CombatState::AttackWindup && elapsed_ >= data.windupDuration) {
 		phase_ = CombatState::AttackActive;
 		elapsed_ = 0.0f;
-		 KdDebugGUI::Instance().AddLog("AttackActive");
+		controller->GetOwner()->RequestRemoveComponent<TweenMoveComponent>();
+		KdDebugGUI::Instance().AddLog("\nAttackActive");
 	}
 	else if (phase_ == CombatState::AttackActive && elapsed_ >= data.activeDuration) {
 		phase_ = CombatState::AttackRecovery;
 		elapsed_ = 0.0f;
-		 KdDebugGUI::Instance().AddLog("AttackRecovery");
+		KdDebugGUI::Instance().AddLog("\nAttackRecovery");
 	}
 	else if (phase_ == CombatState::AttackRecovery && elapsed_ >= data.recoveryDuration) {
 		// 自律的に終了し、ControllerにNoneへの復帰を要請する
@@ -42,20 +68,50 @@ bool StateAttack::CanStartEvade(const PlayerStatusController* controller) const 
 void StateEvade::Enter(PlayerStatusController* controller) {
 	phase_ = CombatState::Evade;
 	elapsed_ = 0.0f;
-	 KdDebugGUI::Instance().AddLog("Evade");
+	KdDebugGUI::Instance().AddLog("Evade");
+
+	// 回避中の移動は入力ではなく、決め打ちの軌道(TweenMoveComponent)に任せる。
+	// MovementComponentはTransitionTo側で既に無効化されているため、
+	// 位置を書き換える権利がここで競合することはない。
+	GameObject* owner = controller->GetOwner();
+	TransformComponent* transform = owner->GetComponent<TransformComponent>();
+	const auto& data = controller->GetCurrentEvadeData();
+
+	if (transform != nullptr) {
+		const Math::Vector3 from = transform->position;
+
+		// 無入力(棒立ち)での回避は、モデルの向いている方向へフォールバックする。
+		// (バッファ時点でゼロベクトルだった場合のみ。方向自体は既に
+		// PlayerInputComponent::PushCommand側で正規化済み)
+		Math::Vector3 dir = data.evadeDirection;
+		if (dir.LengthSquared() <= kDirectionEpsilon) {
+			dir = transform->GetForward();
+		}
+
+		const Math::Vector3 to = from + dir * data.evadeDistance;
+		const float duration = data.activeDuration + data.recoveryDuration;
+
+		owner->RequestAddComponent<TweenMoveComponent>(from, to, duration);
+	}
+}
+
+void StateEvade::Exit(PlayerStatusController* controller) {
+	// EvadeRecovery終了(あるいは何らかの理由での中断)で必ず後始末する。
+	controller->GetOwner()->RequestRemoveComponent<TweenMoveComponent>();
 }
 
 void StateEvade::Update(PlayerStatusController* controller, float deltaTime) {
 	elapsed_ += deltaTime;
 	const auto& data = controller->GetCurrentEvadeData();
-
+	KdDebugGUI::Instance().AddLog("Evade");
 	if (phase_ == CombatState::Evade && elapsed_ >= data.activeDuration) {
 		phase_ = CombatState::EvadeRecovery;
 		elapsed_ = 0.0f;
-		 KdDebugGUI::Instance().AddLog("EvadeRecovery");
+
 	}
 	else if (phase_ == CombatState::EvadeRecovery && elapsed_ >= data.recoveryDuration) {
 		controller->ChangeStateToNone();
+		KdDebugGUI::Instance().AddLog("\nEvadeRecovery");
 	}
 }
 
@@ -68,7 +124,7 @@ bool StateEvade::IsInJustEvadeWindow(const PlayerStatusController* controller) c
 // --- Guard State ---
 void StateGuard::Enter(PlayerStatusController* controller) {
 	elapsed_ = 0.0f;
-	 KdDebugGUI::Instance().AddLog("Guard");
+	KdDebugGUI::Instance().AddLog("Guard");
 }
 
 void StateGuard::Update(PlayerStatusController* controller, float deltaTime) {
@@ -83,7 +139,7 @@ bool StateGuard::IsInParryWindow(const PlayerStatusController* controller) const
 // --- Stagger State ---
 void StateStagger::Enter(PlayerStatusController* controller) {
 	elapsed_ = 0.0f;
-	 KdDebugGUI::Instance().AddLog("Stagger");
+	KdDebugGUI::Instance().AddLog("Stagger");
 }
 
 void StateStagger::Update(PlayerStatusController* controller, float deltaTime) {
@@ -122,12 +178,16 @@ void PlayerStatusController::HandleActionInput(PlayerInputComponent& input)
 	}
 
 	if (input.HasCommand(ActionCommand::Evade) && CanStartEvade()) {
-		input.ConsumeCommand(ActionCommand::Evade);
-		TryStartEvade(EvadeMoveData{});
+		EvadeMoveData data{};
+		// 積まれた瞬間の方向スナップショットをそのまま使う
+		// (消費するこのフレームの生入力ではなく)。
+		input.ConsumeCommand(ActionCommand::Evade, data.evadeDirection);
+		TryStartEvade(data);
 	}
 	else if (input.HasCommand(ActionCommand::Attack) && CanStartAttack()) {
-		input.ConsumeCommand(ActionCommand::Attack);
-		TryStartAttack(AttackMoveData{});
+		AttackMoveData data{};
+		input.ConsumeCommand(ActionCommand::Attack, data.stepDirection);
+		TryStartAttack(data);
 	}
 }
 

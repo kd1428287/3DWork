@@ -223,16 +223,9 @@ bool Application::Init(int w, int h)
 
 	// ボタンの登録: "Jump" アクションに [スペースキー] を割り当て
 	keyboardDevice->AddButton("Evade", new KdInputButtonForWindows(VK_SPACE));
-
-	// ボタンの登録: "Attack" アクションに [Zキー] または [左クリック] を割り当て (複数登録可能)
 	keyboardDevice->AddButton("Attack", new KdInputButtonForWindows({ 'Z', VK_LBUTTON }));
-
-
 	keyboardDevice->AddButton("Guard", new KdInputButtonForWindows({ VK_RBUTTON }));
-
 	keyboardDevice->AddButton("Dash", new KdInputButtonForWindows({ VK_LSHIFT }));
-
-
 
 	std::string buff;
 	for (int i = 0; i < 10; i++)
@@ -253,13 +246,14 @@ bool Application::Init(int w, int h)
 	);
 	keyboardDevice->AddAxis("Move", cross);
 
-
-	// 2. マウス移動用のコレクターを作成
-	//auto mouseDevice = std::make_unique<KdInputCollector>();
-
 	// 軸の登録: "Look" アクションにマウスの移動量を割り当て
-	keyboardDevice->AddAxis("Look", new KdInputAxisForWindowsMouse());
+	auto lookAxis = std::make_shared<KdInputAxisForWindowsMouse>();
+	keyboardDevice->AddAxis("Look", lookAxis);
+	lookAxis->SetConfineToWindowCenter(m_window.GetWndHandle(), true);
 
+	auto controllerDevice = std::make_unique<KdInputCollector>();
+
+	//controllerDevice->AddAxis("Move",)
 
 	// 3. マネージャーにデバイスを登録
 	// ※内部で unique_ptr に変換されて管理されます
@@ -305,6 +299,10 @@ void Application::Execute()
 
 		std::string str = "3D_Action FPS: " + std::to_string(Application::Instance().GetNowFPS());
 		SetWindowTextA(m_window.GetWndHandle(), str.c_str());
+
+		if (KdInputManager::Instance().IsPress("Pause")) {
+
+		}
 
 		// ゲーム終了指定があるときはループ終了
 		if (m_endFlag)

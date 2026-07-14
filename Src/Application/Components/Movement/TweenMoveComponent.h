@@ -42,7 +42,7 @@ public:
 
 		if (t >= 1.0f) {
 			finished_ = true;
-			if (onComplete_) onComplete_();  // 「手札に加える」等をここで呼ぶ
+			if (onComplete_) onComplete_(); 
 		}
 	}
 

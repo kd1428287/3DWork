@@ -12,7 +12,7 @@ GameObject* PlayerFactory::CreatePlayer(ObjectManager& objectManager, int ownerP
 {
 	// 1. ObjectManagerがInstantiate時に内部の std::vector<std::unique_ptr<GameObject>> 等に
 	//    所有権を格納し、その生ポインタを返してくれている想定
-	GameObject* player = objectManager.Instantiate("Player");
+	GameObject* player = objectManager.Instantiate("player");
 	if (!player) return nullptr;
 
 	// 2. コンポーネントをアタッチ

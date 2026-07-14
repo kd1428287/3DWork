@@ -3,6 +3,7 @@
 #include"../BaseScene/BaseScene.h"
 
 class PlayerFactory;
+class CameraFactory;
 
 class InputSystem;
 
@@ -21,5 +22,6 @@ private:
 	void Init()  override;
 
 	std::unique_ptr<PlayerFactory> playerFactory_ = nullptr;
+	std::unique_ptr<CameraFactory> cameraFactory_ = nullptr;
 	std::unique_ptr<InputSystem> inputSystem_ = nullptr;
 };

@@ -75,7 +75,11 @@ public:
 
 	void ApplyStagger(bool isLarge, float duration) {
 		stateStagger_.Setup(isLarge, duration);
-		TransitionTo(&stateStagger_);
+		// Staggerは同じStateインスタンスへの再突入がありうる(連続ヒット等)。
+		// 通常のTransitionToは「同じインスタンスなら何もしない」ため、
+		// 既に怯み中にもう一度怯みが発生するとEnter()が呼ばれずelapsed_が
+		// リセットされない。ここだけは必ずExit→Enterし直す。
+		ForceTransitionTo(&stateStagger_);
 	}
 
 	// --- ライフサイクル --------------------------------------------------
@@ -97,9 +101,23 @@ public:
 private:
 	void TransitionTo(IPlayerState* nextState) {
 		if (currentState_ == nextState) return;
+		ForceTransitionTo(nextState);
+	}
+
+	// currentState_ == nextStateであっても必ずExit→Enterし直す版。
+	// Stagger等、同じStateインスタンスへの再突入で内部タイマーを
+	// リセットしたい場合に使う。
+	void ForceTransitionTo(IPlayerState* nextState) {
 		if (currentState_) currentState_->Exit(this);
 		currentState_ = nextState;
 		currentState_->Enter(this);
+
+		// 移動の許可/禁止はここに集約する。None以外(攻撃/回避/ガード/怯み)の
+		// 間はMovementComponentごと無効化し、各Stateが個別に
+		// enable/disableを気にしなくて済むようにする。
+		if (movementComponent_) {
+			movementComponent_->SetEnabled(nextState == &stateNone_);
+		}
 	}
 
 	void HandleMovementInput(const PlayerInputComponent& input);
@@ -120,9 +138,6 @@ private:
 	AttackMoveData currentAttack_;
 	EvadeMoveData currentEvade_;
 	GuardMoveData currentGuard_;
-	
-	//EvadeMovementSource evadeSource_;
-	IMovementSource* originalSource_ = nullptr; // 元の入力ソースを退避用
 
 	// --- Stateインスタンス (メモリ断片化を防ぐため実体をメンバで持つ) ---
 	StateNone    stateNone_;

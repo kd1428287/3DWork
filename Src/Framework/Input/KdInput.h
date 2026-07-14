@@ -181,8 +181,8 @@ private:
 class KdInputAxisBase
 {
 public:
-	KdInputAxisBase(){}
-	virtual ~KdInputAxisBase(){}
+	KdInputAxisBase() {}
+	virtual ~KdInputAxisBase() {}
 
 	virtual void PreUpdate() {}
 
@@ -222,9 +222,9 @@ public:
 		std::initializer_list<int> downCodes, std::initializer_list<int> leftCodes);
 	KdInputAxisForWindows(const std::vector<int>& upCodes, const std::vector<int>& rightCodes,
 		const std::vector<int>& downCodes, const std::vector<int>& leftCodes);
-	KdInputAxisForWindows(const std::shared_ptr<KdInputButtonBase> upButton, 
-		const std::shared_ptr<KdInputButtonBase> rightButton, 
-		const std::shared_ptr<KdInputButtonBase> downButton, 
+	KdInputAxisForWindows(const std::shared_ptr<KdInputButtonBase> upButton,
+		const std::shared_ptr<KdInputButtonBase> rightButton,
+		const std::shared_ptr<KdInputButtonBase> downButton,
 		const std::shared_ptr<KdInputButtonBase> leftButton);
 
 	void PreUpdate() override;
@@ -262,7 +262,19 @@ public:
 
 	void Update() override;
 
+	// 画面端でカーソルが止まって振り向けなくなる問題への対応。
+	// 有効にすると、毎フレームUpdate()の最後にカーソルをhwndのクライアント領域
+	// 中央へ強制的に戻し、次フレームの差分計算の基準もそこに合わせる
+	// (FPS/TPSのような、常時見回すカメラ操作向け)。
+	//
+	// m_spFixButton(固定ボタン中だけ軸を有効にするモード)とは
+	// 想定用途が異なるため、通常はどちらか一方のみを使うこと。
+	// 無効化(enable=false)すればいつでも通常のマウス移動に戻せる
+	// (メニュー画面などでカーソルを自由に動かしたい場合に使う)。
+	void SetConfineToWindowCenter(HWND hwnd, bool enable);
+
 private:
+
 	POINT m_prevMousePos = { 0 ,0 };
 
 	bool m_beginFrame = true;
@@ -271,4 +283,10 @@ private:
 	// マウスで疑似ジョイスティック操作をしたり、スマホの疑似コントローラーのような動作をさせたい時に利用。
 	// 押している間、軸の中心位置が固定される
 	std::shared_ptr<KdInputButtonBase>	m_spFixButton;
+
+	// --- カーソル閉じ込め/再センタリング -----------------------------------
+	void RecenterCursor();
+
+	HWND m_confineHwnd = nullptr;
+	bool m_confineEnabled = false;
 };

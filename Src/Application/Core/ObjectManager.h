@@ -94,7 +94,6 @@ public:
 	std::size_t GetObjectCount() const { return objects_.size(); }
 
 	// Systemがオブジェクト全体を走査したい場合に使う
-	// (例: ターン開始時に全カードをアンタップする、など)
 	template <typename Func>
 	void ForEachObject(Func&& func) {
 		for (auto& obj : objects_) {

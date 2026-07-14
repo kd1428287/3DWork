@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "../Transform/TransformComponent.h"
+#include "CameraOrbitComponent.h"
 
 // ============================================================
 // カメラを表すコンポーネント。
@@ -53,14 +54,15 @@ public:
 	void PostUpdate(float dt)override
 	{
 		camera_->SetCameraMatrix(transform_->GetWorldMatrix());
-		//camera_->GetCamera().SetCameraMatrix(Math::Matrix::Identity);
 		camera_->SetToShader();
 	}
 
     Math::Vector3 GetPosition() const { return transform_ ? transform_->position : Math::Vector3{}; }
+    //Math::Quaternion GetRotation() const { return orbit_ ? orbit_->GetOrbitRotation() : Math::{}; }
 	KdCamera& GetCamera() const { return *camera_; }
 
 private:
     TransformComponent* transform_ = nullptr;
+    //CameraOrbitComponent* orbit_ = nullptr;
 	std::unique_ptr<KdCamera>					camera_ = nullptr;
 };

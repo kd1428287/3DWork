@@ -41,7 +41,7 @@ public:
 
 	// 戻り値として SubscriptionId を返すようにする
 	template <typename T>
-	SubscriptionId subscribe(std::function<void(const T&)> callback) {
+	SubscriptionId Subscribe(std::function<void(const T&)> callback) {
 		auto wrapper = [callback](const Event& e) {
 			callback(static_cast<const T&>(e));
 			};
@@ -59,7 +59,7 @@ public:
 
 	bool IsDestroyed() const { return m_destroyed.load(std::memory_order_acquire); }
 
-	void unsubscribe(SubscriptionId id) {
+	void Unsubscribe(SubscriptionId id) {
 		if (id == 0 || IsDestroyed()) return;
 
 		std::lock_guard<std::mutex> lock(m_mutex);
@@ -75,7 +75,7 @@ public:
 	}
 
 	template <typename T>
-	void publish(const T& event) {
+	void Publish(const T& event) {
 		if (IsDestroyed()) return;
 
 		// 1. ロックを取って対象のハンドラ一覧だけコピーする
@@ -170,7 +170,7 @@ public:
 	void reset() {
 		// バスが生きていて、IDが有効なら解除
 		if (m_bus && m_id != 0 && !m_bus->IsDestroyed()) {
-			m_bus->unsubscribe(m_id);
+			m_bus->Unsubscribe(m_id);
 		}
 		m_bus = nullptr;
 		m_id = 0;
