@@ -66,10 +66,10 @@ public:
 		const Math::Vector3 worldOffset =
 			Math::Vector3::Transform(localOffset_, offsetRotation);
 
-		transform_->position = targetPos + worldOffset;
+		transform_->SetPosition(targetPos + worldOffset);
 
 		if (followRotation_) {
-			transform_->rotation = offsetRotation;
+			transform_->SetRotation(offsetRotation);
 		}
 	}
 

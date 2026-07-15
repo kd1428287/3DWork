@@ -132,4 +132,5 @@
 #include "Application/Core/ObjectManager.h"   
 
 #include "Application/Components/Transform/TransformComponent.h"   
+#include "Application/Components/Collision/ColliderComponent.h"   
 

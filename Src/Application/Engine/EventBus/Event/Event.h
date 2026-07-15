@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+class ColliderComponent;
+
 class Event {
 public:
 	virtual ~Event() = default;
@@ -7,23 +9,24 @@ public:
 
 namespace Events
 {
-	namespace Card
+	namespace Collision
 	{
-		// カードゲーム関連の代表的なイベント。
-		// これらの型ごとにLocalEventBus::Subscribe<T>/Publish<T>する。
-		struct CardDrawnEvent : public Event{
-			GameObject* card;
-			int ownerPlayerId;
+		struct CollisionEnterEvent : public Event
+		{
+			GameObject* selfObject = nullptr;
+			ColliderComponent* selfCollider = nullptr;
+
+			GameObject* otherObject = nullptr;
+			ColliderComponent* otherCollider = nullptr;
 		};
 
-		struct CardPlayedEvent : public Event {
-			GameObject* card;
-			int ownerPlayerId;
-		};
+		struct CollisionExitEvent : public Event
+		{
+			GameObject* selfObject = nullptr;
+			ColliderComponent* selfCollider = nullptr;
 
-		struct CardSelectedEvent : public Event {
-			GameObject* card;    // 新しく選択されたカード
-			GameObject* previous; // 直前まで選択されていたカード(無ければnullptr)
+			GameObject* otherObject = nullptr;
+			ColliderComponent* otherCollider = nullptr;
 		};
 	}
 }

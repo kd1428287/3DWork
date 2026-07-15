@@ -37,9 +37,7 @@ public:
 		if (transform_ == nullptr) return;
 		if (!IsMoving()) return;
 
-		transform_->position.x += velocity_.x * deltaTime;
-		transform_->position.y += velocity_.y * deltaTime;
-		transform_->position.z += velocity_.z * deltaTime;
+		transform_->Translate(velocity_ * deltaTime);
 
 		// 摩擦減衰
 		const float decay = std::pow(dampingPerSecond_, deltaTime);

@@ -148,6 +148,9 @@
     <Filter Include="Src\Application\Components\Enemy">
       <UniqueIdentifier>{7e0f5fc8-7e9f-414c-927b-a5acfb1b76f8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\Components\Weapon">
+      <UniqueIdentifier>{6ee75371-005d-4941-b7ae-7e16422ade91}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -423,9 +426,6 @@
     <ClInclude Include="Src\Application\Factories\Game\TerrainFactory.h">
       <Filter>Src\Application\Factories\Game</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\Collision\RigidbodyComponent.h">
-      <Filter>Src\Application\Components\Collision</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Systems\CameraSystem.h">
       <Filter>Src\Application\Systems</Filter>
     </ClInclude>
@@ -440,6 +440,15 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Camera\CameraOrbitComponent.h">
       <Filter>Src\Application\Components\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Collision\ColliderComponent.h">
+      <Filter>Src\Application\Components\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Core\Handle.h">
+      <Filter>Src\Application\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Collision\GravityComponent.h">
+      <Filter>Src\Application\Components\Collision</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

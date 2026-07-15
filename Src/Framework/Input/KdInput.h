@@ -32,6 +32,14 @@ public:
 	// 全ての有効な入力装置からの軸入力状態を取得
 	Math::Vector2 GetAxisState(std::string_view name) const;
 
+	// name軸がマウス軸(KdInputAxisForWindowsMouse)であれば、カーソルの
+	// 閉じ込め/再センタリングを設定する。登録されている全デバイスの中から
+	// 名前が一致する軸を探して適用する(GetAxisState等と同じ、
+	// 呼び出し側がデバイスの実体を意識しなくてよい名前ベースのアクセス)。
+	// ウィンドウハンドルは軸側が内部で取得するため指定不要。
+	// 該当する軸が1つも見つからなければfalseを返す。
+	bool SetAxisConfineToWindowCenter(std::string_view name, bool enable);
+
 	// 入力装置の登録
 	void AddDevice(std::string_view name, KdInputCollector* pDevice);
 	void AddDevice(std::string_view name, std::unique_ptr<KdInputCollector>& pDevice);
@@ -81,6 +89,12 @@ public:
 	// 任意の入力状況の取得
 	short GetButtonState(std::string_view name) const;
 	Math::Vector2 GetAxisState(std::string_view name) const;
+
+	// name軸がマウス軸(KdInputAxisForWindowsMouse)であれば、カーソルの
+	// 閉じ込め/再センタリングを設定する。型が違う、または該当する軸が
+	// 無ければfalseを返す。ウィンドウハンドルは軸側が内部で取得するため、
+	// ここでも指定不要。
+	bool SetAxisConfineToWindowCenter(std::string_view name, bool enable);
 
 	// 入力デバイスの状態の取得と設定
 	ActiveState GetActiveState() const { return m_state; }
@@ -263,15 +277,17 @@ public:
 	void Update() override;
 
 	// 画面端でカーソルが止まって振り向けなくなる問題への対応。
-	// 有効にすると、毎フレームUpdate()の最後にカーソルをhwndのクライアント領域
-	// 中央へ強制的に戻し、次フレームの差分計算の基準もそこに合わせる
-	// (FPS/TPSのような、常時見回すカメラ操作向け)。
+	// 有効にすると、毎フレームUpdate()の最後にカーソルをウィンドウの
+	// クライアント領域中央へ強制的に戻し、次フレームの差分計算の基準も
+	// そこに合わせる(FPS/TPSのような、常時見回すカメラ操作向け)。
+	// ウィンドウハンドルはApplication::Instance().GetWindowHandle()から
+	// 内部で取得するため、呼び出し側はhwndを意識する必要がない。
 	//
 	// m_spFixButton(固定ボタン中だけ軸を有効にするモード)とは
 	// 想定用途が異なるため、通常はどちらか一方のみを使うこと。
 	// 無効化(enable=false)すればいつでも通常のマウス移動に戻せる
 	// (メニュー画面などでカーソルを自由に動かしたい場合に使う)。
-	void SetConfineToWindowCenter(HWND hwnd, bool enable);
+	void SetConfineToWindowCenter(bool enable);
 
 private:
 
@@ -287,6 +303,5 @@ private:
 	// --- カーソル閉じ込め/再センタリング -----------------------------------
 	void RecenterCursor();
 
-	HWND m_confineHwnd = nullptr;
 	bool m_confineEnabled = false;
 };

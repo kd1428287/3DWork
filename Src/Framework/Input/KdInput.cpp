@@ -1,4 +1,5 @@
 ﻿#include "KdInput.h"
+#include "../../Application/main.h"
 
 
 // ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### #####
@@ -123,6 +124,26 @@ Math::Vector2 KdInputManager::GetAxisState(std::string_view name) const
 
 	// 最終的に左右と上下の入力値をそれぞれ合成したものを出力する
 	return Math::Vector2(leftValue + rightValue, topValue + bottomValue);
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// name軸がマウス軸であれば、カーソルの閉じ込め/再センタリングを設定する。
+// GetAxisState等と同じく、登録されている全デバイスに対して名前で問い合わせる
+// (呼び出し側はどのデバイスがその軸を持っているか意識しなくてよい)。
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+bool KdInputManager::SetAxisConfineToWindowCenter(std::string_view name, bool enable)
+{
+	bool applied = false;
+
+	for (auto& device : m_pInputDevices)
+	{
+		if (device.second->SetAxisConfineToWindowCenter(name, enable))
+		{
+			applied = true;
+		}
+	}
+
+	return applied;
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -336,6 +357,23 @@ const std::shared_ptr<KdInputAxisBase> KdInputCollector::GetAxis(std::string_vie
 	}
 
 	return AxisIter->second;
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// name軸がマウス軸(KdInputAxisForWindowsMouse)であれば、カーソルの
+// 閉じ込め/再センタリングを設定する。呼び出し側にdynamic_pointer_castを
+// 書かせないための薄いラッパー。
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+bool KdInputCollector::SetAxisConfineToWindowCenter(std::string_view name, bool enable)
+{
+	auto axisIter = m_spAxes.find(name.data());
+	if (axisIter == m_spAxes.end()) { return false; }
+
+	auto mouseAxis = std::dynamic_pointer_cast<KdInputAxisForWindowsMouse>(axisIter->second);
+	if (!mouseAxis) { return false; }
+
+	mouseAxis->SetConfineToWindowCenter(enable);
+	return true;
 }
 
 
@@ -624,16 +662,19 @@ void KdInputAxisForWindowsMouse::Update()
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // カーソルをウィンドウ中央へ強制的に戻す(閉じ込め/再センタリング用)
+// ウィンドウハンドルはApplication::Instance().GetWindowHandle()から都度取得する
+// (ウィンドウはアプリ生存中1つだけなので、呼び出し側に持ち回らせず内部で完結させる)。
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void KdInputAxisForWindowsMouse::RecenterCursor()
 {
-	if (!m_confineHwnd) { return; }
+	HWND hwnd = Application::Instance().GetWindowHandle();
+	if (!hwnd) { return; }
 
 	RECT rect;
-	GetClientRect(m_confineHwnd, &rect);
+	GetClientRect(hwnd, &rect);
 
 	POINT center{ (rect.right - rect.left) / 2, (rect.bottom - rect.top) / 2 };
-	ClientToScreen(m_confineHwnd, &center);
+	ClientToScreen(hwnd, &center);
 
 	SetCursorPos(center.x, center.y);
 
@@ -641,9 +682,8 @@ void KdInputAxisForWindowsMouse::RecenterCursor()
 	m_prevMousePos = center;
 }
 
-void KdInputAxisForWindowsMouse::SetConfineToWindowCenter(HWND hwnd, bool enable)
+void KdInputAxisForWindowsMouse::SetConfineToWindowCenter(bool enable)
 {
-	m_confineHwnd = hwnd;
 	m_confineEnabled = enable;
 
 	if (m_confineEnabled)

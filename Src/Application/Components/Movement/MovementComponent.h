@@ -41,9 +41,7 @@ public:
 		if (velocityComponent_ != nullptr && velocityComponent_->IsMoving()) return;
 
 		const Math::Vector3 v = source_->GetDesiredVelocity();
-		transform_->position.x += v.x * speed_ * deltaTime;
-		transform_->position.y += v.y * speed_ * deltaTime;
-		transform_->position.z += v.z * speed_ * deltaTime;
+		transform_->Translate(v * (speed_ * deltaTime));
 	}
 
 	// 動きの決定方法(手動入力 / AI など)を差し替える。

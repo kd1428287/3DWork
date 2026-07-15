@@ -278,7 +278,8 @@
     <ClInclude Include="Src\Application\Components\Camera\CameraOrbitComponent.h" />
     <ClInclude Include="Src\Application\Components\Camera\CameraViewComponent.h" />
     <ClInclude Include="Src\Application\Components\Camera\CameraTargetComponent.h" />
-    <ClInclude Include="Src\Application\Components\Collision\RigidbodyComponent.h" />
+    <ClInclude Include="Src\Application\Components\Collision\ColliderComponent.h" />
+    <ClInclude Include="Src\Application\Components\Collision\GravityComponent.h" />
     <ClInclude Include="Src\Application\Components\ComponentBase.h" />
     <ClInclude Include="Src\Application\Components\ComponentTypeID.h" />
     <ClInclude Include="Src\Application\Components\Effect\SlowEffectComponent.h" />
@@ -300,6 +301,7 @@
     <ClInclude Include="Src\Application\Components\Tags\TagInterfaces.h" />
     <ClInclude Include="Src\Application\Components\Transform\TransformComponent.h" />
     <ClInclude Include="Src\Application\Core\GameObject.h" />
+    <ClInclude Include="Src\Application\Core\Handle.h" />
     <ClInclude Include="Src\Application\Core\ObjectManager.h" />
     <ClInclude Include="Src\Application\Core\SceneContext.h" />
     <ClInclude Include="Src\Application\Engine\EventBus\EventBus.h" />

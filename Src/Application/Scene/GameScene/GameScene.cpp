@@ -37,13 +37,13 @@ void GameScene::PreUpdate()
 
 void GameScene::Event()
 {
-	if (GetAsyncKeyState('T') & 0x8000)
+	/*if (GetAsyncKeyState('T') & 0x8000)
 	{
 		SceneManager::Instance().SetNextScene
 		(
 			SceneManager::SceneType::Title
 		);
-	}
+	}*/
 }
 
 void GameScene::Init()
@@ -55,7 +55,7 @@ void GameScene::Init()
 	auto* groundModel = ground->AddComponent<ModelRenderComponent>(
 		"Asset/Models/Terrains/Ground/Terrain.gltf"
 	);
-	groundTrans->position = { 0.f,0.f,0.f };
+	groundTrans->SetPosition({ 0.f,0.f,0.f });
 	
 	playerFactory_ = std::make_unique<PlayerFactory>();
 	auto* player = playerFactory_->CreatePlayer(*objManager_);

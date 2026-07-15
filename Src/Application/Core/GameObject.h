@@ -19,9 +19,16 @@ public:
 	// eventBus/activeCameraのように、Sceneに1つだけの既知の対象が
 	// 増えるたびにGameObject自体を変更しなくて済むよう、
 	// 1つのポインタにまとめて持つ。
+	//
+	// generation_はここで自分自身が発行する(ComponentBaseと同じ考え方)。
+	// 以前はObjectManager::Instantiate()側からfriend経由で設定していたが、
+	// それだと「ObjectManagerを経由せず直接newされたGameObject」が
+	// generation_=0のまま残ってしまい、GameObjectHandleの安全性の前提
+	// (生存中の全GameObjectが一意な世代を持つ)が静かに破れる穴になっていた。
+	// コンストラクタ自身に発行させることで、生成経路によらず必ず有効な
+	// 世代を持てるようにしている。
 	explicit GameObject(std::string name = "GameObject", SceneContext* context = nullptr)
-		: name_(std::move(name)), context_(context) {
-	}
+		: name_(std::move(name)), context_(context), generation_(s_nextGeneration++) {}
 
 	GameObject(const GameObject&) = delete;
 	GameObject& operator=(const GameObject&) = delete;
@@ -184,6 +191,13 @@ public:
 	bool IsActive() const { return active_; }
 	void SetActive(bool active) { active_ = active; }
 
+	// このGameObject固有の世代番号。生成時に自分自身のコンストラクタで
+	// 発行される(ComponentBase::generation_と同じ考え方)。0は使用しない
+	// (未初期化のハンドルと衝突させないための予約)ため1から始まる。
+	// GameObjectHandle(Handle.h)が、フレームをまたいで生ポインタを
+	// 保持する際の「参照先が別物にすり替わっていないか」の検証に使う。
+	uint64_t GetGeneration() const { return generation_; }
+
 	// このGameObject単体の時間の流れる速さ。1.0が通常、0.0で完全停止。
 	// 「スロウ」「毒による鈍化」など、対象個別の時間操作に使う。
 	// 負の値は逆再生的な挙動になってしまうため0.0未満はクランプする。
@@ -271,6 +285,12 @@ private:
 	bool active_ = true;
 	SceneContext* context_ = nullptr;
 	float timeScale_ = 1.0f;
+
+	uint64_t generation_ = 0;
+	// 全GameObjectで共有される、生成順の通し番号カウンタ。ComponentBase側と
+	// 同じ理由で素のstatic(このプロジェクトは単一スレッドのUpdateループ内
+	// でのみGameObjectを生成する前提のため、atomicは不要)。
+	static inline uint64_t s_nextGeneration = 1;
 
 	std::unordered_map<ComponentTypeId, std::unique_ptr<ComponentBase>> components_;
 	std::vector<ComponentTypeId> componentOrder_;

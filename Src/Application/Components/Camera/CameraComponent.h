@@ -57,12 +57,10 @@ public:
 		camera_->SetToShader();
 	}
 
-    Math::Vector3 GetPosition() const { return transform_ ? transform_->position : Math::Vector3{}; }
-    //Math::Quaternion GetRotation() const { return orbit_ ? orbit_->GetOrbitRotation() : Math::{}; }
+    Math::Vector3 GetPosition() const { return transform_ ? transform_->GetPosition() : Math::Vector3{}; }
 	KdCamera& GetCamera() const { return *camera_; }
 
 private:
     TransformComponent* transform_ = nullptr;
-    //CameraOrbitComponent* orbit_ = nullptr;
 	std::unique_ptr<KdCamera>					camera_ = nullptr;
 };

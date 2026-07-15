@@ -15,7 +15,7 @@ void StateAttack::Enter(PlayerStatusController* controller) {
 	const auto& data = controller->GetCurrentAttackData();
 
 	if (transform != nullptr) {
-		const Math::Vector3 from = transform->position;
+		const Math::Vector3 from = transform->GetPosition();
 
 		// 無入力(棒立ち)での回避は、モデルの向いている方向へフォールバックする。
 		// (バッファ時点でゼロベクトルだった場合のみ。方向自体は既に
@@ -78,7 +78,7 @@ void StateEvade::Enter(PlayerStatusController* controller) {
 	const auto& data = controller->GetCurrentEvadeData();
 
 	if (transform != nullptr) {
-		const Math::Vector3 from = transform->position;
+		const Math::Vector3 from = transform->GetPosition();
 
 		// 無入力(棒立ち)での回避は、モデルの向いている方向へフォールバックする。
 		// (バッファ時点でゼロベクトルだった場合のみ。方向自体は既に

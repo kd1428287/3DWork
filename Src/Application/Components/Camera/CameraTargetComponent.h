@@ -21,11 +21,11 @@ public:
 	}
 
 	Math::Vector3 GetTargetPosition() const override {
-		return transform_ ? transform_->position : Math::Vector3::Zero;
+		return transform_ ? transform_->GetPosition() : Math::Vector3::Zero;
 	}
 
 	Math::Quaternion GetTargetRotation() const override {
-		return transform_ ? transform_->rotation : Math::Quaternion::Identity;
+		return transform_ ? transform_->GetRotation() : Math::Quaternion::Identity;
 	}
 
 private:

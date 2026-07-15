@@ -226,6 +226,7 @@ bool Application::Init(int w, int h)
 	keyboardDevice->AddButton("Attack", new KdInputButtonForWindows({ 'Z', VK_LBUTTON }));
 	keyboardDevice->AddButton("Guard", new KdInputButtonForWindows({ VK_RBUTTON }));
 	keyboardDevice->AddButton("Dash", new KdInputButtonForWindows({ VK_LSHIFT }));
+	keyboardDevice->AddButton("Pause", new KdInputButtonForWindows({ 'T'}));
 
 	std::string buff;
 	for (int i = 0; i < 10; i++)
@@ -249,7 +250,7 @@ bool Application::Init(int w, int h)
 	// 軸の登録: "Look" アクションにマウスの移動量を割り当て
 	auto lookAxis = std::make_shared<KdInputAxisForWindowsMouse>();
 	keyboardDevice->AddAxis("Look", lookAxis);
-	lookAxis->SetConfineToWindowCenter(m_window.GetWndHandle(), true);
+	lookAxis->SetConfineToWindowCenter(true);
 
 	auto controllerDevice = std::make_unique<KdInputCollector>();
 
@@ -301,7 +302,9 @@ void Application::Execute()
 		SetWindowTextA(m_window.GetWndHandle(), str.c_str());
 
 		if (KdInputManager::Instance().IsPress("Pause")) {
-
+			static bool flg = true;
+			flg = !flg;
+			KdInputManager::Instance().SetAxisConfineToWindowCenter("Look", flg);
 		}
 
 		// ゲーム終了指定があるときはループ終了

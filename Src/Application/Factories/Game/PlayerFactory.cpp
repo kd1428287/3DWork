@@ -23,6 +23,7 @@ GameObject* PlayerFactory::CreatePlayer(ObjectManager& objectManager, int ownerP
 	);
 	player->AddComponent<PlayerStatusController>();
 	player->AddComponent<VelocityComponent>();
+	player->AddComponent<ColliderComponent>()->SetAsSphere(1.f);
 
 	// 3. 入力と移動の依存関係の注入
 	auto* input = player->AddComponent<PlayerInputComponent>();

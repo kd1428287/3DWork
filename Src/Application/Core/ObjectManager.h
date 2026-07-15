@@ -16,6 +16,8 @@ public:
 
 	// 新しいGameObjectを生成してObjectManagerに登録する。
 	// 生成と同時にSceneContext(イベントバス・アクティブカメラ等)を紐付ける。
+	// (世代番号はGameObject自身のコンストラクタが発行するため、ここでは
+	//  何も気にする必要がない)
 	GameObject* Instantiate(const std::string& name = "GameObject") {
 		auto obj = std::make_unique<GameObject>(name, &context_);
 		GameObject* rawPtr = obj.get();
@@ -94,6 +96,7 @@ public:
 	std::size_t GetObjectCount() const { return objects_.size(); }
 
 	// Systemがオブジェクト全体を走査したい場合に使う
+	// (例: ターン開始時に全カードをアンタップする、など)
 	template <typename Func>
 	void ForEachObject(Func&& func) {
 		for (auto& obj : objects_) {
@@ -108,17 +111,6 @@ public:
 		for (auto& obj : objects_) {
 			if (T* comp = obj->GetComponent<T>()) {
 				result.push_back(comp);
-			}
-		}
-		return result;
-	}
-
-	// 指定した名前を持つオブジェクトを一括取得する。
-	std::vector<GameObject*> FindName(const std::string& name) {
-		std::vector<GameObject*> result;
-		for (auto& obj : objects_) {
-			if (obj->GetName() == name) {
-				result.push_back(obj.get());
 			}
 		}
 		return result;
