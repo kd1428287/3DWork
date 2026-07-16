@@ -82,9 +82,6 @@
     <Filter Include="Src\Application\Components\Transform">
       <UniqueIdentifier>{89ccf71c-7317-4bfb-802f-0ff4a520db0f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Src\Application\Components\Data">
-      <UniqueIdentifier>{e12437ba-3dfb-4a18-b4a9-d8dbf5d917c4}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Src\Application\Components\UI">
       <UniqueIdentifier>{5b155835-2392-44bf-8d67-eadc3850dd39}</UniqueIdentifier>
     </Filter>

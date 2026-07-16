@@ -89,6 +89,11 @@ void BaseScene::Init()
 {
 	systemManager_ = std::make_unique<SystemManager>();
 	localBus_ = std::make_unique<EventBus>();
-
 	objManager_ = std::make_unique<ObjectManager>(localBus_.get());
+	// 最低限保証しておく
+	systemManager_->SetExecutionOrder(
+		[this](float dt) { objManager_->PreUpdate(dt); },
+		[this](float dt) { objManager_->Update(dt); },
+		[this](float dt) { objManager_->PostUpdate(dt); }
+	);
 }

@@ -18,10 +18,12 @@ GameObject* PlayerFactory::CreatePlayer(ObjectManager& objectManager, int ownerP
 	if (!player) return nullptr;
 
 	// 2. コンポーネントをアタッチ
-	player->AddComponent<TransformComponent>()->SetPosition({ 0.f, 0.f, 0.f });
+	auto* trans = player->AddComponent<TransformComponent>();
+	trans->SetPosition({ 0.f, 0.f, 0.f });
+	trans->SetScale({ 0.01f,0.01f,0.01f });
 	player->AddComponent<ModelRenderComponent>(
-		//"Asset/Models/Character/Player/Walking.gltf"
-		"Asset/Models/Character/Player/box.gltf"
+		"Asset/Models/Character/Player/Walking.gltf"
+		//"Asset/Models/Character/Player/box.gltf"
 	);
 	player->AddComponent<PlayerStatusController>();
 	player->AddComponent<VelocityComponent>();

@@ -27,7 +27,6 @@ public:
 		spModel_ = model;
 	}
 
-
 	void Start()override
 	{
 		transform_ = GetOwner()->GetComponent<TransformComponent>();

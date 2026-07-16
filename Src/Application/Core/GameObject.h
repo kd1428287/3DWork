@@ -50,7 +50,7 @@ public:
 		components_[id] = std::move(component);
 		componentOrder_.push_back(id);
 
-		// TがKD_TAG_INTERFACESに列挙されたどのタグを実装しているかを
+		// TがTAG_INTERFACESに列挙されたどのタグを実装しているかを
 		// コンパイル時に判定し、該当するものだけタグレジストリに登録する。
 		RegisterTags<T, TAG_INTERFACES>(rawPtr, base);
 
