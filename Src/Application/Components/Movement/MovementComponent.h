@@ -36,9 +36,13 @@ public:
 	void Update(float deltaTime) override {
 		if (transform_ == nullptr || source_ == nullptr) return;
 
-		// 外力(ノックバックなど)が働いている間は、そちらの移動を優先し、
-		// 通常の入力移動は一時停止する(位置の二重書き換えを避けるため)。
-		if (velocityComponent_ != nullptr && velocityComponent_->IsMoving()) return;
+		// ノックバックなど「今まさに外力で押し出されている間」だけ、
+		// そちらの移動を優先し、通常の入力移動は一時停止する
+		// (ノックバックの勢いを入力移動が打ち消してしまうのを防ぐため)。
+		// 単なる重力による落下はここでは判定対象にしない
+		// (空中でも入力による水平移動は継続できるようにするため。
+		//  詳細はVelocityComponent::IsImpulseActive()のコメント参照)。
+		if (velocityComponent_ != nullptr && velocityComponent_->IsImpulseActive()) return;
 
 		const Math::Vector3 v = source_->GetDesiredVelocity();
 		transform_->Translate(v * (speed_ * deltaTime));

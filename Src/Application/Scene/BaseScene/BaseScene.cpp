@@ -4,27 +4,16 @@
 BaseScene::BaseScene() = default;
 BaseScene::~BaseScene() = default;
 
-void BaseScene::PreUpdate()
+void BaseScene::Update(float deltaTime)
 {
-	objManager_->PreUpdate(Application::Instance().GetDeltaTime());
+	// 各シーンで登録された実行順の通りに、システムをまとめて更新する
+	systemManager_->Update(deltaTime);
+
+	// シーン固有の処理は派生クラスのOnUpdate()に任せる
+	OnUpdate(deltaTime);
 }
 
-void BaseScene::Update()
-{
-	float deltaTime = Application::Instance().GetDeltaTime();
-
-	// シーン毎のイベント処理
-	Event();
-	objManager_->Update(deltaTime);
-}
-
-void BaseScene::PostUpdate()
-{
-	objManager_->PostUpdate(Application::Instance().GetDeltaTime());
-	objManager_->Flush();
-}
-
-void BaseScene::PreDraw()
+void BaseScene::PreDraw(float deltaTime)
 {
 	objManager_->PreDraw();
 }
@@ -52,10 +41,6 @@ void BaseScene::Draw()
 	KdShaderManager::Instance().m_StandardShader.BeginLit();
 	{
 		objManager_->DrawLit();
-		for (auto& obj : m_objList)
-		{
-			obj->DrawUnLit();
-		}
 	}
 	KdShaderManager::Instance().m_StandardShader.EndLit();
 
@@ -100,13 +85,9 @@ void BaseScene::DrawDebug()
 	KdShaderManager::Instance().m_StandardShader.EndUnLit();
 }
 
-void BaseScene::Event()
-{
-	// 各シーンで必要な内容を実装(オーバーライド)する
-}
-
 void BaseScene::Init()
 {
+	systemManager_ = std::make_unique<SystemManager>();
 	localBus_ = std::make_unique<EventBus>();
 
 	objManager_ = std::make_unique<ObjectManager>(localBus_.get());

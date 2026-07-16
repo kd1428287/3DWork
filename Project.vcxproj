@@ -283,7 +283,8 @@
     <ClInclude Include="Src\Application\Components\ComponentBase.h" />
     <ClInclude Include="Src\Application\Components\ComponentTypeID.h" />
     <ClInclude Include="Src\Application\Components\Effect\SlowEffectComponent.h" />
-    <ClInclude Include="Src\Application\Components\Enemy\EnemyStateController.h" />
+    <ClInclude Include="Src\Application\Components\Enemy\EnemyState.h" />
+    <ClInclude Include="Src\Application\Components\Enemy\EnemyStatusController.h" />
     <ClInclude Include="Src\Application\Components\Movement\IMovementSource.h" />
     <ClInclude Include="Src\Application\Components\Movement\MovementComponent.h" />
     <ClInclude Include="Src\Application\Components\Movement\TweenMoveComponent.h" />
@@ -295,6 +296,7 @@
     <ClInclude Include="Src\Application\Components\Render\MeshRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Render\ModelRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Render\SpriteRenderComponent.h" />
+    <ClInclude Include="Src\Application\Components\Sensors\GroundSensorComponent.h" />
     <ClInclude Include="Src\Application\Components\Tags\ICameraTarget.h" />
     <ClInclude Include="Src\Application\Components\Tags\ICollidable.h" />
     <ClInclude Include="Src\Application\Components\Tags\IRenderable.h" />
@@ -306,8 +308,10 @@
     <ClInclude Include="Src\Application\Core\SceneContext.h" />
     <ClInclude Include="Src\Application\Engine\EventBus\EventBus.h" />
     <ClInclude Include="Src\Application\Engine\EventBus\Event\Event.h" />
+    <ClInclude Include="Src\Application\Engine\SystemManager\SystemManager.h" />
     <ClInclude Include="Src\Application\Factories\Common\CameraFactory.h" />
     <ClInclude Include="Src\Application\Factories\GameObjectFactory.h" />
+    <ClInclude Include="Src\Application\Factories\Game\EnemyDefinition.h" />
     <ClInclude Include="Src\Application\Factories\Game\EnemyFactory.h" />
     <ClInclude Include="Src\Application\Factories\Game\TerrainFactory.h" />
     <ClInclude Include="Src\Application\Factories\Game\PlayerFactory.h" />
@@ -317,8 +321,11 @@
     <ClInclude Include="Src\Application\Scene\SceneManager.h" />
     <ClInclude Include="Src\Application\Scene\TitleScene\TitleScene.h" />
     <ClInclude Include="Src\Application\Systems\CameraSystem.h" />
-    <ClInclude Include="Src\Application\Systems\CollisionSystem.h" />
-    <ClInclude Include="Src\Application\Systems\Input\InputSystem.h" />
+    <ClInclude Include="Src\Application\Systems\Collision\ColliderRegistry.h" />
+    <ClInclude Include="Src\Application\Systems\Collision\CollisionMath.h" />
+    <ClInclude Include="Src\Application\Systems\Collision\CollisionSystem.h" />
+    <ClInclude Include="Src\Application\Systems\Collision\RaycastSystem.h" />
+    <ClInclude Include="Src\Application\Systems\InputSystem.h" />
     <ClInclude Include="Src\Framework\Direct3D\KdMaterial.h" />
     <ClInclude Include="Src\Framework\Direct3D\Polygon\KdPolygon.h" />
     <ClInclude Include="Src\Framework\Direct3D\Polygon\KdSquarePolygon.h" />
@@ -367,8 +374,10 @@
     <ClCompile Include="..\Library\imgui\imgui_stdlib.cpp" />
     <ClCompile Include="..\Library\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\Library\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="Src\Application\Components\Enemy\EnemyStatusController.cpp" />
     <ClCompile Include="Src\Application\Components\Player\PlayerStatusController.cpp" />
     <ClCompile Include="Src\Application\Factories\Common\CameraFactory.cpp" />
+    <ClCompile Include="Src\Application\Factories\Game\EnemyFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\Game\PlayerFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\Game\TerrainFactory.cpp" />
     <ClCompile Include="Src\Application\main.cpp" />

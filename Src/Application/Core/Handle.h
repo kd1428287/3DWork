@@ -1,6 +1,6 @@
-#pragma once
-#include <cstdint>
-#include <functional>
+﻿#pragma once
+
+#include "GameObject.h"
 
 // ============================================================
 // 任意の型T(GameObject、あるいはComponentBase派生型)への

@@ -2,24 +2,19 @@
 #include"../SceneManager.h"
 
 // system
-#include "../../Systems/Input/InputSystem.h"
+#include "../../Systems/InputSystem.h"
+#include "../../Systems/Collision/ColliderRegistry.h"
+#include "../../Systems/Collision/CollisionSystem.h"
 
 // factory
 #include "../../Factories/Game/PlayerFactory.h"
+#include "../../Factories/Game/TerrainFactory.h"
+#include "../../Factories/Game/EnemyFactory.h"
+#include "../../Factories/Game/EnemyDefinition.h"
 #include "../../Factories/Common/CameraFactory.h"
 
 // component
-#include "../../Components/Render/ModelRenderComponent.h"
 
-// プレイヤー
-#include "../../Components/Player/PlayerInputComponent.h"
-#include "../../Components/Movement/IMovementSource.h"
-#include "../../Components/Movement/MovementComponent.h"
-
-// カメラ
-#include "../../Components/Camera/CameraComponent.h"
-#include "../../Components/Camera/CameraFollowComponent.h"
-#include "../../Components/Camera/CameraViewComponent.h"
 #include "../../Components/Camera/CameraTargetComponent.h"
 
 GameScene::GameScene()
@@ -29,42 +24,49 @@ GameScene::GameScene()
 
 GameScene::~GameScene() = default;
 
-void GameScene::PreUpdate()
+void GameScene::OnUpdate(float deltaTime)
 {
-	BaseScene::PreUpdate();
-	inputSystem_->Update(0);
-}
-
-void GameScene::Event()
-{
-	/*if (GetAsyncKeyState('T') & 0x8000)
-	{
-		SceneManager::Instance().SetNextScene
-		(
-			SceneManager::SceneType::Title
-		);
-	}*/
+	// systemManager_の実行順にまとめたので、ここにはそこに乗らない
+	// GameScene固有の処理(例: クリア判定など)だけを書く
 }
 
 void GameScene::Init()
 {
 	BaseScene::Init();
 
-	auto* ground = objManager_->Instantiate("Ground");
-	auto* groundTrans = ground->AddComponent<TransformComponent>();
-	auto* groundModel = ground->AddComponent<ModelRenderComponent>(
-		"Asset/Models/Terrains/Ground/Terrain.gltf"
-	);
-	groundTrans->SetPosition({ 0.f,0.f,0.f });
-	
+	// factory
+	terrainFactory_ = std::make_unique<TerrainFactory>();
+	auto* terrain = terrainFactory_->CreateTerrain(*objManager_);
+
 	playerFactory_ = std::make_unique<PlayerFactory>();
 	auto* player = playerFactory_->CreatePlayer(*objManager_);
-	
+
 	cameraFactory_ = std::make_unique<CameraFactory>();
+	//player->GetComponent<CameraTargetComponent>()->GetGeneration();
 	auto* camera = cameraFactory_->CreateCamera(*objManager_, player->GetComponent<CameraTargetComponent>());
+
+	std::unordered_map<std::string, EnemyDefinition> map;
+	map.emplace("enemy", EnemyDefinition{});
+	enemyFactory_ = std::make_unique<EnemyFactory>(map);
+	enemyFactory_->CreateEnemy(*objManager_, "enemy", Math::Vector3(0, 0, 5));
 
 	// system
 	inputSystem_ = std::make_unique<InputSystem>();
 	inputSystem_->RegisterPlayer(player->GetComponent<PlayerInputComponent>());
 	inputSystem_->RegisterCameraOrbit(camera->GetComponent<CameraOrbitComponent>());
+
+	colliderRegistry_ = std::make_unique<ColliderRegistry>();
+	collisionSystem_ = std::make_unique<CollisionSystem>();
+
+	// 旧PreUpdate/PostUpdateで表現しようとしていた順序を、ここで明示的に登録する
+	// 入力 → コライダー情報の更新 → 当たり判定、の順で毎フレーム実行される
+	systemManager_->SetExecutionOrder(
+		[this](float dt) { inputSystem_->Update(dt); },
+		[this](float dt) { objManager_->PreUpdate(dt); },
+		[this](float dt) { objManager_->Update(dt); },
+		[this](float dt) { colliderRegistry_->Refresh(*objManager_); },
+		[this](float dt) { collisionSystem_->Update(*colliderRegistry_); },
+		[this](float dt) { objManager_->PostUpdate(dt); },
+		[this](float dt) { objManager_->Flush(); }
+	);
 }

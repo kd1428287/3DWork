@@ -1,10 +1,11 @@
 ﻿#include "SceneManager.h"
+#include "../main.h"
 
 #include "BaseScene/BaseScene.h"
 #include "TitleScene/TitleScene.h"
 #include "GameScene/GameScene.h"
 
-void SceneManager::PreUpdate()
+void SceneManager::Update()
 {
 	// シーン切替
 	if (m_currentSceneType != m_nextSceneType)
@@ -12,22 +13,12 @@ void SceneManager::PreUpdate()
 		ChangeScene(m_nextSceneType);
 	}
 
-	m_currentScene->PreUpdate();
-}
-
-void SceneManager::Update()
-{
-	m_currentScene->Update();
-}
-
-void SceneManager::PostUpdate()
-{
-	m_currentScene->PostUpdate();
+	m_currentScene->Update(Application::Instance().GetDeltaTime());
 }
 
 void SceneManager::PreDraw()
 {
-	m_currentScene->PreDraw();
+	m_currentScene->PreDraw(Application::Instance().GetDeltaTime());
 }
 
 void SceneManager::Draw()
@@ -43,16 +34,6 @@ void SceneManager::DrawSprite()
 void SceneManager::DrawDebug()
 {
 	m_currentScene->DrawDebug();
-}
-
-const std::list<std::shared_ptr<KdGameObject>>& SceneManager::GetObjList()
-{
-	return m_currentScene->GetObjList();
-}
-
-void SceneManager::AddObject(const std::shared_ptr<KdGameObject>& _obj)
-{
-	m_currentScene->AddObject(_obj);
 }
 
 void SceneManager::ChangeScene(SceneType _sceneType)

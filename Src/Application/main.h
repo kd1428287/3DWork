@@ -32,9 +32,7 @@ public:
 private:
 
 	void KdBeginUpdate();
-	void PreUpdate();
 	void Update();
-	void PostUpdate();
 	void KdPostUpdate();
 
 	void KdBeginDraw(bool usePostProcess = true);

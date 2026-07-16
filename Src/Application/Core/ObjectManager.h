@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+class ColliderRegistry;
+
 // ============================================================
 // ObjectManager: GameObjectの集合を管理する。
 //
@@ -114,6 +116,11 @@ public:
 			}
 		}
 		return result;
+	}
+
+	void SetColliderRegistry(ColliderRegistry* colliderRegistry)
+	{
+		context_.colliderRegistry = colliderRegistry;
 	}
 
 private:

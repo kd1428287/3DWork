@@ -112,9 +112,6 @@
     <Filter Include="Src\Application\Components\Render">
       <UniqueIdentifier>{601302c8-803c-45ff-9e86-b4ad29bea01a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Src\Application\Systems\Input">
-      <UniqueIdentifier>{23393297-63bd-42f6-9c48-2394d2530cc8}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Src\Application\Components\Player">
       <UniqueIdentifier>{2a01be33-c85e-4e3e-b4e2-f7a356fd08ac}</UniqueIdentifier>
     </Filter>
@@ -123,9 +120,6 @@
     </Filter>
     <Filter Include="Src\Application\Factories\Game">
       <UniqueIdentifier>{8ec3fc00-5331-4006-95f9-60ecab92fd60}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Src\Application\Systems\Player">
-      <UniqueIdentifier>{4b85f44b-07a2-4ad9-b77f-117dcf2db6a8}</UniqueIdentifier>
     </Filter>
     <Filter Include="Src\Application\Components\Effect">
       <UniqueIdentifier>{72c076b7-7a2b-4330-9d34-3dffccb8ab76}</UniqueIdentifier>
@@ -150,6 +144,15 @@
     </Filter>
     <Filter Include="Src\Application\Components\Weapon">
       <UniqueIdentifier>{6ee75371-005d-4941-b7ae-7e16422ade91}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Systems\Collision">
+      <UniqueIdentifier>{da36fbb4-1d56-4366-bace-664c05a9b6d4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Engine\SystemManager">
+      <UniqueIdentifier>{56f43f44-d5d5-4ad5-87eb-e0fa710eb1f0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Components\Sensors">
+      <UniqueIdentifier>{90408ff0-1f1f-455c-9439-42e2e5a343ac}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -360,9 +363,6 @@
     <ClInclude Include="Src\Application\Factories\GameObjectFactory.h">
       <Filter>Src\Application\Factories</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Systems\Input\InputSystem.h">
-      <Filter>Src\Application\Systems\Input</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Components\Player\PlayerInputComponent.h">
       <Filter>Src\Application\Components\Player</Filter>
     </ClInclude>
@@ -429,14 +429,8 @@
     <ClInclude Include="Src\Application\Systems\CameraSystem.h">
       <Filter>Src\Application\Systems</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Systems\CollisionSystem.h">
-      <Filter>Src\Application\Systems</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Factories\Game\EnemyFactory.h">
       <Filter>Src\Application\Factories\Game</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\Enemy\EnemyStateController.h">
-      <Filter>Src\Application\Components\Enemy</Filter>
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Camera\CameraOrbitComponent.h">
       <Filter>Src\Application\Components\Camera</Filter>
@@ -449,6 +443,36 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Collision\GravityComponent.h">
       <Filter>Src\Application\Components\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Systems\Collision\CollisionMath.h">
+      <Filter>Src\Application\Systems\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Systems\Collision\CollisionSystem.h">
+      <Filter>Src\Application\Systems\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Systems\Collision\RaycastSystem.h">
+      <Filter>Src\Application\Systems\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Systems\InputSystem.h">
+      <Filter>Src\Application\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Systems\Collision\ColliderRegistry.h">
+      <Filter>Src\Application\Systems\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Engine\SystemManager\SystemManager.h">
+      <Filter>Src\Application\Engine\SystemManager</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Sensors\GroundSensorComponent.h">
+      <Filter>Src\Application\Components\Sensors</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Enemy\EnemyState.h">
+      <Filter>Src\Application\Components\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Enemy\EnemyStatusController.h">
+      <Filter>Src\Application\Components\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Factories\Game\EnemyDefinition.h">
+      <Filter>Src\Application\Factories\Game</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -607,6 +631,12 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Factories\Game\TerrainFactory.cpp">
       <Filter>Src\Application\Factories\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Factories\Game\EnemyFactory.cpp">
+      <Filter>Src\Application\Factories\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\Enemy\EnemyStatusController.cpp">
+      <Filter>Src\Application\Components\Enemy</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

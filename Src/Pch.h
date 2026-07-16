@@ -128,9 +128,13 @@
 
 #include "Application/Engine/EventBus/EventBus.h"
 #include "Application/Engine/EventBus/Event/Event.h"
+#include "Application/Core/Handle.h"
 #include "Application/Core/GameObject.h"
 #include "Application/Core/ObjectManager.h"   
 
 #include "Application/Components/Transform/TransformComponent.h"   
 #include "Application/Components/Collision/ColliderComponent.h"   
+#include "Application/Systems/Collision/ColliderRegistry.h"   
+#include "Application/Systems/Collision/CollisionMath.h"   
+#include "Application/Systems/Collision/RaycastSystem.h"   
 

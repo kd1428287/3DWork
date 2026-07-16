@@ -30,7 +30,7 @@ public:
 		if (transform_ == nullptr || finished_) return;
 
 		// 外力(ノックバックなど)が働いている間はTweenそのものを一時停止する。
-		if (velocityComponent_ != nullptr && velocityComponent_->IsMoving()) return;
+		if (velocityComponent_ != nullptr && velocityComponent_->IsImpulseActive()) return;
 
 		elapsed_ += deltaTime;
 		float t = std::min(elapsed_ / duration_, 1.0f);

@@ -13,9 +13,7 @@ public :
 		Game,
 	};
 
-	void PreUpdate();
 	void Update();
-	void PostUpdate();
 
 	void PreDraw();
 	void Draw();
@@ -27,13 +25,6 @@ public :
 	{
 		m_nextSceneType = _nextScene;
 	}
-
-	// 現在のシーンのオブジェクトリストを取得
-	const std::list<std::shared_ptr<KdGameObject>>& GetObjList();
-
-	// 現在のシーンにオブジェクトを追加
-	void AddObject(const std::shared_ptr<KdGameObject>& _obj);
-
 private :
 
 	// マネージャーの初期化

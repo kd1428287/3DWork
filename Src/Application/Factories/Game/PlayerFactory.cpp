@@ -7,6 +7,8 @@
 #include "../../Components/Camera/CameraTargetComponent.h"
 #include "../../Components/Render/ModelRenderComponent.h"
 #include "../../Components/Player/PlayerStatusController.h"
+#include "../../Components/Collision/GravityComponent.h"
+#include "../../Components/Sensors/GroundSensorComponent.h"
 
 GameObject* PlayerFactory::CreatePlayer(ObjectManager& objectManager, int ownerPlayerId)
 {
@@ -16,14 +18,16 @@ GameObject* PlayerFactory::CreatePlayer(ObjectManager& objectManager, int ownerP
 	if (!player) return nullptr;
 
 	// 2. コンポーネントをアタッチ
-	player->AddComponent<TransformComponent>();//->scale = { 0.01f,0.01f,0.01f };
+	player->AddComponent<TransformComponent>()->SetPosition({ 0.f, 0.f, 0.f });
 	player->AddComponent<ModelRenderComponent>(
 		//"Asset/Models/Character/Player/Walking.gltf"
 		"Asset/Models/Character/Player/box.gltf"
 	);
 	player->AddComponent<PlayerStatusController>();
 	player->AddComponent<VelocityComponent>();
-	player->AddComponent<ColliderComponent>()->SetAsSphere(1.f);
+	player->AddComponent<ColliderComponent>()->AddAABB("body", Math::Vector3(0.4f, 0.9f, 0.4f), Math::Vector3::Zero, ColliderLayer::Bump);
+	player->AddComponent<GravityComponent>();
+	player->AddComponent<GroundSensorComponent>();
 
 	// 3. 入力と移動の依存関係の注入
 	auto* input = player->AddComponent<PlayerInputComponent>();

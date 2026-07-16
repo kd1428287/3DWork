@@ -40,7 +40,6 @@ public:
 
 	void SetMoveDirection(Math::Vector3 direction) { 
 		moveDirection_ = direction;
-		//GetOwner()->GetContext()->activeCamera->GetRotation();
 	}
 
 	// Guard/Dashは「押されている間ずっと」の継続状態。

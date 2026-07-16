@@ -2,6 +2,7 @@
 
 class EventBus;
 class CameraComponent;
+class ColliderRegistry;
 
 // ============================================================
 // GameObjectが生成時に1つだけ紐付けられる、Scene全体で共有される
@@ -19,6 +20,7 @@ class CameraComponent;
 struct SceneContext {
 	EventBus* eventBus = nullptr;
 	CameraComponent* activeCamera = nullptr;
+	ColliderRegistry* colliderRegistry = nullptr;
 
 	// スケールされていない、フレームの生の経過時間。
 	// 個々のGameObjectのtimeScale_の影響を受けないため、
