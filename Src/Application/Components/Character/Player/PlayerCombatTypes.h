@@ -29,7 +29,7 @@ enum class MovementState
 // パリィ(弾き)は独立した状態を持たない。Guard開始直後の数フレームに
 // 判定が乗っている「時間窓」に過ぎないため、Guard状態のelapsed_と
 // GuardMoveData::justWindowDurationの比較だけで表現する
-// (PlayerStatusController::IsInParryWindow()参照)。
+// (StateGuard::GetGuardPhase()参照)。
 enum class CombatState
 {
 	None = 0,
@@ -74,6 +74,10 @@ struct AttackMoveData
 	// 開始タイミング(秒)。recoveryDuration以上にすればキャンセル不可の技になる。
 	float recoveryEvadeCancelStart = 0.15f;
 
+	// recoveryDuration内で、ここから先は次の攻撃(コンボ)によるキャンセルを
+	// 許可する開始タイミング(秒)。recoveryDuration以上にすればコンボ不可の技になる。
+	float recoveryAttackCancelStart = 0.2f;
+
 	Math::Vector3 stepDirection = Math::Vector3::Zero;
 };
 
@@ -91,7 +95,7 @@ struct EvadeMoveData
 
 	// 回避方向。入力バッファに積まれた瞬間の移動入力を正規化して
 	// スナップショットしたもの(PlayerInputComponent::PushCommand参照)。
-	// 無入力(ゼロベクトル)の場合は、使う側(StateEvade::Enter)で
+	// 無入力(ゼロベクトル)の場合は、使う側(PlayerStatusController::RequestStepMove)で
 	// モデルの向いている方向にフォールバックする。
 	Math::Vector3 evadeDirection = Math::Vector3::Zero;
 };

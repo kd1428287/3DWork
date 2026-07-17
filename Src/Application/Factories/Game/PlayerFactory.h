@@ -19,11 +19,7 @@ public:
 	PlayerFactory(const PlayerFactory&) = delete;
 	PlayerFactory& operator=(const PlayerFactory&) = delete;
 
-	/**
-	 * @brief プレイヤーキャラクターを生成し、必要なコンポーネントをアタッチして返す
-	 * @param objectManager オブジェクト管理システム
-	 * @param ownerPlayerId マルチプレイ等を見据えたプレイヤー識別ID（不要なら削除可）
-	 * @return 生成されたGameObjectのスマートポインタ
-	 */
-	GameObject* CreatePlayer(ObjectManager& objectManager, int ownerPlayerId = 0);
+	GameObject* CreatePlayer(ObjectManager& objectManager);
+	GameObject* CreateSocket(ObjectManager& objectManager, std::string objectID ,Handle<TransformComponent>& handle);
+	GameObject* CreateWeapon(ObjectManager& objectManager, Handle<TransformComponent>& handle);
 };

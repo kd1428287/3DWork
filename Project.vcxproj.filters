@@ -109,9 +109,6 @@
     <Filter Include="Src\Application\Components\Render">
       <UniqueIdentifier>{601302c8-803c-45ff-9e86-b4ad29bea01a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Src\Application\Components\Player">
-      <UniqueIdentifier>{2a01be33-c85e-4e3e-b4e2-f7a356fd08ac}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Src\Application\Components\Camera">
       <UniqueIdentifier>{d7c593ea-159e-4013-ade0-20ef175a8a5e}</UniqueIdentifier>
     </Filter>
@@ -136,9 +133,6 @@
     <Filter Include="Data\Game">
       <UniqueIdentifier>{b0b732cb-686c-43b7-a379-6be54d9124e4}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Src\Application\Components\Enemy">
-      <UniqueIdentifier>{7e0f5fc8-7e9f-414c-927b-a5acfb1b76f8}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Src\Application\Components\Weapon">
       <UniqueIdentifier>{6ee75371-005d-4941-b7ae-7e16422ade91}</UniqueIdentifier>
     </Filter>
@@ -150,6 +144,18 @@
     </Filter>
     <Filter Include="Src\Application\Components\Sensors">
       <UniqueIdentifier>{90408ff0-1f1f-455c-9439-42e2e5a343ac}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Components\Character">
+      <UniqueIdentifier>{4a855f2b-a409-4953-8fa1-d2cf989ecab3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Components\Character\Player">
+      <UniqueIdentifier>{2a01be33-c85e-4e3e-b4e2-f7a356fd08ac}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Components\Character\Enemy">
+      <UniqueIdentifier>{7e0f5fc8-7e9f-414c-927b-a5acfb1b76f8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Components\Character\StateMachine">
+      <UniqueIdentifier>{165f3da4-5e54-40c3-a83d-c394bde4082d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -360,9 +366,6 @@
     <ClInclude Include="Src\Application\Factories\GameObjectFactory.h">
       <Filter>Src\Application\Factories</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\Player\PlayerInputComponent.h">
-      <Filter>Src\Application\Components\Player</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Components\Tags\ICollidable.h">
       <Filter>Src\Application\Components\Tags</Filter>
     </ClInclude>
@@ -396,12 +399,6 @@
     <ClInclude Include="Src\Application\Components\Effect\SlowEffectComponent.h">
       <Filter>Src\Application\Components\Effect</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\Player\PlayerStatusController.h">
-      <Filter>Src\Application\Components\Player</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\Player\PlayerCombatTypes.h">
-      <Filter>Src\Application\Components\Player</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Components\Movement\IMovementSource.h">
       <Filter>Src\Application\Components\Movement</Filter>
     </ClInclude>
@@ -413,9 +410,6 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Movement\VelocityComponent.h">
       <Filter>Src\Application\Components\Movement</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\Player\PlayerState.h">
-      <Filter>Src\Application\Components\Player</Filter>
     </ClInclude>
     <ClInclude Include="Src\Application\Factories\Common\CameraFactory.h">
       <Filter>Src\Application\Factories\Common</Filter>
@@ -462,14 +456,38 @@
     <ClInclude Include="Src\Application\Components\Sensors\GroundSensorComponent.h">
       <Filter>Src\Application\Components\Sensors</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\Enemy\EnemyState.h">
-      <Filter>Src\Application\Components\Enemy</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\Enemy\EnemyStatusController.h">
-      <Filter>Src\Application\Components\Enemy</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Factories\Game\EnemyDefinition.h">
       <Filter>Src\Application\Factories\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Systems\SocketSystem.h">
+      <Filter>Src\Application\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Transform\SocketComponent.h">
+      <Filter>Src\Application\Components\Transform</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Transform\AttachToSocketComponent.h">
+      <Filter>Src\Application\Components\Transform</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\Player\PlayerCombatTypes.h">
+      <Filter>Src\Application\Components\Character\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\Player\PlayerInputComponent.h">
+      <Filter>Src\Application\Components\Character\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\Player\PlayerState.h">
+      <Filter>Src\Application\Components\Character\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\Player\PlayerStatusController.h">
+      <Filter>Src\Application\Components\Character\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyState.h">
+      <Filter>Src\Application\Components\Character\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyStatusController.h">
+      <Filter>Src\Application\Components\Character\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\StateMachine\StateMachine.h">
+      <Filter>Src\Application\Components\Character\StateMachine</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -620,9 +638,6 @@
     <ClCompile Include="Src\Application\Factories\Game\PlayerFactory.cpp">
       <Filter>Src\Application\Factories\Game</Filter>
     </ClCompile>
-    <ClCompile Include="Src\Application\Components\Player\PlayerStatusController.cpp">
-      <Filter>Src\Application\Components\Player</Filter>
-    </ClCompile>
     <ClCompile Include="Src\Application\Factories\Common\CameraFactory.cpp">
       <Filter>Src\Application\Factories\Common</Filter>
     </ClCompile>
@@ -632,8 +647,11 @@
     <ClCompile Include="Src\Application\Factories\Game\EnemyFactory.cpp">
       <Filter>Src\Application\Factories\Game</Filter>
     </ClCompile>
-    <ClCompile Include="Src\Application\Components\Enemy\EnemyStatusController.cpp">
-      <Filter>Src\Application\Components\Enemy</Filter>
+    <ClCompile Include="Src\Application\Components\Character\Player\PlayerStatusController.cpp">
+      <Filter>Src\Application\Components\Character\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\Character\Enemy\EnemyStatusController.cpp">
+      <Filter>Src\Application\Components\Character\Enemy</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

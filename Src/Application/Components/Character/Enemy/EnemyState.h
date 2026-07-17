@@ -1,22 +1,17 @@
 ﻿#pragma once
+#include "../StateMachine/StateMachine.h"
 
 // 前方宣言
 class EnemyStatusController;
 
 // ============================================================
 // IEnemyState
-// PlayerState(IPlayerState)と同じ、軽量Stateパターンの基底インターフェース。
-// GameObjectにはアタッチせず、EnemyStatusController内部で
-// インスタンスとして保持される。
+// PlayerStateと同じ共通StateMachine基盤(IState<EnemyStatusController>)を
+// そのまま使う軽量Stateパターンのインターフェース。GameObjectにはアタッチ
+// せず、EnemyStatusController内部でインスタンスとして保持される。
+// 現状はEnemy固有の追加メンバは不要(AI判断ロジックが増えたらここに追加)。
 // ============================================================
-class IEnemyState {
-public:
-	virtual ~IEnemyState() = default;
-
-	virtual void Enter(EnemyStatusController* controller) {}
-	virtual void Update(EnemyStatusController* controller, float deltaTime) {}
-	virtual void Exit(EnemyStatusController* controller) {}
-};
+class IEnemyState : public IState<EnemyStatusController> {};
 
 // 基準点から右方向(+X)へ歩く。patrolDistanceまで進んだらStateWalkLeftへ切り替える。
 class StateWalkRight : public IEnemyState {

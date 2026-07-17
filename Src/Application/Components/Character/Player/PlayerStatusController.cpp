@@ -1,5 +1,5 @@
 ﻿#include "PlayerStatusController.h"
-#include "../Movement/TweenMoveComponent.h"
+#include "../../Movement/TweenMoveComponent.h"
 
 // =================================================================
 // 各Stateの具体的なロジック実装
@@ -10,26 +10,11 @@ void StateAttack::Enter(PlayerStatusController* controller) {
 	phase_ = CombatState::AttackWindup;
 	elapsed_ = 0.0f;
 
-	GameObject* owner = controller->GetOwner();
-	TransformComponent* transform = owner->GetComponent<TransformComponent>();
+	// 具体的なコンポーネント操作(Transform/TweenMoveComponent)は
+	// Controller側のRequestStepMoveに閉じ込め、Stateはそれを
+	// 直接知らなくてよいようにする。
 	const auto& data = controller->GetCurrentAttackData();
-
-	if (transform != nullptr) {
-		const Math::Vector3 from = transform->GetPosition();
-
-		// 無入力(棒立ち)での回避は、モデルの向いている方向へフォールバックする。
-		// (バッファ時点でゼロベクトルだった場合のみ。方向自体は既に
-		// PlayerInputComponent::PushCommand側で正規化済み)
-		Math::Vector3 dir = data.stepDirection;
-		if (dir.LengthSquared() <= kDirectionEpsilon) {
-			dir = transform->GetForward();
-		}
-
-		const Math::Vector3 to = from + dir * data.stepDistance;
-		const float duration = data.windupDuration;
-
-		owner->RequestAddComponent<TweenMoveComponent>(from, to, duration);
-	}
+	controller->RequestStepMove(data.stepDirection, data.stepDistance, data.windupDuration);
 
 	KdDebugGUI::Instance().AddLog("AttackWindup"); // 必要なら
 }
@@ -43,7 +28,7 @@ void StateAttack::Update(PlayerStatusController* controller, float deltaTime) {
 	if (phase_ == CombatState::AttackWindup && elapsed_ >= data.windupDuration) {
 		phase_ = CombatState::AttackActive;
 		elapsed_ = 0.0f;
-		controller->GetOwner()->RequestRemoveComponent<TweenMoveComponent>();
+		controller->CancelStepMove();
 		KdDebugGUI::Instance().AddLog("\nAttackActive");
 	}
 	else if (phase_ == CombatState::AttackActive && elapsed_ >= data.activeDuration) {
@@ -57,9 +42,25 @@ void StateAttack::Update(PlayerStatusController* controller, float deltaTime) {
 	}
 }
 
+void StateAttack::Exit(PlayerStatusController* controller) {
+	// Windup中にStagger等で強制的に割り込まれた場合など、通常のUpdateの
+	// 遷移では回収できないタイミングでもステップ移動が残らないよう、
+	// Exitで必ず後始末する(Evadeと同じ考え方)。
+	controller->CancelStepMove();
+}
+
 bool StateAttack::CanStartEvade(const PlayerStatusController* controller) const {
 	if (phase_ == CombatState::AttackRecovery) {
 		return elapsed_ >= controller->GetCurrentAttackData().recoveryEvadeCancelStart;
+	}
+	return false;
+}
+
+bool StateAttack::CanStartAttack(const PlayerStatusController* controller) const {
+	// Recovery中の一定タイミングを過ぎたら、次の攻撃(コンボ)への
+	// キャンセルを許可する。CanStartEvadeと同じ考え方。
+	if (phase_ == CombatState::AttackRecovery) {
+		return elapsed_ >= controller->GetCurrentAttackData().recoveryAttackCancelStart;
 	}
 	return false;
 }
@@ -70,34 +71,16 @@ void StateEvade::Enter(PlayerStatusController* controller) {
 	elapsed_ = 0.0f;
 	KdDebugGUI::Instance().AddLog("Evade");
 
-	// 回避中の移動は入力ではなく、決め打ちの軌道(TweenMoveComponent)に任せる。
+	// 回避中の移動は入力ではなく、決め打ちの軌道(RequestStepMove)に任せる。
 	// MovementComponentはTransitionTo側で既に無効化されているため、
 	// 位置を書き換える権利がここで競合することはない。
-	GameObject* owner = controller->GetOwner();
-	TransformComponent* transform = owner->GetComponent<TransformComponent>();
 	const auto& data = controller->GetCurrentEvadeData();
-
-	if (transform != nullptr) {
-		const Math::Vector3 from = transform->GetPosition();
-
-		// 無入力(棒立ち)での回避は、モデルの向いている方向へフォールバックする。
-		// (バッファ時点でゼロベクトルだった場合のみ。方向自体は既に
-		// PlayerInputComponent::PushCommand側で正規化済み)
-		Math::Vector3 dir = data.evadeDirection;
-		if (dir.LengthSquared() <= kDirectionEpsilon) {
-			dir = transform->GetForward();
-		}
-
-		const Math::Vector3 to = from + dir * data.evadeDistance;
-		const float duration = data.activeDuration + data.recoveryDuration;
-
-		owner->RequestAddComponent<TweenMoveComponent>(from, to, duration);
-	}
+	controller->RequestStepMove(data.evadeDirection, data.evadeDistance, data.activeDuration + data.recoveryDuration);
 }
 
 void StateEvade::Exit(PlayerStatusController* controller) {
 	// EvadeRecovery終了(あるいは何らかの理由での中断)で必ず後始末する。
-	controller->GetOwner()->RequestRemoveComponent<TweenMoveComponent>();
+	controller->CancelStepMove();
 }
 
 void StateEvade::Update(PlayerStatusController* controller, float deltaTime) {
@@ -133,7 +116,13 @@ void StateGuard::Update(PlayerStatusController* controller, float deltaTime) {
 }
 
 bool StateGuard::IsInParryWindow(const PlayerStatusController* controller) const {
-	return elapsed_ <= controller->GetCurrentGuardData().justWindowDuration;
+	return GetGuardPhase(controller) == GuardPhase::JustWindow;
+}
+
+StateGuard::GuardPhase StateGuard::GetGuardPhase(const PlayerStatusController* controller) const {
+	return elapsed_ <= controller->GetCurrentGuardData().justWindowDuration
+		? GuardPhase::JustWindow
+		: GuardPhase::NormalBlock;
 }
 
 // --- Stagger State ---
@@ -167,11 +156,11 @@ void PlayerStatusController::HandleMovementInput(const PlayerInputComponent& inp
 
 void PlayerStatusController::HandleActionInput(PlayerInputComponent& input)
 {
+	// Guardの開始可否もAttack/Evadeと同じくCanStartGuard()/TryStartGuard()
+	// (=State側のポリモーフィズム)に委ねる。CombatState::Noneのハードコード
+	// 比較はここには置かない。
 	if (input.IsGuardHeld()) {
-		if (GetCombatState() == CombatState::None) {
-			currentGuard_ = GuardMoveData{};
-			ChangeStateToGuard();
-		}
+		TryStartGuard();
 	}
 	else if (GetCombatState() == CombatState::Guard) {
 		ChangeStateToNone(); // ガードキーを離したら即解除
@@ -208,4 +197,28 @@ void PlayerStatusController::UpdateMovementState(float deltaTime)
 	if (movementState_ == MovementState::Run) {
 		// スタミナ消費処理用スペース
 	}
+}
+
+void PlayerStatusController::RequestStepMove(const Math::Vector3& direction, float distance, float duration)
+{
+	GameObject* owner = GetOwner();
+	TransformComponent* transform = owner->GetComponent<TransformComponent>();
+	if (transform == nullptr) return;
+
+	// 無入力(棒立ち)での要求は、モデルの向いている方向へフォールバックする。
+	// (方向自体は呼び出し元でPlayerInputComponent::PushCommand時点で
+	// 正規化済みであることを前提とする)
+	Math::Vector3 dir = direction;
+	if (dir.LengthSquared() <= kDirectionEpsilon) {
+		dir = transform->GetForward();
+	}
+
+	const Math::Vector3 from = transform->GetPosition();
+	const Math::Vector3 to = from + dir * distance;
+	owner->RequestAddComponent<TweenMoveComponent>(from, to, duration);
+}
+
+void PlayerStatusController::CancelStepMove()
+{
+	GetOwner()->RequestRemoveComponent<TweenMoveComponent>();
 }

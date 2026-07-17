@@ -90,12 +90,3 @@ namespace std {
 		}
 	};
 }
-
-// --- 互換用エイリアス ---------------------------------------------------
-// 既存コード(CollisionSystem等)がComponentHandle<T>/GameObjectHandleと
-// いう名前で参照しているため、実体はHandle<T>のまま名前だけ残しておく。
-class GameObject;
-using GameObjectHandle = Handle<GameObject>;
-
-template <typename T>
-using ComponentHandle = Handle<T>;

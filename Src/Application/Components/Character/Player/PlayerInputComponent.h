@@ -1,9 +1,9 @@
 ﻿#pragma once
 #include <vector>
 #include "PlayerCombatTypes.h"
-#include "../Movement/IMovementSource.h"
+#include "../../Movement/IMovementSource.h"
 
-#include "../Camera/CameraComponent.h"
+#include "../../Camera/CameraComponent.h"
 
 // 先行入力バッファの1エントリ。Attack/Evadeのようなタップ入力のみを扱う。
 // パリィはGuard開始直後の時間窓として表現するため、ここには含まれない。

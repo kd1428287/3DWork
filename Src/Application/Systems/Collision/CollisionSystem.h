@@ -161,7 +161,7 @@ public:
 	}
 
 private:
-	using ColliderHandle = ComponentHandle<ColliderComponent>;
+	using ColliderHandle = Handle<ColliderComponent>;
 
 	// 「どのコンポーネントの、どの名前の形状か」を指すキー。
 	struct ShapeRef {
