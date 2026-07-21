@@ -157,6 +157,9 @@
     <Filter Include="Src\Application\Components\Character\StateMachine">
       <UniqueIdentifier>{165f3da4-5e54-40c3-a83d-c394bde4082d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\Components\Animation">
+      <UniqueIdentifier>{a0b9f29f-5f49-4085-839d-ebdb7cd4bfa3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -492,11 +495,17 @@
     <ClInclude Include="Src\Application\Components\Render\ModelRenderComponent.h">
       <Filter>Src\Application\Components\Render</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\Render\ModelAnimatorComponent.h">
-      <Filter>Src\Application\Components\Render</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Components\Collision\ModelCollisionMeshBuilder.h">
       <Filter>Src\Application\Components\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Animation\SkeletonComponent.h">
+      <Filter>Src\Application\Components\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Animation\ModelAnimatorComponent.h">
+      <Filter>Src\Application\Components\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Animation\BoneSocketComponent.h">
+      <Filter>Src\Application\Components\Animation</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

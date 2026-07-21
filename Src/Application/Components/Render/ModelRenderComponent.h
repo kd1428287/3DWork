@@ -1,35 +1,17 @@
 ﻿#pragma once
 #include "../Transform/TransformComponent.h"
+#include "../Animation/SkeletonComponent.h"
 
 class ModelRenderComponent : public ComponentBase, public IRenderable {
 public:
-	ModelRenderComponent(GameObject* owner, std::string modelName)
-		: ComponentBase(owner)
-	{
-		spModel_ = std::make_shared<KdModelWork>(
-			KdAssets::Instance().m_modeldatas.GetData(modelName)
-		);
-	}
-
-	// モデルをセットする
-	void SetModel(std::string modelName)
-	{
-		spModel_ = std::make_shared<KdModelWork>(
-			KdAssets::Instance().m_modeldatas.GetData(modelName)
-		);
-	}
-	void SetModel(const std::shared_ptr<KdModelData>&model)
-	{
-		spModel_ = std::make_shared<KdModelWork>(model);
-	}
-	void SetModel(const std::shared_ptr<KdModelWork>&model)
-	{
-		spModel_ = model;
-	}
+	ModelRenderComponent(GameObject* owner)
+		: ComponentBase(owner){}
 
 	void Start()override
 	{
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
+		skeleton_ = GetOwner()->GetComponent<SkeletonComponent>();
+		// model_ = GetOwner()->GetComponent<ModelComponent>();
 	}
 
 	// 光を遮るオブジェクト(影を落とす側)としてシャドウマップに描く
@@ -46,20 +28,18 @@ public:
 	void DrawSprite() override					{ if (layer_ & RenderLayer::DrawSprite)DrawModel(); }
 	// デバッグ描画
 	void DrawDebug() override					{ if (layer_ & RenderLayer::DrawDebug)DrawModel(); }
-
-	void DrawModel() {
-		if (!spModel_ || !transform_)return;
-		KdShaderManager::Instance().m_StandardShader.DrawModel(*spModel_, transform_->GetWorldMatrix());
-	}
 	
 	void SetLayer(const uint8_t& layer) { layer_ = layer; }
 
-	// 別コンポーネント(例: ModelAnimatorComponent)から、同じKdModelWorkを
-	// 共有して参照できるようにするためのゲッター
-	const std::shared_ptr<KdModelWork>& GetModel() const { return spModel_; }
-
 private:
+	void DrawModel() {
+		if (!transform_)return;
+
+		if (skeleton_) { KdShaderManager::Instance().m_StandardShader.DrawModel(skeleton_->WorkModel(), transform_->GetWorldMatrix()); }
+		//else if (model_) { KdShaderManager::Instance().m_StandardShader.DrawModel(model_->WorkModel(), transform_->GetWorldMatrix()); };
+	}
+
 	TransformComponent* transform_ = nullptr;
-	std::shared_ptr<KdModelWork> spModel_ = nullptr;
+	SkeletonComponent* skeleton_ = nullptr;
 	uint8_t layer_ = RenderLayer::DrawLit | RenderLayer::GenerateDepthMapFromLight;
 };

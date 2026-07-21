@@ -273,6 +273,9 @@
     <ClInclude Include="..\Library\tinygltf\stb_image.h" />
     <ClInclude Include="..\Library\tinygltf\stb_image_write.h" />
     <ClInclude Include="..\Library\tinygltf\tiny_gltf.h" />
+    <ClInclude Include="Src\Application\Components\Animation\BoneSocketComponent.h" />
+    <ClInclude Include="Src\Application\Components\Animation\ModelAnimatorComponent.h" />
+    <ClInclude Include="Src\Application\Components\Animation\SkeletonComponent.h" />
     <ClInclude Include="Src\Application\Components\Camera\CameraComponent.h" />
     <ClInclude Include="Src\Application\Components\Camera\CameraFollowComponent.h" />
     <ClInclude Include="Src\Application\Components\Camera\CameraOrbitComponent.h" />
@@ -297,7 +300,6 @@
     <ClInclude Include="Src\Application\Components\Movement\TweenMoveComponent.h" />
     <ClInclude Include="Src\Application\Components\Movement\VelocityComponent.h" />
     <ClInclude Include="Src\Application\Components\Render\MeshRenderComponent.h" />
-    <ClInclude Include="Src\Application\Components\Render\ModelAnimatorComponent.h" />
     <ClInclude Include="Src\Application\Components\Render\ModelRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Render\SpriteRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Sensors\GroundSensorComponent.h" />

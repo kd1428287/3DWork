@@ -1,10 +1,8 @@
 ﻿#pragma once
-#include <memory>
-#include <string>
 
-// 前方宣言でコンパイル時間を短縮
 class GameObject;
 class ObjectManager;
+class SkeletonComponent;
 
 // ============================================================
 // プレイヤー（自機）の生成に特化したファクトリークラス。
@@ -20,6 +18,6 @@ public:
 	PlayerFactory& operator=(const PlayerFactory&) = delete;
 
 	GameObject* CreatePlayer(ObjectManager& objectManager);
-	GameObject* CreateSocket(ObjectManager& objectManager, std::string objectID ,Handle<TransformComponent>& handle);
+	GameObject* CreateSocket(ObjectManager& objectManager, std::string objectID ,Handle<SkeletonComponent>& handle);
 	GameObject* CreateWeapon(ObjectManager& objectManager, Handle<TransformComponent>& handle);
 };

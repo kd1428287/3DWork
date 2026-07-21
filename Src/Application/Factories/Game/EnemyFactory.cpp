@@ -44,9 +44,7 @@ GameObject* EnemyFactory::BuildEnemy(ObjectManager& objectManager, const EnemyDe
 	enemy->AddComponent<GravityComponent>();
 	enemy->AddComponent<GroundSensorComponent>();
 
-	enemy->AddComponent<ModelRenderComponent>(
-		"Asset/Models/Character/Player/box.gltf"
-	);
+	enemy->AddComponent<ModelRenderComponent>();
 
 	return enemy;
 }

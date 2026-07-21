@@ -4,7 +4,7 @@
 #include "../../Movement/MovementComponent.h" // 既存の依存として
 #include "PlayerState.h"
 #include "../StateMachine/StateMachine.h"
-#include "../../Render/ModelAnimatorComponent.h"
+#include "../../Animation/ModelAnimatorComponent.h"
 
 class PlayerStatusController : public ComponentBase
 {

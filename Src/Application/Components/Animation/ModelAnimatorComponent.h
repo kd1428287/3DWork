@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "ModelRenderComponent.h"
+#include "SkeletonComponent.h"
 
 // ============================================================
 // モデルのボーンアニメーション再生"だけ"を責務とするコンポーネント。
@@ -21,13 +21,15 @@ class ModelAnimatorComponent : public ComponentBase
 public:
 	explicit ModelAnimatorComponent(GameObject* owner) : ComponentBase(owner) {}
 
+	void Awake() override
+	{
+		// ファクトリー内でPlayするため
+		skeleton_ = GetOwner()->GetComponent<SkeletonComponent>();
+	}
+
 	void Start() override
 	{
-		// 同じGameObject上のModelRenderComponentが持つKdModelWorkを共有する
-		if (auto* renderer = GetOwner()->GetComponent<ModelRenderComponent>())
-		{
-			spModel_ = renderer->GetModel();
-		}
+		skeleton_ = GetOwner()->GetComponent<SkeletonComponent>();
 	}
 
 	// アニメーション名を指定して再生開始
@@ -35,9 +37,9 @@ public:
 	// ・loop		… ループ再生するか
 	void Play(std::string_view animName, bool loop = true)
 	{
-		if (!spModel_) { return; }
+		if (!skeleton_) { return; }
 
-		auto animData = spModel_->GetAnimation(animName);
+		auto animData = skeleton_->WorkModel().GetAnimation(animName);
 		if (!animData) { 
 			assert(0 && "ModelAnimatorComponent ファイルが存在しません。ファイルパスを確認してください");
 			return; }
@@ -58,9 +60,9 @@ public:
 	//     変わる。もし秒単位ならfps引数には単純にdeltaTimeを渡すこと。
 	void Update(float deltaTime) override
 	{
-		if (!spModel_) { return; }
+		if (!skeleton_) { return; }
 
-		animator_.AdvanceTime(spModel_->WorkNodes(), deltaTime * m_fps);
+		animator_.AdvanceTime(skeleton_->WorkModel().WorkNodes(), deltaTime * m_fps);
 	}
 
 	// 再生速度の基準fpsを設定(デフォルト30fps)
@@ -70,7 +72,7 @@ public:
 	bool IsAnimationEnd() const { return animator_.IsAnimationEnd(); }
 
 private:
-	std::shared_ptr<KdModelWork>		spModel_ = nullptr;
+	SkeletonComponent* skeleton_ = nullptr;
 
 	KdAnimator							animator_;
 

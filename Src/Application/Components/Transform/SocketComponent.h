@@ -28,7 +28,7 @@ public:
 		Math::Vector3 position;
 		Math::Quaternion rotation;
 		Math::Vector3 scale;
-		if (GetWorldMatrix().Decompose(position, rotation, scale)) {
+		if (GetWorldMatrix().Decompose(scale, rotation, position)) {
 			GetOwner()->RequestAddComponent<TransformComponent>(position, rotation, scale);
 		}
 	}

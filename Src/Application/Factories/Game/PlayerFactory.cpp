@@ -8,7 +8,9 @@
 #include "../../Components/Character/Player/PlayerInputComponent.h"
 #include "../../Components/Camera/CameraTargetComponent.h"
 #include "../../Components/Render/ModelRenderComponent.h"
-#include "../../Components/Render/ModelAnimatorComponent.h"
+#include "../../Components/Animation/ModelAnimatorComponent.h"
+#include "../../Components/Animation/SkeletonComponent.h"
+#include "../../Components/Animation/BoneSocketComponent.h"
 #include "../../Components/Character/Player/PlayerStatusController.h"
 #include "../../Components/Collision/GravityComponent.h"
 #include "../../Components/Sensors/GroundSensorComponent.h"
@@ -23,12 +25,12 @@ GameObject* PlayerFactory::CreatePlayer(ObjectManager& objectManager)
 	// 2. コンポーネントをアタッチ
 	auto* trans = player->AddComponent<TransformComponent>();
 	trans->SetPosition({ 0.f, 0.f, 0.f });
-	//trans->SetScale({ 0.01f,0.01f,0.01f });
-	player->AddComponent<ModelRenderComponent>(
-		//"Asset/Models/Character/Player/box.gltf"
-		"Asset/Models/Character/Player/Walking.gltf"
-	);
-	player->AddComponent<ModelAnimatorComponent>()->SetFPS(60);
+	player->AddComponent<ModelRenderComponent>();
+	auto* skeleton = player->AddComponent<SkeletonComponent>();
+	skeleton->SetModelData("Asset/Models/Character/Player/Walking.gltf");
+	auto* animator = player->AddComponent<ModelAnimatorComponent>();
+	animator->SetFPS(60);
+	animator->Play("mixamo.com");
 	player->AddComponent<PlayerStatusController>();
 	player->AddComponent<VelocityComponent>();
 	auto* collider = player->AddComponent<ColliderComponent>();
@@ -54,28 +56,22 @@ GameObject* PlayerFactory::CreatePlayer(ObjectManager& objectManager)
 
 	// ソケットの生成
 	
-	Handle<TransformComponent> handle(trans);
+	Handle<SkeletonComponent> handle(skeleton);
 	auto* LShoulder = CreateSocket(objectManager, "LShoulder", handle);
-	handle = Handle<TransformComponent>(LShoulder->GetComponent<SocketComponent>());
 	auto* LElbow = CreateSocket(objectManager, "LElbow", handle);
-	handle = Handle<TransformComponent>(LElbow->GetComponent<SocketComponent>());
 	auto* LHand = CreateSocket(objectManager, "LHand", handle);
-	handle = Handle<TransformComponent>(trans);
 	auto* RShoulder = CreateSocket(objectManager, "RShoulder", handle);
-	handle = Handle<TransformComponent>(RShoulder->GetComponent<SocketComponent>());
 	auto* RElbow = CreateSocket(objectManager, "RElbow", handle);
-	handle = Handle<TransformComponent>(RElbow->GetComponent<SocketComponent>());
 	auto* RHand = CreateSocket(objectManager, "RHand", handle);
-	handle = Handle<TransformComponent>(RHand->GetComponent<SocketComponent>());
+
 
 	CreateWeapon(objectManager, handle);
-	
 
 	// 4. 所有権を持たない「利用権（参照用）」としての生ポインタを返す
 	return player;
 }
 
-GameObject* PlayerFactory::CreateSocket(ObjectManager& objectManager, std::string objID, Handle<TransformComponent>& handle)
+GameObject* PlayerFactory::CreateSocket(ObjectManager& objectManager, std::string objID, Handle<SkeletonComponent>& handle)
 {
 	auto* obj = objectManager.Instantiate(objID);
 	if (!obj) return nullptr;
@@ -94,7 +90,7 @@ GameObject* PlayerFactory::CreateWeapon(ObjectManager& objectManager, Handle<Tra
 	weapon->AddComponent<AttachToSocketComponent>(handle);
 	//weapon->AddComponent<ColliderComponent>()->AddAABB("body", Math::Vector3(0.1f, 0.1f, 0.5f), {},ColliderLayer::Hitbox);
 	weapon->AddComponent<ModelRenderComponent>(
-		"Asset/Models/Character/Player/box.gltf"
+		//"Asset/Models/Character/Player/box.gltf"
 	);
 
 	return weapon;
