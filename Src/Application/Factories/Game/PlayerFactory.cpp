@@ -56,16 +56,16 @@ GameObject* PlayerFactory::CreatePlayer(ObjectManager& objectManager)
 
 	// ソケットの生成
 	
-	Handle<SkeletonComponent> handle(skeleton);
-	auto* LShoulder = CreateSocket(objectManager, "LShoulder", handle);
-	auto* LElbow = CreateSocket(objectManager, "LElbow", handle);
-	auto* LHand = CreateSocket(objectManager, "LHand", handle);
-	auto* RShoulder = CreateSocket(objectManager, "RShoulder", handle);
-	auto* RElbow = CreateSocket(objectManager, "RElbow", handle);
-	auto* RHand = CreateSocket(objectManager, "RHand", handle);
+	//Handle<SkeletonComponent> handle(skeleton);
+	//auto* LShoulder = CreateSocket(objectManager, "LShoulder", handle);
+	//auto* LElbow = CreateSocket(objectManager, "LElbow", handle);
+	//auto* LHand = CreateSocket(objectManager, "LHand", handle);
+	//auto* RShoulder = CreateSocket(objectManager, "RShoulder", handle);
+	//auto* RElbow = CreateSocket(objectManager, "RElbow", handle);
+	//auto* RHand = CreateSocket(objectManager, "RHand", handle);
 
 
-	CreateWeapon(objectManager, handle);
+	//CreateWeapon(objectManager, handle);
 
 	// 4. 所有権を持たない「利用権（参照用）」としての生ポインタを返す
 	return player;
@@ -75,8 +75,8 @@ GameObject* PlayerFactory::CreateSocket(ObjectManager& objectManager, std::strin
 {
 	auto* obj = objectManager.Instantiate(objID);
 	if (!obj) return nullptr;
-	auto* local = obj->AddComponent<SocketComponent>(handle);
-	local->SetPosition({ 0,0,1 });
+	//auto* local = obj->AddComponent<SocketComponent>(handle);
+	//local->SetPosition({ 0,0,1 });
 	return obj;
 }
 
