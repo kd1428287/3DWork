@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "../../Components/Player/PlayerInputComponent.h"
+#include "../../Components/Character/Player/PlayerInputComponent.h"
 #include "../../Components/Camera/CameraOrbitComponent.h"
 
 // ============================================================

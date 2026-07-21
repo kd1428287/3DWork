@@ -44,8 +44,33 @@ void KdModelData::CreateNodes(const std::shared_ptr<KdGLTFModel>& spGltfModel)
 		// 出力先のノード参照
 		Node& rDstNode = m_originalNodes[i];
 
+
+
+		// KdModel.cpp の CreateNodes() 内、rDstNode.m_spMesh->Create(...) の直前に一時追加
+		if (rSrcNode.Mesh.IsSkinMesh && !rSrcNode.Mesh.Vertices.empty())
+		{
+			auto& v = rSrcNode.Mesh.Vertices[0]; // 先頭頂点で確認
+			float sum = v.SkinWeightList[0] + v.SkinWeightList[1] + v.SkinWeightList[2] + v.SkinWeightList[3];
+
+			char buf[256];
+			
+			sprintf_s(buf, "[%s] idx:(%d,%d,%d,%d) wei:(%.3f,%.3f,%.3f,%.3f) sum:%.3f\n",
+				rSrcNode.Name.c_str(),
+				v.SkinIndexList[0], v.SkinIndexList[1], v.SkinIndexList[2], v.SkinIndexList[3],
+				v.SkinWeightList[0], v.SkinWeightList[1], v.SkinWeightList[2], v.SkinWeightList[3],
+				sum);
+			KdDebugGUI::Instance().AddLog("[%s] idx:(%d,%d,%d,%d) wei:(%.3f,%.3f,%.3f,%.3f) sum:%.3f\n",
+				rSrcNode.Name.c_str(),
+				v.SkinIndexList[0], v.SkinIndexList[1], v.SkinIndexList[2], v.SkinIndexList[3],
+				v.SkinWeightList[0], v.SkinWeightList[1], v.SkinWeightList[2], v.SkinWeightList[3],
+				sum);
+		}
+
+
+
 		if (rSrcNode.IsMesh)
 		{
+
 			// メッシュ作成
 			rDstNode.m_spMesh = std::make_shared<KdMesh>();
 

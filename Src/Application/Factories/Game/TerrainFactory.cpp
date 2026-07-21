@@ -12,7 +12,7 @@ GameObject* TerrainFactory::CreateTerrain(ObjectManager& objectManager, int owne
 		"Asset/Models/Terrains/Ground/Terrain.gltf"
 	);
 	transform->SetPosition({ 0.f,0.f,0.f });
-	collider->AddAABB("body", Math::Vector3(10.f, 1.f, 10.f), Math::Vector3(0.f,-2.f,0.f), ColliderLayer::Ground);
+	collider->AddBox("body", Math::Vector3(10.f, 1.f, 10.f), Math::Vector3(0.f,-2.f,0.f), ColliderLayer::Ground);
 
 	return ground;
 }

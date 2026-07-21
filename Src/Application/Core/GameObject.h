@@ -224,6 +224,8 @@ public:
 		return result;
 	}
 
+	EventBus& GetLocalEventBus() { return localEventBus_; }
+
 private:
 	// タグレジストリの1エントリ。
 	// 「有効かどうかの判定(ComponentBase側)」と「実際に呼ぶメソッド
@@ -301,4 +303,6 @@ private:
 	// RequestAddComponent/RequestRemoveComponentで積まれた、
 	// まだ反映されていない付け外し予約。
 	std::vector<std::function<void()>> pendingActions_;
+
+	EventBus localEventBus_; // このGameObject宛てのイベント専用バス
 };

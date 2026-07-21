@@ -1,4 +1,4 @@
-#include "EnemyStatusController.h"
+﻿#include "EnemyStatusController.h"
 
 // --- StateWalkRight ---
 void StateWalkRight::Enter(EnemyStatusController* controller) {
@@ -23,3 +23,19 @@ void StateWalkLeft::Update(EnemyStatusController* controller, float /*deltaTime*
 		controller->ChangeStateToWalkRight();
 	}
 }
+
+// --- StateKnockback ---
+void StateKnockback::Enter(EnemyStatusController* controller) {
+	controller->SetDesiredDirection({ -1.0f, 0.0f, 0.0f });
+}
+
+void StateKnockback::Update(EnemyStatusController* controller, float /*deltaTime*/) {
+	const float traveled = controller->GetBasePosition().x - controller->GetCurrentPosition().x;
+	if (traveled >= controller->GetPatrolDistance()) {
+		controller->ChangeStateToWalkRight();
+	}
+}
+
+void StateKnockback::Exit(EnemyStatusController* controller) {
+
+};

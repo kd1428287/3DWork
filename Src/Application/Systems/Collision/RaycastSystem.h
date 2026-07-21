@@ -13,9 +13,12 @@
 // イベント通知 vs 戻り値で直接返す)、CollisionSystemとは別クラスに
 // 分けている。
 //
-// KdCollider::Intersects(RayInfo, ...)の役割を引き継ぐが、対象は
-// ColliderComponentのSphere/AABB形状のみ(ポリゴン単位の精密な
-// レイキャストは未対応)。
+// KdCollider::Intersects(RayInfo, ...)の役割を引き継ぐ。対象は
+// ColliderComponentのSphere/Box(OBB)/Mesh/Polygonの4種類全て
+// (Mesh/PolygonはKdModelCollision/KdPolygonCollisionのvsレイ相当)。
+// 以前はMesh/Polygon用に別クラス(TriangleColliderComponent)・
+// 別ループを持っていたが、CollisionShapeEntryに統合されたことで
+// 1つのループ・1つのHit構造体で済むようになった。
 //
 // 対象コライダーの一覧はColliderRegistryが1フレームに1回キャッシュ
 // したものを共有して使う。1フレームに何度も(視界判定、将来的な
@@ -25,7 +28,8 @@
 //  詳細はColliderRegistry参照)
 //
 // 用途例: 敵の視界判定(ColliderLayer::Sightに向けてレイを飛ばす)、
-// 線形の攻撃判定(ColliderLayer::DamageLineに向けてレイを飛ばす)など。
+// 線形の攻撃判定(ColliderLayer::DamageLineに向けてレイを飛ばす)、
+// 地形メッシュ(Meshシェイプ)への接地レイなど。
 // ============================================================
 class RaycastSystem {
 public:
@@ -45,12 +49,10 @@ public:
 		const Math::Vector3& origin, const Math::Vector3& direction, float range,
 		uint32_t layerMask, Hit& outHit) {
 
-		const std::vector<ColliderComponent*>& colliders = registry.GetColliders();
-
 		bool found = false;
 		float closestDistance = range;
 
-		for (ColliderComponent* collider : colliders) {
+		for (ColliderComponent* collider : registry.GetColliders()) {
 			if (!IsRaycastable(collider)) continue;
 
 			for (const CollisionShapeEntry& shape : collider->GetShapes()) {
@@ -58,11 +60,12 @@ public:
 				if ((shape.layer & layerMask) == 0) continue;
 
 				const CollisionMath::RayHitResult result =
-					TestShape(collider, shape, origin, direction, range);
+					TestShape(collider, shape, origin, direction, closestDistance);
 
 				if (!result.hit || result.distance > closestDistance) continue;
 
 				closestDistance = result.distance;
+				outHit = Hit{};
 				outHit.object = collider->GetOwner();
 				outHit.collider = collider;
 				outHit.shapeName = shape.name;
@@ -80,10 +83,9 @@ public:
 		const Math::Vector3& origin, const Math::Vector3& direction, float range,
 		uint32_t layerMask) {
 
-		const std::vector<ColliderComponent*>& colliders = registry.GetColliders();
 		std::vector<Hit> hits;
 
-		for (ColliderComponent* collider : colliders) {
+		for (ColliderComponent* collider : registry.GetColliders()) {
 			if (!IsRaycastable(collider)) continue;
 
 			for (const CollisionShapeEntry& shape : collider->GetShapes()) {
@@ -119,10 +121,18 @@ private:
 		ColliderComponent* collider, const CollisionShapeEntry& shape,
 		const Math::Vector3& origin, const Math::Vector3& direction, float range) {
 
-		const Math::Vector3 center = collider->GetShapeWorldCenter(shape);
+		if (shape.shape == ColliderShape::Sphere) {
+			const Math::Vector3 center = collider->GetShapeWorldCenter(shape);
+			const float radius = collider->GetShapeWorldRadius(shape);
+			return CollisionMath::RayVsSphere(origin, direction, range, center, radius);
+		}
 
-		return (shape.shape == ColliderShape::Sphere)
-			? CollisionMath::RayVsSphere(origin, direction, range, center, shape.radius)
-			: CollisionMath::RayVsAABB(origin, direction, range, center, shape.halfExtents);
+		if (shape.shape == ColliderShape::Box) {
+			const CollisionMath::OrientedBox box = collider->GetShapeWorldOBB(shape);
+			return CollisionMath::RayVsOBB(origin, direction, range, box);
+		}
+
+		// Mesh/Polygon: ワールド行列は形状エントリ自身のキャッシュに委ねる。
+		return shape.TestTriangleVsRay(collider->GetWorldMatrix(), origin, direction, range);
 	}
 };

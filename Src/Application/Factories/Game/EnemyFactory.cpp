@@ -2,7 +2,7 @@
 #include "EnemyDefinition.h"
 
 
-#include "../../Components/Enemy/EnemyStatusController.h"
+#include "../../Components/Character/Enemy/EnemyStatusController.h"
 #include "../../Components/Transform/TransformComponent.h"
 #include "../../Components/Movement/MovementComponent.h"
 #include "../../Components/Collision/ColliderComponent.h"
@@ -38,7 +38,7 @@ GameObject* EnemyFactory::BuildEnemy(ObjectManager& objectManager, const EnemyDe
 	// 既定ロジックによりcollideMaskが自動的にDamage/DamageLineだけを
 	// 見るようになる(ColliderComponent::DefaultCollideMaskFor参照)。
 	ColliderComponent* collider = enemy->AddComponent<ColliderComponent>();
-	collider->AddSphere("body", def.bodyRadius, {}, ColliderLayer::Hurtbox);
+	collider->AddSphere("body", def.bodyRadius, {}, ColliderLayer::HurtBox);
 
 	enemy->AddComponent<VelocityComponent>();
 	enemy->AddComponent<GravityComponent>();

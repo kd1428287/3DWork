@@ -4,6 +4,7 @@
 #include "../../Movement/MovementComponent.h" // 既存の依存として
 #include "PlayerState.h"
 #include "../StateMachine/StateMachine.h"
+#include "../../Render/ModelAnimatorComponent.h"
 
 class PlayerStatusController : public ComponentBase
 {
@@ -14,6 +15,7 @@ public:
 	{
 		inputComponent_ = GetOwner()->GetComponent<PlayerInputComponent>();
 		movementComponent_ = GetOwner()->GetComponent<MovementComponent>();
+		modelAnimatorComponent_ = GetOwner()->GetComponent<ModelAnimatorComponent>();
 
 		// 初期状態のセット。TransitionTo経由なのでEnterも呼ばれるが、
 		// StateNone::Enterは何もしないため実質は代入と同じ。
@@ -142,6 +144,7 @@ private:
 	// 兄弟コンポーネント
 	PlayerInputComponent* inputComponent_ = nullptr;
 	MovementComponent* movementComponent_ = nullptr;
+	ModelAnimatorComponent* modelAnimatorComponent_ = nullptr;
 
 	// --- 移動データ ---
 	MovementState movementState_ = MovementState::Stand;

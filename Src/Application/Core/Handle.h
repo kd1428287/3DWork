@@ -43,7 +43,8 @@ public:
 	Handle() = default;
 
 	explicit Handle(T* obj)
-		: ptr_(obj), generation_(obj ? obj->GetGeneration() : 0) {}
+		: ptr_(obj), generation_(obj ? obj->GetGeneration() : 0) {
+	}
 
 	// 参照先が破棄されておらず、かつ生成時と同じ世代のインスタンスを
 	// 指していればtrue。破棄後に別のインスタンスへポインタ値が

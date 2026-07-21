@@ -372,9 +372,6 @@
     <ClInclude Include="Src\Application\Core\SceneContext.h">
       <Filter>Src\Application\Core</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\Render\ModelRenderComponent.h">
-      <Filter>Src\Application\Components\Render</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Components\Render\SpriteRenderComponent.h">
       <Filter>Src\Application\Components\Render</Filter>
     </ClInclude>
@@ -488,6 +485,18 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Character\StateMachine\StateMachine.h">
       <Filter>Src\Application\Components\Character\StateMachine</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Collision\TriangleMeshData.h">
+      <Filter>Src\Application\Components\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Render\ModelRenderComponent.h">
+      <Filter>Src\Application\Components\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Render\ModelAnimatorComponent.h">
+      <Filter>Src\Application\Components\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Collision\ModelCollisionMeshBuilder.h">
+      <Filter>Src\Application\Components\Collision</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

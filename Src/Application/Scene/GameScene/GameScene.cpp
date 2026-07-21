@@ -38,6 +38,11 @@ void GameScene::Init()
 	terrainFactory_ = std::make_unique<TerrainFactory>();
 	auto* terrain = terrainFactory_->CreateTerrain(*objManager_);
 
+	std::unordered_map<std::string, EnemyDefinition> map;
+	map.emplace("enemy", EnemyDefinition{});
+	enemyFactory_ = std::make_unique<EnemyFactory>(map);
+	enemyFactory_->CreateEnemy(*objManager_, "enemy", Math::Vector3(0, 0, 5));
+
 	playerFactory_ = std::make_unique<PlayerFactory>();
 	auto* player = playerFactory_->CreatePlayer(*objManager_);
 
@@ -45,10 +50,7 @@ void GameScene::Init()
 	//player->GetComponent<CameraTargetComponent>()->GetGeneration();
 	auto* camera = cameraFactory_->CreateCamera(*objManager_, player->GetComponent<CameraTargetComponent>());
 
-	std::unordered_map<std::string, EnemyDefinition> map;
-	map.emplace("enemy", EnemyDefinition{});
-	enemyFactory_ = std::make_unique<EnemyFactory>(map);
-	enemyFactory_->CreateEnemy(*objManager_, "enemy", Math::Vector3(0, 0, 5));
+	
 
 	// system
 	inputSystem_ = std::make_unique<InputSystem>();

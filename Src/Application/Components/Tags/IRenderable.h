@@ -15,6 +15,19 @@
 // のように多重継承し、必要なパスだけoverrideする。
 // 各メソッドは空実装がデフォルトなので、使わないパスは書かなくてよい。
 // ============================================================
+
+namespace RenderLayer
+{
+	constexpr uint8_t PreDraw					= 1u << 0; 
+	constexpr uint8_t GenerateDepthMapFromLight = 1u << 1; 
+	constexpr uint8_t DrawUnLit					= 1u << 2; 
+	constexpr uint8_t DrawLit					= 1u << 3; 
+	constexpr uint8_t DrawEffect				= 1u << 4; 
+	constexpr uint8_t DrawBright				= 1u << 5; 
+	constexpr uint8_t DrawSprite				= 1u << 6; 
+	constexpr uint8_t DrawDebug					= 1u << 7; 
+}
+
 class IRenderable {
 public:
 	virtual ~IRenderable() = default;

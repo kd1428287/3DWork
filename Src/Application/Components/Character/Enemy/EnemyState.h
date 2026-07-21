@@ -26,3 +26,10 @@ public:
 	void Enter(EnemyStatusController* controller) override;
 	void Update(EnemyStatusController* controller, float deltaTime) override;
 };
+
+class StateKnockback : public IEnemyState {
+public:
+	void Enter(EnemyStatusController* controller) override;
+	void Update(EnemyStatusController* controller, float deltaTime) override;
+	void Exit(EnemyStatusController* controller) override;
+};

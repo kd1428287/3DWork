@@ -8,6 +8,7 @@
 #include "../../Components/Character/Player/PlayerInputComponent.h"
 #include "../../Components/Camera/CameraTargetComponent.h"
 #include "../../Components/Render/ModelRenderComponent.h"
+#include "../../Components/Render/ModelAnimatorComponent.h"
 #include "../../Components/Character/Player/PlayerStatusController.h"
 #include "../../Components/Collision/GravityComponent.h"
 #include "../../Components/Sensors/GroundSensorComponent.h"
@@ -24,12 +25,13 @@ GameObject* PlayerFactory::CreatePlayer(ObjectManager& objectManager)
 	trans->SetPosition({ 0.f, 0.f, 0.f });
 	//trans->SetScale({ 0.01f,0.01f,0.01f });
 	player->AddComponent<ModelRenderComponent>(
-		//"Asset/Models/Character/Player/Walking.gltf"
-		"Asset/Models/Character/Player/box.gltf"
+		//"Asset/Models/Character/Player/box.gltf"
+		"Asset/Models/Character/Player/Walking.gltf"
 	);
+	player->AddComponent<ModelAnimatorComponent>()->SetFPS(60);
 	player->AddComponent<PlayerStatusController>();
 	player->AddComponent<VelocityComponent>();
-	player->AddComponent<ColliderComponent>()->AddAABB("body", Math::Vector3(0.4f, 0.9f, 0.4f), Math::Vector3::Zero, ColliderLayer::Bump);
+	auto* collider = player->AddComponent<ColliderComponent>();
 	player->AddComponent<GravityComponent>();
 	player->AddComponent<GroundSensorComponent>();
 
@@ -39,8 +41,19 @@ GameObject* PlayerFactory::CreatePlayer(ObjectManager& objectManager)
 	move->SetMovementSource(input); // 参照関係の構築
 
 	player->AddComponent<CameraTargetComponent>();
+	collider->AddBox("body", Math::Vector3(0.3f, 0.5f, 0.25f), {}, ColliderLayer::HurtBox);
+	auto model = KdAssets::Instance().m_modeldatas.GetData("Asset/Models/Character/Player/box.gltf");
+	/*std::vector<Math::Vector3> triangles;
+	std::shared_ptr<TriangleMeshData> tMeshData = std::make_shared<TriangleMeshData>();
+	for (auto& index : model->GetCollisionMeshNodeIndices())
+	{
+		tMeshData->C
+		triangles = model->GetMesh(index)->GetVertexPositions();
+	}
+	collider->AddMesh("body", tMeshData, ColliderLayer::HurtBox);*/
 
 	// ソケットの生成
+	
 	Handle<TransformComponent> handle(trans);
 	auto* LShoulder = CreateSocket(objectManager, "LShoulder", handle);
 	handle = Handle<TransformComponent>(LShoulder->GetComponent<SocketComponent>());
@@ -56,6 +69,7 @@ GameObject* PlayerFactory::CreatePlayer(ObjectManager& objectManager)
 	handle = Handle<TransformComponent>(RHand->GetComponent<SocketComponent>());
 
 	CreateWeapon(objectManager, handle);
+	
 
 	// 4. 所有権を持たない「利用権（参照用）」としての生ポインタを返す
 	return player;
@@ -78,7 +92,7 @@ GameObject* PlayerFactory::CreateWeapon(ObjectManager& objectManager, Handle<Tra
 	Math::Matrix mat = DirectX::XMMatrixLookAtLH({ 0,0,1 }, { 0,0,0 }, { 0,1,0 });
 	local->SetRotation(Math::Quaternion::CreateFromRotationMatrix(XMMatrixTranspose(mat)));
 	weapon->AddComponent<AttachToSocketComponent>(handle);
-	weapon->AddComponent<ColliderComponent>()->AddAABB("body", Math::Vector3(0.1f, 0.1f, 0.5f), {},ColliderLayer::Hitbox);
+	//weapon->AddComponent<ColliderComponent>()->AddAABB("body", Math::Vector3(0.1f, 0.1f, 0.5f), {},ColliderLayer::Hitbox);
 	weapon->AddComponent<ModelRenderComponent>(
 		"Asset/Models/Character/Player/box.gltf"
 	);

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "../../Components/Collision/ColliderComponent.h"
 #include "../../Core/GameObject.h"
@@ -13,6 +13,11 @@
 // 再収集することになり無駄が多い。特にRaycastSystemは「敵の視界判定」
 // 「将来的な足IKの接地レイ」のように1フレームに何度も(キャラの数だけ)
 // 呼ばれる想定のクエリのため、ここを共有できる効果が大きい。
+//
+// Mesh/Polygon(モデル単位・ポリゴン単位の精密な当たり判定)は、以前は
+// MeshColliderComponent/PolygonColliderComponentという専用コンポーネント
+// だったが、ColliderComponentのCollisionShapeEntryの一種として統合した
+// ため、ここで持つリストは1本で済む。
 //
 // 使い方: Scene側が1フレームに1回だけRefresh()を呼ぶ
 // (ObjectManager::Update()の後、CollisionSystem::Update()や

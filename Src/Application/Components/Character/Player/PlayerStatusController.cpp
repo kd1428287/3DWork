@@ -151,6 +151,7 @@ void PlayerStatusController::HandleMovementInput(const PlayerInputComponent& inp
 	if (movementState_ != nextState) {
 		movementState_ = nextState;
 		ApplyMovementState(movementState_);
+		modelAnimatorComponent_->Play("mixamo.com", true);
 	}
 }
 

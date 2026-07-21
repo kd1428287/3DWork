@@ -184,12 +184,12 @@ void KdStandardShader::DrawModel(const KdModelData& rModel, const Math::Matrix& 
 	for (auto& nodeIdx : rModel.GetDrawMeshNodeIndices())
 	{
 		// 描画
-		DrawMesh(dataNodes[nodeIdx].m_spMesh.get(), dataNodes[nodeIdx].m_worldTransform * mWorld, 
+		DrawMesh(dataNodes[nodeIdx].m_spMesh.get(), dataNodes[nodeIdx].m_worldTransform * mWorld,
 			rModel.GetMaterials(), colRate, emissive);
 	}
 
 	// 定数に変更があった場合は自動的に初期状態に戻す
-	if(m_dirtyCBObj)
+	if (m_dirtyCBObj)
 	{
 		ResetCBObject();
 	}
@@ -228,27 +228,53 @@ void KdStandardShader::DrawModel(KdModelWork& rModel, const Math::Matrix& mWorld
 	// スキンメッシュモデルの場合：ボーン情報を書き込み(スキンメッシュ対応)
 	if (data->IsSkinMesh())
 	{
+		auto& boneCB = m_cb3_Bone.Work();
+
 		// ノード内からボーン情報を取得
 		for (auto&& nodeIdx : data->GetBoneNodeIndices())
 		{
-			if (nodeIdx >= KdStandardShader::maxBoneBufferSize) { assert(0 && "転送できるボーンの上限数を超えました"); return; }
-
 			auto& dataNode = dataNodes[nodeIdx];
+
+			// 修正: 実際に書き込む添字は nodeIdx ではなく dataNode.m_boneIndex なので、
+			// こちらの範囲(0 ～ maxBoneBufferSize-1)をチェックする。
+			// 以前は nodeIdx を上限チェックしていたため、チェックとして機能していなかった。
+			if (dataNode.m_boneIndex < 0 || dataNode.m_boneIndex >= KdStandardShader::maxBoneBufferSize)
+			{
+				assert(0 && "ボーンインデックスが不正、または転送できるボーンの上限数を超えています");
+				continue; // このボーンだけスキップし、他の正常なボーンの処理は継続する
+			}
+
 			auto& workNode = workNodes[nodeIdx];
 
 			// ボーン情報からGPUに渡す行列の計算
-			m_cb3_Bone.Work().mBones[dataNode.m_boneIndex] = dataNode.m_boneInverseWorldMatrix * workNode.m_worldTransform;
-
-			m_cb3_Bone.Write();
+			boneCB.mBones[dataNode.m_boneIndex] = dataNode.m_boneInverseWorldMatrix * workNode.m_worldTransform;
 		}
+
+		// GPUへの転送はループの外で1回だけ行う(以前はボーンの数だけ毎回転送していた)
+		m_cb3_Bone.Write();
 	}
-	
+
 
 	// 全描画用メッシュノードを描画
 	for (auto& nodeIdx : data->GetDrawMeshNodeIndices())
 	{
+		auto& dataNode = dataNodes[nodeIdx];
+
+		// 修正: glTF仕様上、スキンメッシュの場合はメッシュノード自身のワールド行列(階層計算済みの
+		// workNodes[nodeIdx].m_worldTransform)は使用してはならず、mWorld(GameObject側の行列)のみを
+		// 使うのが正しい。頂点の位置決めは全てボーン行列(mBones、上のループで書き込み済み)側で
+		// 完結しているため。
+		//
+		// 以前はスキンメッシュか否かに関わらず、常にメッシュノード自身のワールド行列を掛けていたため、
+		// エクスポート時のノード階層(例えばメッシュノードが"Armature"のようなノードの子になっている場合)
+		// 次第で、本来無関係なはずの祖先ノードの回転・スケール(軸補正用など)が二重に掛かってしまい、
+		// モデル全体が縮小・回転する不具合があった。
+		const Math::Matrix meshWorldMat = dataNode.m_isSkinMesh
+			? mWorld
+			: (workNodes[nodeIdx].m_worldTransform * mWorld);
+
 		// 描画
-		DrawMesh(dataNodes[nodeIdx].m_spMesh.get(), workNodes[nodeIdx].m_worldTransform * mWorld,
+		DrawMesh(dataNode.m_spMesh.get(), meshWorldMat,
 			data->GetMaterials(), colRate, emissive);
 	}
 
@@ -485,8 +511,8 @@ bool KdStandardShader::Init()
 			Release();
 			return false;
 		}
-	} 
-	
+	}
+
 	{
 #include "KdStandardShader_PS_UnLit.shaderInc"
 
@@ -532,7 +558,7 @@ void KdStandardShader::Release()
 	KdSafeRelease(m_VS_UnLit);
 
 	KdSafeRelease(m_inputLayout);
-	
+
 	KdSafeRelease(m_PS_Lit);
 	KdSafeRelease(m_PS_GenDepthFromLight);
 	KdSafeRelease(m_PS_UnLit);
