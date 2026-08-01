@@ -45,27 +45,20 @@ GameObject* PlayerFactory::CreatePlayer(ObjectManager& objectManager)
 	player->AddComponent<CameraTargetComponent>();
 	collider->AddBox("body", Math::Vector3(0.3f, 0.5f, 0.25f), {}, ColliderLayer::HurtBox);
 	auto model = KdAssets::Instance().m_modeldatas.GetData("Asset/Models/Character/Player/box.gltf");
-	/*std::vector<Math::Vector3> triangles;
-	std::shared_ptr<TriangleMeshData> tMeshData = std::make_shared<TriangleMeshData>();
-	for (auto& index : model->GetCollisionMeshNodeIndices())
-	{
-		tMeshData->C
-		triangles = model->GetMesh(index)->GetVertexPositions();
-	}
-	collider->AddMesh("body", tMeshData, ColliderLayer::HurtBox);*/
 
 	// ソケットの生成
 	
-	//Handle<SkeletonComponent> handle(skeleton);
-	//auto* LShoulder = CreateSocket(objectManager, "LShoulder", handle);
-	//auto* LElbow = CreateSocket(objectManager, "LElbow", handle);
-	//auto* LHand = CreateSocket(objectManager, "LHand", handle);
-	//auto* RShoulder = CreateSocket(objectManager, "RShoulder", handle);
-	//auto* RElbow = CreateSocket(objectManager, "RElbow", handle);
-	//auto* RHand = CreateSocket(objectManager, "RHand", handle);
+	Handle<SkeletonComponent> handle(skeleton);
+	auto* LShoulder = CreateSocket(objectManager, "mixamorig:LeftShoulder", handle);
+	auto* LElbow = CreateSocket(objectManager, "mixamorig:LeftArm", handle);
+	auto* LHand = CreateSocket(objectManager, "mixamorig:LeftHand", handle);
+	auto* RShoulder = CreateSocket(objectManager, "mixamorig:RightShoulder", handle);
+	auto* RElbow = CreateSocket(objectManager, "mixamorig:RightArm", handle);
+	auto* RHand = CreateSocket(objectManager, "mixamorig:RightHand", handle);
 
+	Handle<TransformComponent> rhandle(RHand->GetComponent<BoneSocketComponent>());
 
-	//CreateWeapon(objectManager, handle);
+	CreateWeapon(objectManager, rhandle);
 
 	// 4. 所有権を持たない「利用権（参照用）」としての生ポインタを返す
 	return player;
@@ -75,8 +68,8 @@ GameObject* PlayerFactory::CreateSocket(ObjectManager& objectManager, std::strin
 {
 	auto* obj = objectManager.Instantiate(objID);
 	if (!obj) return nullptr;
-	//auto* local = obj->AddComponent<SocketComponent>(handle);
-	//local->SetPosition({ 0,0,1 });
+	auto* local = obj->AddComponent<BoneSocketComponent>(handle, objID);
+	//local->SetPosition({ 0,0,1 });,
 	return obj;
 }
 
@@ -87,11 +80,13 @@ GameObject* PlayerFactory::CreateWeapon(ObjectManager& objectManager, Handle<Tra
 	auto* local = weapon->AddComponent<TransformComponent>();
 	Math::Matrix mat = DirectX::XMMatrixLookAtLH({ 0,0,1 }, { 0,0,0 }, { 0,1,0 });
 	local->SetRotation(Math::Quaternion::CreateFromRotationMatrix(XMMatrixTranspose(mat)));
+	local->SetScale({ 0.5f,0.5f,0.5f, });
 	weapon->AddComponent<AttachToSocketComponent>(handle);
-	//weapon->AddComponent<ColliderComponent>()->AddAABB("body", Math::Vector3(0.1f, 0.1f, 0.5f), {},ColliderLayer::Hitbox);
-	weapon->AddComponent<ModelRenderComponent>(
-		//"Asset/Models/Character/Player/box.gltf"
+	auto* skeleton = weapon->AddComponent<SkeletonComponent>();
+	skeleton->SetModelData(
+		KdAssets::Instance().m_modeldatas.GetData("Asset/Models/Character/Player/box.gltf")
 	);
+	weapon->AddComponent<ModelRenderComponent>();
 
 	return weapon;
 }

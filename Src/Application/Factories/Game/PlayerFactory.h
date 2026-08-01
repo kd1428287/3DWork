@@ -3,6 +3,7 @@
 class GameObject;
 class ObjectManager;
 class SkeletonComponent;
+class BoneSocketComponent;
 
 // ============================================================
 // プレイヤー（自機）の生成に特化したファクトリークラス。
