@@ -20,7 +20,7 @@
 // 「誰と誰の、どの形状同士が、前フレームから状態が変わったか」の
 // 記録とイベント発行だけに専念する。
 //
-// Sphere/Box(OBB)/Mesh/Polygonの4種類の形状は、すべてColliderComponent
+// Sphere/Box(OBB)/Capsule/Mesh/Polygonの5種類の形状は、すべてColliderComponent
 // のCollisionShapeEntryとして同じリストに混在する(以前はMesh/Polygonを
 // MeshColliderComponent/PolygonColliderComponentという専用コンポーネントに
 // 分離していたが、CollisionSystem/RaycastSystem/ColliderRegistryが
@@ -122,6 +122,12 @@ public:
 
 				// 同じGameObjectに付いている場合、自分同士は判定しない
 				if (a->GetOwner() == b->GetOwner()) continue;
+
+				// 個別除外(IgnoreCollisionWith)が設定されている相手同士は
+				// 形状ループに入るまでもなくスキップする(自分が発射した
+				// 弾を自分自身には当てたくない、等)。片方だけの登録でも
+				// 除外されるようにOR判定にする。
+				if (a->IsIgnoring(b->GetOwner()) || b->IsIgnoring(a->GetOwner())) continue;
 
 				for (const CollisionShapeEntry& shapeA : a->GetShapes()) {
 					if (!shapeA.enabled) continue;
@@ -314,7 +320,7 @@ private:
 			return TestTriangleShape(b, shapeB, a, shapeA);
 		}
 
-		// ここから先はSphere/Box(OBB)同士の組み合わせのみ。
+		// ここから先はSphere/Box(OBB)/Capsuleの組み合わせのみ。
 		if (shapeA.shape == ColliderShape::Sphere && shapeB.shape == ColliderShape::Sphere) {
 			const Math::Vector3 centerA = a.GetShapeWorldCenter(shapeA);
 			const Math::Vector3 centerB = b.GetShapeWorldCenter(shapeB);
@@ -326,17 +332,48 @@ private:
 			return CollisionMath::OBBVsOBB(a.GetShapeWorldOBB(shapeA), b.GetShapeWorldOBB(shapeB));
 		}
 
-		// 残りは必ずSphere-Box(OBB)の組み合わせになる。
-		if (shapeA.shape == ColliderShape::Sphere) {
+		if (shapeA.shape == ColliderShape::Capsule && shapeB.shape == ColliderShape::Capsule) {
+			return CollisionMath::CapsuleVsCapsule(a.GetShapeWorldCapsule(shapeA), b.GetShapeWorldCapsule(shapeB));
+		}
+
+		// Sphere-Box(OBB)の組み合わせ。
+		if (shapeA.shape == ColliderShape::Sphere && shapeB.shape == ColliderShape::Box) {
 			const Math::Vector3 centerA = a.GetShapeWorldCenter(shapeA);
 			return CollisionMath::SphereVsOBB(centerA, a.GetShapeWorldRadius(shapeA), b.GetShapeWorldOBB(shapeB));
 		}
+		if (shapeA.shape == ColliderShape::Box && shapeB.shape == ColliderShape::Sphere) {
+			// SphereVsOBBはsphere視点の法線を返すため、a視点(常に「aをbから
+			// 押し出す向き」)に合わせて反転する。
+			const Math::Vector3 centerB = b.GetShapeWorldCenter(shapeB);
+			CollisionMath::OverlapResult result =
+				CollisionMath::SphereVsOBB(centerB, b.GetShapeWorldRadius(shapeB), a.GetShapeWorldOBB(shapeA));
+			if (result.hit) result.hitNormal = -result.hitNormal;
+			return result;
+		}
 
-		// shapeAがBox、shapeBがSphereの場合。SphereVsOBBはsphere視点の
-		// 法線を返すため、a視点(常に「aをbから押し出す向き」)に合わせて反転する。
-		const Math::Vector3 centerB = b.GetShapeWorldCenter(shapeB);
+		// Sphere-Capsuleの組み合わせ。
+		if (shapeA.shape == ColliderShape::Sphere && shapeB.shape == ColliderShape::Capsule) {
+			const Math::Vector3 centerA = a.GetShapeWorldCenter(shapeA);
+			return CollisionMath::SphereVsCapsule(centerA, a.GetShapeWorldRadius(shapeA), b.GetShapeWorldCapsule(shapeB));
+		}
+		if (shapeA.shape == ColliderShape::Capsule && shapeB.shape == ColliderShape::Sphere) {
+			// SphereVsCapsuleはsphere視点の法線を返すため、a視点に合わせて反転する。
+			const Math::Vector3 centerB = b.GetShapeWorldCenter(shapeB);
+			CollisionMath::OverlapResult result =
+				CollisionMath::SphereVsCapsule(centerB, b.GetShapeWorldRadius(shapeB), a.GetShapeWorldCapsule(shapeA));
+			if (result.hit) result.hitNormal = -result.hitNormal;
+			return result;
+		}
+
+		// 残りは必ずBox-Capsuleの組み合わせになる。CapsuleVsOBBは
+		// 「capsule視点(=引数1つ目)を押し出す向き」を返す。
+		if (shapeA.shape == ColliderShape::Capsule) {
+			return CollisionMath::CapsuleVsOBB(a.GetShapeWorldCapsule(shapeA), b.GetShapeWorldOBB(shapeB));
+		}
+
+		// shapeAがBox、shapeBがCapsuleの場合。a視点に合わせて反転する。
 		CollisionMath::OverlapResult result =
-			CollisionMath::SphereVsOBB(centerB, b.GetShapeWorldRadius(shapeB), a.GetShapeWorldOBB(shapeA));
+			CollisionMath::CapsuleVsOBB(b.GetShapeWorldCapsule(shapeB), a.GetShapeWorldOBB(shapeA));
 		if (result.hit) {
 			result.hitNormal = -result.hitNormal;
 		}
@@ -344,9 +381,9 @@ private:
 	}
 
 	// triOwner/triShapeがMesh/Polygon側。実際の反復判定は
-	// CollisionShapeEntry::TestTriangleVsSphere/TestTriangleVsOBBに委譲する
-	// (KdModelCollision/KdPolygonCollisionが自分の全ての面をループして
-	// 結果を合成していたのと同じ責務分担)。
+	// CollisionShapeEntry::TestTriangleVsSphere/TestTriangleVsOBB/
+	// TestTriangleVsCapsuleに委譲する(KdModelCollision/KdPolygonCollisionが
+	// 自分の全ての面をループして結果を合成していたのと同じ責務分担)。
 	// 戻り値のhitNormalは「otherShapeをtriShapeから押し出す向き」。
 	static CollisionMath::OverlapResult TestTriangleShape(
 		ColliderComponent& triOwner, const CollisionShapeEntry& triShape,
@@ -357,6 +394,10 @@ private:
 		if (otherShape.shape == ColliderShape::Sphere) {
 			const Math::Vector3 center = other.GetShapeWorldCenter(otherShape);
 			return triShape.TestTriangleVsSphere(triWorldMatrix, center, other.GetShapeWorldRadius(otherShape));
+		}
+
+		if (otherShape.shape == ColliderShape::Capsule) {
+			return triShape.TestTriangleVsCapsule(triWorldMatrix, other.GetShapeWorldCapsule(otherShape));
 		}
 
 		return triShape.TestTriangleVsOBB(triWorldMatrix, other.GetShapeWorldOBB(otherShape));

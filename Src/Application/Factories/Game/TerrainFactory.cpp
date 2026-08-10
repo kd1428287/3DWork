@@ -12,9 +12,8 @@ GameObject* TerrainFactory::CreateTerrain(ObjectManager& objectManager, int owne
 	model->SetModelData("Asset/Models/Terrains/Ground/Terrain.gltf");
 	auto* collider = ground->AddComponent<ColliderComponent>();
 	auto* groundModel = ground->AddComponent<ModelRenderComponent>();
-	//"Asset/Models/Terrains/Ground/Terrain.gltf"
 	transform->SetPosition({ 0.f,0.f,0.f });
-	collider->AddBox("body", Math::Vector3(10.f, 1.f, 10.f), Math::Vector3(0.f,-2.f,0.f), ColliderLayer::Ground);
+	collider->AddBox("body", Math::Vector3(100.f, 1.f, 100.f), Math::Vector3(0.f,-2.f,0.f), ColliderCategory::Ground);
 
 	return ground;
 }

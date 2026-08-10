@@ -5,15 +5,17 @@
 #include "../../Components/Character/Enemy/EnemyStatusController.h"
 #include "../../Components/Transform/TransformComponent.h"
 #include "../../Components/Movement/MovementComponent.h"
+#include "../../Components/Movement/FacingDirectionComponent.h"
 #include "../../Components/Collision/ColliderComponent.h"
 #include "../../Components/Collision/GravityComponent.h"
+#include "../../Components/Animation/SkeletonComponent.h"
 #include "../../Components/Render/ModelRenderComponent.h"
 #include "../../Components/Sensors/GroundSensorComponent.h"
 
 
 EnemyFactory::EnemyFactory(const std::unordered_map<std::string, EnemyDefinition>& database) {
 	for (const auto& [id, def] : database) {
-		const EnemyDefinition* defPtr = &def; 
+		const EnemyDefinition* defPtr = &def;
 
 		registry_.Register(id, [defPtr](ObjectManager& objectManager, Math::Vector3 position) {
 			return BuildEnemy(objectManager, *defPtr, position);
@@ -28,23 +30,59 @@ GameObject* EnemyFactory::BuildEnemy(ObjectManager& objectManager, const EnemyDe
 	transform->SetPosition(position);
 
 	enemy->AddComponent<MovementComponent>(def.moveSpeed);
+	enemy->AddComponent<SkeletonComponent>()->SetModelData("Asset/Models/Character/Player/box.gltf");
 
 	// EnemyStatusController::Start()内でMovementComponentへ
 	// SetMovementSource(this)する。GetComponent<T>()はマップ参照なので、
 	// AddComponentの順序には依存しない。
 	enemy->AddComponent<EnemyStatusController>(def.patrolDistance);
 
-	// 被弾判定。Hurtboxレイヤーで追加すると、ColliderComponentの
-	// 既定ロジックによりcollideMaskが自動的にDamage/DamageLineだけを
-	// 見るようになる(ColliderComponent::DefaultCollideMaskFor参照)。
+	// 被弾判定(トリガー、攻撃判定専用)。collideMaskをHitBoxだけに
+	// 絞っているため、これだけでは地形(Ground)を含めどのカテゴリとも
+	// 物理的に判定しない(お互いのcollideMask/categoryMaskが噛み合う
+	// 必要があるため。ColliderComponent::CanCollideWith参照)。
 	ColliderComponent* collider = enemy->AddComponent<ColliderComponent>();
-	collider->AddSphere("body", def.bodyRadius, {}, ColliderLayer::HurtBox);
+	collider->AddSphere("HurtBox", def.bodyRadius, {}, ColliderCategory::HurtBox, ColliderCategory::HitBox);
 
-	enemy->AddComponent<VelocityComponent>();
+	// 物理的な「胴体」形状。地形・壁など(Bump/Ground)と実際に押し合い、
+	// GravityComponentによる落下を地面で受け止めるのはこちらの役目。
+	// HurtBoxとは別の形状として持たせているのは、「攻撃を受ける範囲」と
+	// 「物理的に押し返される範囲」は本来別の概念であり、将来的に
+	// 「攻撃判定は少し大きいが体は細い」といった調整を独立にできるように
+	// するため。isTrigger=false(デフォルト)なので押し返しが有効になる。
+	//
+	// 下端をGroundSensorComponentのデフォルトfootOffset(0.9f)と
+	// 一致させている点が重要。footOffsetは「Transform原点から足裏までの
+	// 距離」を表すため、Bodyの下端がここまで届いていないと、Bodyが地面に
+	// 乗って静止した高さと、GroundSensorComponentが接地レイを飛ばす基準
+	//高さがズレる。ズレると接地レイの発射点が地面の内部/下から始まる形に
+	// なり、「発射点がAABB内部から始まるケースは非対応」
+	// (GroundSensorComponent.h参照)という制約によって永遠に接地を
+	// 検出できず、重力が際限なく積み上がって最終的に地面を貫通する
+	// (実際に発生していた不具合の根本原因)。
+	constexpr float kFootOffset = 0.9f; // GroundSensorComponent::footOffsetの既定値と合わせること
+	collider->AddCapsule("Body", def.bodyRadius,
+		Math::Vector3(0.0f, -kFootOffset + def.bodyRadius, 0.0f),
+		Math::Vector3(0.0f, kFootOffset - def.bodyRadius, 0.0f),
+		ColliderCategory::Bump);
+
+	// GravityComponentをVelocityComponentより先にAddComponentしている。
+	// 「同名コンポーネントは追加順」で毎フレームUpdate()が呼ばれるため、
+	// この順序が「着地の瞬間、今フレームの速度クリアが位置反映より
+	// 先に間に合うかどうか」を左右する。VelocityComponentが先だと、
+	// 前フレームのPostUpdateで接地が確定していても、今フレームの
+	// VelocityComponent::Updateが「まだクリアされていない古い下向き
+	// 速度」を先に位置へ反映してしまい、着地の瞬間に地面へめり込む→
+	// CollisionSystemに押し戻される、を繰り返す不安定な挙動(バウンド)
+	// の原因になる。GravityComponentを先にすることで、着地判定に
+	// 基づく速度クリアが同じフレーム内のVelocityComponent::Updateより
+	// 前に確定するようにしている。
 	enemy->AddComponent<GravityComponent>();
+	enemy->AddComponent<VelocityComponent>();
 	enemy->AddComponent<GroundSensorComponent>();
 
 	enemy->AddComponent<ModelRenderComponent>();
+	enemy->AddComponent<FacingDirectionComponent>();
 
 	return enemy;
 }

@@ -81,7 +81,7 @@ public:
 		RaycastSystem::Hit hit;
 		const bool found = RaycastSystem::RaycastClosest(
 			*registry, origin, Math::Vector3::Down, checkDistance,
-			ColliderLayer::Ground, hit);
+			ColliderCategory::Ground, hit);
 
 		wasGroundedLastQuery_ = isGrounded_;
 

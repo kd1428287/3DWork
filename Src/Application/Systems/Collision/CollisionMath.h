@@ -4,9 +4,17 @@
 // 当たり判定の純粋な幾何計算だけを集めた場所。
 //
 // KdCollision.cpp(ポリゴン/メッシュ含む低レベル判定関数群)の役割を
-// 引き継ぐ部分。Sphere/Box(OBB。回転を考慮するBOX)/Rayの基本形状に
-// 加え、三角形単位の判定(KdPointToTriangle/DirectX::TriangleTests::
-// Intersects相当)もここに集約している。
+// 引き継ぐ部分。Sphere/Box(OBB。回転を考慮するBOX)/Capsule(線分+半径)/
+// Rayの基本形状に加え、三角形単位の判定(KdPointToTriangle/DirectX::
+// TriangleTests::Intersects相当)もここに集約している。
+//
+// Capsule絡みの判定(CapsuleVsOBB/CapsuleVsTriangle)は、線分と相手形状の
+// 「真の最近接点対」を解析的に一発で求めるのではなく、"交互射影法"
+// (線分側→相手側→線分側…と最近接点を数回往復させ収束させる近似)で
+// 求めている。線分・OBB・三角形はいずれも凸形状なので、この方法は
+// 数回の反復で実用上十分な精度に収束する(Capsule vs Capsuleのみ、
+// 線分同士の最近接点対を解析的に一発で求める古典的な閉じた式
+// (ClosestPtSegmentSegment)があるため、そちらを使っている)。
 //
 // 三角形1枚に対する判定はここでは「1枚だけ」を見て結果を返す関数と
 // している。複数の三角形(メッシュ/ポリゴン)をまとめて相手にする際の
@@ -179,7 +187,206 @@ namespace CollisionMath
 		return result;
 	}
 
-	// スラブ法によるレイ vs AABB判定。
+	// 点から線分への最近接点。Capsule(線分+半径)の判定全般で使う基礎関数。
+	inline Math::Vector3 ClosestPointOnSegment(
+		const Math::Vector3& p, const Math::Vector3& a, const Math::Vector3& b)
+	{
+		const Math::Vector3 ab = b - a;
+		const float abLenSq = ab.LengthSquared();
+		if (abLenSq < 1e-10f) return a; // 縮退(始点=終点。実質ただの点)
+
+		float t = (p - a).Dot(ab) / abLenSq;
+		t = std::clamp(t, 0.0f, 1.0f);
+		return a + ab * t;
+	}
+
+	// 線分同士の最近接点対を求める(Christer Ericson「リアルタイム衝突判定」の
+	// ClosestPtSegmentSegmentと同一のアルゴリズム)。Capsule vs Capsuleの
+	// 判定で、両カプセルの軸線分がどこで最も近づくかを求めるために使う。
+	inline void ClosestPointSegmentSegment(
+		const Math::Vector3& p1, const Math::Vector3& q1,
+		const Math::Vector3& p2, const Math::Vector3& q2,
+		Math::Vector3& outC1, Math::Vector3& outC2)
+	{
+		const Math::Vector3 d1 = q1 - p1;
+		const Math::Vector3 d2 = q2 - p2;
+		const Math::Vector3 r = p1 - p2;
+		const float a = d1.Dot(d1);
+		const float e = d2.Dot(d2);
+		const float f = d2.Dot(r);
+
+		constexpr float kEpsilon = 1e-8f;
+		float s, t;
+
+		if (a <= kEpsilon && e <= kEpsilon) {
+			// 両方とも点に縮退している
+			outC1 = p1;
+			outC2 = p2;
+			return;
+		}
+
+		if (a <= kEpsilon) {
+			s = 0.0f;
+			t = std::clamp(f / e, 0.0f, 1.0f);
+		}
+		else {
+			const float c = d1.Dot(r);
+			if (e <= kEpsilon) {
+				t = 0.0f;
+				s = std::clamp(-c / a, 0.0f, 1.0f);
+			}
+			else {
+				const float b = d1.Dot(d2);
+				const float denom = a * e - b * b;
+
+				// denomが0に近い(2本の線分がほぼ平行)場合はs=0を基準にする。
+				s = (denom > kEpsilon) ? std::clamp((b * f - c * e) / denom, 0.0f, 1.0f) : 0.0f;
+
+				t = (b * s + f) / e;
+
+				// tが[0,1]の外に出た場合、その端点に固定してsを求め直す
+				// (Ericson本のロバスト化版と同じ処理)。
+				if (t < 0.0f) {
+					t = 0.0f;
+					s = std::clamp(-c / a, 0.0f, 1.0f);
+				}
+				else if (t > 1.0f) {
+					t = 1.0f;
+					s = std::clamp((b - c) / a, 0.0f, 1.0f);
+				}
+			}
+		}
+
+		outC1 = p1 + d1 * s;
+		outC2 = p2 + d2 * t;
+	}
+
+	// ============================================================
+	// Capsule(線分+半径。カプセルコライダー)の判定。
+	//
+	// キャラクターの主判定形状として、Sphere(不均一スケールで歪む/
+	// 段差に引っかかりやすい)やBox(角に引っかかりやすい)よりも
+	// 段差・斜面追従が滑らかなため、Unity(CapsuleCollider)/
+	// Unreal(UCapsuleComponent)ともにキャラクター用のデフォルト形状
+	// として採用している。
+	//
+	// 中身は「線分(start-end)の周りに半径radiusを膨らませた形状」
+	// というだけなので、他形状との判定は基本的に「まず線分側の
+	// 最近接点(あるいは最近接点対)を求め、そこから先はSphereの判定
+	// 関数に委譲する」という形に帰着できる(半径付きの点=球なので)。
+	// ============================================================
+	struct Capsule
+	{
+		Math::Vector3	start{};
+		Math::Vector3	end{};
+		float			radius = 0.5f;
+	};
+
+	// Capsule vs Capsule。両カプセルの軸線分同士の最近接点対を求め、
+	// そこから先はSphereVsSphereと全く同じロジック(距離と半径の和の比較)。
+	inline OverlapResult CapsuleVsCapsule(const Capsule& a, const Capsule& b)
+	{
+		Math::Vector3 c1, c2;
+		ClosestPointSegmentSegment(a.start, a.end, b.start, b.end, c1, c2);
+		return SphereVsSphere(c1, a.radius, c2, b.radius);
+	}
+
+	// Sphere vs Capsule。球中心からカプセルの軸線分への最近接点を求めれば、
+	// あとは球同士の判定(SphereVsSphere)に帰着する。
+	// hitNormalは「sphereをcapsuleから押し出す向き」。
+	inline OverlapResult SphereVsCapsule(
+		const Math::Vector3& sphereCenter, float sphereRadius, const Capsule& capsule)
+	{
+		const Math::Vector3 nearest = ClosestPointOnSegment(sphereCenter, capsule.start, capsule.end);
+		return SphereVsSphere(sphereCenter, sphereRadius, nearest, capsule.radius);
+	}
+
+	// レイ vs Capsule。円柱の側面(無限円柱として交点を求め、線分の範囲内かで
+	// 絞り込む)+両端の半球(RayVsSphereをそのまま流用)、の3パーツに分けて
+	// 判定し、最も手前のヒットを採用する。
+	// ※レイの発射点がカプセル内部から始まっているケースは円柱側面については
+	//   厳密に扱えていない(RayVsAABBと同様の簡易実装。発射点が内部にある
+	//   状況は「攻撃判定の中に元々いる」ような特殊ケースなので、実用上は
+	//   Enter/Exit判定(CollisionSystem側)で別途カバーされる想定)。
+	inline RayHitResult RayVsCapsule(
+		const Math::Vector3& rayOrigin, const Math::Vector3& rayDir, float rayRange,
+		const Capsule& capsule)
+	{
+		RayHitResult result;
+
+		const Math::Vector3 axis = capsule.end - capsule.start;
+		const float axisLenSq = axis.LengthSquared();
+
+		// 縮退(start==end): 実質ただの球
+		if (axisLenSq < 1e-10f) {
+			return RayVsSphere(rayOrigin, rayDir, rayRange, capsule.start, capsule.radius);
+		}
+
+		const float axisLen = std::sqrt(axisLenSq);
+		const Math::Vector3 axisDir = axis / axisLen;
+
+		// レイ・原点それぞれをaxisDirに垂直な平面へ投影し、円柱断面の
+		// 2次元の円との交差問題に落とし込む。
+		const Math::Vector3 originToStart = rayOrigin - capsule.start;
+		const float rayDotAxis = rayDir.Dot(axisDir);
+		const float originDotAxis = originToStart.Dot(axisDir);
+
+		const Math::Vector3 rayPerp = rayDir - axisDir * rayDotAxis;
+		const Math::Vector3 originPerp = originToStart - axisDir * originDotAxis;
+
+		const float qa = rayPerp.LengthSquared();
+		const float qb = 2.0f * rayPerp.Dot(originPerp);
+		const float qc = originPerp.LengthSquared() - capsule.radius * capsule.radius;
+
+		float bestDist = rayRange;
+		bool found = false;
+		Math::Vector3 bestPos, bestNormal;
+
+		// 円柱の側面
+		if (qa > 1e-10f) {
+			const float disc = qb * qb - 4.0f * qa * qc;
+			if (disc >= 0.0f) {
+				const float sqrtDisc = std::sqrt(disc);
+				const float candidates[2] = { (-qb - sqrtDisc) / (2.0f * qa), (-qb + sqrtDisc) / (2.0f * qa) };
+
+				for (const float t : candidates) {
+					if (t < 0.0f || t > bestDist) continue;
+
+					const float hAlongAxis = originDotAxis + rayDotAxis * t;
+					if (hAlongAxis < 0.0f || hAlongAxis > axisLen) continue; // 円柱の範囲外(半球側で別途判定)
+
+					bestDist = t;
+					found = true;
+					bestPos = rayOrigin + rayDir * t;
+					const Math::Vector3 onAxis = capsule.start + axisDir * hAlongAxis;
+					bestNormal = bestPos - onAxis;
+					bestNormal.Normalize();
+				}
+			}
+		}
+
+		// 両端の半球
+		const Math::Vector3 capCenters[2] = { capsule.start, capsule.end };
+		for (const Math::Vector3& capCenter : capCenters) {
+			const RayHitResult capHit = RayVsSphere(rayOrigin, rayDir, bestDist, capCenter, capsule.radius);
+			if (capHit.hit && capHit.distance <= bestDist) {
+				bestDist = capHit.distance;
+				found = true;
+				bestPos = capHit.hitPos;
+				bestNormal = capHit.hitNormal;
+			}
+		}
+
+		if (!found) return result;
+
+		result.hit = true;
+		result.distance = bestDist;
+		result.hitPos = bestPos;
+		result.hitNormal = bestNormal;
+		return result;
+	}
+
+
 	// ※ レイの発射点が既にAABB内部から始まっているケースは
 	//   「当たらない」扱いにする簡易実装(前進方向の脱出交点は求めない)。
 	inline RayHitResult RayVsAABB(
@@ -355,21 +562,21 @@ namespace CollisionMath
 		const Math::Vector3 t2 = v2 - boxCenter;
 
 		auto overlapsOnAxis = [&](const Math::Vector3& axis) -> bool
-		{
-			const float axisLenSq = axis.LengthSquared();
-			if (axisLenSq < 1e-10f) return true; // 縮退した軸は判定不能なので無視(重なり扱い)
+			{
+				const float axisLenSq = axis.LengthSquared();
+				if (axisLenSq < 1e-10f) return true; // 縮退した軸は判定不能なので無視(重なり扱い)
 
-			const float p0 = axis.Dot(t0);
-			const float p1 = axis.Dot(t1);
-			const float p2 = axis.Dot(t2);
-			const float triMin = std::min({ p0, p1, p2 });
-			const float triMax = std::max({ p0, p1, p2 });
+				const float p0 = axis.Dot(t0);
+				const float p1 = axis.Dot(t1);
+				const float p2 = axis.Dot(t2);
+				const float triMin = std::min({ p0, p1, p2 });
+				const float triMax = std::max({ p0, p1, p2 });
 
-			const float boxRadius =
-				boxHalf.x * std::abs(axis.x) + boxHalf.y * std::abs(axis.y) + boxHalf.z * std::abs(axis.z);
+				const float boxRadius =
+					boxHalf.x * std::abs(axis.x) + boxHalf.y * std::abs(axis.y) + boxHalf.z * std::abs(axis.z);
 
-			return !(triMin > boxRadius || triMax < -boxRadius);
-		};
+				return !(triMin > boxRadius || triMax < -boxRadius);
+			};
 
 		// BOX主軸
 		for (const Math::Vector3& axis : boxAxes) {
@@ -400,7 +607,26 @@ namespace CollisionMath
 		return result;
 	}
 
-	// rayDirは正規化済みである前提。Möller-Trumboreアルゴリズムによる
+	// Capsule vs 三角形1枚。線分と三角形はどちらも凸形状なので、
+	// 「線分上の点から三角形への最近接点」→「その点から線分への最近接点」
+	// を数回往復させる(交互射影法)だけで真の最近接点対に収束する。
+	// 収束後はSphereVsTriangleにそのまま委譲すればよい
+	// (収束済みの点を中心とする半径radiusの球、として扱えるため)。
+	inline OverlapResult CapsuleVsTriangle(
+		const Capsule& capsule, const Math::Vector3& v0, const Math::Vector3& v1, const Math::Vector3& v2)
+	{
+		Math::Vector3 pointOnSegment = (capsule.start + capsule.end) * 0.5f;
+
+		constexpr int kIterations = 4; // 凸形状同士の交互射影は数回で十分収束する
+		for (int i = 0; i < kIterations; ++i) {
+			const Math::Vector3 pointOnTriangle = ClosestPointOnTriangle(pointOnSegment, v0, v1, v2);
+			pointOnSegment = ClosestPointOnSegment(pointOnTriangle, capsule.start, capsule.end);
+		}
+
+		return SphereVsTriangle(pointOnSegment, capsule.radius, v0, v1, v2);
+	}
+
+
 	// レイ vs 三角形1枚の判定(DirectX::TriangleTests::Intersects相当)。
 	// ※両面にヒットする(裏面からでも貫通しない)。片面カリングが
 	//   必要な用途(視界を遮る壁など、裏側からは素通りしてほしい場合)は
@@ -530,7 +756,44 @@ namespace CollisionMath
 		return result;
 	}
 
-	// OBB vs OBB。両方が回転しているため、13軸SAT(AABBVsTriangleの応用)では
+	// Capsule vs OBB。BOXのローカル空間(回転を打ち消した空間)へ線分の
+	// 両端だけ持ち込み、「線分上の点をBOXの範囲にクランプ→そのクランプ
+	// 結果に最も近い線分上の点」を数回往復させて最近接点対に近似収束させる
+	// (CapsuleVsTriangleと同じ交互射影の考え方。BOXは各軸へのクランプが
+	// そのまま最近接点になる凸形状なので、三角形の場合よりむしろ単純)。
+	// 収束後はSphereVsAABBに委譲し、結果をワールド空間へ戻す。
+	inline OverlapResult CapsuleVsOBB(const Capsule& capsule, const OrientedBox& box)
+	{
+		Math::Quaternion invRot;
+		box.orientation.Conjugate(invRot);
+
+		const Math::Vector3 localStart = Math::Vector3::Transform(capsule.start - box.center, invRot);
+		const Math::Vector3 localEnd = Math::Vector3::Transform(capsule.end - box.center, invRot);
+
+		Math::Vector3 pointOnSegment = (localStart + localEnd) * 0.5f;
+
+		constexpr int kIterations = 4;
+		for (int i = 0; i < kIterations; ++i) {
+			const Math::Vector3 pointOnBox = Math::Vector3(
+				std::clamp(pointOnSegment.x, -box.halfExtents.x, box.halfExtents.x),
+				std::clamp(pointOnSegment.y, -box.halfExtents.y, box.halfExtents.y),
+				std::clamp(pointOnSegment.z, -box.halfExtents.z, box.halfExtents.z));
+
+			pointOnSegment = ClosestPointOnSegment(pointOnBox, localStart, localEnd);
+		}
+
+		const OverlapResult local = SphereVsAABB(pointOnSegment, capsule.radius, Math::Vector3::Zero, box.halfExtents);
+		if (!local.hit) return local;
+
+		OverlapResult result;
+		result.hit = true;
+		result.hitNormal = Math::Vector3::Transform(local.hitNormal, box.orientation);
+		result.overlapDistance = local.overlapDistance;
+		result.hitPos = Math::Vector3::Transform(local.hitPos, box.orientation) + box.center;
+		return result;
+	}
+
+
 	// 済まず、両BOXの主軸(3+3)と、それぞれの主軸同士の外積(9)を合わせた
 	// 15軸のSATで判定する(古典的なOBB-OBB分離軸判定)。
 	// 押し出しは「重なりが最も小さい軸」をMTV(最小移動ベクトル)として採用する。
@@ -556,35 +819,35 @@ namespace CollisionMath
 		Math::Vector3 minAxis;
 
 		auto testAxis = [&](Math::Vector3 axis) -> bool
-		{
-			const float axisLenSq = axis.LengthSquared();
-			if (axisLenSq < 1e-10f) return true; // 縮退した軸(平行なエッジ同士)は無視
+			{
+				const float axisLenSq = axis.LengthSquared();
+				if (axisLenSq < 1e-10f) return true; // 縮退した軸(平行なエッジ同士)は無視
 
-			axis /= std::sqrt(axisLenSq);
+				axis /= std::sqrt(axisLenSq);
 
-			// aをこの軸に投影した半径
-			const float radiusA =
-				a.halfExtents.x * std::abs(axis.Dot(axesA[0])) +
-				a.halfExtents.y * std::abs(axis.Dot(axesA[1])) +
-				a.halfExtents.z * std::abs(axis.Dot(axesA[2]));
+				// aをこの軸に投影した半径
+				const float radiusA =
+					a.halfExtents.x * std::abs(axis.Dot(axesA[0])) +
+					a.halfExtents.y * std::abs(axis.Dot(axesA[1])) +
+					a.halfExtents.z * std::abs(axis.Dot(axesA[2]));
 
-			const float radiusB =
-				b.halfExtents.x * std::abs(axis.Dot(axesB[0])) +
-				b.halfExtents.y * std::abs(axis.Dot(axesB[1])) +
-				b.halfExtents.z * std::abs(axis.Dot(axesB[2]));
+				const float radiusB =
+					b.halfExtents.x * std::abs(axis.Dot(axesB[0])) +
+					b.halfExtents.y * std::abs(axis.Dot(axesB[1])) +
+					b.halfExtents.z * std::abs(axis.Dot(axesB[2]));
 
-			const float dist = std::abs(centerDiff.Dot(axis));
-			const float overlap = (radiusA + radiusB) - dist;
+				const float dist = std::abs(centerDiff.Dot(axis));
+				const float overlap = (radiusA + radiusB) - dist;
 
-			if (overlap <= 0.0f) return false; // この軸で分離できている = 交差していない
+				if (overlap <= 0.0f) return false; // この軸で分離できている = 交差していない
 
-			if (overlap < minOverlap) {
-				minOverlap = overlap;
-				// 押し出す向きは「aをbから遠ざける」向きに揃える
-				minAxis = (centerDiff.Dot(axis) >= 0.0f) ? -axis : axis;
-			}
-			return true;
-		};
+				if (overlap < minOverlap) {
+					minOverlap = overlap;
+					// 押し出す向きは「aをbから遠ざける」向きに揃える
+					minAxis = (centerDiff.Dot(axis) >= 0.0f) ? -axis : axis;
+				}
+				return true;
+			};
 
 		for (const Math::Vector3& axis : axesA) { if (!testAxis(axis)) return result; }
 		for (const Math::Vector3& axis : axesB) { if (!testAxis(axis)) return result; }

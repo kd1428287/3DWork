@@ -20,5 +20,5 @@ public:
 
 	GameObject* CreatePlayer(ObjectManager& objectManager);
 	GameObject* CreateSocket(ObjectManager& objectManager, std::string objectID ,Handle<SkeletonComponent>& handle);
-	GameObject* CreateWeapon(ObjectManager& objectManager, Handle<TransformComponent>& handle);
+	GameObject* CreateWeapon(ObjectManager& objectManager, GameObject* player, Handle<TransformComponent>& handle);
 };

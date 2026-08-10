@@ -18,7 +18,7 @@ class SkeletonComponent : public ComponentBase {
 public:
 	explicit SkeletonComponent(GameObject* owner) : ComponentBase(owner) {}
 
-	void SetModelData(std::string_view fileName) { m_modelWork.SetModelData(fileName); }
+	void SetModelData(std::string_view fileName) { m_modelWork.SetModelData(KdAssets::Instance().m_modeldatas.GetData(fileName)); }
 	void SetModelData(const std::shared_ptr<KdModelData>& data) { m_modelWork.SetModelData(data); }
 
 	void Start() override {
@@ -65,7 +65,7 @@ public:
 	uint32_t GetBoneVersion() const { return m_boneVersion; }
 
 	KdModelWork& WorkModel() { return m_modelWork; }
-	const KdModelWork& WorkModel() const { return m_modelWork; }
+	const KdModelWork& GetModel() const { return m_modelWork; }
 
 private:
 	KdModelWork m_modelWork;
