@@ -39,7 +39,8 @@ public:
 	// すぐ止まる(重く粘性が高い)感触になる。
 	// continuousVelocity_(重力等)には適用されない。
 	explicit VelocityComponent(GameObject* owner, float dampingPerSecond = 0.05f)
-		: ComponentBase(owner), dampingPerSecond_(dampingPerSecond) {}
+		: ComponentBase(owner), dampingPerSecond_(dampingPerSecond) {
+	}
 
 	void Start() override {
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
@@ -53,14 +54,32 @@ public:
 	void Update(float deltaTime) override {
 		if (transform_ == nullptr) return;
 
+		// フレームの一瞬の停滞(ロード、GC、デバッガのブレークポイント等)で
+		// deltaTimeが異常に大きくなることがある。離散判定(今フレームの
+		// 位置しか見ない)である以上、1フレームの移動量が大きすぎると
+		// 地形の厚みを飛び越えてすり抜ける(トンネリング)ことがあるため、
+		// ここで上限をかけて安全側に倒す。根本的なCCD(連続衝突判定)の
+		// 代わりにはならないが、「たまに地面をすり抜ける」の主要因の
+		// 一つである異常なdeltaTimeスパイクは吸収できる。
+		const float clampedDeltaTime = std::min(deltaTime, kMaxDeltaTime);
+
+		// continuousVelocity_(重力等)に上限をかける。着地判定が何らかの
+		// 理由で一瞬途切れる等して長時間自由落下が続くと、この速度が
+		// 際限なく育ち、ノックバックの初速と合算された瞬間に地形の厚みを
+		// 超える移動量になりうる。終端速度として妥当な範囲に抑えておく。
+		if (continuousVelocity_.LengthSquared() > kMaxSpeed * kMaxSpeed) {
+			continuousVelocity_.Normalize();
+			continuousVelocity_ *= kMaxSpeed;
+		}
+
 		const Math::Vector3 totalVelocity = impulseVelocity_ + continuousVelocity_;
 		if (totalVelocity.LengthSquared() > kStopThresholdSq) {
-			transform_->Translate(totalVelocity * deltaTime);
+			transform_->Translate(totalVelocity * clampedDeltaTime);
 		}
 
 		// 摩擦減衰。impulseVelocity_にだけ適用する
 		// (continuousVelocity_は重力のように減衰させたくない力のため対象外)。
-		const float decay = std::pow(dampingPerSecond_, deltaTime);
+		const float decay = std::pow(dampingPerSecond_, clampedDeltaTime);
 		impulseVelocity_ *= decay;
 
 		// 十分小さくなったら0に切り詰め、以降の無駄な計算とIsMoving()の
@@ -127,6 +146,15 @@ public:
 
 private:
 	static constexpr float kStopThresholdSq = 0.0001f;
+
+	// フレームの一瞬の停滞によるdeltaTimeスパイクを吸収する上限(秒)。
+	// 30fps相当(約33ms)を下限の目安にしている。これより長いdeltaTimeが
+	// 来ても、物理的な移動量としては上限で頭打ちにする。
+	static constexpr float kMaxDeltaTime = 1.0f / 30.0f;
+
+	// continuousVelocity_(重力等)の終端速度。トンネリング対策として
+	// 「際限なく速度が育つ状況」自体を防ぐための上限。
+	static constexpr float kMaxSpeed = 25.0f;
 
 	TransformComponent* transform_ = nullptr;
 	Math::Vector3 impulseVelocity_ = Math::Vector3::Zero;

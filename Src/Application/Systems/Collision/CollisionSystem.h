@@ -417,6 +417,11 @@ private:
 	//     真の同時解決(全接触を連立して解く)はしていないため、
 	//     多接触時に軽い震え(ジッター)が出る可能性がある。
 	//   - 回転・トルクへの応答はない(並進移動のみ)。
+	//   - 両方が非静的な場合(キャラクター同士など)は、押し出し方向を
+	//     水平面に投影してから使う。最近接点ベースの法線が斜め上/真上を
+	//     向くケース(相手の頭寄りに近づいた場合など)で、押し合いが
+	//     「よじ登り」に見えてしまうのを防ぐため。地形(isStatic=true)
+	//     との押し合いはこれまで通り3D方向のまま。
 	static void ResolvePushBack(
 		ColliderComponent* a, const CollisionShapeEntry& shapeA,
 		ColliderComponent* b, const CollisionShapeEntry& shapeB,
@@ -426,16 +431,46 @@ private:
 		if (shapeA.isStatic && shapeB.isStatic) return; // 両方静的なら押し返しようがない
 
 		// overlap.hitNormalは「aをbから押し出す向き」
+		Math::Vector3 pushNormal = overlap.hitNormal;
+
+		// 両方が非静的(=地形ではない、キャラクター同士のような動く物体
+		// 同士)の場合に限り、法線を水平面に投影してから押し合う。
+		// SphereVsCapsule/CapsuleVsCapsule等の最近接点ベースの法線は、
+		// 相手の頭寄りの部分に近づいただけで斜め上〜真上向きの法線を
+		// 返すことがあり、これをそのまま押し出しに使うと「横に押し合う」
+		// はずが「相手によじ登る」ように見えてしまう(プレイヤーが敵に
+		// 乗りかかる、等)。地形(isStatic=true)との押し合いは、
+		// 「地面に立つ」動作そのものが垂直方向の押し出しを必要とするため、
+		// ここでは対象外にする(3D方向のまま)。
+		if (!shapeA.isStatic && !shapeB.isStatic) {
+			pushNormal.y = 0.0f;
+			const float horizontalLenSq = pushNormal.LengthSquared();
+
+			if (horizontalLenSq < 1e-6f) {
+				// 水平成分がほぼゼロ(ちょうど真上/真下から重なった特殊ケース)。
+				// 押し出す向きが定まらないため、この場合だけは押し返しを
+				// 諦める(無理に横へ押すと不自然なテレポートになるため)。
+				return;
+			}
+
+			pushNormal /= std::sqrt(horizontalLenSq);
+
+			// 注意: overlap.overlapDistanceは元の3D法線方向で測った深さで
+			// あり、水平方向に投影した後の正確な押し出し量とは厳密には
+			// 一致しない(近似)。過不足があっても次フレームの再検出で
+			// 徐々に収束するため、実用上は許容範囲としている。
+		}
+
 		if (shapeA.isStatic) {
-			b->Translate(-overlap.hitNormal * overlap.overlapDistance);
+			b->Translate(-pushNormal * overlap.overlapDistance);
 		}
 		else if (shapeB.isStatic) {
-			a->Translate(overlap.hitNormal * overlap.overlapDistance);
+			a->Translate(pushNormal * overlap.overlapDistance);
 		}
 		else {
 			const float half = overlap.overlapDistance * 0.5f;
-			a->Translate(overlap.hitNormal * half);
-			b->Translate(-overlap.hitNormal * half);
+			a->Translate(pushNormal * half);
+			b->Translate(-pushNormal * half);
 		}
 	}
 

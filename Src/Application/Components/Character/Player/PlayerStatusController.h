@@ -5,6 +5,9 @@
 #include "PlayerState.h"
 #include "../StateMachine/StateMachine.h"
 #include "../../Animation/ModelAnimatorComponent.h"
+#include "../../Collision/ColliderComponent.h"
+#include "../../Collision/AttackSourceComponent.h"
+#include "../../../Core/Handle.h"
 
 class PlayerStatusController : public ComponentBase
 {
@@ -106,6 +109,40 @@ public:
 	// 進行中のステップ移動があれば止める(フェーズ遷移や状態の中断時に使う)。
 	void CancelStepMove();
 
+	// --- 武器の攻撃判定 --------------------------------------------------
+	// PlayerFactory::CreatePlayer側で、生成した武器のColliderComponent/
+	// AttackSourceComponentをここに登録してもらう想定
+	// (武器はソケット経由でアタッチされる別GameObjectのため、Handle経由の
+	//  弱参照で保持する。武器が破棄された場合はResolve()がnullptrを返す)。
+	void SetWeapon(Handle<ColliderComponent> weaponCollider, Handle<AttackSourceComponent> weaponAttackSource) {
+		weaponCollider_ = weaponCollider;
+		weaponAttackSource_ = weaponAttackSource;
+	}
+
+	// StateAttack::Updateから、AttackActiveフェーズの開始/終了に合わせて
+	// 呼ばれる。攻撃判定(HitBox形状)のenabled切り替えと、多段ヒット防止用の
+	// 記録(AttackSourceComponent::alreadyHit)のクリアをここに集約する。
+	//
+	// 常時enabled=trueのままだと、HurtBoxと重なり続けている間
+	// CollisionEnterEventが繰り返し発火し、そのたびにノックバックが
+	// 積み増される不具合があった(詳細は経緯コメント不要、実際に発生した
+	// 不具合)。攻撃が実際に発生している一瞬だけ判定させることで解決する。
+	void SetWeaponHitBoxEnabled(bool enabled) {
+		if (ColliderComponent* collider = weaponCollider_.Resolve()) {
+			collider->SetShapeEnabled("HitBox", enabled);
+		}
+
+		if (enabled) {
+			// 新しい攻撃の開始として、前回までのヒット記録をクリアする。
+			// (無効化する側=Recovery移行時にクリアしないのは、Recovery中に
+			//  誰かがalreadyHitを覗きに来る可能性を考慮し、次の攻撃が
+			//  始まる直前まで記録を残しておくため)
+			if (AttackSourceComponent* source = weaponAttackSource_.Resolve()) {
+				source->alreadyHit.clear();
+			}
+		}
+	}
+
 	// --- ライフサイクル --------------------------------------------------
 	void Update(float deltaTime) override
 	{
@@ -145,6 +182,11 @@ private:
 	PlayerInputComponent* inputComponent_ = nullptr;
 	MovementComponent* movementComponent_ = nullptr;
 	ModelAnimatorComponent* modelAnimatorComponent_ = nullptr;
+
+	// 武器(別GameObject、ソケット経由でアタッチ)への弱参照。
+	// SetWeapon()経由でPlayerFactory側からセットされる想定。
+	Handle<ColliderComponent> weaponCollider_;
+	Handle<AttackSourceComponent> weaponAttackSource_;
 
 	// --- 移動データ ---
 	MovementState movementState_ = MovementState::Stand;

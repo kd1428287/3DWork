@@ -13,7 +13,7 @@ class EnemyStatusController;
 // ============================================================
 class IEnemyState : public IState<EnemyStatusController> {};
 
-// HurtBoxがHitBoxを受けた際に、攻撃側(AttackHitBoxComponent)から
+// HurtBoxがHitBoxを受けた際に、攻撃側(AttackSourceComponent)から
 // StateKnockbackへ渡すパラメータ一式。
 //
 // 実際の吹っ飛び移動自体はVelocityComponent::AddImpulse()に委譲する

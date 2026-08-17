@@ -2,17 +2,20 @@
 #include "../ComponentBase.h"
 
 // ============================================================
-// AttackHitBoxComponent
+// AttackSourceComponent
 //
-// HitBox(ColliderShape側でlayer=HitBox, isTrigger=trueにした形状)を
-// 持つGameObjectにアタッチしておく、攻撃1回分のパラメータ置き場。
+// HitBox(ColliderShape側でcategoryMask=HitBox, isTrigger=trueにした
+// 形状)を持つGameObjectにアタッチしておく、攻撃1回分のパラメータ置き場。
 // CollisionSystemが発行するCollisionEnterEventには「誰が当たったか」
 // (GameObject*)しか載っていないため、被弾側(EnemyStatusController等)は
-// e.otherObject->GetComponent<AttackHitBoxComponent>()で攻撃データを
+// e.otherObject->GetComponent<AttackSourceComponent>()で攻撃データを
 // 引き当てる想定。
 //
 // 武器やスキルごとに値を変えたい場合は、GameObject生成時にこの
 // コンポーネントの値を書き換えるか、派生クラスを作って上書きする。
+//
+// HitBoxのenabled切り替え(攻撃発生フレームだけ判定させる)と組み合わせて
+// 使う想定。PlayerStatusController::SetWeaponHitBoxEnabled()参照。
 // ============================================================
 class AttackSourceComponent : public ComponentBase {
 public:

@@ -2,6 +2,7 @@
 #include <cstdio>
 
 #include "../Collision/ColliderComponent.h"
+#include "../Collision/CharacterCollisionDefaults.h"
 #include "../Transform/TransformComponent.h"
 #include "../../Core/GameObject.h"
 #include "../../Core/SceneContext.h"
@@ -114,8 +115,10 @@ public:
 	// --- パラメータ ------------------------------------------------
 
 	// TransformComponentの位置(通常はキャラの中心と想定)から、
-	// どれだけ下に足裏があるか。
-	float footOffset = 0.9f;
+	// どれだけ下に足裏があるか。既定値はCharacterCollisionDefaults::
+	// kFootOffsetを参照する(Bodyコライダーの下端の高さと必ず一致させる
+	// 必要があるため。詳細はCharacterCollisionDefaults.h参照)。
+	float footOffset = CharacterCollisionDefaults::kFootOffset;
 
 	// 足裏からどれだけ下まで地面を探すか。
 	// 0に近すぎると段差や坂でわずかに浮いた瞬間に非接地判定されてしまい、

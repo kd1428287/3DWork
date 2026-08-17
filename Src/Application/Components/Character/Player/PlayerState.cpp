@@ -23,17 +23,19 @@ void StateAttack::Update(PlayerStatusController* controller, float deltaTime) {
 	elapsed_ += deltaTime;
 	const auto& data = controller->GetCurrentAttackData();
 
-	KdDebugGUI::Instance().AddLog("Attack"); 
+	KdDebugGUI::Instance().AddLog("Attack");
 
 	if (phase_ == CombatState::AttackWindup && elapsed_ >= data.windupDuration) {
 		phase_ = CombatState::AttackActive;
 		elapsed_ = 0.0f;
 		controller->CancelStepMove();
+		controller->SetWeaponHitBoxEnabled(true); // 攻撃判定が実際に発生する一瞬だけ有効化
 		KdDebugGUI::Instance().AddLog("\nAttackActive");
 	}
 	else if (phase_ == CombatState::AttackActive && elapsed_ >= data.activeDuration) {
 		phase_ = CombatState::AttackRecovery;
 		elapsed_ = 0.0f;
+		controller->SetWeaponHitBoxEnabled(false); // 判定の発生窓を閉じる
 		KdDebugGUI::Instance().AddLog("\nAttackRecovery");
 	}
 	else if (phase_ == CombatState::AttackRecovery && elapsed_ >= data.recoveryDuration) {
@@ -47,6 +49,13 @@ void StateAttack::Exit(PlayerStatusController* controller) {
 	// 遷移では回収できないタイミングでもステップ移動が残らないよう、
 	// Exitで必ず後始末する(Evadeと同じ考え方)。
 	controller->CancelStepMove();
+
+	// AttackActive中に割り込まれた場合、HitBoxが有効なまま次のStateへ
+	// 遷移してしまうと、以後の状態(Stagger中など)でも攻撃判定が
+	// 生き続けてしまう。通常のUpdate側の遷移(Active→Recovery)で
+	// 既に無効化済みのケースがほとんどだが、その経路を通らない
+	// 中断にも安全に対応できるよう、Exitで無条件に無効化しておく。
+	controller->SetWeaponHitBoxEnabled(false);
 }
 
 bool StateAttack::CanStartEvade(const PlayerStatusController* controller) const {

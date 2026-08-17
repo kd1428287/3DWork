@@ -7,6 +7,7 @@
 #include "../../Components/Movement/MovementComponent.h"
 #include "../../Components/Movement/FacingDirectionComponent.h"
 #include "../../Components/Collision/ColliderComponent.h"
+#include "../../Components/Collision/CharacterCollisionDefaults.h"
 #include "../../Components/Collision/GravityComponent.h"
 #include "../../Components/Animation/SkeletonComponent.h"
 #include "../../Components/Render/ModelRenderComponent.h"
@@ -51,16 +52,18 @@ GameObject* EnemyFactory::BuildEnemy(ObjectManager& objectManager, const EnemyDe
 	// 「攻撃判定は少し大きいが体は細い」といった調整を独立にできるように
 	// するため。isTrigger=false(デフォルト)なので押し返しが有効になる。
 	//
-	// 下端をGroundSensorComponentのデフォルトfootOffset(0.9f)と
-	// 一致させている点が重要。footOffsetは「Transform原点から足裏までの
-	// 距離」を表すため、Bodyの下端がここまで届いていないと、Bodyが地面に
-	// 乗って静止した高さと、GroundSensorComponentが接地レイを飛ばす基準
-	//高さがズレる。ズレると接地レイの発射点が地面の内部/下から始まる形に
-	// なり、「発射点がAABB内部から始まるケースは非対応」
-	// (GroundSensorComponent.h参照)という制約によって永遠に接地を
-	// 検出できず、重力が際限なく積み上がって最終的に地面を貫通する
-	// (実際に発生していた不具合の根本原因)。
-	constexpr float kFootOffset = 0.9f; // GroundSensorComponent::footOffsetの既定値と合わせること
+	// 下端をGroundSensorComponentのfootOffsetと一致させている点が重要。
+	// footOffsetは「Transform原点から足裏までの距離」を表すため、Bodyの
+	// 下端がここまで届いていないと、Bodyが地面に乗って静止した高さと、
+	// GroundSensorComponentが接地レイを飛ばす基準高さがズレる。ズレると
+	// 接地レイの発射点が地面の内部/下から始まる形になり、「発射点がAABB
+	// 内部から始まるケースは非対応」(GroundSensorComponent.h参照)という
+	// 制約によって永遠に接地を検出できず、重力が際限なく積み上がって
+	// 最終的に地面を貫通する(実際に発生していた不具合の根本原因)。
+	// 生の数値ではなくCharacterCollisionDefaults::kFootOffsetを直接参照
+	// することで、GroundSensorComponent側のデフォルト値とここが将来
+	// 食い違わないようにしている(詳細はCharacterCollisionDefaults.h参照)。
+	using CharacterCollisionDefaults::kFootOffset;
 	collider->AddCapsule("Body", def.bodyRadius,
 		Math::Vector3(0.0f, -kFootOffset + def.bodyRadius, 0.0f),
 		Math::Vector3(0.0f, kFootOffset - def.bodyRadius, 0.0f),

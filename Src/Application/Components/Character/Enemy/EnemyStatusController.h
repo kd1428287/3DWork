@@ -145,6 +145,14 @@ private:
 		AttackSourceComponent* attack = e.otherObject->GetComponent<AttackSourceComponent>();
 		if (attack == nullptr) return;
 
+		// 多段ヒット防止。同じ攻撃(=HitBoxがenabled=trueになっている間)で
+		// 既にこの相手(自分)へヒット済みなら無視する。HitBoxが再度
+		// enabled=trueになる(=次の攻撃が始まる)たびにPlayerStatusController::
+		// SetWeaponHitBoxEnabled()側でクリアされる想定(alreadyHitの
+		// クリアタイミングは攻撃側が管理する。詳細はAttackSourceComponent.h参照)。
+		if (attack->alreadyHit.count(GetOwner()) > 0) return;
+		attack->alreadyHit.insert(GetOwner());
+
 		// e.hitResult.hitNormalは既に「self(=このHurtBox)を押し出す方向」に
 		// 正規化済み(CollisionSystem::MakeEnterEventのflipNormal参照)なので、
 		// そのままノックバック方向として使える。
