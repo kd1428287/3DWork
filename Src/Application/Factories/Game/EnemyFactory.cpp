@@ -9,6 +9,7 @@
 #include "../../Components/Collision/ColliderComponent.h"
 #include "../../Components/Collision/CharacterCollisionDefaults.h"
 #include "../../Components/Collision/GravityComponent.h"
+#include "../../Components/Collision/WireFrameComponent.h"
 #include "../../Components/Animation/SkeletonComponent.h"
 #include "../../Components/Render/ModelRenderComponent.h"
 #include "../../Components/Sensors/GroundSensorComponent.h"
@@ -31,7 +32,7 @@ GameObject* EnemyFactory::BuildEnemy(ObjectManager& objectManager, const EnemyDe
 	transform->SetPosition(position);
 
 	enemy->AddComponent<MovementComponent>(def.moveSpeed);
-	enemy->AddComponent<SkeletonComponent>()->SetModelData("Asset/Models/Character/Player/box.gltf");
+	enemy->AddComponent<SkeletonComponent>()->SetModelData("Asset/Models/Character/Enemy/box.gltf");
 
 	// EnemyStatusController::Start()内でMovementComponentへ
 	// SetMovementSource(this)する。GetComponent<T>()はマップ参照なので、
@@ -43,7 +44,10 @@ GameObject* EnemyFactory::BuildEnemy(ObjectManager& objectManager, const EnemyDe
 	// 物理的に判定しない(お互いのcollideMask/categoryMaskが噛み合う
 	// 必要があるため。ColliderComponent::CanCollideWith参照)。
 	ColliderComponent* collider = enemy->AddComponent<ColliderComponent>();
-	collider->AddSphere("HurtBox", def.bodyRadius, {}, ColliderCategory::HurtBox, ColliderCategory::HitBox);
+	CollisionShapeEntry& hurtBox = collider->AddSphere(
+		"HurtBox", def.bodyRadius, Math::Vector3{ 0.f, def.bodyRadius, 0.f },
+		ColliderCategory::HurtBox, ColliderCategory::HitBox);
+	hurtBox.isTrigger = true;
 
 	// 物理的な「胴体」形状。地形・壁など(Bump/Ground)と実際に押し合い、
 	// GravityComponentによる落下を地面で受け止めるのはこちらの役目。
@@ -65,8 +69,8 @@ GameObject* EnemyFactory::BuildEnemy(ObjectManager& objectManager, const EnemyDe
 	// 食い違わないようにしている(詳細はCharacterCollisionDefaults.h参照)。
 	using CharacterCollisionDefaults::kFootOffset;
 	collider->AddCapsule("Body", def.bodyRadius,
-		Math::Vector3(0.0f, -kFootOffset + def.bodyRadius, 0.0f),
 		Math::Vector3(0.0f, kFootOffset - def.bodyRadius, 0.0f),
+		Math::Vector3(0.0f, kFootOffset + def.bodyRadius, 0.0f),
 		ColliderCategory::Bump);
 
 	// GravityComponentをVelocityComponentより先にAddComponentしている。
@@ -86,6 +90,7 @@ GameObject* EnemyFactory::BuildEnemy(ObjectManager& objectManager, const EnemyDe
 
 	enemy->AddComponent<ModelRenderComponent>();
 	enemy->AddComponent<FacingDirectionComponent>();
+	enemy->AddComponent<WireFrameComponent>();
 
 	return enemy;
 }

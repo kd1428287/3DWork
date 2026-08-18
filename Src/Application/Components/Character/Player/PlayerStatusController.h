@@ -1,4 +1,7 @@
-﻿#pragma once
+﻿// PlayerStatusController.h
+#pragma once
+#include <array>
+#include <string>
 #include "PlayerCombatTypes.h"
 #include "PlayerInputComponent.h"
 #include "../../Movement/MovementComponent.h" // 既存の依存として
@@ -20,8 +23,15 @@ public:
 		movementComponent_ = GetOwner()->GetComponent<MovementComponent>();
 		modelAnimatorComponent_ = GetOwner()->GetComponent<ModelAnimatorComponent>();
 
+		// コンボ各段のアニメーション名を仮で割り当てる
+		// (本番の技データテーブルが用意できたらここは不要になる)。
+		for (int i = 0; i < kMaxComboHits; ++i) {
+			comboAttacks_[i].animationName = "Attack" + std::to_string(i + 1);
+		}
+
 		// 初期状態のセット。TransitionTo経由なのでEnterも呼ばれるが、
-		// StateNone::Enterは何もしないため実質は代入と同じ。
+		// StateNone::Enter()がRefreshMovementAnimation()を呼ぶため、
+		// ここで最初のIdleアニメーションも合わせて再生される。
 		TransitionTo(&stateNone_);
 	}
 
@@ -65,12 +75,20 @@ public:
 	const EvadeMoveData& GetCurrentEvadeData() const { return currentEvade_; }
 	const GuardMoveData& GetCurrentGuardData() const { return currentGuard_; }
 
+	// 現在のコンボ段数(0始まり、0=1段目)。演出・SE分岐等で参照したい場合用。
+	int GetComboIndex() const { return comboIndex_; }
+
 	// --- 状態遷移 (State内部から、あるいはControllerから呼ばれる) -------
 	void ChangeStateToNone() { TransitionTo(&stateNone_); }
 
-	bool TryStartAttack(const AttackMoveData& move) {
+	// コンボ何段目を出すかは内部のcomboIndex_で判断するため、
+	// 呼び出し側は技データを組み立てず、ただ「攻撃したい」とだけ伝える。
+	bool TryStartAttack() {
 		if (!CanStartAttack()) return false;
-		currentAttack_ = move;
+
+		currentAttack_ = comboAttacks_[comboIndex_];
+		comboIndex_ = (comboIndex_ + 1) % kMaxComboHits; // 5段目の次は1段目へ折り返す
+
 		TransitionTo(&stateAttack_);
 		return true;
 	}
@@ -143,6 +161,29 @@ public:
 		}
 	}
 
+	// --- アニメーション再生 -----------------------------------------------
+	// State側が具体的なModelAnimatorComponentを直接知らずに再生できるようにする
+	// 薄いラッパー(RequestStepMoveと同じ考え方)。
+	void PlayAnimation(const std::string& name, bool loop = false) {
+		if (modelAnimatorComponent_ != nullptr) {
+			modelAnimatorComponent_->Play(name, loop);
+		}
+	}
+
+	// 現在のMovementStateに応じたアニメーションを再生し直す。
+	// StateNone::Enter()(=攻撃/回避/ガード/怯みが終わった直後)から呼ばれ、
+	// 「行動中に入力状態が変わっていても、Noneに戻った瞬間に必ず現在の
+	// 入力を反映したアニメーションに同期させる」ために使う
+	// (HandleMovementInputの「変化があった時だけPlay」する仕組みだけでは、
+	//  行動中ずっと同じ入力のままだった場合にPlay()が呼ばれず、
+	//  行動アニメーションの最終ポーズで固まったままになってしまうため)。
+	void RefreshMovementAnimation() {
+		if (inputComponent_ == nullptr) return;
+		movementState_ = inputComponent_->GetDesiredMovementState();
+		ApplyMovementState(movementState_);
+		PlayMovementAnimation(movementState_);
+	}
+
 	// --- ライフサイクル --------------------------------------------------
 	void Update(float deltaTime) override
 	{
@@ -167,9 +208,16 @@ private:
 	// 移動の許可/禁止はここに集約する。None以外(攻撃/回避/ガード/怯み)の
 	// 間はMovementComponentごと無効化し、各Stateが個別に
 	// enable/disableを気にしなくて済むようにする。
+	//
+	// あわせて、コンボの連鎖もここで判定する。Attack以外へ遷移した場合
+	// (Recovery中のコンボキャンセルでstateAttack_へ再突入するケースを
+	//  除く)はコンボが途切れたとみなし、comboIndex_を1段目へ戻す。
 	void OnStateChanged(IPlayerState* nextState) {
 		if (movementComponent_) {
 			movementComponent_->SetEnabled(nextState == &stateNone_);
+		}
+		if (nextState != &stateAttack_) {
+			comboIndex_ = 0;
 		}
 	}
 
@@ -177,6 +225,16 @@ private:
 	void HandleActionInput(PlayerInputComponent& input);
 	void ApplyMovementState(MovementState state);
 	void UpdateMovementState(float deltaTime);
+
+	// Stand/Walk/Runそれぞれのアニメーションをループ再生する。
+	// アイドルを基本状態として扱うため、Standでは明示的にkIdleAnimationを再生する。
+	void PlayMovementAnimation(MovementState state) {
+		switch (state) {
+		case MovementState::Stand: PlayAnimation(kIdleAnimation, true); break;
+		case MovementState::Walk:  PlayAnimation(kWalkAnimation, true); break;
+		case MovementState::Run:   PlayAnimation(kRunAnimation, true); break;
+		}
+	}
 
 	// 兄弟コンポーネント
 	PlayerInputComponent* inputComponent_ = nullptr;
@@ -193,10 +251,21 @@ private:
 	float walkSpeed_ = 2.0f;
 	float runSpeed_ = 5.0f;
 
+	// Stand/Walk/Runのアニメーション名(仮)。
+	static constexpr const char* kIdleAnimation = "Idle";
+	static constexpr const char* kWalkAnimation = "Walk";
+	static constexpr const char* kRunAnimation = "Run";
+
 	// --- 戦闘データ ---
 	AttackMoveData currentAttack_;
 	EvadeMoveData currentEvade_;
 	GuardMoveData currentGuard_;
+
+	// コンボ攻撃: 何段目か(0始まり)と、各段の技データテーブル。
+	// 各要素の具体的な数値(モーション時間・踏み込み距離等)は別途詰める
+	// (現状は全段ともAttackMoveDataのデフォルト値+仮のanimationNameのまま)。
+	int comboIndex_ = 0;
+	std::array<AttackMoveData, kMaxComboHits> comboAttacks_;
 
 	// --- Stateインスタンス (メモリ断片化を防ぐため実体をメンバで持つ) ---
 	StateNone    stateNone_;

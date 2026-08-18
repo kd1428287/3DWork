@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿// PlayerState.h
+#pragma once
 #include "PlayerCombatTypes.h"
 #include "../StateMachine/StateMachine.h"
 
@@ -33,6 +34,11 @@ public:
 
 class StateNone : public IPlayerState {
 public:
+	// Noneに戻った瞬間、現在の入力状態に合わせてIdle/Walk/Runへ
+	// アニメーションを同期し直す(行動中ずっと同じ入力のままだった場合の
+	// 固まり対策。詳細はPlayerStatusController::RefreshMovementAnimation参照)。
+	void Enter(PlayerStatusController* controller) override;
+
 	CombatState GetDetailedState() const override { return CombatState::None; }
 	float GetElapsed() const override { return 0.0f; }
 

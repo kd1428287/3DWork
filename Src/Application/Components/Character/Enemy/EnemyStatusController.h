@@ -137,34 +137,25 @@ private:
 	// --- 当たり判定連携 ------------------------------------------------
 
 	void OnCollisionEnter(const CollisionSystem::CollisionEnterEvent& e) {
-		// このコントローラが反応すべきは自分側がHurtBoxとして受けた通知だけ。
-		// (同じGameObjectが足元の接地レイ用コライダー等、他の形状を
-		//  持っている場合に、それらのEnterと混ざらないようにするため)
 		if (e.selfShapeName != "HurtBox") return;
 
 		AttackSourceComponent* attack = e.otherObject->GetComponent<AttackSourceComponent>();
 		if (attack == nullptr) return;
-
-		// 多段ヒット防止。同じ攻撃(=HitBoxがenabled=trueになっている間)で
-		// 既にこの相手(自分)へヒット済みなら無視する。HitBoxが再度
-		// enabled=trueになる(=次の攻撃が始まる)たびにPlayerStatusController::
-		// SetWeaponHitBoxEnabled()側でクリアされる想定(alreadyHitの
-		// クリアタイミングは攻撃側が管理する。詳細はAttackSourceComponent.h参照)。
 		if (attack->alreadyHit.count(GetOwner()) > 0) return;
 		attack->alreadyHit.insert(GetOwner());
 
-		// e.hitResult.hitNormalは既に「self(=このHurtBox)を押し出す方向」に
-		// 正規化済み(CollisionSystem::MakeEnterEventのflipNormal参照)なので、
-		// そのままノックバック方向として使える。
-		// ※現状のパトロールAI(StateWalkRight/Left)はX軸移動のみのテスト用
-		//   簡易実装だが、これは移動システム側が最終的に3D対応する前提の
-		//   暫定であり、当たり判定・ノックバック側をX軸限定に合わせて
-		//   歪める必要は無い。hitNormalの向きをそのまま使うのが正しい。
+		// 接触法線(hitNormal)ではなく、攻撃者→自分への水平方向を使う。
+		// 理由: hitNormalは深い重なりで幾何学的に不安定になりうる
+		// (CollisionMath::SphereVsAABBの深貫通フォールバック参照)。
+		Math::Vector3 dir = transform_->GetPosition() - e.otherObject->GetComponent<TransformComponent>()->GetPosition();
+		dir.y = 0.0f;
+		if (dir.LengthSquared() < 1e-6f) dir = Math::Vector3::Forward; // 真上/真下から等、水平差が無い場合のフォールバック
+		dir.Normalize();
+
 		KnockbackParams params;
-		params.direction = e.hitResult.hitNormal;
+		params.direction = dir;
 		params.power = attack->knockbackPower;
 		params.minStunDuration = attack->hitStunSeconds;
-
 		ChangeStateToKnockback(params);
 	}
 

@@ -1,19 +1,25 @@
-﻿#include "PlayerStatusController.h"
-#include "../../Movement/TweenMoveComponent.h"
+﻿// PlayerState.cpp
+#include "PlayerStatusController.h"
 
 // =================================================================
 // 各Stateの具体的なロジック実装
 // =================================================================
+
+// --- None State ---
+void StateNone::Enter(PlayerStatusController* controller) {
+	controller->RefreshMovementAnimation();
+}
 
 // --- Attack State ---
 void StateAttack::Enter(PlayerStatusController* controller) {
 	phase_ = CombatState::AttackWindup;
 	elapsed_ = 0.0f;
 
-	// 具体的なコンポーネント操作(Transform/TweenMoveComponent)は
-	// Controller側のRequestStepMoveに閉じ込め、Stateはそれを
-	// 直接知らなくてよいようにする。
+	// 具体的なコンポーネント操作(Transform/TweenMoveComponent/
+	// ModelAnimatorComponent)はController側に閉じ込め、Stateは
+	// それを直接知らなくてよいようにする。
 	const auto& data = controller->GetCurrentAttackData();
+	controller->PlayAnimation(data.animationName); // コンボ段数に応じたアニメーション
 	controller->RequestStepMove(data.stepDirection, data.stepDistance, data.windupDuration);
 
 	KdDebugGUI::Instance().AddLog("AttackWindup"); // 必要なら
@@ -84,6 +90,7 @@ void StateEvade::Enter(PlayerStatusController* controller) {
 	// MovementComponentはTransitionTo側で既に無効化されているため、
 	// 位置を書き換える権利がここで競合することはない。
 	const auto& data = controller->GetCurrentEvadeData();
+	controller->PlayAnimation(data.animationName);
 	controller->RequestStepMove(data.evadeDirection, data.evadeDistance, data.activeDuration + data.recoveryDuration);
 }
 
@@ -117,6 +124,11 @@ bool StateEvade::IsInJustEvadeWindow(const PlayerStatusController* controller) c
 void StateGuard::Enter(PlayerStatusController* controller) {
 	elapsed_ = 0.0f;
 	KdDebugGUI::Instance().AddLog("Guard");
+
+	// 「構えに入る」単発モーションを再生し、最終フレームでポーズを保持する
+	// 想定のためloop=falseにしている(ModelAnimatorComponent側が
+	// 非ループ再生の終了後に自動で最終フレーム保持する実装であることが前提)。
+	controller->PlayAnimation(controller->GetCurrentGuardData().animationName, false);
 }
 
 void StateGuard::Update(PlayerStatusController* controller, float deltaTime) {
@@ -138,6 +150,10 @@ StateGuard::GuardPhase StateGuard::GetGuardPhase(const PlayerStatusController* c
 void StateStagger::Enter(PlayerStatusController* controller) {
 	elapsed_ = 0.0f;
 	KdDebugGUI::Instance().AddLog("Stagger");
+
+	// AttackMoveData/GuardMoveDataのような専用データ構造をStaggerは
+	// 持たないため、isLarge_で仮のアニメーション名を直接出し分けている。
+	controller->PlayAnimation(isLarge_ ? "StaggerLarge" : "StaggerSmall");
 }
 
 void StateStagger::Update(PlayerStatusController* controller, float deltaTime) {
@@ -145,90 +161,4 @@ void StateStagger::Update(PlayerStatusController* controller, float deltaTime) {
 	if (elapsed_ >= duration_) {
 		controller->ChangeStateToNone();
 	}
-}
-
-// =================================================================
-// PlayerStatusController 本体の実装
-// =================================================================
-
-void PlayerStatusController::HandleMovementInput(const PlayerInputComponent& input)
-{
-	// 攻撃や回避中（None以外）は移動入力を無視する
-	if (GetCombatState() != CombatState::None) return;
-	MovementState nextState = input.GetDesiredMovementState();
-
-	if (movementState_ != nextState) {
-		movementState_ = nextState;
-		ApplyMovementState(movementState_);
-		modelAnimatorComponent_->Play("mixamo.com", true);
-	}
-}
-
-void PlayerStatusController::HandleActionInput(PlayerInputComponent& input)
-{
-	// Guardの開始可否もAttack/Evadeと同じくCanStartGuard()/TryStartGuard()
-	// (=State側のポリモーフィズム)に委ねる。CombatState::Noneのハードコード
-	// 比較はここには置かない。
-	if (input.IsGuardHeld()) {
-		TryStartGuard();
-	}
-	else if (GetCombatState() == CombatState::Guard) {
-		ChangeStateToNone(); // ガードキーを離したら即解除
-	}
-
-	if (input.HasCommand(ActionCommand::Evade) && CanStartEvade()) {
-		EvadeMoveData data{};
-		// 積まれた瞬間の方向スナップショットをそのまま使う
-		// (消費するこのフレームの生入力ではなく)。
-		input.ConsumeCommand(ActionCommand::Evade, data.evadeDirection);
-		TryStartEvade(data);
-	}
-	else if (input.HasCommand(ActionCommand::Attack) && CanStartAttack()) {
-		AttackMoveData data{};
-		input.ConsumeCommand(ActionCommand::Attack, data.stepDirection);
-		TryStartAttack(data);
-	}
-}
-
-void PlayerStatusController::ApplyMovementState(MovementState state)
-{
-	if (!movementComponent_) return;
-	switch (state) {
-	case MovementState::Stand: break;
-	case MovementState::Walk: movementComponent_->SetSpeed(walkSpeed_); break;
-	case MovementState::Run:  movementComponent_->SetSpeed(runSpeed_); break;
-	}
-}
-
-void PlayerStatusController::UpdateMovementState(float deltaTime)
-{
-	if (GetCombatState() != CombatState::None) return;
-
-	if (movementState_ == MovementState::Run) {
-		// スタミナ消費処理用スペース
-	}
-}
-
-void PlayerStatusController::RequestStepMove(const Math::Vector3& direction, float distance, float duration)
-{
-	GameObject* owner = GetOwner();
-	TransformComponent* transform = owner->GetComponent<TransformComponent>();
-	if (transform == nullptr) return;
-
-	// 無入力(棒立ち)での要求は、モデルの向いている方向へフォールバックする。
-	// (方向自体は呼び出し元でPlayerInputComponent::PushCommand時点で
-	// 正規化済みであることを前提とする)
-	Math::Vector3 dir = direction;
-	if (dir.LengthSquared() <= kDirectionEpsilon) {
-		dir = transform->GetForward();
-	}
-
-	const Math::Vector3 from = transform->GetPosition();
-	const Math::Vector3 to = from + dir * distance;
-	owner->RequestAddComponent<TweenMoveComponent>(from, to, duration);
-}
-
-void PlayerStatusController::CancelStepMove()
-{
-	GetOwner()->RequestRemoveComponent<TweenMoveComponent>();
 }

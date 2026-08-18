@@ -16,6 +16,7 @@
 #include "../../Components/Collision/GravityComponent.h"
 #include "../../Components/Collision/CharacterCollisionDefaults.h"
 #include "../../Components/Collision/AttackSourceComponent.h"
+#include "../../Components/Collision/WireFrameComponent.h"
 #include "../../Components/Sensors/GroundSensorComponent.h"
 
 namespace
@@ -32,11 +33,11 @@ namespace
 		player->AddComponent<ModelRenderComponent>();
 
 		auto* skeleton = player->AddComponent<SkeletonComponent>();
-		skeleton->SetModelData("Asset/Models/Character/Player/Walking.gltf");
+		skeleton->SetModelData("Asset/Models/Character/Player/Player.gltf");
 
 		auto* animator = player->AddComponent<ModelAnimatorComponent>();
 		animator->SetFPS(60);
-		animator->Play("mixamo.com");
+		animator->Play("SlashCombo1");
 
 		return skeleton;
 	}
@@ -56,6 +57,7 @@ namespace
 		auto* collider = player->AddComponent<ColliderComponent>();
 		player->AddComponent<GroundSensorComponent>();
 		player->AddComponent<FacingDirectionComponent>();
+		player->AddComponent<WireFrameComponent>();
 
 		// Y方向の半径をCharacterCollisionDefaults::kFootOffsetと一致させて
 		// いる点が重要。Bodyの下端がfootOffsetまで届いていないと、Bodyが
@@ -63,7 +65,7 @@ namespace
 		// 基準高さがズレる(詳細はCharacterCollisionDefaults.h、および
 		// EnemyFactory::BuildEnemy側の同種の修正コメント参照)。
 		collider->AddBox("Body",
-			Math::Vector3(0.3f, CharacterCollisionDefaults::kFootOffset, 0.25f), {},
+			Math::Vector3(0.3f, CharacterCollisionDefaults::kFootOffset, 0.25f), Math::Vector3(0.f, CharacterCollisionDefaults::kFootOffset, 0.f),
 			ColliderCategory::Bump);
 
 		return collider;
@@ -147,7 +149,7 @@ GameObject* PlayerFactory::CreateWeapon(ObjectManager& objectManager, GameObject
 	weapon->AddComponent<AttachToSocketComponent>(handle);
 
 	auto* skeleton = weapon->AddComponent<SkeletonComponent>();
-	skeleton->SetModelData("Asset/Models/Character/Player/box.gltf");
+	//skeleton->SetModelData("Asset/Models/Character/Player/box.gltf");
 	weapon->AddComponent<ModelRenderComponent>();
 
 	auto* collision = weapon->AddComponent<ColliderComponent>();
@@ -156,10 +158,14 @@ GameObject* PlayerFactory::CreateWeapon(ObjectManager& objectManager, GameObject
 	// (実際に発生していた不具合)。攻撃発生フレーム(AttackActive)の間だけ
 	// PlayerStatusController::SetWeaponHitBoxEnabled()経由で有効化する
 	// 前提のため、生成直後はfalseにしておく。
-	collision->AddBox("HitBox", Math::Vector3(1.f, 1.f, 1.f), Math::Vector3(0.f, 0.f, 0.f), ColliderCategory::HitBox).enabled = false;
+	CollisionShapeEntry& hitBox = collision->AddBox(
+		"HitBox", Math::Vector3(1.f, 1.f, 1.f), Math::Vector3(0.f, 1.f, 0.f), ColliderCategory::HitBox);
+	hitBox.enabled = false;
+	hitBox.isTrigger = true;
 	collision->IgnoreCollisionWith(player);
 
 	weapon->AddComponent<AttackSourceComponent>();
+	weapon->AddComponent<WireFrameComponent>();
 
 	return weapon;
 }

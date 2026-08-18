@@ -1,4 +1,7 @@
-﻿#pragma once
+﻿// PlayerCombatTypes.h
+#pragma once
+
+#include <string>
 
 // ============================================================
 // PlayerStatusController / PlayerInputComponent 双方から参照される
@@ -79,6 +82,11 @@ struct AttackMoveData
 	float recoveryAttackCancelStart = 0.2f;
 
 	Math::Vector3 stepDirection = Math::Vector3::Zero;
+
+	// 再生するアニメーション名(仮)。コンボの段数ごとに異なる想定のため、
+	// PlayerStatusController::Start()でcomboAttacks_の各要素へ
+	// "Attack1"〜"Attack5"を仮で割り当てる。
+	std::string animationName = "Attack1";
 };
 
 struct EvadeMoveData
@@ -98,6 +106,8 @@ struct EvadeMoveData
 	// 無入力(ゼロベクトル)の場合は、使う側(PlayerStatusController::RequestStepMove)で
 	// モデルの向いている方向にフォールバックする。
 	Math::Vector3 evadeDirection = Math::Vector3::Zero;
+
+	std::string animationName = "Evade"; // 仮
 };
 
 struct GuardMoveData
@@ -105,4 +115,10 @@ struct GuardMoveData
 	// Guard開始からこの秒数以内に被弾すると、通常のブロックではなく
 	// パリィ(弾き)として成立する。この秒数を過ぎたら以降は通常ブロック扱い。
 	float justWindowDuration = 0.15f;
+
+	std::string animationName = "Guard"; // 仮。単発再生+最終フレームでポーズ保持想定
 };
+
+// コンボ攻撃の最大段数。PlayerStatusController::comboAttacks_の要素数、
+// および comboIndex_ の折り返し(% kMaxComboHits)に使う。
+constexpr int kMaxComboHits = 5;
