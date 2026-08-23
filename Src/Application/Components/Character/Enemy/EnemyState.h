@@ -66,3 +66,54 @@ private:
 	KnockbackParams params_;
 	float elapsed_ = 0.0f;
 };
+
+// HealthComponent::DiedEvent受信時に強制遷移する終端State。
+// 「移動・当たり判定を止める→死亡演出(アニメーション+エフェクト)→
+// 一定時間後に消滅」という流れを担う。
+//
+// アニメーション/エフェクトはまだ実装されていないため、該当箇所は
+// コメントアウトしたまま残している(Enter()参照)。それぞれの再生時間が
+// 決まったら、kDespawnDelayをその長さに合わせて調整すること。
+class StateDead : public IEnemyState {
+public:
+	void Enter(EnemyStatusController* controller) override;
+	void Update(EnemyStatusController* controller, float deltaTime) override;
+
+private:
+	float elapsed_ = 0.0f;
+
+	// 二重にDestroy()を呼ばないようにするためのガード
+	// (ObjectManager::Destroy()自体は多重呼び出しに耐えるが、無駄なため)。
+	bool despawnRequested_ = false;
+
+	// 死亡演出から消滅までの猶予秒数(仮の値)。アニメーション/エフェクトが
+	// 実装されたら、それぞれの再生時間に合わせて調整すること。
+	static constexpr float kDespawnDelay = 1.5f;
+};
+
+// 自分の攻撃がPlayer側にパリィされた時に強制遷移する、パリィ専用の
+// 短い怯みState。小スタン(StateKnockback、被弾時)・大スタン(体幹崩し時、
+// 未実装)とは別枠として用意している(理由: パリィされた際の正しい反応は
+// 「被弾した」のではなく「武器を弾き返された」ことに対する反応であり、
+// 将来的にはHP/体幹には一切影響させず、武器そのものが弾かれる物理演出だけ
+// を行う形にしたいため。詳細はEnemyStatusController::ChangeStateToParryStun
+// のコメント参照)。
+//
+// 現状は敵本体が攻撃判定を持つ仮実装のため、単に「その場で一定時間
+// 動けなくなる」だけの中身にしている。将来Player同様の武器オブジェクトを
+// 持つようになったら、Enter()内で武器が弾かれるアニメーション/物理挙動を
+// 追加する想定。
+class StateParryStun : public IEnemyState {
+public:
+	void Enter(EnemyStatusController* controller) override;
+	void Update(EnemyStatusController* controller, float deltaTime) override;
+	void Exit(EnemyStatusController* controller) override;
+
+private:
+	float elapsed_ = 0.0f;
+
+	// パリィ成立時の硬直時間(仮の値)。将来武器オブジェクトが実装されたら、
+	// 「武器が弾かれてから体勢を立て直すまで」の演出時間に合わせて
+	// 調整する想定。
+	static constexpr float kParryStunDuration = 0.6f;
+};

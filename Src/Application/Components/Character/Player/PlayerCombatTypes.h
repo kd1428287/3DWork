@@ -67,7 +67,7 @@ enum class ActionCommand
 struct AttackMoveData
 {
 	float windupDuration = 0.2f;
-	float activeDuration = 0.15f;
+	float activeDuration = 0.25f;
 	float recoveryDuration = 0.3f;
 
 	float stepDistance = 0.5f; //	攻撃入力時対象方向か入力方向に移動
@@ -107,7 +107,7 @@ struct EvadeMoveData
 	// モデルの向いている方向にフォールバックする。
 	Math::Vector3 evadeDirection = Math::Vector3::Zero;
 
-	std::string animationName = "Evade"; // 仮
+	std::string animationName = "StandToRoll"; // 仮
 };
 
 struct GuardMoveData

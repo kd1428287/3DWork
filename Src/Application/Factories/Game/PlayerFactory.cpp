@@ -13,6 +13,8 @@
 #include "../../Components/Animation/SkeletonComponent.h"
 #include "../../Components/Animation/BoneSocketComponent.h"
 #include "../../Components/Character/Player/PlayerStatusController.h"
+#include "../../Components/Character/Data/PostureComponent.h"
+#include "../../Components/Character/Data/HealthComponent.h"
 #include "../../Components/Collision/GravityComponent.h"
 #include "../../Components/Collision/CharacterCollisionDefaults.h"
 #include "../../Components/Collision/AttackSourceComponent.h"
@@ -37,8 +39,7 @@ namespace
 
 		auto* animator = player->AddComponent<ModelAnimatorComponent>();
 		animator->SetFPS(60);
-		animator->Play("SlashCombo1");
-
+	
 		return skeleton;
 	}
 
@@ -59,14 +60,30 @@ namespace
 		player->AddComponent<FacingDirectionComponent>();
 		player->AddComponent<WireFrameComponent>();
 
+		// 体幹(パリィ/ガードの削り合い)管理用。数値の詳細(最大値・
+		// 回復速度等)はPostureComponentのデフォルト値のまま、別途調整する。
+		player->AddComponent<PostureComponent>();
+
+		// HP管理用。数値の詳細(最大値等)はHealthComponentのデフォルト値
+		// のまま、別途調整する。
+		player->AddComponent<HealthComponent>();
+
 		// Y方向の半径をCharacterCollisionDefaults::kFootOffsetと一致させて
 		// いる点が重要。Bodyの下端がfootOffsetまで届いていないと、Bodyが
 		// 地面に乗って静止した高さとGroundSensorComponentの接地レイの
 		// 基準高さがズレる(詳細はCharacterCollisionDefaults.h、および
 		// EnemyFactory::BuildEnemy側の同種の修正コメント参照)。
-		collider->AddBox("Body",
-			Math::Vector3(0.3f, CharacterCollisionDefaults::kFootOffset, 0.25f), Math::Vector3(0.f, CharacterCollisionDefaults::kFootOffset, 0.f),
+		collider->AddCapsule("Body", 0.4,
+			Math::Vector3(0.0f, 0.4, 0.0f),
+			Math::Vector3(0.0f, (CharacterCollisionDefaults::kFootOffset * 2) - 0.4, 0.0f),
 			ColliderCategory::Bump);
+
+		collider->AddCapsule("HurtBox", 0.4,
+			Math::Vector3(0.0f, 0.4, 0.0f),
+			Math::Vector3(0.0f, (CharacterCollisionDefaults::kFootOffset * 2) - 0.4, 0.0f),
+			ColliderCategory::HurtBox, ColliderCategory::HitBox);
+		
+		collider->SetShapeIsTrigger("HurtBox", true);
 
 		return collider;
 	}
@@ -144,12 +161,15 @@ GameObject* PlayerFactory::CreateWeapon(ObjectManager& objectManager, GameObject
 	if (!weapon) return nullptr;
 
 	auto* transform = weapon->AddComponent<TransformComponent>();
-	transform->SetScale({ 0.5f, 0.5f, 0.5f });
+	
+	auto* socket = weapon->AddComponent<AttachToSocketComponent>(handle);
+	socket->SetLocalRotation(Math::Quaternion::CreateFromYawPitchRoll(
+		-90, DirectX::XMConvertToRadians(180), 0.0f));
 
-	weapon->AddComponent<AttachToSocketComponent>(handle);
+	socket->SetLocalPositon({ -0.1f,-0.1f,0.f });
 
 	auto* skeleton = weapon->AddComponent<SkeletonComponent>();
-	//skeleton->SetModelData("Asset/Models/Character/Player/box.gltf");
+	skeleton->SetModelData("Asset/Models/Character/Player/Tachi.gltf");
 	weapon->AddComponent<ModelRenderComponent>();
 
 	auto* collision = weapon->AddComponent<ColliderComponent>();
@@ -159,12 +179,21 @@ GameObject* PlayerFactory::CreateWeapon(ObjectManager& objectManager, GameObject
 	// PlayerStatusController::SetWeaponHitBoxEnabled()経由で有効化する
 	// 前提のため、生成直後はfalseにしておく。
 	CollisionShapeEntry& hitBox = collision->AddBox(
-		"HitBox", Math::Vector3(1.f, 1.f, 1.f), Math::Vector3(0.f, 1.f, 0.f), ColliderCategory::HitBox);
+		"HitBox", Math::Vector3(0.1f, 1.f, 0.1f), Math::Vector3(0.f, 1.f, 0.f), ColliderCategory::HitBox);
 	hitBox.enabled = false;
+	// 押し返し(物理応答)はせず、重なり検知(イベント)だけ行う。
+	// isTrigger未設定のままだと通常のBump同様の押し返しが働いてしまう
+	// (Enemy側のHurtBoxで実際に発生した不具合と同種)。以前このHitBoxに
+	// 限り設定が漏れていたため、明示的に追加している。
 	hitBox.isTrigger = true;
 	collision->IgnoreCollisionWith(player);
 
-	weapon->AddComponent<AttackSourceComponent>();
+	auto* attackSource = weapon->AddComponent<AttackSourceComponent>();
+	// パリィ成立時、被弾側(この武器で攻撃された相手)が「攻撃者本体」の
+	// PostureComponentを引き当てられるようにする(otherObjectは武器自体の
+	// GameObjectであり、プレイヤー本体ではないため)。
+	attackSource->ownerCharacter = Handle<GameObject>(player);
+
 	weapon->AddComponent<WireFrameComponent>();
 
 	return weapon;

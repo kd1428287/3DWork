@@ -27,6 +27,7 @@ public:
 	virtual bool CanStartGuard(const PlayerStatusController* controller) const { return false; }
 
 	// ジャスト判定の問い合わせ（該当するStateのみがオーバーライドしてtrueを返す）
+	virtual bool IsInvincible(const PlayerStatusController* controller) const { return false; }
 	virtual bool IsInJustEvadeWindow(const PlayerStatusController* controller) const { return false; }
 	virtual bool IsInParryWindow(const PlayerStatusController* controller) const { return false; }
 };
@@ -79,6 +80,7 @@ public:
 	float GetElapsed() const override { return elapsed_; }
 
 	bool IsInJustEvadeWindow(const PlayerStatusController* controller) const override;
+	bool IsInvincible(const PlayerStatusController* controller) const override; // 追加
 
 private:
 	CombatState phase_ = CombatState::Evade;

@@ -1,5 +1,5 @@
-﻿// PlayerState.cpp
-#include "PlayerStatusController.h"
+﻿#include "PlayerStatusController.h"
+#include "../../Movement/TweenMoveComponent.h"
 
 // =================================================================
 // 各Stateの具体的なロジック実装
@@ -19,7 +19,10 @@ void StateAttack::Enter(PlayerStatusController* controller) {
 	// ModelAnimatorComponent)はController側に閉じ込め、Stateは
 	// それを直接知らなくてよいようにする。
 	const auto& data = controller->GetCurrentAttackData();
-	controller->PlayAnimation(data.animationName); // コンボ段数に応じたアニメーション
+	// 攻撃全体(Windup+Active+Recovery)の秒数を目標としてアニメーション
+	// 速度を自動スケーリングする(詳細はModelAnimatorComponent::Play参照)。
+	const float targetDuration = data.windupDuration + data.activeDuration + data.recoveryDuration;
+	controller->PlayAnimation(data.animationName, false, targetDuration); // コンボ段数に応じたアニメーション
 	controller->RequestStepMove(data.stepDirection, data.stepDistance, data.windupDuration);
 
 	KdDebugGUI::Instance().AddLog("AttackWindup"); // 必要なら
@@ -90,7 +93,10 @@ void StateEvade::Enter(PlayerStatusController* controller) {
 	// MovementComponentはTransitionTo側で既に無効化されているため、
 	// 位置を書き換える権利がここで競合することはない。
 	const auto& data = controller->GetCurrentEvadeData();
-	controller->PlayAnimation(data.animationName);
+	// 回避全体(Active+Recovery)の秒数を目標としてアニメーション速度を
+	// 自動スケーリングする(詳細はModelAnimatorComponent::Play参照)。
+	const float targetDuration = data.activeDuration + data.recoveryDuration;
+	controller->PlayAnimation(data.animationName, false, targetDuration);
 	controller->RequestStepMove(data.evadeDirection, data.evadeDistance, data.activeDuration + data.recoveryDuration);
 }
 
@@ -120,14 +126,20 @@ bool StateEvade::IsInJustEvadeWindow(const PlayerStatusController* controller) c
 	return elapsed_ >= data.justWindowStart && elapsed_ <= data.justWindowEnd;
 }
 
+bool StateEvade::IsInvincible(const PlayerStatusController* controller) const {
+	// Evade(実移動フェーズ)中のみ無敵。EvadeRecoveryは無敵切れとして
+	// 通常の被弾判定に戻す(後隙に攻撃を合わせられたら普通に食らう)。
+	return phase_ == CombatState::Evade;
+}
+
+
 // --- Guard State ---
 void StateGuard::Enter(PlayerStatusController* controller) {
 	elapsed_ = 0.0f;
 	KdDebugGUI::Instance().AddLog("Guard");
 
-	// 「構えに入る」単発モーションを再生し、最終フレームでポーズを保持する
-	// 想定のためloop=falseにしている(ModelAnimatorComponent側が
-	// 非ループ再生の終了後に自動で最終フレーム保持する実装であることが前提)。
+	// 単発再生(loop=false)にすることで「構えに入る動作を1回再生し、
+	// 最終フレームでポーズを保持する」形にする。
 	controller->PlayAnimation(controller->GetCurrentGuardData().animationName, false);
 }
 
@@ -151,9 +163,10 @@ void StateStagger::Enter(PlayerStatusController* controller) {
 	elapsed_ = 0.0f;
 	KdDebugGUI::Instance().AddLog("Stagger");
 
+	// アニメーション未実装のためコメントアウト。
 	// AttackMoveData/GuardMoveDataのような専用データ構造をStaggerは
-	// 持たないため、isLarge_で仮のアニメーション名を直接出し分けている。
-	controller->PlayAnimation(isLarge_ ? "StaggerLarge" : "StaggerSmall");
+	// 持たないため、isLarge_で仮のアニメーション名を直接出し分ける想定だった。
+	// controller->PlayAnimation(isLarge_ ? "StaggerLarge" : "StaggerSmall");
 }
 
 void StateStagger::Update(PlayerStatusController* controller, float deltaTime) {

@@ -3,6 +3,7 @@
 class EventBus;
 class CameraComponent;
 class ColliderRegistry;
+class ObjectManager;
 
 // ============================================================
 // GameObjectが生成時に1つだけ紐付けられる、Scene全体で共有される
@@ -21,6 +22,12 @@ struct SceneContext {
 	EventBus* eventBus = nullptr;
 	CameraComponent* activeCamera = nullptr;
 	ColliderRegistry* colliderRegistry = nullptr;
+
+	// 自分自身(あるいは他のGameObject)をObjectManager::Destroy()経由で
+	// 破棄予約したいコンポーネントのために追加(死亡演出後の消滅処理等)。
+	// ObjectManagerのコンストラクタでcontext_.objectManager = this;と
+	// 自己登録される。
+	ObjectManager* objectManager = nullptr;
 
 	// スケールされていない、フレームの生の経過時間。
 	// 個々のGameObjectのtimeScale_の影響を受けないため、

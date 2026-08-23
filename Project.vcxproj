@@ -281,6 +281,8 @@
     <ClInclude Include="Src\Application\Components\Camera\CameraOrbitComponent.h" />
     <ClInclude Include="Src\Application\Components\Camera\CameraViewComponent.h" />
     <ClInclude Include="Src\Application\Components\Camera\CameraTargetComponent.h" />
+    <ClInclude Include="Src\Application\Components\Character\Data\HealthComponent.h" />
+    <ClInclude Include="Src\Application\Components\Character\Data\PostureComponent.h" />
     <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyState.h" />
     <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyStatusController.h" />
     <ClInclude Include="Src\Application\Components\Character\Player\PlayerCombatTypes.h" />
@@ -390,6 +392,7 @@
     <ClCompile Include="..\Library\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\Library\imgui\imgui_widgets.cpp" />
     <ClCompile Include="Src\Application\Components\Character\Enemy\EnemyState.cpp" />
+    <ClCompile Include="Src\Application\Components\Character\Enemy\EnemyStatusController.cpp" />
     <ClCompile Include="Src\Application\Components\Character\Player\PlayerState.cpp" />
     <ClCompile Include="Src\Application\Components\Character\Player\PlayerStatusController.cpp" />
     <ClCompile Include="Src\Application\Components\Collision\WireFrameComponent.cpp" />

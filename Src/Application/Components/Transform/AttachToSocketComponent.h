@@ -60,8 +60,8 @@ public:
 		Math::Quaternion rotation;
 		Math::Vector3 scale;
 		if (socket->GetWorldMatrix().Decompose(scale, rotation, position)) {
-			selfTransform_->SetPosition(position);
-			selfTransform_->SetRotation(rotation);
+			selfTransform_->SetPosition(position + position_);
+			selfTransform_->SetRotation(rotation_ * rotation);
 			// スケールは意図的に同期しない。武器モデル自体のスケールは
 			// 武器側のTransformComponentが独自に持つ値を尊重するため
 			// (ソケット側のスケールを引き継ぐと、キャラクターの
@@ -71,8 +71,13 @@ public:
 
 	Handle<TransformComponent>& GetSocketHandle() { return socketHandle_; }
 	void SetSocketHandle(Handle<TransformComponent> socketHandle) { socketHandle_ = socketHandle; }
+	void SetLocalPositon(Math::Vector3 position) { position_ = position; }
+	void SetLocalRotation(Math::Quaternion rotation) { rotation_ = rotation; }
 
 private:
 	Handle<TransformComponent> socketHandle_;
 	TransformComponent* selfTransform_ = nullptr; // 兄弟コンポーネントなのでHandle不要
+
+	Math::Vector3 position_;
+	Math::Quaternion rotation_;
 };

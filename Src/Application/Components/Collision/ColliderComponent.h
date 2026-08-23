@@ -558,6 +558,33 @@ public:
 		}
 	}
 
+	// true: 押し返しなどの物理応答をやめ、重なり検知(イベント)だけにする。
+	// 攻撃判定(HitBox/HurtBox)のように、常に非トリガーで生成してから
+	// 個別にトリガー化したいケースや、逆に地形風の形状を一時的に
+	// トリガー化してすり抜け可能にしたい、といった用途向け。
+	void SetShapeIsTrigger(std::string_view name, bool isTrigger) {
+		if (CollisionShapeEntry* entry = FindShape(name)) {
+			entry->isTrigger = isTrigger;
+		}
+	}
+
+	// true: 押し返しの対象から自分を除外する(地形・壁など、押されても
+	// 動かないものにする)。詳細はCollisionShapeEntry::isStaticのコメント参照。
+	void SetShapeIsStatic(std::string_view name, bool isStatic) {
+		if (CollisionShapeEntry* entry = FindShape(name)) {
+			entry->isStatic = isStatic;
+		}
+	}
+
+	// true: 重なっている間、CollisionEnterEvent相当の通知を毎フレーム
+	// 追加で受け取る(Unity等のOnTriggerStayに相当)。詳細は
+	// CollisionShapeEntry::wantsStayEventのコメント参照。
+	void SetShapeWantsStayEvent(std::string_view name, bool wantsStayEvent) {
+		if (CollisionShapeEntry* entry = FindShape(name)) {
+			entry->wantsStayEvent = wantsStayEvent;
+		}
+	}
+
 	CollisionShapeEntry* FindShape(std::string_view name) {
 		auto it = std::find_if(shapes_.begin(), shapes_.end(),
 			[&](const CollisionShapeEntry& e) { return e.name == name; });

@@ -14,7 +14,14 @@ class ObjectManager {
 public:
 	// eventBusはSceneが所有するものへの非所有参照。
 	// nullptrのままでも動作する(イベントバスを使わない場合)。
-	explicit ObjectManager(EventBus* eventBus = nullptr) { context_.eventBus = eventBus; }
+	explicit ObjectManager(EventBus* eventBus = nullptr) {
+		context_.eventBus = eventBus;
+		// 自分自身への参照をSceneContextに登録しておく。
+		// GameObject側のコンポーネントが「自分自身を破棄予約したい」
+		// 場合(死亡演出後の消滅処理等)、GetOwner()->GetContext()->
+		// objectManager->Destroy(GetOwner())という形でアクセスできる。
+		context_.objectManager = this;
+	}
 
 	// 新しいGameObjectを生成してObjectManagerに登録する。
 	// 生成と同時にSceneContext(イベントバス・アクティブカメラ等)を紐付ける。

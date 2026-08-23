@@ -160,6 +160,9 @@
     <Filter Include="Src\Application\Components\Animation">
       <UniqueIdentifier>{a0b9f29f-5f49-4085-839d-ebdb7cd4bfa3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\Components\Character\Data">
+      <UniqueIdentifier>{8348d6fd-5b47-493b-adf4-c9d1fa720c66}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -525,6 +528,12 @@
     <ClInclude Include="Src\Application\Components\Collision\WireFrameComponent.h">
       <Filter>Src\Application\Components\Collision</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\Data\PostureComponent.h">
+      <Filter>Src\Application\Components\Character\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\Data\HealthComponent.h">
+      <Filter>Src\Application\Components\Character\Data</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -694,6 +703,9 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Components\Character\Player\PlayerStatusController.cpp">
       <Filter>Src\Application\Components\Character\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\Character\Enemy\EnemyStatusController.cpp">
+      <Filter>Src\Application\Components\Character\Enemy</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
