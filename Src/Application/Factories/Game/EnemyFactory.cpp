@@ -70,7 +70,7 @@ namespace
 		// 同様にownerCharacterへ本体(enemy)を登録しておく。
 		attackSource->ownerCharacter = Handle<GameObject>(enemy);
 
-		weapon->AddComponent<WireFrameComponent>();
+		//weapon->AddComponent<WireFrameComponent>();
 
 		return weapon;
 	}
@@ -104,7 +104,8 @@ GameObject* EnemyFactory::BuildEnemy(ObjectManager& objectManager, const EnemyDe
 	// 新しい見た目のシルエットと合わなくなっている可能性がある。
 	// 一度ワイヤーフレーム表示で確認し、必要なら再調整すること。
 	auto* skeleton = enemy->AddComponent<SkeletonComponent>();
-	skeleton->SetModelData("Asset/Models/Character/Player/Player.gltf");
+	//skeleton->SetModelData("Asset/Models/Character/Player/Player.gltf");
+	skeleton->SetModelData("Asset/Models/Character/Brute/Brute.gltf");
 
 	// EnemyStatusController::Start()内でMovementComponentへ
 	// SetMovementSource(this)する。GetComponent<T>()はマップ参照なので、
@@ -167,7 +168,7 @@ GameObject* EnemyFactory::BuildEnemy(ObjectManager& objectManager, const EnemyDe
 
 	enemy->AddComponent<ModelRenderComponent>();
 	enemy->AddComponent<FacingDirectionComponent>();
-	enemy->AddComponent<WireFrameComponent>();
+	//enemy->AddComponent<WireFrameComponent>();
 
 	// 体幹(パリィ/ガードの削り合い)管理用。
 	enemy->AddComponent<PostureComponent>();
@@ -187,6 +188,16 @@ GameObject* EnemyFactory::BuildEnemy(ObjectManager& objectManager, const EnemyDe
 		status->SetWeapon(
 			Handle<ColliderComponent>(weapon->GetComponent<ColliderComponent>()),
 			Handle<AttackSourceComponent>(weapon->GetComponent<AttackSourceComponent>()));
+	}
+
+	// 武器・武器ソケットは敵本体とは別のGameObjectのため、敵が死亡して
+	// 消滅する際に道連れで破棄されるよう明示的に登録しておく
+	// (登録しないと、当たり判定は無効化されても見た目上ワールドに
+	//  浮いたまま残り続けてしまう。詳細はEnemyStatusController::
+	//  RequestDespawn()参照)。
+	status->RegisterOwnedObject(Handle<GameObject>(weaponSocket));
+	if (weapon != nullptr) {
+		status->RegisterOwnedObject(Handle<GameObject>(weapon));
 	}
 
 	return enemy;

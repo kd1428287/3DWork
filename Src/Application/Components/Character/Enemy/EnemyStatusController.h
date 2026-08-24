@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include <vector>
 #include "EnemyState.h"
 #include "../../Movement/IMovementSource.h"
 #include "../../Movement/MovementComponent.h"
@@ -40,8 +41,7 @@ class EnemyStatusController : public ComponentBase, public IMovementSource {
 public:
 	// patrolDistance: 基準点からどれだけ離れたら折り返すか
 	explicit EnemyStatusController(GameObject* owner, float patrolDistance = 3.0f)
-		: ComponentBase(owner), patrolDistance_(patrolDistance) {
-	}
+		: ComponentBase(owner), patrolDistance_(patrolDistance) {}
 
 	void Start() override {
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
@@ -117,6 +117,13 @@ public:
 	// に一本化しているため、以前ほどトンネリングは起きにくくなったが、
 	// 極端な速度・下向き成分を渡した場合の安全策として引き続き残している。
 	void ChangeStateToKnockback(const KnockbackParams& params) {
+		// 死亡中はいかなる状態遷移も受け付けない(IsDead()参照)。
+		// OnCollisionEnter()はTakeDamage()の結果として同一フレーム内で
+		// 既にStateDeadへ遷移済みの場合があり、そのままここへ来ると
+		// StateDead::Enter()直後にStateKnockbackへ上書きされてしまう
+		// (StateDead::Update()が一度も呼ばれなくなる不具合の原因だった)。
+		if (IsDead()) return;
+
 		stateKnockback_.SetParams(ClampKnockbackParams(params));
 		stateMachine_.ForceTransitionTo(this, &stateKnockback_);
 	}
@@ -131,6 +138,9 @@ public:
 	// 弾かれる物理演出もこの遷移に合わせて追加する想定
 	// (詳細はStateParryStun::Enterのコメント参照)。
 	void ChangeStateToParryStun() {
+		// 死亡中はいかなる状態遷移も受け付けない(IsDead()参照)。
+		if (IsDead()) return;
+
 		stateMachine_.ForceTransitionTo(this, &stateParryStun_);
 	}
 
@@ -178,11 +188,30 @@ public:
 	// 一定の猶予(死亡演出の再生時間)を置いた後、StateDead::Update()から
 	// 呼ばれる。ObjectManager::Destroy()は実際の削除をFlush()まで遅延する
 	// ため、この呼び出し自体はこのフレームの他の処理を壊さない。
+	//
+	// 自分自身だけでなく、ownedObjects_に登録された所有物(武器・武器
+	// ソケット等)もまとめて破棄する。これを行わないと、当たり判定は
+	// 無効化済みでも見た目上ワールドに浮いたまま残り続けてしまう
+	// (ソケット追従先を失った武器は、直前の姿勢で固まって見える)。
 	void RequestDespawn() {
 		SceneContext* context = GetOwner()->GetContext();
-		if (context != nullptr && context->objectManager != nullptr) {
-			context->objectManager->Destroy(GetOwner());
+		if (context == nullptr || context->objectManager == nullptr) return;
+
+		for (Handle<GameObject>& owned : ownedObjects_) {
+			if (GameObject* obj = owned.Resolve()) {
+				context->objectManager->Destroy(obj);
+			}
 		}
+
+		context->objectManager->Destroy(GetOwner());
+	}
+
+	// このEnemyが生成した(=このEnemyが消えたら道連れで消えるべき)
+	// 付随オブジェクトを登録する。EnemyFactory側で武器・武器ソケットの
+	// 生成直後に呼んでもらう想定(将来、盾等の装備が増えても同じ仕組みで
+	// 対応できる)。
+	void RegisterOwnedObject(Handle<GameObject> obj) {
+		ownedObjects_.push_back(obj);
 	}
 
 	// --- 武器の攻撃判定 --------------------------------------------------
@@ -210,6 +239,10 @@ private:
 	// EnemyFactory側からSetWeapon()経由でセットされる想定。
 	Handle<ColliderComponent> weaponCollider_;
 	Handle<AttackSourceComponent> weaponAttackSource_;
+
+	// RegisterOwnedObject()で登録された、このEnemyの所有物(武器・武器
+	// ソケット等)。死亡時にRequestDespawn()でまとめて破棄する。
+	std::vector<Handle<GameObject>> ownedObjects_;
 
 	Math::Vector3 basePosition_{};
 	float patrolDistance_;
@@ -248,6 +281,22 @@ private:
 	bool CanAttack() const {
 		IEnemyState* current = stateMachine_.Current();
 		return current != &stateKnockback_ && current != &stateDead_ && current != &stateParryStun_;
+	}
+
+	// 死亡中(StateDead)かどうかの共通ガード。CanAttack()と同じくポインタ
+	// 比較で判定する。ChangeStateToKnockback()/ChangeStateToParryStun()の
+	// ように、外部イベント(被弾/パリィ)起因で呼ばれ得る状態遷移トリガーは
+	// 全てこれで死亡中の遷移を弾く。
+	//
+	// 背景: OnCollisionEnter()内のTakeDamage()がHPを0にすると、同一フレーム
+	// 内で同期的にHealthComponent::DiedEvent→OnDied()→StateDead::Enter()まで
+	// 実行される。その直後にOnCollisionEnter()が(死亡したことを知らずに)
+	// 無条件でChangeStateToKnockback()を呼んでいたため、StateDeadへ遷移した
+	// 直後にStateKnockbackへ上書きされ、StateDead::Update()が一度も呼ばれない
+	// (かつStateDead::Exit()が空実装のため、無効化した移動/当たり判定も
+	//  復元されないままKnockbackに入ってしまう)不具合が起きていた。
+	bool IsDead() const {
+		return stateMachine_.Current() == &stateDead_;
 	}
 
 	// 攻撃の発生間隔(秒)。実際の攻撃AIが実装されたら、この固定間隔ではなく

@@ -1,4 +1,5 @@
 ﻿#include "EnemyStatusController.h"
+#include "../../../Engine/EventBus/Event/SceneEvents.h"
 
 // --- StateWalkRight ---
 void StateWalkRight::Enter(EnemyStatusController* controller) {
@@ -91,6 +92,7 @@ void StateDead::Update(EnemyStatusController* controller, float deltaTime) {
 	if (elapsed_ >= kDespawnDelay) {
 		despawnRequested_ = true;
 		controller->RequestDespawn();
+		GLOBALEVENT.Publish(Events::Scene::SceneChangeRequestEvent{ SceneType::Result });
 	}
 }
 

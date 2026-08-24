@@ -1,17 +1,13 @@
 ﻿#pragma once
 
+#include "SceneType.h"
+
 class BaseScene;
+class ScopedSubscriber; // EventBus.h (前方宣言のみ。実体はEventBus.h参照)
 
 class SceneManager
 {
-public :
-
-	// シーン情報
-	enum class SceneType
-	{
-		Title,
-		Game,
-	};
+public:
 
 	void Update();
 
@@ -25,15 +21,11 @@ public :
 	{
 		m_nextSceneType = _nextScene;
 	}
-private :
+private:
 
 	// マネージャーの初期化
 	// インスタンス生成(アプリ起動)時にコンストラクタで自動実行
-	void Init()
-	{
-		// 開始シーンに切り替え
-		ChangeScene(m_currentSceneType);
-	}
+	void Init();
 
 	// シーン切り替え関数
 	void ChangeScene(SceneType _sceneType);
@@ -43,14 +35,21 @@ private :
 
 	// 現在のシーンの種類を保持している変数
 	SceneType m_currentSceneType = SceneType::Game;
-	
+
 	// 次のシーンの種類を保持している変数
 	SceneType m_nextSceneType = m_currentSceneType;
+
+	// Events::Scene::SceneChangeRequestEvent の購読。
+	// 「どの敵を倒したら」等の遷移理由はここでは一切判断せず、
+	// 受け取ったSceneTypeへSetNextSceneするだけの薄い受け口にする。
+	// unique_ptrにしているのはSceneManager.hにEventBus.hをincludeさせないため
+	// (前方宣言のみで済ませる)。
+	std::unique_ptr<ScopedSubscriber> m_sceneChangeSub;
 
 private:
 
 	SceneManager() { Init(); }
-	~SceneManager() {}
+	~SceneManager();
 
 public:
 

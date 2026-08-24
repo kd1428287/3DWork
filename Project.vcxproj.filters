@@ -163,6 +163,9 @@
     <Filter Include="Src\Application\Components\Character\Data">
       <UniqueIdentifier>{8348d6fd-5b47-493b-adf4-c9d1fa720c66}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\Scene\Result">
+      <UniqueIdentifier>{cef29b94-8da2-4983-b856-80cfb02c422f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -534,6 +537,18 @@
     <ClInclude Include="Src\Application\Components\Character\Data\HealthComponent.h">
       <Filter>Src\Application\Components\Character\Data</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Components\Animation\TwoBoneIK.h">
+      <Filter>Src\Application\Components\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Animation\TwoBoneIKComponent.h">
+      <Filter>Src\Application\Components\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Scene\ResultScene\ResultScene.h">
+      <Filter>Src\Application\Scene\Result</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Scene\SceneType.h">
+      <Filter>Src\Application\Scene</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -706,6 +721,9 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Components\Character\Enemy\EnemyStatusController.cpp">
       <Filter>Src\Application\Components\Character\Enemy</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Scene\ResultScene\ResultScene.cpp">
+      <Filter>Src\Application\Scene\Result</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

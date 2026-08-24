@@ -4,12 +4,15 @@
 
 class TitleScene : public BaseScene
 {
-public :
+public:
 
-	TitleScene()  { Init(); }
+	TitleScene() { Init(); }
 	~TitleScene() {}
 
-private :
+private:
 
 	void Init()  override;
+
+	// Attack入力でGameSceneへ遷移する
+	void OnUpdate(float deltaTime) override;
 };

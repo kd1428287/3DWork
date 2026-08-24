@@ -12,6 +12,7 @@
 #include "../../Components/Animation/ModelAnimatorComponent.h"
 #include "../../Components/Animation/SkeletonComponent.h"
 #include "../../Components/Animation/BoneSocketComponent.h"
+#include "../../Components/Animation/TwoBoneIKComponent.h"
 #include "../../Components/Character/Player/PlayerStatusController.h"
 #include "../../Components/Character/Data/PostureComponent.h"
 #include "../../Components/Character/Data/HealthComponent.h"
@@ -58,7 +59,7 @@ namespace
 		auto* collider = player->AddComponent<ColliderComponent>();
 		player->AddComponent<GroundSensorComponent>();
 		player->AddComponent<FacingDirectionComponent>();
-		player->AddComponent<WireFrameComponent>();
+		//player->AddComponent<WireFrameComponent>();
 
 		// 体幹(パリィ/ガードの削り合い)管理用。数値の詳細(最大値・
 		// 回復速度等)はPostureComponentのデフォルト値のまま、別途調整する。
@@ -110,22 +111,38 @@ GameObject* PlayerFactory::CreatePlayer(ObjectManager& objectManager)
 	AttachMovement(player);
 
 	player->AddComponent<PlayerStatusController>();
-	player->AddComponent<CameraTargetComponent>();
-
+	player->AddComponent<CameraTargetComponent>()->SetLocalPosition({ 0.f,0.5f,0.f });
 	// --- 腕・武器のソケット生成 -----------------------------------------
-	// 武器の取り付け先(右手)以外のソケットは、現時点では取り付け先として
-	// 使っていないが、将来的な装備拡張(盾・エフェクト等)や、SkeletonComponent
-	// のボーン構成確認用として生成だけ済ませておく。
+		// 武器の取り付け先(右手)以外のソケットは、現時点では取り付け先として
+		// 使っていないが、将来的な装備拡張(盾・エフェクト等)や、SkeletonComponent
+		// のボーン構成確認用として生成だけ済ませておく。
 	Handle<SkeletonComponent> skeletonHandle(skeleton);
 
 	static const char* const kAuxiliarySocketBones[] = {
-		"mixamorig:LeftShoulder", "mixamorig:LeftArm", "mixamorig:LeftHand",
-		"mixamorig:RightShoulder", "mixamorig:RightArm",
+		//"mixamorig:HeadTop_End", "mixamorig:Head", "mixamorig:Neck",
+		//"mixamorig:LeftHandThumb4", "mixamorig:LeftHandThumb3", "mixamorig:LeftHandThumb2", "mixamorig:LeftHandThumb1",
+		//"mixamorig:LeftHandIndex4", "mixamorig:LeftHandIndex3", "mixamorig:LeftHandIndex2", "mixamorig:LeftHandIndex1",
+		//"mixamorig:LeftHandMiddle4", "mixamorig:LeftHandMiddle3", "mixamorig:LeftHandMiddle2", "mixamorig:LeftHandMiddle1",
+		//"mixamorig:LeftHandRing4", "mixamorig:LeftHandRing3", "mixamorig:LeftHandRing2", "mixamorig:LeftHandRing1",
+		//"mixamorig:LeftHandPinky4", "mixamorig:LeftHandPinky3", "mixamorig:LeftHandPinky2", "mixamorig:LeftHandPinky1",
+		"mixamorig:LeftHand", "mixamorig:LeftForeArm", "mixamorig:LeftArm", "mixamorig:LeftShoulder",
+		//"mixamorig:RightHandThumb4", "mixamorig:RightHandThumb3", "mixamorig:RightHandThumb2", "mixamorig:RightHandThumb1",
+		//"mixamorig:RightHandIndex4", "mixamorig:RightHandIndex3", "mixamorig:RightHandIndex2", "mixamorig:RightHandIndex1",
+		//"mixamorig:RightHandMiddle4", "mixamorig:RightHandMiddle3", "mixamorig:RightHandMiddle2", "mixamorig:RightHandMiddle1",
+		//"mixamorig:RightHandRing4", "mixamorig:RightHandRing3", "mixamorig:RightHandRing2", "mixamorig:RightHandRing1",
+		//"mixamorig:RightHandPinky4", "mixamorig:RightHandPinky3", "mixamorig:RightHandPinky2", "mixamorig:RightHandPinky1",
+		// mixamorig:RightHand は直後で個別に生成・取得するため除外
+		/*"mixamorig:RightForeArm", "mixamorig:RightArm", "mixamorig:RightShoulder",
+		"mixamorig:Spine2", "mixamorig:Spine1", "mixamorig:Spine",
+		"mixamorig:LeftToe_End", "mixamorig:LeftToeBase", "mixamorig:LeftFoot", "mixamorig:LeftLeg", "mixamorig:LeftUpLeg",
+		"mixamorig:RightToe_End", "mixamorig:RightToeBase", "mixamorig:RightFoot", "mixamorig:RightLeg", "mixamorig:RightUpLeg",
+		"mixamorig:Hips"*/
 	};
 	for (const char* boneName : kAuxiliarySocketBones) {
 		CreateSocket(objectManager, boneName, skeletonHandle);
 	}
 
+	// 武器生成用に RightHand ソケットのみ参照を受け取る
 	GameObject* rightHandSocket = CreateSocket(objectManager, "mixamorig:RightHand", skeletonHandle);
 	Handle<TransformComponent> weaponAttachPoint(rightHandSocket->GetComponent<BoneSocketComponent>());
 
@@ -142,6 +159,10 @@ GameObject* PlayerFactory::CreatePlayer(ObjectManager& objectManager)
 			Handle<ColliderComponent>(weapon->GetComponent<ColliderComponent>()),
 			Handle<AttackSourceComponent>(weapon->GetComponent<AttackSourceComponent>()));
 	}
+
+	weapon->AddComponent<TwoBoneIKComponent>(
+		"mixamorig:RightShoulder", "mixamorig:RightArm",
+		"mixamorig:RightForeArm", "mixamorig:RightHand");
 
 	// 所有権を持たない「利用権(参照用)」としての生ポインタを返す。
 	return player;
@@ -166,7 +187,7 @@ GameObject* PlayerFactory::CreateWeapon(ObjectManager& objectManager, GameObject
 	socket->SetLocalRotation(Math::Quaternion::CreateFromYawPitchRoll(
 		-90, DirectX::XMConvertToRadians(180), 0.0f));
 
-	socket->SetLocalPositon({ -0.1f,-0.1f,0.f });
+	socket->SetLocalPositon({ 0.05f,0.1f,0.f });
 
 	auto* skeleton = weapon->AddComponent<SkeletonComponent>();
 	skeleton->SetModelData("Asset/Models/Character/Player/Tachi.gltf");
@@ -194,7 +215,7 @@ GameObject* PlayerFactory::CreateWeapon(ObjectManager& objectManager, GameObject
 	// GameObjectであり、プレイヤー本体ではないため)。
 	attackSource->ownerCharacter = Handle<GameObject>(player);
 
-	weapon->AddComponent<WireFrameComponent>();
+	//weapon->AddComponent<WireFrameComponent>();
 
 	return weapon;
 }

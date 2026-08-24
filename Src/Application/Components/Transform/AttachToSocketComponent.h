@@ -60,7 +60,16 @@ public:
 		Math::Quaternion rotation;
 		Math::Vector3 scale;
 		if (socket->GetWorldMatrix().Decompose(scale, rotation, position)) {
-			selfTransform_->SetPosition(position + position_);
+			// position_はソケット(手のボーン)から見たローカルなオフセットの
+			// つもりで設定される値。ソケットの向きに関わらず一定のワールド
+			// 座標方向へずらしてしまうと、手首の回転が変わるモーション
+			// (攻撃・ガード等)で武器の位置だけがおかしくなる。ソケットの
+			// 回転(rotation)でposition_を変換してから足すことで、
+			// 「ソケットの向きに追従するローカルオフセット」として正しく
+			// 機能するようにする(回転側は元々rotation_ * rotationという
+			// 合成で同じことができていた)。
+			const Math::Vector3 rotatedOffset = Math::Vector3::Transform(position_, rotation);
+			selfTransform_->SetPosition(position + rotatedOffset);
 			selfTransform_->SetRotation(rotation_ * rotation);
 			// スケールは意図的に同期しない。武器モデル自体のスケールは
 			// 武器側のTransformComponentが独自に持つ値を尊重するため

@@ -276,6 +276,8 @@
     <ClInclude Include="Src\Application\Components\Animation\BoneSocketComponent.h" />
     <ClInclude Include="Src\Application\Components\Animation\ModelAnimatorComponent.h" />
     <ClInclude Include="Src\Application\Components\Animation\SkeletonComponent.h" />
+    <ClInclude Include="Src\Application\Components\Animation\TwoBoneIK.h" />
+    <ClInclude Include="Src\Application\Components\Animation\TwoBoneIKComponent.h" />
     <ClInclude Include="Src\Application\Components\Camera\CameraComponent.h" />
     <ClInclude Include="Src\Application\Components\Camera\CameraFollowComponent.h" />
     <ClInclude Include="Src\Application\Components\Camera\CameraOrbitComponent.h" />
@@ -334,7 +336,9 @@
     <ClInclude Include="Src\Application\main.h" />
     <ClInclude Include="Src\Application\Scene\BaseScene\BaseScene.h" />
     <ClInclude Include="Src\Application\Scene\GameScene\GameScene.h" />
+    <ClInclude Include="Src\Application\Scene\ResultScene\ResultScene.h" />
     <ClInclude Include="Src\Application\Scene\SceneManager.h" />
+    <ClInclude Include="Src\Application\Scene\SceneType.h" />
     <ClInclude Include="Src\Application\Scene\TitleScene\TitleScene.h" />
     <ClInclude Include="Src\Application\Systems\CameraSystem.h" />
     <ClInclude Include="Src\Application\Systems\Collision\ColliderRegistry.h" />
@@ -403,6 +407,7 @@
     <ClCompile Include="Src\Application\main.cpp" />
     <ClCompile Include="Src\Application\Scene\BaseScene\BaseScene.cpp" />
     <ClCompile Include="Src\Application\Scene\GameScene\GameScene.cpp" />
+    <ClCompile Include="Src\Application\Scene\ResultScene\ResultScene.cpp" />
     <ClCompile Include="Src\Application\Scene\SceneManager.cpp" />
     <ClCompile Include="Src\Application\Scene\TitleScene\TitleScene.cpp" />
     <ClCompile Include="Src\Framework\Direct3D\KdMaterial.cpp">
