@@ -326,6 +326,7 @@
     <ClInclude Include="Src\Application\Core\Handle.h" />
     <ClInclude Include="Src\Application\Core\ObjectManager.h" />
     <ClInclude Include="Src\Application\Core\SceneContext.h" />
+    <ClInclude Include="Src\Application\Editor\MapEditor.h" />
     <ClInclude Include="Src\Application\Engine\EventBus\EventBus.h" />
     <ClInclude Include="Src\Application\Engine\EventBus\Event\Event.h" />
     <ClInclude Include="Src\Application\Engine\SystemManager\SystemManager.h" />
@@ -403,6 +404,7 @@
     <ClCompile Include="Src\Application\Components\Character\Player\PlayerState.cpp" />
     <ClCompile Include="Src\Application\Components\Character\Player\PlayerStatusController.cpp" />
     <ClCompile Include="Src\Application\Components\Collision\WireFrameComponent.cpp" />
+    <ClCompile Include="Src\Application\Editor\MapEditor.cpp" />
     <ClCompile Include="Src\Application\Factories\Common\CameraFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\Game\EnemyFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\Game\PlayerFactory.cpp" />

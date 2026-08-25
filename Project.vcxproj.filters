@@ -172,6 +172,9 @@
     <Filter Include="Src\Application\Factories\Map">
       <UniqueIdentifier>{d65119ad-f10b-4999-8aa7-7f636432b55a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\Editor">
+      <UniqueIdentifier>{4d33b04a-546b-4544-b216-c18854df7aca}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -564,6 +567,9 @@
     <ClInclude Include="Src\Application\Factories\Map\MapLoader.h">
       <Filter>Src\Application\Factories\Map</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Editor\MapEditor.h">
+      <Filter>Src\Application\Editor</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -742,6 +748,9 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Factories\Map\MapLoader.cpp">
       <Filter>Src\Application\Factories\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Editor\MapEditor.cpp">
+      <Filter>Src\Application\Editor</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
