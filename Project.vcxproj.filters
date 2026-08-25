@@ -166,6 +166,12 @@
     <Filter Include="Src\Application\Scene\Result">
       <UniqueIdentifier>{cef29b94-8da2-4983-b856-80cfb02c422f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\Components\Character\Enemy\Brute">
+      <UniqueIdentifier>{9937f668-b6cc-42ac-a0f0-a083b2a1abf3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Factories\Map">
+      <UniqueIdentifier>{d65119ad-f10b-4999-8aa7-7f636432b55a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -420,9 +426,6 @@
     <ClInclude Include="Src\Application\Factories\Common\CameraFactory.h">
       <Filter>Src\Application\Factories\Common</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Factories\Game\TerrainFactory.h">
-      <Filter>Src\Application\Factories\Game</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Systems\CameraSystem.h">
       <Filter>Src\Application\Systems</Filter>
     </ClInclude>
@@ -464,9 +467,6 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Factories\Game\EnemyDefinition.h">
       <Filter>Src\Application\Factories\Game</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Systems\SocketSystem.h">
-      <Filter>Src\Application\Systems</Filter>
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Transform\SocketComponent.h">
       <Filter>Src\Application\Components\Transform</Filter>
@@ -548,6 +548,21 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Scene\SceneType.h">
       <Filter>Src\Application\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\Enemy\Brute\BruteStatusController.h">
+      <Filter>Src\Application\Components\Character\Enemy\Brute</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyStatusData.h">
+      <Filter>Src\Application\Components\Character\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Factories\Map\TerrainFactory.h">
+      <Filter>Src\Application\Factories\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Factories\Map\MapData.h">
+      <Filter>Src\Application\Factories\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Factories\Map\MapLoader.h">
+      <Filter>Src\Application\Factories\Map</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -701,9 +716,6 @@
     <ClCompile Include="Src\Application\Factories\Common\CameraFactory.cpp">
       <Filter>Src\Application\Factories\Common</Filter>
     </ClCompile>
-    <ClCompile Include="Src\Application\Factories\Game\TerrainFactory.cpp">
-      <Filter>Src\Application\Factories\Game</Filter>
-    </ClCompile>
     <ClCompile Include="Src\Application\Factories\Game\EnemyFactory.cpp">
       <Filter>Src\Application\Factories\Game</Filter>
     </ClCompile>
@@ -724,6 +736,12 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Scene\ResultScene\ResultScene.cpp">
       <Filter>Src\Application\Scene\Result</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Factories\Map\TerrainFactory.cpp">
+      <Filter>Src\Application\Factories\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Factories\Map\MapLoader.cpp">
+      <Filter>Src\Application\Factories\Map</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -34,6 +34,8 @@ void GameScene::Init()
 {
 	BaseScene::Init();
 
+	ShowCursor(false);
+
 	// factory
 	terrainFactory_ = std::make_unique<TerrainFactory>();
 	auto* terrain = terrainFactory_->CreateTerrain(*objManager_);
@@ -49,8 +51,6 @@ void GameScene::Init()
 	cameraFactory_ = std::make_unique<CameraFactory>();
 	//player->GetComponent<CameraTargetComponent>()->GetGeneration();
 	auto* camera = cameraFactory_->CreateCamera(*objManager_, player->GetComponent<CameraTargetComponent>());
-
-	
 
 	// system
 	inputSystem_ = std::make_unique<InputSystem>();

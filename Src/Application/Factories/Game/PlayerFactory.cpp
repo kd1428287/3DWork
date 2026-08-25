@@ -59,15 +59,16 @@ namespace
 		auto* collider = player->AddComponent<ColliderComponent>();
 		player->AddComponent<GroundSensorComponent>();
 		player->AddComponent<FacingDirectionComponent>();
-		//player->AddComponent<WireFrameComponent>();
+		player->AddComponent<WireFrameComponent>();
 
 		// 体幹(パリィ/ガードの削り合い)管理用。数値の詳細(最大値・
 		// 回復速度等)はPostureComponentのデフォルト値のまま、別途調整する。
-		player->AddComponent<PostureComponent>();
+		auto* posture = player->AddComponent<PostureComponent>();
 
 		// HP管理用。数値の詳細(最大値等)はHealthComponentのデフォルト値
 		// のまま、別途調整する。
-		player->AddComponent<HealthComponent>();
+		auto* health = player->AddComponent<HealthComponent>();
+		health->SetMax(100.f, true);
 
 		// Y方向の半径をCharacterCollisionDefaults::kFootOffsetと一致させて
 		// いる点が重要。Bodyの下端がfootOffsetまで届いていないと、Bodyが
@@ -200,7 +201,7 @@ GameObject* PlayerFactory::CreateWeapon(ObjectManager& objectManager, GameObject
 	// PlayerStatusController::SetWeaponHitBoxEnabled()経由で有効化する
 	// 前提のため、生成直後はfalseにしておく。
 	CollisionShapeEntry& hitBox = collision->AddBox(
-		"HitBox", Math::Vector3(0.1f, 1.f, 0.1f), Math::Vector3(0.f, 1.f, 0.f), ColliderCategory::HitBox);
+		"HitBox", Math::Vector3(0.1f, 0.1f, 0.75f), Math::Vector3(0.f, 0.f, 0.75f), ColliderCategory::HitBox);
 	hitBox.enabled = false;
 	// 押し返し(物理応答)はせず、重なり検知(イベント)だけ行う。
 	// isTrigger未設定のままだと通常のBump同様の押し返しが働いてしまう
@@ -215,7 +216,7 @@ GameObject* PlayerFactory::CreateWeapon(ObjectManager& objectManager, GameObject
 	// GameObjectであり、プレイヤー本体ではないため)。
 	attackSource->ownerCharacter = Handle<GameObject>(player);
 
-	//weapon->AddComponent<WireFrameComponent>();
+	weapon->AddComponent<WireFrameComponent>();
 
 	return weapon;
 }

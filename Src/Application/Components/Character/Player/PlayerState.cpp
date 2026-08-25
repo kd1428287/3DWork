@@ -166,7 +166,7 @@ void StateStagger::Enter(PlayerStatusController* controller) {
 	// アニメーション未実装のためコメントアウト。
 	// AttackMoveData/GuardMoveDataのような専用データ構造をStaggerは
 	// 持たないため、isLarge_で仮のアニメーション名を直接出し分ける想定だった。
-	// controller->PlayAnimation(isLarge_ ? "StaggerLarge" : "StaggerSmall");
+	 controller->PlayAnimation(isLarge_ ? "miniStun" : "miniStun");
 }
 
 void StateStagger::Update(PlayerStatusController* controller, float deltaTime) {

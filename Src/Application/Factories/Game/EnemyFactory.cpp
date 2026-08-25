@@ -3,6 +3,7 @@
 
 
 #include "../../Components/Character/Enemy/EnemyStatusController.h"
+#include "../../Components/Character/Enemy/Brute/BruteStatusController.h"
 #include "../../Components/Character/Data/PostureComponent.h"
 #include "../../Components/Character/Data/HealthComponent.h"
 #include "../../Components/Transform/TransformComponent.h"
@@ -16,6 +17,7 @@
 #include "../../Components/Collision/AttackSourceComponent.h"
 #include "../../Components/Animation/SkeletonComponent.h"
 #include "../../Components/Animation/BoneSocketComponent.h"
+#include "../../Components/Animation/ModelAnimatorComponent.h"
 #include "../../Components/Render/ModelRenderComponent.h"
 #include "../../Components/Sensors/GroundSensorComponent.h"
 
@@ -110,6 +112,7 @@ GameObject* EnemyFactory::BuildEnemy(ObjectManager& objectManager, const EnemyDe
 	// EnemyStatusController::Start()内でMovementComponentへ
 	// SetMovementSource(this)する。GetComponent<T>()はマップ参照なので、
 	// AddComponentの順序には依存しない。
+	//EnemyStatusController* status = enemy->AddComponent<BruteStatusController>(def.patrolDistance);
 	EnemyStatusController* status = enemy->AddComponent<EnemyStatusController>(def.patrolDistance);
 
 	// 被弾判定(トリガー、攻撃判定専用)。collideMaskをHitBoxだけに
@@ -176,6 +179,8 @@ GameObject* EnemyFactory::BuildEnemy(ObjectManager& objectManager, const EnemyDe
 	// HP管理用。数値の詳細(最大値等)はHealthComponentのデフォルト値
 	// のまま、別途調整する。
 	enemy->AddComponent<HealthComponent>();
+
+	enemy->AddComponent<ModelAnimatorComponent>()->SetFPS(60);
 
 	// --- 武器のソケット生成・武器生成・登録 -------------------------------
 	// PlayerFactory::CreatePlayer()の武器生成部分と同じ流れ。

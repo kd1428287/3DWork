@@ -314,7 +314,8 @@ private:
 			}
 		}
 		else {
-			// 通常被弾: ダメージ+ノックバック+怯みを付与する。
+			// 通常被弾: ダメージ+体幹ダメージ+ノックバックを付与し、
+			// 体幹が壊れたかどうかで小スタン/大スタンに分岐する。
 			//
 			// ノックバック方向は幾何学的接触法線(hitNormal)ではなく、
 			// 攻撃者→自分への水平方向を使う(Enemy側で発生した「Box形状の
@@ -342,10 +343,22 @@ private:
 				velocityComponent_->AddImpulse(dir * attack->knockbackPower);
 			}
 
-			// Small/Largeの判定基準がまだ無いため、ひとまずSmallで固定。
-			// (大技だけ吹っ飛びを大きくしたい等の要件が出たら、
-			//  AttackSourceComponentにisLargeフラグ等を足して分岐する)
-			ApplyStagger(/*isLarge=*/false, attack->hitStunSeconds);
+			// 通常被弾でも体幹にダメージを蓄積する(ガード時とは異なり全ダメージ分)。
+			// 体幹が壊れた(IsBroken())場合は大スタン(のけぞり)へ、
+			// そうでなければ従来通り小スタン(よろけ、attack->hitStunSeconds)へ。
+			bool postureBroken = false;
+			if (postureComponent_ != nullptr) {
+				postureComponent_->AddPostureDamage(attack->postureDamage);
+				postureBroken = postureComponent_->IsBroken();
+				if (postureBroken) {
+					// 大スタンへ移行するため、次の蓄積に備えて体幹ゲージを空にする。
+					// TODO: PostureComponent側の実際のリセットAPI名に合わせて修正すること
+					// (現状Reset()という名称を仮定している)。
+					postureComponent_->Reset();
+				}
+			}
+
+			ApplyStagger(/*isLarge=*/postureBroken, postureBroken ? kLargeStaggerDuration : attack->hitStunSeconds);
 		}
 	}
 
@@ -374,6 +387,10 @@ private:
 	static constexpr const char* kIdleAnimation = "Idle";
 	static constexpr const char* kWalkAnimation = "Walk";
 	static constexpr const char* kRunAnimation = "Walk"; //"Run";
+
+	// 大スタン(のけぞり)の硬直時間(仮)。小スタンはattack->hitStunSecondsを
+	// そのまま使うが、大スタンは攻撃側のデータに依存させず一律の値にしている。
+	static constexpr float kLargeStaggerDuration = 0.6f;
 
 	// --- 戦闘データ ---
 	AttackMoveData currentAttack_;

@@ -32,7 +32,7 @@ public:
 		GameObject* object = nullptr;
 	};
 
-	explicit HealthComponent(GameObject* owner, float maxHealth = 100.0f)
+	explicit HealthComponent(GameObject* owner, float maxHealth = 1000.0f)
 		: ComponentBase(owner), max_(maxHealth), current_(maxHealth) {
 	}
 

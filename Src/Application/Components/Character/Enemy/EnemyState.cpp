@@ -4,6 +4,7 @@
 // --- StateWalkRight ---
 void StateWalkRight::Enter(EnemyStatusController* controller) {
 	controller->SetDesiredDirection({ 1.0f, 0.0f, 0.0f });
+	controller->PlayAnimation("Run", true);
 }
 
 void StateWalkRight::Update(EnemyStatusController* controller, float /*deltaTime*/) {
@@ -16,6 +17,9 @@ void StateWalkRight::Update(EnemyStatusController* controller, float /*deltaTime
 // --- StateWalkLeft ---
 void StateWalkLeft::Enter(EnemyStatusController* controller) {
 	controller->SetDesiredDirection({ -1.0f, 0.0f, 0.0f });
+	// 左右で専用のアニメーションは無いため、StateWalkRightと同じ"Run"を
+	// 再生する(モデルの向き自体はTransform側の回転で表現される想定)。
+	controller->PlayAnimation("Run", true);
 }
 
 void StateWalkLeft::Update(EnemyStatusController* controller, float /*deltaTime*/) {
@@ -33,6 +37,11 @@ void StateWalkLeft::Update(EnemyStatusController* controller, float /*deltaTime*
 void StateKnockback::Enter(EnemyStatusController* controller) {
 	elapsed_ = 0.0f;
 	controller->ApplyKnockbackImpulse(params_.direction * params_.power);
+
+	// アニメーション未実装のためコメントアウト(PlayerState.cppの
+	// StateStagger::Enterと同じ考え方)。専用の被弾/怯みアニメーションが
+	// 用意できたら再生する。
+	// controller->PlayAnimation("Hit", false);
 }
 
 void StateKnockback::Update(EnemyStatusController* controller, float deltaTime) {
@@ -59,8 +68,7 @@ void StateKnockback::Update(EnemyStatusController* controller, float deltaTime) 
 	}
 }
 
-void StateKnockback::Exit(EnemyStatusController* /*controller*/) {
-}
+void StateKnockback::Exit(EnemyStatusController* /*controller*/) {}
 
 // --- StateDead ---
 void StateDead::Enter(EnemyStatusController* controller) {
@@ -74,8 +82,10 @@ void StateDead::Enter(EnemyStatusController* controller) {
 	controller->StopMovementForDeath();
 	controller->DisableCollisionForDeath();
 
-	// TODO: 死亡アニメーションを再生する(ModelAnimatorComponent導入後)。
-	// controller->PlayDeathAnimation();
+	// 死亡演出の再生時間(kDespawnDelay)にちょうど収まるよう、単発再生
+	// (loop=false)でアニメーション速度を自動スケーリングする
+	// (PlayerStatusController::PlayAnimationの同種コメント参照)。
+	//controller->PlayAnimation("Death", false, kDespawnDelay);
 
 	// TODO: 死亡エフェクト(パーティクル等)を再生する(エフェクトシステム実装後)。
 	// controller->PlayDeathEffect();
@@ -92,7 +102,7 @@ void StateDead::Update(EnemyStatusController* controller, float deltaTime) {
 	if (elapsed_ >= kDespawnDelay) {
 		despawnRequested_ = true;
 		controller->RequestDespawn();
-		GLOBALEVENT.Publish(Events::Scene::SceneChangeRequestEvent{ SceneType::Result });
+		//GLOBALEVENT.Publish(Events::Scene::SceneChangeRequestEvent{ SceneType::Result });
 	}
 }
 

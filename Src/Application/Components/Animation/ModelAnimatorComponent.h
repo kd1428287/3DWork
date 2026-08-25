@@ -144,7 +144,7 @@ public:
 		}
 	}
 
-	// 再生速度の基準fpsを設定(デフォルト30fps)
+	// 再生速度の基準fpsを設定(デフォルト60fps)
 	void SetFPS(float fps) { m_fps = fps; }
 
 	// クロスフェードの時間(秒)を設定する。技の種類によって
@@ -198,7 +198,7 @@ private:
 	// 現在再生中のアニメーションデータ(Play()の多重頭出し防止用)
 	std::shared_ptr<KdAnimationData>	spNowPlaying_ = nullptr;
 
-	float								m_fps = 30.0f;
+	float								m_fps = 60.0f;
 
 	// Play()にtargetDurationSecondsが渡された場合、m_fpsの代わりに使う
 	// 「1秒あたりに進めるアニメーション時間」。-1以下ならm_fps基準に戻す。

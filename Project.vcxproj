@@ -285,8 +285,10 @@
     <ClInclude Include="Src\Application\Components\Camera\CameraTargetComponent.h" />
     <ClInclude Include="Src\Application\Components\Character\Data\HealthComponent.h" />
     <ClInclude Include="Src\Application\Components\Character\Data\PostureComponent.h" />
+    <ClInclude Include="Src\Application\Components\Character\Enemy\Brute\BruteStatusController.h" />
     <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyState.h" />
     <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyStatusController.h" />
+    <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyStatusData.h" />
     <ClInclude Include="Src\Application\Components\Character\Player\PlayerCombatTypes.h" />
     <ClInclude Include="Src\Application\Components\Character\Player\PlayerInputComponent.h" />
     <ClInclude Include="Src\Application\Components\Character\Player\PlayerState.h" />
@@ -331,8 +333,10 @@
     <ClInclude Include="Src\Application\Factories\GameObjectFactory.h" />
     <ClInclude Include="Src\Application\Factories\Game\EnemyDefinition.h" />
     <ClInclude Include="Src\Application\Factories\Game\EnemyFactory.h" />
-    <ClInclude Include="Src\Application\Factories\Game\TerrainFactory.h" />
     <ClInclude Include="Src\Application\Factories\Game\PlayerFactory.h" />
+    <ClInclude Include="Src\Application\Factories\Map\MapData.h" />
+    <ClInclude Include="Src\Application\Factories\Map\MapLoader.h" />
+    <ClInclude Include="Src\Application\Factories\Map\TerrainFactory.h" />
     <ClInclude Include="Src\Application\main.h" />
     <ClInclude Include="Src\Application\Scene\BaseScene\BaseScene.h" />
     <ClInclude Include="Src\Application\Scene\GameScene\GameScene.h" />
@@ -346,7 +350,6 @@
     <ClInclude Include="Src\Application\Systems\Collision\CollisionSystem.h" />
     <ClInclude Include="Src\Application\Systems\Collision\RaycastSystem.h" />
     <ClInclude Include="Src\Application\Systems\InputSystem.h" />
-    <ClInclude Include="Src\Application\Systems\SocketSystem.h" />
     <ClInclude Include="Src\Framework\Direct3D\KdMaterial.h" />
     <ClInclude Include="Src\Framework\Direct3D\Polygon\KdPolygon.h" />
     <ClInclude Include="Src\Framework\Direct3D\Polygon\KdSquarePolygon.h" />
@@ -403,7 +406,8 @@
     <ClCompile Include="Src\Application\Factories\Common\CameraFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\Game\EnemyFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\Game\PlayerFactory.cpp" />
-    <ClCompile Include="Src\Application\Factories\Game\TerrainFactory.cpp" />
+    <ClCompile Include="Src\Application\Factories\Map\MapLoader.cpp" />
+    <ClCompile Include="Src\Application\Factories\Map\TerrainFactory.cpp" />
     <ClCompile Include="Src\Application\main.cpp" />
     <ClCompile Include="Src\Application\Scene\BaseScene\BaseScene.cpp" />
     <ClCompile Include="Src\Application\Scene\GameScene\GameScene.cpp" />

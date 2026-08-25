@@ -17,6 +17,15 @@ void PlayerStatusController::HandleMovementInput(const PlayerInputComponent& inp
 
 void PlayerStatusController::HandleActionInput(PlayerInputComponent& input)
 {
+	// スタン中(Stagger)は一切の行動入力を受け付けない。
+	// Attack/Evadeの開始自体はCanStartAttack()/CanStartEvade()
+	// (IPlayerStateのデフォルトfalse、StateStaggerは未オーバーライド)に
+	// よっても防がれてはいるが、ここで早期リターンしておくことで、
+	// HandleMovementInputと同じく「スタン中は行動入力を一切見ない」ことを
+	// 明示し、将来Stateが増えた際にCanStart*系のオーバーライド漏れが
+	// あってもスタン無敵貫通が起きないようにする。
+	if (IsStaggered()) return;
+
 	// Guardの開始可否もAttack/Evadeと同じくCanStartGuard()/TryStartGuard()
 	// (=State側のポリモーフィズム)に委ねる。CombatState::Noneのハードコード
 	// 比較はここには置かない。

@@ -1,11 +1,14 @@
 ﻿#pragma once
+#include <string>
 #include <vector>
 #include "EnemyState.h"
+#include "EnemyStatusData.h"
 #include "../../Movement/IMovementSource.h"
 #include "../../Movement/MovementComponent.h"
 #include "../../Movement/VelocityComponent.h"
 #include "../../Transform/TransformComponent.h"
 #include "../StateMachine/StateMachine.h"
+#include "../../Animation/ModelAnimatorComponent.h"
 #include "../../../Systems/Collision/CollisionSystem.h"
 #include "../../Collision/AttackSourceComponent.h"
 #include "../../Collision/ColliderComponent.h"
@@ -36,12 +39,24 @@
 // 計算)は宣言のみここに置き、実装はEnemyStatusController.cppにある。
 // 単純な橋渡し(1行で完結するState向けのgetter/setterや状態遷移トリガー)
 // はこれまで通りインラインのままにしている。
+//
+// --- 派生クラスについて ---------------------------------------------
+// このクラスは雑魚敵(BruteStatusController)・ボス(BossStatusController)の
+// 共通基底として使う。パトロール/ノックバック/死亡/パリィ怯みといった
+// 共通の挙動はここに残し、敵種ごとに差し替えたい部分(現状は
+// UpdateAttackTimer()による仮攻撃AI)だけをvirtualにして派生クラス側で
+// 上書きできるようにしている。State(StateWalkRight等)はEnemyStatusController*
+// を扱うだけなので、派生クラスをそのままStateMachineに乗せても変更不要。
+//
+// チューニング値(patrolDistance、攻撃間隔等)はEnemyStatusData(別ファイル)
+// にまとめてコンストラクタで受け取る形にした。将来的にJSON等の外部データ
+// から読み込んだEnemyStatusDataをそのまま渡せるようにするための下準備
+// (実際のJSON読み込み処理自体はまだ未実装)。
 // ============================================================
 class EnemyStatusController : public ComponentBase, public IMovementSource {
 public:
-	// patrolDistance: 基準点からどれだけ離れたら折り返すか
-	explicit EnemyStatusController(GameObject* owner, float patrolDistance = 3.0f)
-		: ComponentBase(owner), patrolDistance_(patrolDistance) {}
+	explicit EnemyStatusController(GameObject* owner, const EnemyStatusData& data = EnemyStatusData{})
+		: ComponentBase(owner), data_(data) {}
 
 	void Start() override {
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
@@ -49,6 +64,7 @@ public:
 		velocityComponent_ = GetOwner()->GetComponent<VelocityComponent>();
 		postureComponent_ = GetOwner()->GetComponent<PostureComponent>();
 		healthComponent_ = GetOwner()->GetComponent<HealthComponent>();
+		modelAnimatorComponent_ = GetOwner()->GetComponent<ModelAnimatorComponent>();
 
 		if (transform_ != nullptr) {
 			basePosition_ = transform_->GetPosition();
@@ -87,7 +103,8 @@ public:
 		// 暫定的に一定間隔で武器のHitBoxを短時間有効化するだけの
 		// タイマーを回す(詳細はUpdateAttackTimer()参照)。パトロール/
 		// ノックバック等のStateMachineとは独立に、常にこのタイマーだけ
-		// 先に進める。
+		// 先に進める。UpdateAttackTimer()はvirtualなので、派生クラス
+		// (BossStatusController等)が独自の攻撃パターンに差し替えられる。
 		UpdateAttackTimer(deltaTime);
 
 		// 戦闘状態の更新は共通StateMachineに丸投げ
@@ -97,7 +114,7 @@ public:
 	// --- Stateから参照される情報 ------------------------------------------
 
 	const Math::Vector3& GetBasePosition() const { return basePosition_; }
-	float GetPatrolDistance() const { return patrolDistance_; }
+	float GetPatrolDistance() const { return data_.patrolDistance; }
 
 	Math::Vector3 GetCurrentPosition() const {
 		return transform_ ? transform_->GetPosition() : basePosition_;
@@ -165,12 +182,6 @@ public:
 	// --- StateDead/StateParryStunから呼ばれる、移動・当たり判定・消滅の橋渡し ---
 	// 死亡時(恒久的に停止)とパリィ怯み(一定時間後に再開)の両方で使う
 	// 共通の橋渡し。
-	//
-	// 修正: 以前はprivate:セクションに置かれてしまっており、State側
-	// (EnemyState.cppのStateDead/StateParryStun、EnemyStatusControllerの
-	// メンバでもfriendでもない別クラス)から呼ぶとコンパイルエラーに
-	// なっていた。ApplyKnockbackImpulse等、他のState向け橋渡しメソッドと
-	// 同じくpublicへ移動して解決している。
 	void SetMovementEnabled(bool enabled) {
 		if (movementComponent_ != nullptr) movementComponent_->SetEnabled(enabled);
 	}
@@ -224,6 +235,51 @@ public:
 		weaponAttackSource_ = weaponAttackSource;
 	}
 
+	// --- アニメーション再生 -----------------------------------------------
+	// PlayerStatusController::PlayAnimation()と同じ考え方。State側が
+	// 具体的なModelAnimatorComponentを直接知らずに再生できるようにする
+	// 薄いラッパー。
+	void PlayAnimation(const std::string& name, bool loop = false, float targetDurationSeconds = -1.0f) {
+		if (modelAnimatorComponent_ != nullptr) {
+			modelAnimatorComponent_->Play(name, loop, targetDurationSeconds);
+		}
+	}
+
+protected:
+	// --- 派生クラス(Brute/Boss)が差し替える・再利用するための拡張ポイント ---
+
+	// 実際の攻撃AI(射程判定、プレイヤーへの接近、攻撃モーション等)が
+	// 実装されるまでの暫定処置。一定間隔でSetWeaponHitBoxEnabled(true)し、
+	// 一定時間後に閉じるだけ(実装はcpp)。virtualにしてあるので、Boss等で
+	// 複数パターンの攻撃AIに完全に差し替えたい場合はoverrideすること。
+	virtual void UpdateAttackTimer(float deltaTime);
+
+	// PlayerStatusController::SetWeaponHitBoxEnabled()と同じ役割
+	// (武器のHitBoxのenabled切り替えと、多段ヒット防止用記録のクリア)。
+	// 派生クラスが独自のUpdateAttackTimer()から呼べるようprotectedにしている。
+	void SetWeaponHitBoxEnabled(bool enabled);
+
+	// ノックバック中/死亡後/パリィ怯み中は攻撃できない
+	// (Stateインスタンスへのポインタ比較で判定)。
+	bool CanAttack() const {
+		IEnemyState* current = stateMachine_.Current();
+		return current != &stateKnockback_ && current != &stateDead_ && current != &stateParryStun_;
+	}
+
+	// 死亡中(StateDead)かどうかの共通ガード。
+	bool IsDead() const {
+		return stateMachine_.Current() == &stateDead_;
+	}
+
+	// コンストラクタで受け取ったチューニング値。派生クラスの
+	// UpdateAttackTimer()等から直接参照できるようprotectedにしている。
+	EnemyStatusData data_;
+
+	// 仮攻撃タイマーの内部状態。派生クラスが独自のUpdateAttackTimer()を
+	// 書く場合、流用してもよいし、派生クラス側に別のメンバを持たせてもよい。
+	float attackIntervalTimer_ = 0.0f;
+	float hitBoxActiveTimer_ = 0.0f;
+
 private:
 	void TransitionTo(IEnemyState* nextState) {
 		stateMachine_.TransitionTo(this, nextState);
@@ -234,6 +290,7 @@ private:
 	VelocityComponent* velocityComponent_ = nullptr; // ノックバックの実際の移動はこちらに委譲する
 	PostureComponent* postureComponent_ = nullptr;
 	HealthComponent* healthComponent_ = nullptr;
+	ModelAnimatorComponent* modelAnimatorComponent_ = nullptr;
 
 	// 武器(別GameObject、ソケット経由でアタッチ)への弱参照。
 	// EnemyFactory側からSetWeapon()経由でセットされる想定。
@@ -245,7 +302,6 @@ private:
 	std::vector<Handle<GameObject>> ownedObjects_;
 
 	Math::Vector3 basePosition_{};
-	float patrolDistance_;
 	Math::Vector3 desiredDirection_{};
 
 	// Stateインスタンス(メモリ断片化を防ぐため実体をメンバで持つ。
@@ -265,49 +321,6 @@ private:
 	// HealthComponent::DiedEvent受信時に呼ばれる(実装はEnemyStatusController.cpp)。
 	void OnDied(const HealthComponent::DiedEvent& e);
 
-	// --- 簡易的な攻撃タイマー(実装はEnemyStatusController.cpp) --------------
-	// 実際の攻撃AI(射程判定、プレイヤーへの接近、攻撃モーション等)が
-	// 実装されるまでの暫定処置。一定間隔でSetWeaponHitBoxEnabled(true)し、
-	// 一定時間後に閉じるだけ。
-	void UpdateAttackTimer(float deltaTime);
-
-	// PlayerStatusController::SetWeaponHitBoxEnabled()と同じ役割
-	// (武器のHitBoxのenabled切り替えと、多段ヒット防止用記録のクリア)。
-	void SetWeaponHitBoxEnabled(bool enabled);
-
-	// ノックバック中/死亡後/パリィ怯み中は攻撃できない
-	// (Stateインスタンスへのポインタ比較で判定。専用の仮想メソッドを
-	//  IEnemyStateに増やすほどではないと判断し、最小限の実装にしている)。
-	bool CanAttack() const {
-		IEnemyState* current = stateMachine_.Current();
-		return current != &stateKnockback_ && current != &stateDead_ && current != &stateParryStun_;
-	}
-
-	// 死亡中(StateDead)かどうかの共通ガード。CanAttack()と同じくポインタ
-	// 比較で判定する。ChangeStateToKnockback()/ChangeStateToParryStun()の
-	// ように、外部イベント(被弾/パリィ)起因で呼ばれ得る状態遷移トリガーは
-	// 全てこれで死亡中の遷移を弾く。
-	//
-	// 背景: OnCollisionEnter()内のTakeDamage()がHPを0にすると、同一フレーム
-	// 内で同期的にHealthComponent::DiedEvent→OnDied()→StateDead::Enter()まで
-	// 実行される。その直後にOnCollisionEnter()が(死亡したことを知らずに)
-	// 無条件でChangeStateToKnockback()を呼んでいたため、StateDeadへ遷移した
-	// 直後にStateKnockbackへ上書きされ、StateDead::Update()が一度も呼ばれない
-	// (かつStateDead::Exit()が空実装のため、無効化した移動/当たり判定も
-	//  復元されないままKnockbackに入ってしまう)不具合が起きていた。
-	bool IsDead() const {
-		return stateMachine_.Current() == &stateDead_;
-	}
-
-	// 攻撃の発生間隔(秒)。実際の攻撃AIが実装されたら、この固定間隔ではなく
-	// 射程・クールダウン等に基づいた判断へ置き換える想定。
-	static constexpr float kAttackInterval = 1.0f;
-	// HitBoxが有効になっている時間(秒)。
-	static constexpr float kAttackActiveDuration = 0.2f;
-
-	float attackIntervalTimer_ = 0.0f;
-	float hitBoxActiveTimer_ = 0.0f;
-
 	ScopedSubscriber subscriber_;
 	ScopedSubscriber healthSubscriber_;
 
@@ -317,18 +330,9 @@ private:
 	// 「1フレームでの最大移動量」を大きく超えるような異常な速度を防ぐのが
 	// 目的で、地形の厚みそのものが薄すぎる場合は根本対策にならない
 	// (別途、地面コライダーに十分な厚みを持たせることも推奨)。
-
-	// 1秒あたりのノックバック速度の上限。VelocityComponent::AddImpulse()に
-	// そのまま渡す値なので、ここでのpowerの単位は「1秒あたりの移動距離」
-	// とみなせる(MovementComponentのspeed_のような追加の倍率はかからない)。
-	static constexpr float kMaxKnockbackSpeed = 15.0f;
-
-	// ノックバック方向のY成分(下向き)の下限。-1.0(完全に真下)に近いほど
-	// 高速で地面へ潜り込みやすくなるため、真下方向をある程度までに制限する
-	// (真横〜斜め下までは許容し、「真下へ垂直落下するような」極端な
-	//  ケースだけ緩和する)。
-	static constexpr float kMinKnockbackDirectionY = -0.5f;
-
-	static KnockbackParams ClampKnockbackParams(KnockbackParams params);
-	static Math::Vector3 ClampKnockbackDirection(const Math::Vector3& direction);
+	//
+	// data_(EnemyStatusData)のmaxKnockbackSpeed/minKnockbackDirectionYを
+	// 参照するようになったため、static関数からインスタンスメソッドに変更した。
+	KnockbackParams ClampKnockbackParams(KnockbackParams params);
+	Math::Vector3 ClampKnockbackDirection(const Math::Vector3& direction);
 };

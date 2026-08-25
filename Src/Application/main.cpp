@@ -83,7 +83,7 @@ void Application::KdBeginDraw(bool usePostProcess)
 void Application::KdPostDraw()
 {
 	// Imguiのレンダリング
-	//KdDebugGUI::Instance().GuiProcess();
+	KdDebugGUI::Instance().GuiProcess();
 
 	// BackBuffer -> 画面表示
 	KdDirect3D::Instance().WorkSwapChain()->Present(0, 0);
@@ -205,9 +205,9 @@ bool Application::Init(int w, int h)
 	// 1. キーボード用のコレクターを作成
 	auto keyboardDevice = std::make_unique<KdInputCollector>();
 
-	// ボタンの登録: "Jump" アクションに [スペースキー] を割り当て
+	// ボタンの登録
 	keyboardDevice->AddButton("Evade", new KdInputButtonForWindows(VK_SPACE));
-	keyboardDevice->AddButton("Attack", new KdInputButtonForWindows({ 'Z', VK_LBUTTON }));
+	keyboardDevice->AddButton("Attack", new KdInputButtonForWindows({ 'Z', VK_LBUTTON , VK_RETURN }));
 	keyboardDevice->AddButton("Guard", new KdInputButtonForWindows({ VK_RBUTTON }));
 	keyboardDevice->AddButton("Dash", new KdInputButtonForWindows({ VK_LSHIFT }));
 	keyboardDevice->AddButton("Pause", new KdInputButtonForWindows({ 'T'}));

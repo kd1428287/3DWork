@@ -23,8 +23,8 @@ public:
 	explicit AttackSourceComponent(GameObject* owner) : ComponentBase(owner) {}
 
 	float damage = 10.0f;
-	float knockbackPower = 8.0f;
-	float hitStunSeconds = 0.4f;
+	float knockbackPower = 6.0f;
+	float hitStunSeconds = 0.5f;
 
 	// この攻撃をガードされた時に、被弾側の体幹(PostureComponent)へ
 	// 与えるダメージ量。

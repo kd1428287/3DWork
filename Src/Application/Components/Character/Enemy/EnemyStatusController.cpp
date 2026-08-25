@@ -86,7 +86,7 @@ void EnemyStatusController::OnDied(const HealthComponent::DiedEvent& /*e*/) {
 
 KnockbackParams EnemyStatusController::ClampKnockbackParams(KnockbackParams params) {
 	params.direction = ClampKnockbackDirection(params.direction);
-	params.power = std::min(params.power, kMaxKnockbackSpeed);
+	params.power = std::min(params.power, data_.maxKnockbackSpeed);
 	return params;
 }
 
@@ -101,7 +101,7 @@ KnockbackParams EnemyStatusController::ClampKnockbackParams(KnockbackParams para
 // よう水平方向だけ再スケールする」必要がある。これなら仕上がりが
 // 必ず単位ベクトルになり、yも狙った値のまま保たれる。
 Math::Vector3 EnemyStatusController::ClampKnockbackDirection(const Math::Vector3& direction) {
-	const float clampedY = std::max(direction.y, kMinKnockbackDirectionY);
+	const float clampedY = std::max(direction.y, data_.minKnockbackDirectionY);
 
 	Math::Vector3 horizontal(direction.x, 0.0f, direction.z);
 	const float horizontalLenSq = horizontal.LengthSquared();
@@ -126,6 +126,8 @@ Math::Vector3 EnemyStatusController::ClampKnockbackDirection(const Math::Vector3
 }
 
 // --- 簡易的な攻撃タイマー -------------------------------------------------
+// 基底クラスのデフォルト実装。Boss等で完全に異なる攻撃パターンが
+// 必要になったらoverrideすること(EnemyStatusController.hのコメント参照)。
 
 void EnemyStatusController::UpdateAttackTimer(float deltaTime) {
 	if (!CanAttack()) {
@@ -149,10 +151,10 @@ void EnemyStatusController::UpdateAttackTimer(float deltaTime) {
 	}
 
 	attackIntervalTimer_ += deltaTime;
-	if (attackIntervalTimer_ < kAttackInterval) return;
+	if (attackIntervalTimer_ < data_.attackInterval) return;
 
 	attackIntervalTimer_ = 0.0f;
-	hitBoxActiveTimer_ = kAttackActiveDuration;
+	hitBoxActiveTimer_ = data_.attackActiveDuration;
 	SetWeaponHitBoxEnabled(true);
 }
 
