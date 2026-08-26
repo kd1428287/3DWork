@@ -2,6 +2,7 @@
 #include <array>
 #include <string>
 #include "PlayerCombatTypes.h"
+#include "PlayerCombatDataTable.h"
 #include "PlayerInputComponent.h"
 #include "../../Movement/MovementComponent.h" // 既存の依存として
 #include "../../Movement/VelocityComponent.h"
@@ -32,11 +33,18 @@ public:
 		velocityComponent_ = GetOwner()->GetComponent<VelocityComponent>();
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
 
-		// コンボ各段のアニメーション名を仮で割り当てる
-		// (本番の技データテーブルが用意できたらここは不要になる)。
-		for (int i = 0; i < kMaxComboHits; ++i) {
-			comboAttacks_[i].animationName = "Attack" + std::to_string(i + 1);
-		}
+		// コンボ各段のデータ(タイミング・踏み込み量等)をまとめて読み込む。
+		// 現状はデバッグ用の直書きテーブル(CreateDebugComboAttackTable())
+		// から取得しているが、将来的にはJSON等の外部データから読み込んだ
+		// テーブルをそのまま代入できるようにするための下準備
+		// (実際のJSON読み込み処理自体はまだ未実装)。
+		comboAttacks_ = CreateDebugComboAttackTable();
+
+		// Evade/Guardの基本データも同様にデバッグ用テーブルから読み込む。
+		// Evadeは方向(evadeDirection)だけ入力時に上書きされ(HandleActionInput
+		// 参照)、それ以外のタイミング系はこの基本データをそのまま使う。
+		baseEvadeData_ = CreateDebugEvadeData();
+		baseGuardData_ = CreateDebugGuardData();
 
 		// HurtBoxへのCollisionEnterEventは、シーン共有バスではなく
 		// このGameObject自身のローカルバスにだけ届く(CollisionSystem/
@@ -106,7 +114,14 @@ public:
 		currentAttack_ = comboAttacks_[comboIndex_];
 		comboIndex_ = (comboIndex_ + 1) % kMaxComboHits; // 5段目の次は1段目へ折り返す
 
-		TransitionTo(&stateAttack_);
+		// コンボの2段目以降は同一StateAttackインスタンスへの再突入になる。
+		// 通常のTransitionTo()は「同一インスタンスなら何もしない」ため、
+		// phase_/elapsed_がAttackRecoveryのまま引き継がれてしまい、
+		// 2段目のWindupが始まらずそのままRecovery終了→Noneに戻ってしまう
+		// 不具合があった。ForceTransitionToで必ずExit→Enterし直す
+		// (ApplyStagger()と同じ考え方)。
+		stateMachine_.ForceTransitionTo(this, &stateAttack_);
+		OnStateChanged(&stateAttack_);
 		return true;
 	}
 
@@ -119,7 +134,7 @@ public:
 
 	bool TryStartGuard() {
 		if (!CanStartGuard()) return false;
-		currentGuard_ = GuardMoveData{};
+		currentGuard_ = baseGuardData_;
 		TransitionTo(&stateGuard_);
 		return true;
 	}
@@ -186,8 +201,17 @@ public:
 	// 関わらず、その秒数でちょうど再生し終わるよう速度を自動調整する
 	// (ModelAnimatorComponent::Play()参照)。攻撃/回避のように、
 	// ゲームプレイ側の秒数(AttackMoveData等)を基準にしたい場合に使う。
-	void PlayAnimation(const std::string& name, bool loop = false, float targetDurationSeconds = -1.0f) {
+	//
+	// blendDurationSecondsは、この呼び出しで切り替わる際のクロスフェード
+	// 時間。呼ぶたびに必ずModelAnimatorComponent::SetBlendDuration()で
+	// 明示的に設定し直すことで、「前回どこかで設定した値が意図せず
+	// 引き継がれる」ことを防いでいる(省略時はkDefaultAnimationBlendDuration、
+	// コンボ攻撃のようにAttackMoveData側で個別の値を持つ場合はそちらを渡す。
+	// 詳細はStateAttack::Enter()参照)。
+	void PlayAnimation(const std::string& name, bool loop = false, float targetDurationSeconds = -1.0f,
+		float blendDurationSeconds = kDefaultAnimationBlendDuration) {
 		if (modelAnimatorComponent_ != nullptr) {
+			modelAnimatorComponent_->SetBlendDuration(blendDurationSeconds);
 			modelAnimatorComponent_->Play(name, loop, targetDurationSeconds);
 		}
 	}
@@ -392,16 +416,27 @@ private:
 	// そのまま使うが、大スタンは攻撃側のデータに依存させず一律の値にしている。
 	static constexpr float kLargeStaggerDuration = 0.6f;
 
+	// PlayAnimation()でblendDurationSecondsを省略した場合に使う既定値。
+	// ModelAnimatorComponent側の初期値(0.15秒)と合わせている。
+	static constexpr float kDefaultAnimationBlendDuration = 0.15f;
+
 	// --- 戦闘データ ---
 	AttackMoveData currentAttack_;
 	EvadeMoveData currentEvade_;
 	GuardMoveData currentGuard_;
 
+	// Evade/Guardの基本データ(デバッグ用テーブルから読み込んだもの)。
+	// currentEvade_/currentGuard_は「今回発動する際の実際の値」
+	// (Evadeは方向がそのつど変わる)、こちらは「その元になる基本データ」
+	// という役割分担。
+	EvadeMoveData baseEvadeData_;
+	GuardMoveData baseGuardData_;
+
 	// コンボ攻撃: 何段目か(0始まり)と、各段の技データテーブル。
 	// 各要素の具体的な数値(モーション時間・踏み込み距離等)は別途詰める
 	// (現状は全段ともAttackMoveDataのデフォルト値+仮のanimationNameのまま)。
 	int comboIndex_ = 0;
-	std::array<AttackMoveData, kMaxComboHits> comboAttacks_;
+	ComboAttackTable comboAttacks_;
 
 	// --- Stateインスタンス (メモリ断片化を防ぐため実体をメンバで持つ) ---
 	StateNone    stateNone_;

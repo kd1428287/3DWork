@@ -1,6 +1,7 @@
 ﻿#include "../../../Application/main.h"
 
 #include "KdDebugGUI.h"
+#include "../../../Application/Editor/MapEditor.h"
 
 KdDebugGUI::KdDebugGUI()
 {}
@@ -72,6 +73,9 @@ void KdDebugGUI::GuiProcess()
 	//=====================================================
 
 //	KdDebugGUI::Instance().AddLog("TestLog\n");
+
+		// ↓ここを追加：マップエディタの更新・描画
+	MapEditor::Instance().Update();
 
 	//===========================================================
 	// ここより上にImGuiの描画はする事

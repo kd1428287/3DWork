@@ -175,6 +175,12 @@
     <Filter Include="Src\Application\Editor">
       <UniqueIdentifier>{4d33b04a-546b-4544-b216-c18854df7aca}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\Components\UI\Player">
+      <UniqueIdentifier>{1f8e9aef-4c6b-4bf5-ae5d-aa112f4a32b5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Components\UI\Enemy">
+      <UniqueIdentifier>{b8ce769d-5920-4d9c-8274-dd43e2e48887}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -570,6 +576,21 @@
     <ClInclude Include="Src\Application\Editor\MapEditor.h">
       <Filter>Src\Application\Editor</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Editor\ImGuizmo.h">
+      <Filter>Src\Application\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Render\GaugeBarRenderer.h">
+      <Filter>Src\Application\Components\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\UI\Player\PlayerStatusUIComponent.h">
+      <Filter>Src\Application\Components\UI\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\UI\Enemy\EnemyHPBarComponent.h">
+      <Filter>Src\Application\Components\UI\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\Player\PlayerCombatDataTable.h">
+      <Filter>Src\Application\Components\Character\Player</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -751,6 +772,18 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Editor\MapEditor.cpp">
       <Filter>Src\Application\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Editor\ImGuizmo.cpp">
+      <Filter>Src\Application\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\UI\Player\PlayerStatusUIComponent.cpp">
+      <Filter>Src\Application\Components\UI\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\UI\Enemy\EnemyHPBarComponent.cpp">
+      <Filter>Src\Application\Components\UI\Enemy</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\Character\Player\PlayerCombatDataTable.cpp">
+      <Filter>Src\Application\Components\Character\Player</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

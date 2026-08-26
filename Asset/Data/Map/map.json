@@ -1,0 +1,659 @@
+{
+    "metadata": {
+        "name": "Circular_Enclosure_Map",
+        "version": "1.0.0",
+        "coordinate_system": "LeftHanded_Y_Up"
+    },
+    "entities": [
+        {
+            "id": "ground_00",
+            "type": "Environment",
+            "asset_id": "model_plane",
+            "transform": {
+                "position": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    50.0,
+                    1.0,
+                    50.0
+                ]
+            },
+            "properties": {
+                "is_static": true,
+                "collider_type": "Box"
+            }
+        },
+        {
+            "id": "tree_00",
+            "type": "Prop",
+            "asset_id": "model_tree_pine",
+            "transform": {
+                "position": [
+                    20.0,
+                    0.0,
+                    0.0
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "properties": {
+                "is_static": true,
+                "collider_type": "Cylinder"
+            }
+        },
+        {
+            "id": "tree_01",
+            "type": "Prop",
+            "asset_id": "model_tree_pine",
+            "transform": {
+                "position": [
+                    19.319,
+                    0.0,
+                    5.176
+                ],
+                "rotation": [
+                    0.0,
+                    15.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.1,
+                    1.0
+                ]
+            },
+            "properties": {
+                "is_static": true,
+                "collider_type": "Cylinder"
+            }
+        },
+        {
+            "id": "tree_02",
+            "type": "Prop",
+            "asset_id": "model_tree_pine",
+            "transform": {
+                "position": [
+                    17.321,
+                    0.0,
+                    10.0
+                ],
+                "rotation": [
+                    0.0,
+                    30.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.2,
+                    1.0
+                ]
+            },
+            "properties": {
+                "is_static": true,
+                "collider_type": "Cylinder"
+            }
+        },
+        {
+            "id": "tree_03",
+            "type": "Prop",
+            "asset_id": "model_tree_pine",
+            "transform": {
+                "position": [
+                    14.142,
+                    0.0,
+                    14.142
+                ],
+                "rotation": [
+                    0.0,
+                    45.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "properties": {
+                "is_static": true,
+                "collider_type": "Cylinder"
+            }
+        },
+        {
+            "id": "tree_04",
+            "type": "Prop",
+            "asset_id": "model_tree_pine",
+            "transform": {
+                "position": [
+                    10.0,
+                    0.0,
+                    17.321
+                ],
+                "rotation": [
+                    0.0,
+                    60.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.1,
+                    1.0
+                ]
+            },
+            "properties": {
+                "is_static": true,
+                "collider_type": "Cylinder"
+            }
+        },
+        {
+            "id": "tree_05",
+            "type": "Prop",
+            "asset_id": "model_tree_pine",
+            "transform": {
+                "position": [
+                    5.176,
+                    0.0,
+                    19.319
+                ],
+                "rotation": [
+                    0.0,
+                    75.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.2,
+                    1.0
+                ]
+            },
+            "properties": {
+                "is_static": true,
+                "collider_type": "Cylinder"
+            }
+        },
+        {
+            "id": "tree_06",
+            "type": "Prop",
+            "asset_id": "model_tree_pine",
+            "transform": {
+                "position": [
+                    0.0,
+                    0.0,
+                    20.0
+                ],
+                "rotation": [
+                    0.0,
+                    90.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "properties": {
+                "is_static": true,
+                "collider_type": "Cylinder"
+            }
+        },
+        {
+            "id": "tree_07",
+            "type": "Prop",
+            "asset_id": "model_tree_pine",
+            "transform": {
+                "position": [
+                    -5.176,
+                    0.0,
+                    19.319
+                ],
+                "rotation": [
+                    0.0,
+                    105.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.1,
+                    1.0
+                ]
+            },
+            "properties": {
+                "is_static": true,
+                "collider_type": "Cylinder"
+            }
+        },
+        {
+            "id": "tree_08",
+            "type": "Prop",
+            "asset_id": "model_tree_pine",
+            "transform": {
+                "position": [
+                    -10.0,
+                    0.0,
+                    17.321
+                ],
+                "rotation": [
+                    0.0,
+                    120.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.2,
+                    1.0
+                ]
+            },
+            "properties": {
+                "is_static": true,
+                "collider_type": "Cylinder"
+            }
+        },
+        {
+            "id": "tree_09",
+            "type": "Prop",
+            "asset_id": "model_tree_pine",
+            "transform": {
+                "position": [
+                    -14.142,
+                    0.0,
+                    14.142
+                ],
+                "rotation": [
+                    0.0,
+                    135.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "properties": {
+                "is_static": true,
+                "collider_type": "Cylinder"
+            }
+        },
+        {
+            "id": "tree_10",
+            "type": "Prop",
+            "asset_id": "model_tree_pine",
+            "transform": {
+                "position": [
+                    -17.321,
+                    0.0,
+                    10.0
+                ],
+                "rotation": [
+                    0.0,
+                    150.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.1,
+                    1.0
+                ]
+            },
+            "properties": {
+                "is_static": true,
+                "collider_type": "Cylinder"
+            }
+        },
+        {
+            "id": "tree_11",
+            "type": "Prop",
+            "asset_id": "model_tree_pine",
+            "transform": {
+                "position": [
+                    -19.319,
+                    0.0,
+                    5.176
+                ],
+                "rotation": [
+                    0.0,
+                    165.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.2,
+                    1.0
+                ]
+            },
+            "properties": {
+                "is_static": true,
+                "collider_type": "Cylinder"
+            }
+        },
+        {
+            "id": "tree_12",
+            "type": "Prop",
+            "asset_id": "model_tree_pine",
+            "transform": {
+                "position": [
+                    -20.0,
+                    0.0,
+                    0.0
+                ],
+                "rotation": [
+                    0.0,
+                    180.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "properties": {
+                "is_static": true,
+                "collider_type": "Cylinder"
+            }
+        },
+        {
+            "id": "tree_13",
+            "type": "Prop",
+            "asset_id": "model_tree_pine",
+            "transform": {
+                "position": [
+                    -19.319,
+                    0.0,
+                    -5.176
+                ],
+                "rotation": [
+                    0.0,
+                    195.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.1,
+                    1.0
+                ]
+            },
+            "properties": {
+                "is_static": true,
+                "collider_type": "Cylinder"
+            }
+        },
+        {
+            "id": "tree_14",
+            "type": "Prop",
+            "asset_id": "model_tree_pine",
+            "transform": {
+                "position": [
+                    -17.321,
+                    0.0,
+                    -10.0
+                ],
+                "rotation": [
+                    0.0,
+                    210.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.2,
+                    1.0
+                ]
+            },
+            "properties": {
+                "is_static": true,
+                "collider_type": "Cylinder"
+            }
+        },
+        {
+            "id": "tree_15",
+            "type": "Prop",
+            "asset_id": "model_tree_pine",
+            "transform": {
+                "position": [
+                    -14.142,
+                    0.0,
+                    -14.142
+                ],
+                "rotation": [
+                    0.0,
+                    225.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "properties": {
+                "is_static": true,
+                "collider_type": "Cylinder"
+            }
+        },
+        {
+            "id": "tree_16",
+            "type": "Prop",
+            "asset_id": "model_tree_pine",
+            "transform": {
+                "position": [
+                    -10.0,
+                    0.0,
+                    -17.321
+                ],
+                "rotation": [
+                    0.0,
+                    240.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.1,
+                    1.0
+                ]
+            },
+            "properties": {
+                "is_static": true,
+                "collider_type": "Cylinder"
+            }
+        },
+        {
+            "id": "tree_17",
+            "type": "Prop",
+            "asset_id": "model_tree_pine",
+            "transform": {
+                "position": [
+                    -5.176,
+                    0.0,
+                    -19.319
+                ],
+                "rotation": [
+                    0.0,
+                    255.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.2,
+                    1.0
+                ]
+            },
+            "properties": {
+                "is_static": true,
+                "collider_type": "Cylinder"
+            }
+        },
+        {
+            "id": "tree_18",
+            "type": "Prop",
+            "asset_id": "model_tree_pine",
+            "transform": {
+                "position": [
+                    -0.0,
+                    0.0,
+                    -20.0
+                ],
+                "rotation": [
+                    0.0,
+                    270.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "properties": {
+                "is_static": true,
+                "collider_type": "Cylinder"
+            }
+        },
+        {
+            "id": "tree_19",
+            "type": "Prop",
+            "asset_id": "model_tree_pine",
+            "transform": {
+                "position": [
+                    5.176,
+                    0.0,
+                    -19.319
+                ],
+                "rotation": [
+                    0.0,
+                    285.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.1,
+                    1.0
+                ]
+            },
+            "properties": {
+                "is_static": true,
+                "collider_type": "Cylinder"
+            }
+        },
+        {
+            "id": "tree_20",
+            "type": "Prop",
+            "asset_id": "model_tree_pine",
+            "transform": {
+                "position": [
+                    10.0,
+                    0.0,
+                    -17.321
+                ],
+                "rotation": [
+                    0.0,
+                    300.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.2,
+                    1.0
+                ]
+            },
+            "properties": {
+                "is_static": true,
+                "collider_type": "Cylinder"
+            }
+        },
+        {
+            "id": "tree_21",
+            "type": "Prop",
+            "asset_id": "model_tree_pine",
+            "transform": {
+                "position": [
+                    14.142,
+                    0.0,
+                    -14.142
+                ],
+                "rotation": [
+                    0.0,
+                    315.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "properties": {
+                "is_static": true,
+                "collider_type": "Cylinder"
+            }
+        },
+        {
+            "id": "tree_22",
+            "type": "Prop",
+            "asset_id": "model_tree_pine",
+            "transform": {
+                "position": [
+                    17.321,
+                    0.0,
+                    -10.0
+                ],
+                "rotation": [
+                    0.0,
+                    330.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.1,
+                    1.0
+                ]
+            },
+            "properties": {
+                "is_static": true,
+                "collider_type": "Cylinder"
+            }
+        },
+        {
+            "id": "tree_23",
+            "type": "Prop",
+            "asset_id": "model_tree_pine",
+            "transform": {
+                "position": [
+                    19.319,
+                    0.0,
+                    -5.176
+                ],
+                "rotation": [
+                    0.0,
+                    345.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.2,
+                    1.0
+                ]
+            },
+            "properties": {
+                "is_static": true,
+                "collider_type": "Cylinder"
+            }
+        }
+    ]
+}

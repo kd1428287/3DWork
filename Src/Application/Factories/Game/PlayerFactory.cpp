@@ -21,6 +21,7 @@
 #include "../../Components/Collision/AttackSourceComponent.h"
 #include "../../Components/Collision/WireFrameComponent.h"
 #include "../../Components/Sensors/GroundSensorComponent.h"
+#include "../../Components/UI/Player/PlayerStatusUIComponent.h"
 
 namespace
 {
@@ -69,6 +70,8 @@ namespace
 		// のまま、別途調整する。
 		auto* health = player->AddComponent<HealthComponent>();
 		health->SetMax(100.f, true);
+
+		//player->AddComponent<PlayerStatusUIComponent>();
 
 		// Y方向の半径をCharacterCollisionDefaults::kFootOffsetと一致させて
 		// いる点が重要。Bodyの下端がfootOffsetまで届いていないと、Bodyが
@@ -132,12 +135,12 @@ GameObject* PlayerFactory::CreatePlayer(ObjectManager& objectManager)
 		//"mixamorig:RightHandMiddle4", "mixamorig:RightHandMiddle3", "mixamorig:RightHandMiddle2", "mixamorig:RightHandMiddle1",
 		//"mixamorig:RightHandRing4", "mixamorig:RightHandRing3", "mixamorig:RightHandRing2", "mixamorig:RightHandRing1",
 		//"mixamorig:RightHandPinky4", "mixamorig:RightHandPinky3", "mixamorig:RightHandPinky2", "mixamorig:RightHandPinky1",
-		// mixamorig:RightHand は直後で個別に生成・取得するため除外
-		/*"mixamorig:RightForeArm", "mixamorig:RightArm", "mixamorig:RightShoulder",
-		"mixamorig:Spine2", "mixamorig:Spine1", "mixamorig:Spine",
-		"mixamorig:LeftToe_End", "mixamorig:LeftToeBase", "mixamorig:LeftFoot", "mixamorig:LeftLeg", "mixamorig:LeftUpLeg",
-		"mixamorig:RightToe_End", "mixamorig:RightToeBase", "mixamorig:RightFoot", "mixamorig:RightLeg", "mixamorig:RightUpLeg",
-		"mixamorig:Hips"*/
+		// //mixamorig:RightHand は直後で個別に生成・取得するため除外
+		//"mixamorig:RightForeArm", "mixamorig:RightArm", "mixamorig:RightShoulder",
+		//"mixamorig:Spine2", "mixamorig:Spine1", "mixamorig:Spine",
+		//"mixamorig:LeftToe_End", "mixamorig:LeftToeBase", "mixamorig:LeftFoot", "mixamorig:LeftLeg", "mixamorig:LeftUpLeg",
+		//"mixamorig:RightToe_End", "mixamorig:RightToeBase", "mixamorig:RightFoot", "mixamorig:RightLeg", "mixamorig:RightUpLeg",
+		//"mixamorig:Hips"
 	};
 	for (const char* boneName : kAuxiliarySocketBones) {
 		CreateSocket(objectManager, boneName, skeletonHandle);

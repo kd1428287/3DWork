@@ -37,7 +37,7 @@ void PlayerStatusController::HandleActionInput(PlayerInputComponent& input)
 	}
 
 	if (input.HasCommand(ActionCommand::Evade) && CanStartEvade()) {
-		EvadeMoveData data{};
+		EvadeMoveData data = baseEvadeData_;
 		// 積まれた瞬間の方向スナップショットをそのまま使う
 		// (消費するこのフレームの生入力ではなく)。
 		input.ConsumeCommand(ActionCommand::Evade, data.evadeDirection);

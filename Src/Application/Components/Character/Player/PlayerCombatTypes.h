@@ -83,6 +83,16 @@ struct AttackMoveData
 
 	Math::Vector3 stepDirection = Math::Vector3::Zero;
 
+	// このAttackへ切り替わる際のクロスフェード時間(秒)。
+	// ModelAnimatorComponent::SetBlendDuration()にそのまま渡す。
+	// ModelAnimatorComponent側のデフォルト(0.15秒)は「今のポーズが
+	// 安定している状態からの遷移」を想定した長さだが、コンボの2段目
+	// 以降は「Recovery中の任意のタイミングで割り込まれる」ため、
+	// 同じ長さでブレンドすると出発点が毎回不安定になり、繋がりが
+	// 不自然に見えやすい。攻撃データ側でこの値を個別に持たせることで、
+	// 段ごとに(あるいは今後の技ごとに)繋ぎの長さを調整できるようにする。
+	float blendDuration = 0.1f;
+
 	// 再生するアニメーション名(仮)。コンボの段数ごとに異なる想定のため、
 	// PlayerStatusController::Start()でcomboAttacks_の各要素へ
 	// "Attack1"〜"Attack5"を仮で割り当てる。

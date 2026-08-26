@@ -8,7 +8,7 @@
 
 // factory
 #include "../../Factories/Game/PlayerFactory.h"
-#include "../../Factories/Game/TerrainFactory.h"
+#include "../../Factories/Map/TerrainFactory.h"
 #include "../../Factories/Game/EnemyFactory.h"
 #include "../../Factories/Game/EnemyDefinition.h"
 #include "../../Factories/Common/CameraFactory.h"
@@ -38,7 +38,7 @@ void GameScene::Init()
 
 	// factory
 	terrainFactory_ = std::make_unique<TerrainFactory>();
-	auto* terrain = terrainFactory_->CreateTerrain(*objManager_);
+	auto* terrain = terrainFactory_->CreateTerrain(*objManager_,0);
 
 	std::unordered_map<std::string, EnemyDefinition> map;
 	map.emplace("enemy", EnemyDefinition{});

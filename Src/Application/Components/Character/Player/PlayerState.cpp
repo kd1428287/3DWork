@@ -22,8 +22,11 @@ void StateAttack::Enter(PlayerStatusController* controller) {
 	// 攻撃全体(Windup+Active+Recovery)の秒数を目標としてアニメーション
 	// 速度を自動スケーリングする(詳細はModelAnimatorComponent::Play参照)。
 	const float targetDuration = data.windupDuration + data.activeDuration + data.recoveryDuration;
-	controller->PlayAnimation(data.animationName, false, targetDuration); // コンボ段数に応じたアニメーション
-	controller->RequestStepMove(data.stepDirection, data.stepDistance, data.windupDuration);
+	controller->PlayAnimation(data.animationName, false, targetDuration, data.blendDuration); // コンボ段数に応じたアニメーション
+
+	// 踏み込み移動はここ(Windup開始時点)では行わない。Windupが終わった
+	// 瞬間(Update()側、AttackActiveへの切り替わり)に開始する
+	// (振りかぶり中に前進してしまうと予備動作の説得力が薄れるため)。
 
 	KdDebugGUI::Instance().AddLog("AttackWindup"); // 必要なら
 }
@@ -37,7 +40,13 @@ void StateAttack::Update(PlayerStatusController* controller, float deltaTime) {
 	if (phase_ == CombatState::AttackWindup && elapsed_ >= data.windupDuration) {
 		phase_ = CombatState::AttackActive;
 		elapsed_ = 0.0f;
-		controller->CancelStepMove();
+
+		// 踏み込み移動はここ(Windupが終わった瞬間)から開始する。
+		// 移動時間はwindupDurationではなく専用のstepDurationを使う
+		// (以前はEnter()側でwindupDuration分だけ振りかぶり中に動かして
+		//  いたが、攻撃が実際に届き始めるタイミングと踏み込みを
+		//  合わせたいという理由でここへ移した)。
+		controller->RequestStepMove(data.stepDirection, data.stepDistance, data.stepDuration);
 		controller->SetWeaponHitBoxEnabled(true); // 攻撃判定が実際に発生する一瞬だけ有効化
 		KdDebugGUI::Instance().AddLog("\nAttackActive");
 	}
@@ -166,7 +175,7 @@ void StateStagger::Enter(PlayerStatusController* controller) {
 	// アニメーション未実装のためコメントアウト。
 	// AttackMoveData/GuardMoveDataのような専用データ構造をStaggerは
 	// 持たないため、isLarge_で仮のアニメーション名を直接出し分ける想定だった。
-	 controller->PlayAnimation(isLarge_ ? "miniStun" : "miniStun");
+	controller->PlayAnimation(isLarge_ ? "miniStun" : "miniStun");
 }
 
 void StateStagger::Update(PlayerStatusController* controller, float deltaTime) {

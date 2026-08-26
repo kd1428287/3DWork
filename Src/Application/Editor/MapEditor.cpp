@@ -11,7 +11,7 @@
 // ImGuizmoの内部フォーマット(float[16])はDirectXの行列メモリレイアウトと互換のため
 // そのままSimpleMath::Matrixへコピーできる
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-DirectX::SimpleMath::Matrix KdMapObject::GetMatrix() const
+DirectX::SimpleMath::Matrix MapObject::GetMatrix() const
 {
 	float m[16];
 	ImGuizmo::RecomposeMatrixFromComponents(&pos.x, &rotate.x, &scale.x, m);
@@ -24,7 +24,7 @@ DirectX::SimpleMath::Matrix KdMapObject::GetMatrix() const
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 毎フレーム更新
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void KdMapEditor::Update()
+void MapEditor::Update()
 {
 	ImGuizmo::BeginFrame();
 
@@ -48,7 +48,7 @@ void KdMapEditor::Update()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // メニュー(セーブ/ロード)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void KdMapEditor::DrawMainMenu()
+void MapEditor::DrawMainMenu()
 {
 	ImGui::Begin("Map Editor");
 
@@ -68,7 +68,7 @@ void KdMapEditor::DrawMainMenu()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 階層ウィンドウ(オブジェクト一覧・追加/削除)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void KdMapEditor::DrawHierarchy()
+void MapEditor::DrawHierarchy()
 {
 	ImGui::Begin("Hierarchy");
 
@@ -101,7 +101,7 @@ void KdMapEditor::DrawHierarchy()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // インスペクターウィンドウ(選択中オブジェクトのTransform + ギズモ操作モード)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void KdMapEditor::DrawInspector()
+void MapEditor::DrawInspector()
 {
 	ImGui::Begin("Inspector");
 
@@ -112,7 +112,7 @@ void KdMapEditor::DrawInspector()
 		return;
 	}
 
-	KdMapObject& obj = m_objects[m_selected];
+	MapObject& obj = m_objects[m_selected];
 
 	char nameBuf[128];
 	strcpy_s(nameBuf, obj.name.c_str());
@@ -155,10 +155,10 @@ void KdMapEditor::DrawInspector()
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // ギズモ描画・操作
-//	KdShaderManager の カメラCB(mView / mProjection) を使用
+//	ShaderManager の カメラCB(mView / mProjection) を使用
 //	※メンバ名はプロジェクト側の実際の型に合わせて調整してください
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void KdMapEditor::DrawGizmo()
+void MapEditor::DrawGizmo()
 {
 	if (m_selected < 0 || m_selected >= (int)m_objects.size()) return;
 
@@ -170,9 +170,9 @@ void KdMapEditor::DrawGizmo()
 
 	const auto& cameraCB = KdShaderManager::Instance().GetCameraCB();
 	const DirectX::SimpleMath::Matrix& view = cameraCB.mView;
-	const DirectX::SimpleMath::Matrix& proj = cameraCB.mProjection;
+	const DirectX::SimpleMath::Matrix& proj = cameraCB.mProj;
 
-	KdMapObject& obj = m_objects[m_selected];
+	MapObject& obj = m_objects[m_selected];
 
 	float matrix[16];
 	ImGuizmo::RecomposeMatrixFromComponents(&obj.pos.x, &obj.rotate.x, &obj.scale.x, matrix);
@@ -193,15 +193,15 @@ void KdMapEditor::DrawGizmo()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // オブジェクトの追加/削除
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void KdMapEditor::AddObject()
+void MapEditor::AddObject()
 {
-	KdMapObject obj;
+	MapObject obj;
 	obj.name = "Object" + std::to_string(m_objects.size());
 	m_objects.push_back(obj);
 	m_selected = (int)m_objects.size() - 1;
 }
 
-void KdMapEditor::RemoveSelected()
+void MapEditor::RemoveSelected()
 {
 	if (m_selected < 0 || m_selected >= (int)m_objects.size()) return;
 
@@ -212,7 +212,7 @@ void KdMapEditor::RemoveSelected()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // セーブ/ロード(仮実装：nlohmann/json使用)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void KdMapEditor::Save(const std::string& path)
+void MapEditor::Save(const std::string& path)
 {
 	nlohmann::json j;
 
@@ -252,7 +252,7 @@ void KdMapEditor::Save(const std::string& path)
 //	・エディタ外(テキストエディタ、Git、別ツール等)でJSONを直接編集した場合の即時反映用
 //	・0.5秒間隔でチェックするため、毎フレームファイルI/Oは発生しない
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void KdMapEditor::CheckHotReload()
+void MapEditor::CheckHotReload()
 {
 	if (!m_autoReload) return;
 
@@ -296,7 +296,7 @@ void KdMapEditor::CheckHotReload()
 	KdDebugGUI::Instance().AddLog("MapEditor: 外部変更を検知し自動リロードしました (%s)\n", m_filePathBuf);
 }
 
-void KdMapEditor::Load(const std::string& path)
+void MapEditor::Load(const std::string& path)
 {
 	std::ifstream ifs(path);
 	if (!ifs)
@@ -312,7 +312,7 @@ void KdMapEditor::Load(const std::string& path)
 
 	for (auto& e : j)
 	{
-		KdMapObject obj;
+		MapObject obj;
 		obj.name = e.at("name").get<std::string>();
 		obj.pos = { e.at("pos")[0],    e.at("pos")[1],    e.at("pos")[2] };
 		obj.rotate = { e.at("rotate")[0], e.at("rotate")[1], e.at("rotate")[2] };

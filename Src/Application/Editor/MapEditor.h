@@ -6,9 +6,9 @@
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // マップに配置する1オブジェクト分のデータ(仮実装：Transformのみ)
-// 実際のプロジェクトでは KdGameObject 等の実体への参照/IDに差し替える想定
+// 実際のプロジェクトでは GameObject 等の実体への参照/IDに差し替える想定
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-struct KdMapObject
+struct MapObject
 {
 	std::string					name = "Object";
 
@@ -22,10 +22,10 @@ struct KdMapObject
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // マップエディタ本体
-//	KdDebugGUI::GuiProcess() の中(ImGui::NewFrame() 後 ～ ImGui::Render() 前)から
+//	DebugGUI::GuiProcess() の中(ImGui::NewFrame() 後 ～ ImGui::Render() 前)から
 //	Update() を呼び出して使用する
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-class KdMapEditor
+class MapEditor
 {
 public:
 
@@ -33,7 +33,7 @@ public:
 	void Update();
 
 	// 配置済みオブジェクト一覧の取得(実際の描画パスから参照する用)
-	const std::vector<KdMapObject>& GetObjects() const { return m_objects; }
+	const std::vector<MapObject>& GetObjects() const { return m_objects; }
 
 private:
 
@@ -51,7 +51,7 @@ private:
 	// マップデータ(JSON)の外部変更を検知して自動リロードする
 	void CheckHotReload();
 
-	std::vector<KdMapObject>	m_objects;
+	std::vector<MapObject>	m_objects;
 	int							m_selected = -1;
 
 	ImGuizmo::OPERATION			m_operation = ImGuizmo::TRANSLATE;
@@ -60,7 +60,7 @@ private:
 	bool	m_useSnap = false;
 	float	m_snapValue[3] = { 1.0f, 1.0f, 1.0f };
 
-	char	m_filePathBuf[260] = "Asset/Data/map.json";
+	char	m_filePathBuf[260] = "Asset/Data/Map/map.json";
 
 	// ホットリロード関連
 	bool		m_autoReload = true;	// trueなら外部変更を自動検知
@@ -71,12 +71,12 @@ private:
 	// シングルトンパターン
 	//=====================================================
 private:
-	KdMapEditor() {}
-	~KdMapEditor() {}
+	MapEditor() {}
+	~MapEditor() {}
 
 public:
-	static KdMapEditor& Instance() {
-		static KdMapEditor instance;
+	static MapEditor& Instance() {
+		static MapEditor instance;
 		return instance;
 	}
 };

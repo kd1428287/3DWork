@@ -288,6 +288,7 @@ void Application::Execute()
 		if (KdInputManager::Instance().IsPress("Pause")) {
 			static bool flg = true;
 			flg = !flg;
+			ShowCursor(true);
 			KdInputManager::Instance().SetAxisConfineToWindowCenter("Look", flg);
 		}
 

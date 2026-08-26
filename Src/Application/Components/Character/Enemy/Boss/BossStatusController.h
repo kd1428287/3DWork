@@ -1,5 +1,5 @@
-#pragma once
-#include "EnemyStatusController.h"
+﻿#pragma once
+#include "../EnemyStatusController.h"
 
 // ============================================================
 // BossStatusController

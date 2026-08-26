@@ -289,6 +289,7 @@
     <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyState.h" />
     <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyStatusController.h" />
     <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyStatusData.h" />
+    <ClInclude Include="Src\Application\Components\Character\Player\PlayerCombatDataTable.h" />
     <ClInclude Include="Src\Application\Components\Character\Player\PlayerCombatTypes.h" />
     <ClInclude Include="Src\Application\Components\Character\Player\PlayerInputComponent.h" />
     <ClInclude Include="Src\Application\Components\Character\Player\PlayerState.h" />
@@ -311,6 +312,7 @@
     <ClInclude Include="Src\Application\Components\Movement\MovementComponent.h" />
     <ClInclude Include="Src\Application\Components\Movement\TweenMoveComponent.h" />
     <ClInclude Include="Src\Application\Components\Movement\VelocityComponent.h" />
+    <ClInclude Include="Src\Application\Components\Render\GaugeBarRenderer.h" />
     <ClInclude Include="Src\Application\Components\Render\MeshRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Render\ModelRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Render\SpriteRenderComponent.h" />
@@ -322,10 +324,13 @@
     <ClInclude Include="Src\Application\Components\Transform\AttachToSocketComponent.h" />
     <ClInclude Include="Src\Application\Components\Transform\SocketComponent.h" />
     <ClInclude Include="Src\Application\Components\Transform\TransformComponent.h" />
+    <ClInclude Include="Src\Application\Components\UI\Enemy\EnemyHPBarComponent.h" />
+    <ClInclude Include="Src\Application\Components\UI\Player\PlayerStatusUIComponent.h" />
     <ClInclude Include="Src\Application\Core\GameObject.h" />
     <ClInclude Include="Src\Application\Core\Handle.h" />
     <ClInclude Include="Src\Application\Core\ObjectManager.h" />
     <ClInclude Include="Src\Application\Core\SceneContext.h" />
+    <ClInclude Include="Src\Application\Editor\ImGuizmo.h" />
     <ClInclude Include="Src\Application\Editor\MapEditor.h" />
     <ClInclude Include="Src\Application\Engine\EventBus\EventBus.h" />
     <ClInclude Include="Src\Application\Engine\EventBus\Event\Event.h" />
@@ -401,9 +406,13 @@
     <ClCompile Include="..\Library\imgui\imgui_widgets.cpp" />
     <ClCompile Include="Src\Application\Components\Character\Enemy\EnemyState.cpp" />
     <ClCompile Include="Src\Application\Components\Character\Enemy\EnemyStatusController.cpp" />
+    <ClCompile Include="Src\Application\Components\Character\Player\PlayerCombatDataTable.cpp" />
     <ClCompile Include="Src\Application\Components\Character\Player\PlayerState.cpp" />
     <ClCompile Include="Src\Application\Components\Character\Player\PlayerStatusController.cpp" />
     <ClCompile Include="Src\Application\Components\Collision\WireFrameComponent.cpp" />
+    <ClCompile Include="Src\Application\Components\UI\Enemy\EnemyHPBarComponent.cpp" />
+    <ClCompile Include="Src\Application\Components\UI\Player\PlayerStatusUIComponent.cpp" />
+    <ClCompile Include="Src\Application\Editor\ImGuizmo.cpp" />
     <ClCompile Include="Src\Application\Editor\MapEditor.cpp" />
     <ClCompile Include="Src\Application\Factories\Common\CameraFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\Game\EnemyFactory.cpp" />

@@ -4,6 +4,7 @@
 
 #include "../../Components/Character/Enemy/EnemyStatusController.h"
 #include "../../Components/Character/Enemy/Brute/BruteStatusController.h"
+#include "../../Components/Character/Enemy/Boss/BossStatusController.h"
 #include "../../Components/Character/Data/PostureComponent.h"
 #include "../../Components/Character/Data/HealthComponent.h"
 #include "../../Components/Transform/TransformComponent.h"
@@ -106,14 +107,26 @@ GameObject* EnemyFactory::BuildEnemy(ObjectManager& objectManager, const EnemyDe
 	// 新しい見た目のシルエットと合わなくなっている可能性がある。
 	// 一度ワイヤーフレーム表示で確認し、必要なら再調整すること。
 	auto* skeleton = enemy->AddComponent<SkeletonComponent>();
-	//skeleton->SetModelData("Asset/Models/Character/Player/Player.gltf");
-	skeleton->SetModelData("Asset/Models/Character/Brute/Brute.gltf");
+	skeleton->SetModelData(def.modelPath);
 
 	// EnemyStatusController::Start()内でMovementComponentへ
 	// SetMovementSource(this)する。GetComponent<T>()はマップ参照なので、
 	// AddComponentの順序には依存しない。
-	//EnemyStatusController* status = enemy->AddComponent<BruteStatusController>(def.patrolDistance);
-	EnemyStatusController* status = enemy->AddComponent<EnemyStatusController>(def.patrolDistance);
+	//
+	// def.typeに応じて実際に生成する派生クラスを出し分ける。以降の処理
+	// (SetWeapon/RegisterOwnedObject等)はEnemyStatusControllerの公開
+	// インターフェースしか使っていないため、基底クラスのポインタとして
+	// 受け取るだけで問題ない。
+	EnemyStatusController* status = nullptr;
+	switch (def.type) {
+	case EnemyDefinition::EnemyType::Boss:
+		status = enemy->AddComponent<BossStatusController>(def.statusData);
+		break;
+	case EnemyDefinition::EnemyType::Brute:
+	default:
+		status = enemy->AddComponent<BruteStatusController>(def.statusData);
+		break;
+	}
 
 	// 被弾判定(トリガー、攻撃判定専用)。collideMaskをHitBoxだけに
 	// 絞っているため、これだけでは地形(Ground)を含めどのカテゴリとも
