@@ -14,7 +14,6 @@
 #include "../../Factories/Common/CameraFactory.h"
 
 // component
-
 #include "../../Components/Camera/CameraTargetComponent.h"
 
 GameScene::GameScene()
@@ -50,7 +49,7 @@ void GameScene::Init()
 
 	cameraFactory_ = std::make_unique<CameraFactory>();
 	//player->GetComponent<CameraTargetComponent>()->GetGeneration();
-	auto* camera = cameraFactory_->CreateCamera(*objManager_, player->GetComponent<CameraTargetComponent>());
+	auto* camera = cameraFactory_->CreateCamera(*objManager_, player);
 
 	// system
 	inputSystem_ = std::make_unique<InputSystem>();

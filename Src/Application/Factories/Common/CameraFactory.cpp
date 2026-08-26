@@ -4,6 +4,7 @@
 #include "../../Components/Camera/CameraViewComponent.h"
 #include "../../Components/Camera/CameraOrbitComponent.h"
 #include "../../Components/Camera/CameraTargetComponent.h"
+#include "../../Components/Camera/CameraCollision.h"
 
 
 GameObject* CameraFactory::CreateCamera(ObjectManager& objectManager, GameObject* target, int ownerCameraId)
@@ -19,8 +20,11 @@ GameObject* CameraFactory::CreateCamera(ObjectManager& objectManager, CameraTarg
 	auto* follow = camera->AddComponent<CameraFollowComponent>();
 	camera->AddComponent<CameraOrbitComponent>();
 	camera->AddComponent<CameraViewComponent>();
-	follow->SetTarget(target);
+	follow->SetTarget(Handle<CameraTargetComponent>(target));
 	follow->SetLocalOffset({ 0.0f, 1.0f, -5.0f });
+	auto* collision = camera->AddComponent<CameraCollisionComponent>(); // Followより後
+	collision->SetPivotTarget(Handle<CameraTargetComponent>(target));
+	collision->SetSweepRadius(0.5f);
 
 	return camera;
 }

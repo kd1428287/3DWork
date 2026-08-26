@@ -48,17 +48,19 @@ namespace
 
 		weapon->AddComponent<AttachToSocketComponent>(attachPoint);
 
-		auto* skeleton = weapon->AddComponent<SkeletonComponent>();
-		skeleton->SetModelData("Asset/Models/Character/Player/Tachi.gltf");
-		weapon->AddComponent<ModelRenderComponent>();
+		//auto* skeleton = weapon->AddComponent<SkeletonComponent>();
+		//skeleton->SetModelData("Asset/Models/Character/Player/Tachi.gltf");
+		//weapon->AddComponent<ModelRenderComponent>();
 
 		auto* collision = weapon->AddComponent<ColliderComponent>();
 		// 常時enabled=trueのままだと、HurtBoxと重なっている間ずっと
 		// CollisionEnterEventが発火し続けてしまう(Player側で実際に発生した
 		// 不具合と同じ)。EnemyStatusController::UpdateAttackTimer()が
 		// 一定間隔でだけ有効化する前提のため、生成直後はfalseにしておく。
+		/*CollisionShapeEntry& hitBox = collision->AddBox(
+			"HitBox", Math::Vector3(1.f, 1.f, 1.f), Math::Vector3(0.f, 1.f, 0.f), ColliderCategory::HitBox);*/
 		CollisionShapeEntry& hitBox = collision->AddBox(
-			"HitBox", Math::Vector3(1.f, 1.f, 1.f), Math::Vector3(0.f, 1.f, 0.f), ColliderCategory::HitBox);
+			"HitBox", Math::Vector3(1.f, 1.f, 0.1f), Math::Vector3(1.f, 1.f, 0.f), ColliderCategory::HitBox);
 		hitBox.enabled = false;
 		// 押し返し(物理応答)はせず、重なり検知(イベント)だけ行う。
 		// EnemyFactory側のHurtBoxで既に発生していたのと同種の不具合
@@ -73,7 +75,7 @@ namespace
 		// 同様にownerCharacterへ本体(enemy)を登録しておく。
 		attackSource->ownerCharacter = Handle<GameObject>(enemy);
 
-		//weapon->AddComponent<WireFrameComponent>();
+		weapon->AddComponent<WireFrameComponent>();
 
 		return weapon;
 	}

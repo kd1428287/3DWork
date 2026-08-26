@@ -136,6 +136,8 @@ public:
 		if (!CanStartGuard()) return false;
 		currentGuard_ = baseGuardData_;
 		TransitionTo(&stateGuard_);
+	    /*stateMachine_.ForceTransitionTo(this, &stateGuard_);
+		OnStateChanged(&stateGuard_);*/
 		return true;
 	}
 

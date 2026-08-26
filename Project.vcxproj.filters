@@ -591,6 +591,12 @@
     <ClInclude Include="Src\Application\Components\Character\Player\PlayerCombatDataTable.h">
       <Filter>Src\Application\Components\Character\Player</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Components\Camera\CameraCollision.h">
+      <Filter>Src\Application\Components\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Engine\EventBus\Event\SceneEvents.h">
+      <Filter>Src\Application\Engine\EventBus\Event</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">

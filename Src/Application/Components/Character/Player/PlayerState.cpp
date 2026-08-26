@@ -92,6 +92,15 @@ bool StateAttack::CanStartAttack(const PlayerStatusController* controller) const
 	return false;
 }
 
+bool StateAttack::CanStartGuard(const PlayerStatusController* controller) const {
+	if (phase_ == CombatState::AttackRecovery) {
+		//return elapsed_ >= controller->GetCurrentAttackData().recoveryEvadeCancelStart;
+		return true;
+	}
+	return false;
+}
+
+
 // --- Evade State ---
 void StateEvade::Enter(PlayerStatusController* controller) {
 	phase_ = CombatState::Evade;

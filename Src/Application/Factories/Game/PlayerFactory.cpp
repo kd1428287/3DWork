@@ -83,9 +83,9 @@ namespace
 			Math::Vector3(0.0f, (CharacterCollisionDefaults::kFootOffset * 2) - 0.4, 0.0f),
 			ColliderCategory::Bump);
 
-		collider->AddCapsule("HurtBox", 0.4,
-			Math::Vector3(0.0f, 0.4, 0.0f),
-			Math::Vector3(0.0f, (CharacterCollisionDefaults::kFootOffset * 2) - 0.4, 0.0f),
+		collider->AddCapsule("HurtBox", 0.3,
+			Math::Vector3(0.0f, 0.3, 0.0f),
+			Math::Vector3(0.0f, (CharacterCollisionDefaults::kFootOffset * 2) - 0.3, 0.0f),
 			ColliderCategory::HurtBox, ColliderCategory::HitBox);
 		
 		collider->SetShapeIsTrigger("HurtBox", true);

@@ -63,6 +63,7 @@ public:
 	// (コンボ)によるキャンセルも許可する。
 	bool CanStartAttack(const PlayerStatusController* controller) const override;
 	bool CanStartEvade(const PlayerStatusController* controller) const override;
+	bool CanStartGuard(const PlayerStatusController* controller) const override;
 
 private:
 	CombatState phase_ = CombatState::AttackWindup;

@@ -278,6 +278,7 @@
     <ClInclude Include="Src\Application\Components\Animation\SkeletonComponent.h" />
     <ClInclude Include="Src\Application\Components\Animation\TwoBoneIK.h" />
     <ClInclude Include="Src\Application\Components\Animation\TwoBoneIKComponent.h" />
+    <ClInclude Include="Src\Application\Components\Camera\CameraCollision.h" />
     <ClInclude Include="Src\Application\Components\Camera\CameraComponent.h" />
     <ClInclude Include="Src\Application\Components\Camera\CameraFollowComponent.h" />
     <ClInclude Include="Src\Application\Components\Camera\CameraOrbitComponent.h" />
@@ -334,6 +335,7 @@
     <ClInclude Include="Src\Application\Editor\MapEditor.h" />
     <ClInclude Include="Src\Application\Engine\EventBus\EventBus.h" />
     <ClInclude Include="Src\Application\Engine\EventBus\Event\Event.h" />
+    <ClInclude Include="Src\Application\Engine\EventBus\Event\SceneEvents.h" />
     <ClInclude Include="Src\Application\Engine\SystemManager\SystemManager.h" />
     <ClInclude Include="Src\Application\Factories\Common\CameraFactory.h" />
     <ClInclude Include="Src\Application\Factories\GameObjectFactory.h" />
