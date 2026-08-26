@@ -181,6 +181,9 @@
     <Filter Include="Src\Application\Components\UI\Enemy">
       <UniqueIdentifier>{b8ce769d-5920-4d9c-8274-dd43e2e48887}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\Factories\Effect">
+      <UniqueIdentifier>{2ea53370-b4ce-4de1-a205-925f1df1ef6a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -591,6 +594,24 @@
     <ClInclude Include="Src\Application\Components\Character\Player\PlayerCombatDataTable.h">
       <Filter>Src\Application\Components\Character\Player</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Factories\Effect\EffectDefinition.h">
+      <Filter>Src\Application\Factories\Effect</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Factories\Effect\EffectFactory.h">
+      <Filter>Src\Application\Factories\Effect</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Render\PolygonRenderComponent.h">
+      <Filter>Src\Application\Components\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Effect\TrailPolygonEffectComponent.h">
+      <Filter>Src\Application\Components\Effect</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Tags\IPolygonRenderSource.h">
+      <Filter>Src\Application\Components\Tags</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Tags\IModelRenderSource.h">
+      <Filter>Src\Application\Components\Tags</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -784,6 +805,9 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Components\Character\Player\PlayerCombatDataTable.cpp">
       <Filter>Src\Application\Components\Character\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Factories\Effect\EffectFactory.cpp">
+      <Filter>Src\Application\Factories\Effect</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

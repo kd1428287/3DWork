@@ -307,6 +307,7 @@
     <ClInclude Include="Src\Application\Components\ComponentBase.h" />
     <ClInclude Include="Src\Application\Components\ComponentTypeID.h" />
     <ClInclude Include="Src\Application\Components\Effect\SlowEffectComponent.h" />
+    <ClInclude Include="Src\Application\Components\Effect\TrailPolygonEffectComponent.h" />
     <ClInclude Include="Src\Application\Components\Movement\FacingDirectionComponent.h" />
     <ClInclude Include="Src\Application\Components\Movement\IMovementSource.h" />
     <ClInclude Include="Src\Application\Components\Movement\MovementComponent.h" />
@@ -315,10 +316,13 @@
     <ClInclude Include="Src\Application\Components\Render\GaugeBarRenderer.h" />
     <ClInclude Include="Src\Application\Components\Render\MeshRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Render\ModelRenderComponent.h" />
+    <ClInclude Include="Src\Application\Components\Render\PolygonRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Render\SpriteRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Sensors\GroundSensorComponent.h" />
     <ClInclude Include="Src\Application\Components\Tags\ICameraTarget.h" />
     <ClInclude Include="Src\Application\Components\Tags\ICollidable.h" />
+    <ClInclude Include="Src\Application\Components\Tags\IModelRenderSource.h" />
+    <ClInclude Include="Src\Application\Components\Tags\IPolygonRenderSource.h" />
     <ClInclude Include="Src\Application\Components\Tags\IRenderable.h" />
     <ClInclude Include="Src\Application\Components\Tags\TagInterfaces.h" />
     <ClInclude Include="Src\Application\Components\Transform\AttachToSocketComponent.h" />
@@ -336,6 +340,8 @@
     <ClInclude Include="Src\Application\Engine\EventBus\Event\Event.h" />
     <ClInclude Include="Src\Application\Engine\SystemManager\SystemManager.h" />
     <ClInclude Include="Src\Application\Factories\Common\CameraFactory.h" />
+    <ClInclude Include="Src\Application\Factories\Effect\EffectDefinition.h" />
+    <ClInclude Include="Src\Application\Factories\Effect\EffectFactory.h" />
     <ClInclude Include="Src\Application\Factories\GameObjectFactory.h" />
     <ClInclude Include="Src\Application\Factories\Game\EnemyDefinition.h" />
     <ClInclude Include="Src\Application\Factories\Game\EnemyFactory.h" />
@@ -415,6 +421,7 @@
     <ClCompile Include="Src\Application\Editor\ImGuizmo.cpp" />
     <ClCompile Include="Src\Application\Editor\MapEditor.cpp" />
     <ClCompile Include="Src\Application\Factories\Common\CameraFactory.cpp" />
+    <ClCompile Include="Src\Application\Factories\Effect\EffectFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\Game\EnemyFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\Game\PlayerFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\Map\MapLoader.cpp" />
