@@ -15,6 +15,11 @@ void StateAttack::Enter(PlayerStatusController* controller) {
 	phase_ = CombatState::AttackWindup;
 	elapsed_ = 0.0f;
 
+	// ロック中ならロック対象へ、未ロックなら画面中心に最も近い敵へ正対する。
+	// facingDirectionComponent_はAttack中無効化されているため、
+	// ここで明示的に向きを合わせておく必要がある。
+	controller->FaceAttackTarget();
+
 	// 具体的なコンポーネント操作(Transform/TweenMoveComponent/
 	// ModelAnimatorComponent)はController側に閉じ込め、Stateは
 	// それを直接知らなくてよいようにする。
@@ -22,7 +27,7 @@ void StateAttack::Enter(PlayerStatusController* controller) {
 	// 攻撃全体(Windup+Active+Recovery)の秒数を目標としてアニメーション
 	// 速度を自動スケーリングする(詳細はModelAnimatorComponent::Play参照)。
 	const float targetDuration = data.windupDuration + data.activeDuration + data.recoveryDuration;
-	controller->PlayAnimation(data.animationName, false, targetDuration, data.blendDuration); // コンボ段数に応じたアニメーション
+	controller->PlayAnimation(data.animationName, false, targetDuration, data.useRootMotion, data.blendDuration); // コンボ段数に応じたアニメーション
 
 	// 踏み込み移動はここ(Windup開始時点)では行わない。Windupが終わった
 	// 瞬間(Update()側、AttackActiveへの切り替わり)に開始する
@@ -46,7 +51,12 @@ void StateAttack::Update(PlayerStatusController* controller, float deltaTime) {
 		// (以前はEnter()側でwindupDuration分だけ振りかぶり中に動かして
 		//  いたが、攻撃が実際に届き始めるタイミングと踏み込みを
 		//  合わせたいという理由でここへ移した)。
-		controller->RequestStepMove(data.stepDirection, data.stepDistance, data.stepDuration);
+		// useRootMotionがtrueの技(Attack5等)は、この決め打ち移動の
+		// 代わりにアニメーションのルートモーションで動くため呼ばない
+		// (PlayerStatusController::ApplyRootMotion参照)。
+		if (!data.useRootMotion) {
+			controller->RequestStepMove(data.stepDirection, data.stepDistance, data.stepDuration);
+		}
 		controller->SetWeaponHitBoxEnabled(true); // 攻撃判定が実際に発生する一瞬だけ有効化
 		KdDebugGUI::Instance().AddLog("\nAttackActive");
 	}
@@ -107,15 +117,25 @@ void StateEvade::Enter(PlayerStatusController* controller) {
 	elapsed_ = 0.0f;
 	KdDebugGUI::Instance().AddLog("Evade");
 
-	// 回避中の移動は入力ではなく、決め打ちの軌道(RequestStepMove)に任せる。
-	// MovementComponentはTransitionTo側で既に無効化されているため、
+	// 回避中の移動は入力ではなく、決め打ちの軌道(RequestStepMove)、
+	// または(useRootMotionがtrueの場合)アニメーションのルートモーションに
+	// 任せる。MovementComponentはTransitionTo側で既に無効化されているため、
 	// 位置を書き換える権利がここで競合することはない。
 	const auto& data = controller->GetCurrentEvadeData();
+
+	// 現在の前方に対する入力方向の相対位置(前後左右)を判定し、
+	// 対応するアニメーションを選ぶ。キャラクター自体は向きを変えない
+	// (facingDirectionComponent_はEvade中無効化されているため、
+	//  ここで回転させない限り自然に維持される)。
+	const EvadeDirection evadeDir = controller->ClassifyEvadeDirection(data.evadeDirection);
+
 	// 回避全体(Active+Recovery)の秒数を目標としてアニメーション速度を
 	// 自動スケーリングする(詳細はModelAnimatorComponent::Play参照)。
 	const float targetDuration = data.activeDuration + data.recoveryDuration;
-	controller->PlayAnimation(data.animationName, false, targetDuration);
-	controller->RequestStepMove(data.evadeDirection, data.evadeDistance, data.activeDuration + data.recoveryDuration);
+	controller->PlayAnimation(data.GetAnimationName(evadeDir), false, targetDuration, data.useRootMotion);
+	if (!data.useRootMotion) {
+		controller->RequestStepMove(data.evadeDirection, data.evadeDistance, data.activeDuration + data.recoveryDuration);
+	}
 }
 
 void StateEvade::Exit(PlayerStatusController* controller) {

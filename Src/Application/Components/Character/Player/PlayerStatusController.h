@@ -1,11 +1,15 @@
 ﻿#pragma once
+
 #include <array>
+#include <cmath>
 #include <string>
 #include "PlayerCombatTypes.h"
 #include "PlayerCombatDataTable.h"
 #include "PlayerInputComponent.h"
+#include "PlayerLockOnComponent.h"
 #include "../../Movement/MovementComponent.h" // 既存の依存として
 #include "../../Movement/VelocityComponent.h"
+#include "../../Movement/FacingDirectionComponent.h"
 #include "../../Transform/TransformComponent.h"
 #include "PlayerState.h"
 #include "../StateMachine/StateMachine.h"
@@ -32,6 +36,8 @@ public:
 		healthComponent_ = GetOwner()->GetComponent<HealthComponent>();
 		velocityComponent_ = GetOwner()->GetComponent<VelocityComponent>();
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
+		facingDirectionComponent_ = GetOwner()->GetComponent<FacingDirectionComponent>();
+		lockOnComponent_ = GetOwner()->GetComponent<PlayerLockOnComponent>(); // ロックオン対象の選定/保持を担当する兄弟コンポーネント
 
 		// コンボ各段のデータ(タイミング・踏み込み量等)をまとめて読み込む。
 		// 現状はデバッグ用の直書きテーブル(CreateDebugComboAttackTable())
@@ -100,6 +106,14 @@ public:
 	const EvadeMoveData& GetCurrentEvadeData() const { return currentEvade_; }
 	const GuardMoveData& GetCurrentGuardData() const { return currentGuard_; }
 
+	// 回避方向を、Enter()時点の(=FacingDirectionComponentの追従が止まった直後の)
+	// 現在の前方と比較し、前後左右のどれに該当するかを判定する。
+	// StateEvade::Enter()が再生アニメーションを選ぶために呼ぶ。
+	EvadeDirection ClassifyEvadeDirection(const Math::Vector3& inputDirection) const {
+		const Math::Vector3 forward = (transform_ != nullptr) ? transform_->GetForward() : Math::Vector3::Zero;
+		return ::ClassifyEvadeDirection(forward, inputDirection);
+	}
+
 	// 現在のコンボ段数(0始まり、0=1段目)。演出・SE分岐等で参照したい場合用。
 	int GetComboIndex() const { return comboIndex_; }
 
@@ -136,7 +150,7 @@ public:
 		if (!CanStartGuard()) return false;
 		currentGuard_ = baseGuardData_;
 		TransitionTo(&stateGuard_);
-	    /*stateMachine_.ForceTransitionTo(this, &stateGuard_);
+		/*stateMachine_.ForceTransitionTo(this, &stateGuard_);
 		OnStateChanged(&stateGuard_);*/
 		return true;
 	}
@@ -148,6 +162,58 @@ public:
 		// ForceTransitionToで必ずExit→Enterし直す。
 		stateMachine_.ForceTransitionTo(this, &stateStagger_);
 		OnStateChanged(&stateStagger_);
+	}
+
+	// --- ロックオン ------------------------------------------------------
+	// "lock"入力から呼ばれる。選定/保持自体はPlayerLockOnComponentの責務で、
+	// ここは単なる委譲。
+	void TryLockOn() {
+		if (lockOnComponent_ != nullptr) lockOnComponent_->TryLockOn();
+	}
+	void ClearLockOn() {
+		if (lockOnComponent_ != nullptr) lockOnComponent_->ClearLockOn();
+	}
+	bool IsLockedOn() const {
+		return lockOnComponent_ != nullptr && lockOnComponent_->IsLockedOn();
+	}
+
+	// 未ロック時、攻撃開始のタイミングで画面中心に最も近い敵へ正対させる。
+	// ロック中はロック対象へ正対する。どちらの場合もPlayerLockOnComponent::
+	// FindNearestToScreenCenter()を状態変更なしの問い合わせとして使い回す
+	// (ロック確定用のTryLockOn()とは別経路)。
+	// StateAttack::Enter()から呼ばれる。facingDirectionComponent_はAttack中
+	// 無効化されているため、ここで明示的に向きを合わせる必要がある。
+	void FaceAttackTarget() {
+		if (lockOnComponent_ == nullptr || transform_ == nullptr) return;
+
+		GameObject* target = lockOnComponent_->IsLockedOn()
+			? lockOnComponent_->GetLockedTarget()
+			: lockOnComponent_->FindNearestToScreenCenter();
+
+		if (lockOnComponent_->IsLockedOn())
+		{
+			target = lockOnComponent_->GetLockedTarget();
+		}
+		else {
+			target = lockOnComponent_->FindNearestToScreenCenter();
+		}
+
+		if (target == nullptr) return;
+
+		TransformComponent* targetTransform = target->GetComponent<TransformComponent>();
+		if (targetTransform == nullptr) return;
+
+		Math::Vector3 dir = targetTransform->GetPosition() - transform_->GetPosition();
+		dir.y = 0.0f;
+		if (dir.LengthSquared() <= kDirectionEpsilon) return;
+		dir.Normalize();
+		dir = -dir;
+
+		// 【要確認】+Z前方・DirectX左手系を想定したyaw角の算出。
+		// TransformComponentの回転表現/SetRotation()の実際のシグネチャに
+		// 合わせて調整すること(ClassifyEvadeDirectionの座標系前提と同じ確認が必要)。
+		const float yaw = std::atan2(dir.x, dir.z);
+		transform_->SetRotation(Math::Quaternion::CreateFromAxisAngle(Math::Vector3::Up, yaw));
 	}
 
 	// --- Stateからの移動リクエスト --------------------------------------
@@ -210,9 +276,17 @@ public:
 	// 引き継がれる」ことを防いでいる(省略時はkDefaultAnimationBlendDuration、
 	// コンボ攻撃のようにAttackMoveData側で個別の値を持つ場合はそちらを渡す。
 	// 詳細はStateAttack::Enter()参照)。
+	//
+	// useRootMotionは、この技がTweenMoveComponentによる決め打ち移動ではなく
+	// アニメーションクリップのルートモーションで動くかどうか。blendDuration
+	// と同じ理由で、こちらも呼ぶたびに必ずModelAnimatorComponent::
+	// SetRootMotionBoneName()で明示的に有効/無効を設定し直す(前回別の技が
+	// ルートモーションを有効にしていた場合でも、この技がfalseなら確実に
+	// 無効化される)。
 	void PlayAnimation(const std::string& name, bool loop = false, float targetDurationSeconds = -1.0f,
-		float blendDurationSeconds = kDefaultAnimationBlendDuration) {
+		bool useRootMotion = false, float blendDurationSeconds = kDefaultAnimationBlendDuration) {
 		if (modelAnimatorComponent_ != nullptr) {
+			modelAnimatorComponent_->SetRootMotionBoneName(useRootMotion ? kRootMotionBoneName : "");
 			modelAnimatorComponent_->SetBlendDuration(blendDurationSeconds);
 			modelAnimatorComponent_->Play(name, loop, targetDurationSeconds);
 		}
@@ -244,6 +318,15 @@ public:
 
 		// 戦闘状態の更新は共通StateMachineに丸投げ
 		stateMachine_.Update(this, deltaTime);
+
+		// ModelAnimatorComponentが今フレーム抽出したルートモーション移動量を
+		// キャラクターのTransformへ反映する。stateMachine_.Update()の後に
+		// 置いているのは、この中でPlayAnimation()による技の切り替えが
+		// 起こりうるため、その切り替え後の状態も踏まえてから最後に
+		// 一度だけ消費したいという理由(実際にはConsumeRootMotionDelta()は
+		// このフレーム分の値を返すだけなので、呼ぶ位置自体はUpdate()内なら
+		// さほど厳密ではない)。
+		ApplyRootMotion();
 	}
 
 private:
@@ -266,6 +349,17 @@ private:
 		if (movementComponent_) {
 			movementComponent_->SetEnabled(nextState == &stateNone_);
 		}
+		if (facingDirectionComponent_) {
+			// MovementComponentと同じ理由。None以外(攻撃/回避/ガード/怯み)の
+			// 間は、移動方向から向きを自動追従させない。特にルートモーション
+			// で移動する技(Attack5/Evade等)は移動方向がアニメーション側の
+			// 都合で毎フレーム変わりうるため、それに合わせて向きまで
+			// 追従させると、その回転が次フレームのルートモーション変換
+			// (ApplyRootMotion側でtransform_->GetRotation()を使っている)
+			// に影響し、向きと移動が互いに干渉して暴れる不具合があった
+			// (実際に発生)。
+			facingDirectionComponent_->SetUpdateEnabled(nextState == &stateNone_);
+		}
 		if (nextState != &stateAttack_) {
 			comboIndex_ = 0;
 		}
@@ -275,6 +369,32 @@ private:
 	void HandleActionInput(PlayerInputComponent& input);
 	void ApplyMovementState(MovementState state);
 	void UpdateMovementState(float deltaTime);
+
+	// ModelAnimatorComponent側で抽出されたルートモーション移動量
+	// (ボーンのローカル/モデル空間、まだ回転を反映していない値)を、
+	// キャラクターの現在の向きでワールド空間に変換してTransformへ加算する。
+	//
+	// 【呼び出し順序の前提・未確認】ModelAnimatorComponent::Update()が
+	// このフレーム内で既に実行済みである必要がある。GameObject側の
+	// コンポーネント更新順が、型をまたいでもAddComponentした順序通りに
+	// 保証されるか未確認。保証されないなら、PlayerFactory側で
+	// ModelAnimatorComponentをこのコンポーネントより先にAddComponentする
+	// よう明示的に順序を揃えること(そうしないと、ここで消費する値が
+	// 常に1フレーム遅れる)。
+	void ApplyRootMotion() {
+		if (modelAnimatorComponent_ == nullptr || transform_ == nullptr) return;
+
+		Math::Vector3 localDelta = modelAnimatorComponent_->ConsumeRootMotionDelta();
+		if (localDelta.LengthSquared() <= 0.0f) return;
+
+		// ボーンのローカル(≒モデル)空間の移動量を、キャラクターの現在の
+		// ワールド回転で変換してからワールド移動量として加算する
+		// (Vector3::Transform(vector, quaternion)は回転のみを適用し、
+		//  平行移動は含まないため、そのままデルタの変換に使える。
+		//  TransformComponent::GetForward()と同じ変換方法)。
+		Math::Vector3 worldDelta = Math::Vector3::Transform(localDelta, transform_->GetRotation());
+		transform_->Translate(worldDelta);
+	}
 
 	// Stand/Walk/Runそれぞれのアニメーションをループ再生する。
 	// アイドルを基本状態として扱うため、Standでは明示的にkIdleAnimationを再生する。
@@ -396,6 +516,8 @@ private:
 	HealthComponent* healthComponent_ = nullptr;
 	VelocityComponent* velocityComponent_ = nullptr;
 	TransformComponent* transform_ = nullptr;
+	FacingDirectionComponent* facingDirectionComponent_ = nullptr;
+	PlayerLockOnComponent* lockOnComponent_ = nullptr;
 
 	// 武器(別GameObject、ソケット経由でアタッチ)への弱参照。
 	// SetWeapon()経由でPlayerFactory側からセットされる想定。
@@ -421,6 +543,11 @@ private:
 	// PlayAnimation()でblendDurationSecondsを省略した場合に使う既定値。
 	// ModelAnimatorComponent側の初期値(0.15秒)と合わせている。
 	static constexpr float kDefaultAnimationBlendDuration = 0.15f;
+
+	// PlayAnimation(useRootMotion=true)の際にModelAnimatorComponent::
+	// SetRootMotionBoneName()へ渡すボーン名。PlayerFactory側でモデルに
+	// アタッチしているMixamoリグのHipボーン名と一致している前提。
+	static constexpr const char* kRootMotionBoneName = "mixamorig:Hips";
 
 	// --- 戦闘データ ---
 	AttackMoveData currentAttack_;

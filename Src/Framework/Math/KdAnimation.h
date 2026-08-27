@@ -68,6 +68,11 @@ public:
 	// アニメーションの更新
 	void AdvanceTime(std::vector<KdModelWork::Node>& rNodes, float speed = 1.0f);
 
+	// 現在の再生時間(秒、またはSetFPS()の単位に依存)を取得する。
+	// ModelAnimatorComponent側でルートモーション抽出時のループ検知
+	// (AdvanceTime()の前後でこの値を比較し、巻き戻ったかどうかを見る)に使う。
+	float GetTime() const { return m_time; }
+
 private:
 
 	std::shared_ptr<KdAnimationData>	m_spAnimation = nullptr;	// 再生するアニメーションデータ

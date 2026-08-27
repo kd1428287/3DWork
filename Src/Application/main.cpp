@@ -211,6 +211,7 @@ bool Application::Init(int w, int h)
 	keyboardDevice->AddButton("Guard", new KdInputButtonForWindows({ VK_RBUTTON }));
 	keyboardDevice->AddButton("Dash", new KdInputButtonForWindows({ VK_LSHIFT }));
 	keyboardDevice->AddButton("Pause", new KdInputButtonForWindows({ 'T'}));
+	keyboardDevice->AddButton("Lock", new KdInputButtonForWindows({ VK_MBUTTON}));
 
 	std::string buff;
 	for (int i = 0; i < 10; i++)
@@ -280,7 +281,7 @@ void Application::Execute()
 	{
 		// 処理開始時間Get
 		m_fpsController.UpdateStartTime();
-		KdDebugGUI::Instance().ClearLog();
+		//KdDebugGUI::Instance().ClearLog();
 
 		std::string str = "3D_Action FPS: " + std::to_string(Application::Instance().GetNowFPS());
 		SetWindowTextA(m_window.GetWndHandle(), str.c_str());

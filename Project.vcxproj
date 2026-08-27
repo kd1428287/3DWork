@@ -275,6 +275,7 @@
     <ClInclude Include="..\Library\tinygltf\tiny_gltf.h" />
     <ClInclude Include="Src\Application\Components\Animation\BoneSocketComponent.h" />
     <ClInclude Include="Src\Application\Components\Animation\ModelAnimatorComponent.h" />
+    <ClInclude Include="Src\Application\Components\Animation\RootMotionExtractor.h" />
     <ClInclude Include="Src\Application\Components\Animation\SkeletonComponent.h" />
     <ClInclude Include="Src\Application\Components\Animation\TwoBoneIK.h" />
     <ClInclude Include="Src\Application\Components\Animation\TwoBoneIKComponent.h" />
@@ -290,9 +291,11 @@
     <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyState.h" />
     <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyStatusController.h" />
     <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyStatusData.h" />
+    <ClInclude Include="Src\Application\Components\Character\Enemy\LockOnTargetComponent.h" />
     <ClInclude Include="Src\Application\Components\Character\Player\PlayerCombatDataTable.h" />
     <ClInclude Include="Src\Application\Components\Character\Player\PlayerCombatTypes.h" />
     <ClInclude Include="Src\Application\Components\Character\Player\PlayerInputComponent.h" />
+    <ClInclude Include="Src\Application\Components\Character\Player\PlayerLockOnComponent.h" />
     <ClInclude Include="Src\Application\Components\Character\Player\PlayerState.h" />
     <ClInclude Include="Src\Application\Components\Character\Player\PlayerStatusController.h" />
     <ClInclude Include="Src\Application\Components\Character\StateMachine\StateMachine.h" />

@@ -16,7 +16,7 @@ GameObject* CameraFactory::CreateCamera(ObjectManager& objectManager, CameraTarg
 {
 	GameObject* camera = objectManager.Instantiate("camera");
 	camera->AddComponent<TransformComponent>();
-	camera->AddComponent<CameraComponent>();
+	auto* cameraC = camera->AddComponent<CameraComponent>();
 	auto* follow = camera->AddComponent<CameraFollowComponent>();
 	camera->AddComponent<CameraOrbitComponent>();
 	camera->AddComponent<CameraViewComponent>();
@@ -25,6 +25,7 @@ GameObject* CameraFactory::CreateCamera(ObjectManager& objectManager, CameraTarg
 	auto* collision = camera->AddComponent<CameraCollisionComponent>(); // Followより後
 	collision->SetPivotTarget(Handle<CameraTargetComponent>(target));
 	collision->SetSweepRadius(0.5f);
+	objectManager.SetActiveCamera(cameraC);
 
 	return camera;
 }

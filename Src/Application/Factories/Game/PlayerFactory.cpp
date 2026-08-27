@@ -14,6 +14,7 @@
 #include "../../Components/Animation/BoneSocketComponent.h"
 #include "../../Components/Animation/TwoBoneIKComponent.h"
 #include "../../Components/Character/Player/PlayerStatusController.h"
+#include "../../Components/Character/Player/PlayerLockOnComponent.h"
 #include "../../Components/Character/Data/PostureComponent.h"
 #include "../../Components/Character/Data/HealthComponent.h"
 #include "../../Components/Collision/GravityComponent.h"
@@ -41,7 +42,10 @@ namespace
 
 		auto* animator = player->AddComponent<ModelAnimatorComponent>();
 		animator->SetFPS(60);
-	
+		animator->SetRootMotionBoneName("mixamorig:Hips");
+		animator->SetRootMotionForwardAxis(RootMotionAxis::Y,-1.0f);
+		animator->SetRootMotionScale(0.01f);
+
 		return skeleton;
 	}
 
@@ -73,6 +77,8 @@ namespace
 
 		//player->AddComponent<PlayerStatusUIComponent>();
 
+		player->AddComponent<PlayerLockOnComponent>();
+
 		// Y方向の半径をCharacterCollisionDefaults::kFootOffsetと一致させて
 		// いる点が重要。Bodyの下端がfootOffsetまで届いていないと、Bodyが
 		// 地面に乗って静止した高さとGroundSensorComponentの接地レイの
@@ -87,7 +93,7 @@ namespace
 			Math::Vector3(0.0f, 0.3, 0.0f),
 			Math::Vector3(0.0f, (CharacterCollisionDefaults::kFootOffset * 2) - 0.3, 0.0f),
 			ColliderCategory::HurtBox, ColliderCategory::HitBox);
-		
+
 		collider->SetShapeIsTrigger("HurtBox", true);
 
 		return collider;
@@ -186,7 +192,7 @@ GameObject* PlayerFactory::CreateWeapon(ObjectManager& objectManager, GameObject
 	if (!weapon) return nullptr;
 
 	auto* transform = weapon->AddComponent<TransformComponent>();
-	
+
 	auto* socket = weapon->AddComponent<AttachToSocketComponent>(handle);
 	socket->SetLocalRotation(Math::Quaternion::CreateFromYawPitchRoll(
 		-90, DirectX::XMConvertToRadians(180), 0.0f));

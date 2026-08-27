@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <vector>
 #include "SkeletonComponent.h"
+#include "RootMotionExtractor.h"
 
 // ============================================================
 // モデルのボーンアニメーション再生"だけ"を責務とするコンポーネント。
@@ -42,6 +43,29 @@
 // 区切りになっている)であれば実用上問題にならない想定。
 //
 // KdAnimation.cpp(KdAnimator/KdAnimationData)側は一切変更していない。
+//
+// --- ルートモーション(Inplaceではない、位置移動が焼き込まれたクリップ)について ---
+// SetRootMotionBoneName()でHip/Root等のボーン名を指定すると、Update()内で
+// AdvanceTime()の前後でそのボーンのローカル位置を比較し、その差分を
+// 「このフレームで蓄積されたルートモーション移動量」として保持する。
+// 呼び出し側(PlayerStatusController等)は毎フレームConsumeRootMotionDelta()
+// で取り出し、キャラクターの現在の向きで変換してからTransformへ加算する
+// 必要がある(ここではボーンのローカル空間の値のまま返すだけで、ワールド
+// 空間への変換や実際の移動適用はキャラクター側の責務とする)。
+//
+// 実際の計算(ボーン解決・ループ巻き戻り検知・基準位置の管理)は
+// RootMotionExtractor(別ファイル)に切り出してあり、このクラスは
+// Update()/Play()の中でそれを呼び出すだけ。「モデルのボーンアニメーション
+// 再生」というこのクラス本来の責務からルートモーション計算の詳細を
+// 追い出し、肥大化を防ぐための分離(RootMotionExtractor.h参照)。
+//
+// 【既知の制約】クロスフェード中(blendElapsed_ < blendDuration_)は、
+// このあと述べる補間処理でルートボーンの見た目上の位置も再度ブレンド
+// されるが、ルートモーションのデルタ自体はブレンド前の生の補間結果から
+// 計算している。そのため、ブレンドが長い技だとクロスフェード中だけ
+// 見た目の位置とワールド移動量がわずかに食い違う(足が少し滑って見える)
+// 可能性がある。ルートモーションを使う技はブレンド時間を短くする
+// (AttackMoveData::blendDuration等)ことである程度緩和できる。
 // ============================================================
 class ModelAnimatorComponent : public ComponentBase
 {
@@ -105,6 +129,14 @@ public:
 		spNowPlaying_ = animData;
 		animator_.SetAnimation(animData, loop);
 
+		// ルートモーション抽出中に別アニメーションへ切り替わった場合、
+		// 旧アニメーションの最終位置と新アニメーションの先頭位置の差分を
+		// 1フレームの移動量として誤って計上しないよう、基準位置を
+		// 次のUpdate()の冒頭で取り直す(このタイミングではまだ
+		// AdvanceTime()が走っておらず、ボーンが新アニメーションの
+		// 姿勢に更新されていないため、ここでは取り直せない)。
+		rootMotion_.NotifyAnimationChanged();
+
 		// targetDurationSecondsが指定された場合、m_maxLength(このクリップの
 		// 実際の長さ)と目標秒数の比から「1秒あたりに進めるアニメーション
 		// 時間」を逆算し、以降のUpdate()ではSetFPS()の値ではなくこちらを使う。
@@ -125,10 +157,17 @@ public:
 	{
 		if (!skeleton_) { return; }
 
+		// ルートモーション: ボーン解決・基準位置の管理はRootMotionExtractor
+		// に委譲している。AdvanceTime()の前後を挟む形でしか計算できない
+		// ため、この2行はここに残す必要がある(詳細はRootMotionExtractor.h参照)。
+		rootMotion_.PrepareFrame(skeleton_->WorkModel());
+
 		// targetSpeedOverride_が設定されていれば(Play()にtargetDurationSeconds
 		// を渡した場合)、SetFPS()の値ではなくこちらを優先して速度を決める。
 		const float speed = (targetSpeedOverride_ > 0.0f) ? targetSpeedOverride_ : m_fps;
+		const float timeBeforeAdvance = animator_.GetTime();
 		animator_.AdvanceTime(skeleton_->WorkModel().WorkNodes(), deltaTime * speed);
+		rootMotion_.FinalizeFrame(timeBeforeAdvance, animator_.GetTime());
 
 		// クロスフェード: 遷移直後のblendDuration_秒間、直前のポーズと
 		// 新しいアニメーションの今のポーズを補間してWorkNodes()を上書きする。
@@ -153,6 +192,28 @@ public:
 
 	// 現在のアニメーションが最後まで再生し終わったか(ループ再生時は常にfalse)
 	bool IsAnimationEnd() const { return animator_.IsAnimationEnd(); }
+
+	// --- ルートモーション ---------------------------------------------
+	// Inplaceではない(位置移動が焼き込まれた)アニメーションを使いたい場合、
+	// 抽出元にするボーン名(通常はHip/Root)を指定する。空文字を渡すと無効化。
+	void SetRootMotionBoneName(std::string_view name) { rootMotion_.SetBoneName(name); }
+
+	// 抽出したデルタに掛ける倍率(単位変換用)。詳細はRootMotionExtractor::
+	// SetUnitScale()のコメント参照。実測して合わせ込むこと。
+	void SetRootMotionScale(float scale) { rootMotion_.SetUnitScale(scale); }
+
+	// ボーンのローカル空間で「前後」「左右」に対応する軸を指定する。
+	// モデルデータの座標変換過程で軸が入れ替わっていることがあるため、
+	// 実機で確認しながら合わせ込むこと(詳細はRootMotionExtractor::
+	// SetForwardAxis/SetRightAxisのコメント参照)。
+	void SetRootMotionForwardAxis(RootMotionAxis axis, float sign = 1.0f) { rootMotion_.SetForwardAxis(axis, sign); }
+	void SetRootMotionRightAxis(RootMotionAxis axis, float sign = 1.0f) { rootMotion_.SetRightAxis(axis, sign); }
+
+	// このフレームで蓄積されたルートモーションの移動量(ボーンの
+	// ローカル空間、まだワールド回転を反映していない値)を取得し、
+	// 内部を0にリセットする。呼ぶと消費されるので、1フレームにつき
+	// 1回だけ呼ぶこと(二重適用防止)。
+	Math::Vector3 ConsumeRootMotionDelta() { return rootMotion_.ConsumeDelta(); }
 
 private:
 	// 2つのローカル変換行列を、位置・回転・拡縮に分解してから個別に補間する。
@@ -208,4 +269,9 @@ private:
 	std::vector<Math::Matrix>			blendFromLocalTransforms_; // 切り替わる直前の全ボーンのローカル行列
 	float								blendDuration_ = 0.15f;    // ブレンドにかける時間(秒)
 	float								blendElapsed_ = 0.0f;      // ブレンド開始からの経過時間(blendDuration_以上ならブレンド終了)
+
+	// --- ルートモーション ---------------------------------------------
+	// ボーン解決・巻き戻り検知・基準位置の管理はすべてこちらに委譲
+	// (詳細はRootMotionExtractor.h参照)。
+	RootMotionExtractor					rootMotion_;
 };

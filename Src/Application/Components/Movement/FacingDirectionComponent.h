@@ -30,8 +30,7 @@ public:
 	//   向きがガタつくのを防ぐ)。
 	explicit FacingDirectionComponent(GameObject* owner,
 		float rotationSpeed = 10.0f, float moveThreshold = 0.001f)
-		: ComponentBase(owner), rotationSpeed_(rotationSpeed), moveThreshold_(moveThreshold) {
-	}
+		: ComponentBase(owner), rotationSpeed_(rotationSpeed), moveThreshold_(moveThreshold) {}
 
 	void Start() override {
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
@@ -53,6 +52,20 @@ public:
 			// 初回フレームは前の位置が無く差分が取れないため、記録だけして終わる。
 			lastPosition_ = currentPosition;
 			hasLastPosition_ = true;
+			return;
+		}
+
+		// 外部(PlayerStatusController等)から向きの自動更新を止められている間は、
+		// 位置の記録だけ更新して回転はスキップする。攻撃/回避中(特に
+		// ルートモーションで移動する技)は、移動方向がアニメーション側の
+		// 都合で毎フレーム大きく変わりうるため、それに合わせて向きまで
+		// 追従させてしまうと、その回転がまた次のフレームの移動方向計算に
+		// 影響し(ルートモーションのデルタは現在の向きで変換されるため)、
+		// 向きと移動が互いに干渉して暴れる不具合があった(実際に発生)。
+		// ノックバック中の扱いと同じ考え方で、この間はlastPosition_の
+		// 更新も含めて丸ごとスキップする。
+		if (!updateEnabled_) {
+			lastPosition_ = currentPosition;
 			return;
 		}
 
@@ -95,6 +108,12 @@ public:
 	void SetMoveThreshold(float threshold) { moveThreshold_ = threshold; }
 	float GetMoveThreshold() const { return moveThreshold_; }
 
+	// trueなら通常通り移動方向へ向きを追従させる、falseなら向きの自動更新を
+	// 完全に止める(位置の記録だけは続ける)。攻撃/回避中など、移動方向を
+	// 向きの根拠にしたくない場面でPlayerStatusController等から呼ぶ想定。
+	void SetUpdateEnabled(bool enabled) { updateEnabled_ = enabled; }
+	bool IsUpdateEnabled() const { return updateEnabled_; }
+
 private:
 	// Math::Vector3::Forward(TransformComponent::GetForward()が基準にしている
 	// ローカル前方軸)から、水平方向dirへの最短回転を内積・外積だけで求める。
@@ -129,4 +148,5 @@ private:
 
 	float rotationSpeed_;
 	float moveThreshold_;
+	bool updateEnabled_ = true;
 };

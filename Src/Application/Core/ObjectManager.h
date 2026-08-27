@@ -130,6 +130,11 @@ public:
 		context_.colliderRegistry = colliderRegistry;
 	}
 
+	void SetActiveCamera(CameraComponent* camera) 
+	{
+		context_.activeCamera = camera;
+	}
+
 private:
 	std::vector<std::unique_ptr<GameObject>> objects_;
 	std::vector<GameObject*> pendingDestroy_;

@@ -60,6 +60,53 @@ enum class ActionCommand
 	Evade,
 };
 
+// --- 回避方向の分類 -----------------------------------------------
+// 現在の前方(Enter()時点でFacingDirectionComponentの追従が止まった
+// 直後の向き)に対して、入力方向(evadeDirection)がどちら寄りかを
+// 4方向に分類したもの。前後左右で別アニメーションを出し分けるために使う。
+enum class EvadeDirection
+{
+	Forward = 0,
+	Backward,
+	Left,
+	Right,
+};
+
+// forward: キャラクターの現在の前方(正規化済み想定、TransformComponent::GetForward())
+// inputDir: 判定したい入力方向(PlayerInputComponent::PushCommand時点のスナップショット)。
+//           ゼロベクトル(無入力でEvadeキーだけ押した場合)はForward扱いにする。
+//
+// 【要確認】right = (forward.z, 0, -forward.x) は、このプロジェクトの座標系
+// (DirectX系、+Y上, +Z前方, +X右 の左手系を想定)でforwardを+90度(右へ)
+// 回した向きになるはず、という前提で書いている。実際に鏡合わせになる場合は
+// 符号を反転すること(TransformComponent::GetForward()の実装/RotationYの
+// 回転方向と突き合わせて確認してください)。
+inline EvadeDirection ClassifyEvadeDirection(const Math::Vector3& forward, const Math::Vector3& inputDir)
+{
+	if (inputDir.LengthSquared() <= kDirectionEpsilon) {
+		return EvadeDirection::Forward;
+	}
+
+	// 水平面(Y)は無視して比較する。
+	Math::Vector3 f = forward;
+	Math::Vector3 d = inputDir;
+	f.y = 0.0f;
+	d.y = 0.0f;
+	if (f.LengthSquared() <= kDirectionEpsilon || d.LengthSquared() <= kDirectionEpsilon) {
+		return EvadeDirection::Forward;
+	}
+	f.Normalize();
+	d.Normalize();
+
+	// forwardとの前後判定。cos45°(≒0.7071)を閾値にして前後/左右の4象限に分ける。
+	const float forwardDot = f.Dot(d);
+	if (forwardDot >= 0.70710678f)  return EvadeDirection::Forward;
+	if (forwardDot <= -0.70710678f) return EvadeDirection::Backward;
+
+	const Math::Vector3 right(f.z, 0.0f, -f.x);
+	return (right.Dot(d) >= 0.0f) ? EvadeDirection::Right : EvadeDirection::Left;
+}
+
 // --- 技ごとの時間的定義 --------------------------------------------
 // 技データテーブルの設計(どこで保持し、どう選択するか)は別途詰める。
 // 現状はPlayerStatusController内部でデフォルト値をそのまま使う暫定運用。
@@ -71,7 +118,9 @@ struct AttackMoveData
 	float recoveryDuration = 0.3f;
 
 	float stepDistance = 0.5f; //	攻撃入力時対象方向か入力方向に移動
-	float stepDuration = 0.1f; //	踏み込み速度
+	// Windupが終わった瞬間(AttackActiveへの切り替わり)に開始する
+	// 踏み込み移動の所要時間(StateAttack::Update参照)。
+	float stepDuration = 0.1f;
 
 	// recoveryDuration内で、ここから先は回避によるキャンセルを許可する
 	// 開始タイミング(秒)。recoveryDuration以上にすればキャンセル不可の技になる。
@@ -93,6 +142,12 @@ struct AttackMoveData
 	// 段ごとに(あるいは今後の技ごとに)繋ぎの長さを調整できるようにする。
 	float blendDuration = 0.1f;
 
+	// trueの場合、この攻撃はTweenMoveComponentによる決め打ち移動
+	// (stepDistance/stepDuration)ではなく、アニメーションクリップに
+	// 焼き込まれたルートモーションで移動する(StateAttack::Update参照)。
+	// この場合stepDistance/stepDirection/stepDurationは無視される。
+	bool useRootMotion = false;
+
 	// 再生するアニメーション名(仮)。コンボの段数ごとに異なる想定のため、
 	// PlayerStatusController::Start()でcomboAttacks_の各要素へ
 	// "Attack1"〜"Attack5"を仮で割り当てる。
@@ -101,23 +156,32 @@ struct AttackMoveData
 
 struct EvadeMoveData
 {
-	float activeDuration = 0.25f;    // 無敵が乗っている実移動フェーズ
-	float recoveryDuration = 0.15f;  // 後隙(無敵切れ)
-
-	// activeDuration内で、ここから先が「ジャスト回避」の成立窓。
+	float activeDuration = 0.25f;
+	float recoveryDuration = 0.15f;
 	float justWindowStart = 0.05f;
 	float justWindowEnd = 0.15f;
-
-	// 回避で移動する距離。TweenMoveComponentでの決め打ち軌道に使う。
 	float evadeDistance = 3.0f;
-
-	// 回避方向。入力バッファに積まれた瞬間の移動入力を正規化して
-	// スナップショットしたもの(PlayerInputComponent::PushCommand参照)。
-	// 無入力(ゼロベクトル)の場合は、使う側(PlayerStatusController::RequestStepMove)で
-	// モデルの向いている方向にフォールバックする。
 	Math::Vector3 evadeDirection = Math::Vector3::Zero;
+	bool useRootMotion = false;
 
-	std::string animationName = "StandToRoll"; // 仮
+	// 前後左右で別クリップを再生するため、単一のanimationNameから分割。
+	// 全方向とも同じクリップで良ければ4つとも同じ名前を入れればよい
+	// (実アセットが揃うまでの暫定運用としてCreateDebugEvadeData()参照)。
+	std::string animationNameForward = "StandToRoll";
+	std::string animationNameBackward = "StandToRoll";
+	std::string animationNameLeft = "StandToRoll";
+	std::string animationNameRight = "StandToRoll";
+
+	const std::string& GetAnimationName(EvadeDirection dir) const
+	{
+		switch (dir) {
+		case EvadeDirection::Backward: return animationNameBackward;
+		case EvadeDirection::Left:     return animationNameLeft;
+		case EvadeDirection::Right:    return animationNameRight;
+		case EvadeDirection::Forward:
+		default:                       return animationNameForward;
+		}
+	}
 };
 
 struct GuardMoveData

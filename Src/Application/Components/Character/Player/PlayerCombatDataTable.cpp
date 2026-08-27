@@ -9,8 +9,8 @@ ComboAttackTable CreateDebugComboAttackTable()
 
 	// 1段目: 素早い差し込み
 	table[0].windupDuration = 0.15f;
-	table[0].activeDuration = 0.55f;
-	table[0].recoveryDuration = 0.55f;
+	table[0].activeDuration = 0.15f;
+	table[0].recoveryDuration = 0.25f;
 	table[0].stepDistance = 0.5f;
 	table[0].stepDuration = 0.10f;
 	table[0].recoveryEvadeCancelStart = 0.10f;
@@ -20,19 +20,19 @@ ComboAttackTable CreateDebugComboAttackTable()
 
 	// 2段目
 	table[1].windupDuration = 0.18f;
-	table[1].activeDuration = 0.45f;
-	table[1].recoveryDuration = 0.35f;
+	table[1].activeDuration = 0.18f;
+	table[1].recoveryDuration = 0.30f;
 	table[1].stepDistance = 0.6f;
 	table[1].stepDuration = 0.12f;
 	table[1].recoveryEvadeCancelStart = 0.15f;
 	table[1].recoveryAttackCancelStart = 0.18f;
-	table[1].blendDuration = 0.005f; // 前段からの継続。短めにして繋ぎの唐突さを緩和
+	table[1].blendDuration = 0.08f; // 前段からの継続。短めにして繋ぎの唐突さを緩和
 	table[1].animationName = "Attack2";
 
 	// 3段目
-	table[2].windupDuration = 0.18f;
-	table[2].activeDuration = 0.45f;
-	table[2].recoveryDuration = 0.35f;
+	table[2].windupDuration = 0.20f;
+	table[2].activeDuration = 0.20f;
+	table[2].recoveryDuration = 0.32f;
 	table[2].stepDistance = 0.6f;
 	table[2].stepDuration = 0.12f;
 	table[2].recoveryEvadeCancelStart = 0.16f;
@@ -41,8 +41,8 @@ ComboAttackTable CreateDebugComboAttackTable()
 	table[2].animationName = "Attack3";
 
 	// 4段目
-	table[3].windupDuration = 0.18f;
-	table[3].activeDuration = 0.45f;
+	table[3].windupDuration = 0.22f;
+	table[3].activeDuration = 0.22f;
 	table[3].recoveryDuration = 0.35f;
 	table[3].stepDistance = 0.7f;
 	table[3].stepDuration = 0.14f;
@@ -65,6 +65,10 @@ ComboAttackTable CreateDebugComboAttackTable()
 	table[4].recoveryEvadeCancelStart = 0.30f;
 	table[4].recoveryAttackCancelStart = 0.50f;
 	table[4].blendDuration = 0.1f; // フィニッシュ技。次はNoneへ戻るだけなので通常寄りの値
+	// フィニッシュ技はルートモーション付きのクリップを使う想定。
+	// stepDistance/stepDirection/stepDurationはuseRootMotion=trueの間
+	// 無視される(StateAttack::Update参照)。
+	table[4].useRootMotion = true;
 	table[4].animationName = "Attack5";
 
 	return table;
@@ -78,10 +82,17 @@ EvadeMoveData CreateDebugEvadeData()
 	data.justWindowStart = 0.05f;
 	data.justWindowEnd = 0.15f;
 	data.evadeDistance = 3.0f;
-	data.animationName = "StandToRoll";
+	data.useRootMotion = true;
+
+	// TODO: 前後左右それぞれの実クリップが揃うまでは全て同じ名前の暫定運用。
+	// 揃い次第、backward/left/right側を差し替える。
+	data.animationNameForward = "StandToRoll";
+	data.animationNameBackward = "StandToRoll";
+	data.animationNameLeft = "LeftStep";
+	data.animationNameRight = "RightStep";
+
 	return data;
 }
-
 GuardMoveData CreateDebugGuardData()
 {
 	GuardMoveData data{};

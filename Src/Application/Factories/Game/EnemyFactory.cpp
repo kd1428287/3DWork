@@ -5,6 +5,7 @@
 #include "../../Components/Character/Enemy/EnemyStatusController.h"
 #include "../../Components/Character/Enemy/Brute/BruteStatusController.h"
 #include "../../Components/Character/Enemy/Boss/BossStatusController.h"
+#include "../../Components/Character/Enemy/LockOnTargetComponent.h"
 #include "../../Components/Character/Data/PostureComponent.h"
 #include "../../Components/Character/Data/HealthComponent.h"
 #include "../../Components/Transform/TransformComponent.h"
@@ -194,6 +195,7 @@ GameObject* EnemyFactory::BuildEnemy(ObjectManager& objectManager, const EnemyDe
 	// HP管理用。数値の詳細(最大値等)はHealthComponentのデフォルト値
 	// のまま、別途調整する。
 	enemy->AddComponent<HealthComponent>();
+	enemy->AddComponent<LockOnTargetComponent>();
 
 	enemy->AddComponent<ModelAnimatorComponent>()->SetFPS(60);
 

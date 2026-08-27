@@ -23,7 +23,7 @@
 // ============================================================
 class CameraComponent : public ComponentBase {
 public:
-    explicit CameraComponent(GameObject* owner) : ComponentBase(owner) {}
+	explicit CameraComponent(GameObject* owner) : ComponentBase(owner) {}
 
 	void Awake() override
 	{
@@ -34,22 +34,22 @@ public:
 		camera_->SetProjectionMatrix(60);
 	}
 
-    void Start() override {
-        transform_ = GetOwner()->GetComponent<TransformComponent>();
-        if (auto* ctx = GetOwner()->GetContext()) {
-            ctx->activeCamera = this;  // 自分をアクティブカメラとして登録
-        }
-    }
+	void Start() override {
+		transform_ = GetOwner()->GetComponent<TransformComponent>();
+		if (auto* ctx = GetOwner()->GetContext()) {
+			ctx->activeCamera = this;  // 自分をアクティブカメラとして登録
+		}
+	}
 
-    void OnDestroy() override {
-        // 自分が今もアクティブカメラのままなら、登録を解除しておく
-        // (解除しないと、破棄後のポインタが残ってしまう)
-        if (auto* ctx = GetOwner()->GetContext()) {
-            if (ctx->activeCamera == this) {
-                ctx->activeCamera = nullptr;
-            }
-        }
-    }
+	void OnDestroy() override {
+		// 自分が今もアクティブカメラのままなら、登録を解除しておく
+		// (解除しないと、破棄後のポインタが残ってしまう)
+		if (auto* ctx = GetOwner()->GetContext()) {
+			if (ctx->activeCamera == this) {
+				ctx->activeCamera = nullptr;
+			}
+		}
+	}
 
 	void PostUpdate(float dt)override
 	{
@@ -57,10 +57,17 @@ public:
 		camera_->SetToShader();
 	}
 
-    Math::Vector3 GetPosition() const { return transform_ ? transform_->GetPosition() : Math::Vector3{}; }
+	Math::Vector3 GetPosition() const { return transform_ ? transform_->GetPosition() : Math::Vector3{}; }
+
+	// カメラの向いている方向(正規化済み)。PostUpdate()でtransform_->GetWorldMatrix()を
+	// そのままカメラ行列に渡しているため、transform_->GetForward()がカメラの
+	// 視線方向と一致する(PlayerLockOnComponent::FindNearestToScreenCenter()が
+	// 画面中心からの近さを判定するのに使う)。
+	Math::Vector3 GetForward() const { return transform_ ? transform_->GetForward() : Math::Vector3{}; }
+
 	KdCamera& GetCamera() const { return *camera_; }
 
 private:
-    TransformComponent* transform_ = nullptr;
+	TransformComponent* transform_ = nullptr;
 	std::unique_ptr<KdCamera>					camera_ = nullptr;
 };
