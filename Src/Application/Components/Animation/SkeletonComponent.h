@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "../../Core/Handle.h"
+#include "../Tags/IModelRenderSource.h"
 
 // ============================================================
 // SkeletonComponent: 骨格アニメーション(FK)を担当する。
@@ -14,7 +15,7 @@
 // 二重計算・アニメのズレを避けるため、そちらではなくこの
 // SkeletonComponentが持つKdModelWorkを描画側からも参照すること。
 // ============================================================
-class SkeletonComponent : public ComponentBase {
+class SkeletonComponent : public ComponentBase, IModelRenderSource {
 public:
 	explicit SkeletonComponent(GameObject* owner) : ComponentBase(owner) {}
 
@@ -66,6 +67,8 @@ public:
 
 	KdModelWork& WorkModel() { return m_modelWork; }
 	const KdModelWork& GetModel() const { return m_modelWork; }
+
+	KdModelWork* GetModel() override { return &m_modelWork; }
 
 private:
 	KdModelWork m_modelWork;

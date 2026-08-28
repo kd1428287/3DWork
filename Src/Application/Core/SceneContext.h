@@ -1,9 +1,12 @@
 ﻿#pragma once
+#include "Handle.h"
 
 class EventBus;
 class CameraComponent;
 class ColliderRegistry;
 class ObjectManager;
+class GameObject;
+class LockOnTargetComponent;
 
 // ============================================================
 // GameObjectが生成時に1つだけ紐付けられる、Scene全体で共有される
@@ -28,6 +31,17 @@ struct SceneContext {
 	// ObjectManagerのコンストラクタでcontext_.objectManager = this;と
 	// 自己登録される。
 	ObjectManager* objectManager = nullptr;
+
+	// シーンに1つだけの「現在ロックオン中の対象」への弱参照。activeCameraと
+	// 同じ考え方(このファイル冒頭のコメント参照)で、Playerに限らず誰でも
+	// ここを見ればロック状態を知れるようにする。
+	//
+	// 書き込むのはPlayerLockOnComponent(Playerの兄弟コンポーネント)だけ
+	// (TryLockOn()/ClearLockOn()、および対象消失時の自動解除)。他の
+	// システム(カメラ側のCameraOrbitComponent等)はPlayerLockOnComponentと
+	// いう型を一切知らずに、ここを読むだけでロック対象を参照できる。
+	//Handle<LockOnTargetComponent> lockedTarget;
+	Handle<GameObject> lockedTarget;
 
 	// スケールされていない、フレームの生の経過時間。
 	// 個々のGameObjectのtimeScale_の影響を受けないため、

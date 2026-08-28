@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "../Transform/TransformComponent.h"
 #include "../Animation/SkeletonComponent.h"
+#include "../Tags/IModelRenderSource.h"
 
 class ModelRenderComponent : public ComponentBase, public IRenderable {
 public:
@@ -11,7 +12,8 @@ public:
 	{
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
 		skeleton_ = GetOwner()->GetComponent<SkeletonComponent>();
-		// model_ = GetOwner()->GetComponent<ModelComponent>();
+		
+		//auto models = GetOwner()->GetTagged<IModelRenderSource>();
 	}
 
 	// 光を遮るオブジェクト(影を落とす側)としてシャドウマップに描く
@@ -37,6 +39,7 @@ private:
 
 		if (skeleton_) { KdShaderManager::Instance().m_StandardShader.DrawModel(skeleton_->WorkModel(), transform_->GetWorldMatrix()); }
 		//else if (model_) { KdShaderManager::Instance().m_StandardShader.DrawModel(model_->WorkModel(), transform_->GetWorldMatrix()); };
+
 	}
 
 	TransformComponent* transform_ = nullptr;

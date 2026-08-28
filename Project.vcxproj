@@ -338,6 +338,7 @@
     <ClInclude Include="Src\Application\Core\Handle.h" />
     <ClInclude Include="Src\Application\Core\ObjectManager.h" />
     <ClInclude Include="Src\Application\Core\SceneContext.h" />
+    <ClInclude Include="Src\Application\Editor\EditorViewport.h" />
     <ClInclude Include="Src\Application\Editor\ImGuizmo.h" />
     <ClInclude Include="Src\Application\Editor\MapEditor.h" />
     <ClInclude Include="Src\Application\Engine\EventBus\EventBus.h" />
@@ -423,6 +424,7 @@
     <ClCompile Include="Src\Application\Components\Collision\WireFrameComponent.cpp" />
     <ClCompile Include="Src\Application\Components\UI\Enemy\EnemyHPBarComponent.cpp" />
     <ClCompile Include="Src\Application\Components\UI\Player\PlayerStatusUIComponent.cpp" />
+    <ClCompile Include="Src\Application\Editor\EditorViewport.cpp" />
     <ClCompile Include="Src\Application\Editor\ImGuizmo.cpp" />
     <ClCompile Include="Src\Application\Editor\MapEditor.cpp" />
     <ClCompile Include="Src\Application\Factories\Common\CameraFactory.cpp" />

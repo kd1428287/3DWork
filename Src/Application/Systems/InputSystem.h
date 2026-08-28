@@ -78,6 +78,13 @@ public:
 			// パリィは独立した入力を持たない。Guardボタン押下(SetGuardHeld)の
 			// 開始直後の数フレームが、そのままパリィ判定窓になる
 			// (PlayerStatusController::IsInParryWindow()参照)。
+
+			// "Lock"は押した瞬間だけ意味を持つ単発入力。Attack/Evadeと違い
+			// 先行入力バッファ(PushCommand)には積まず、専用のフラグとして
+			// 素通しする(PlayerInputComponent::SetLockPressed()参照)。
+			if (KdInputManager::Instance().IsPress("Lock")) {
+				playerInput_->SetLockPressed();
+			}
 		}
 
 		if (cameraOrbit_ != nullptr) {

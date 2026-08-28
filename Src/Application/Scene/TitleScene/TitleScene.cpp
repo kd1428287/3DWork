@@ -12,8 +12,6 @@ void TitleScene::Init()
 {
 	BaseScene::Init();
 
-	ShowCursor(true);
-
 	GameObject* logo = objManager_->Instantiate("TitleLogo");
 	logo->AddComponent<TransformComponent>()->SetScale({ 1.4f,1.4f,1.4f });
 	auto* sprite = logo->AddComponent<SpriteRenderComponent>("Asset/Textures/Title/Title.png");

@@ -8,10 +8,24 @@ void PlayerStatusController::HandleMovementInput(const PlayerInputComponent& inp
 	if (GetCombatState() != CombatState::None) return;
 	MovementState nextState = input.GetDesiredMovementState();
 
-	if (movementState_ != nextState) {
+	// Walk中は、Stand/Walk/Run間の切り替わりだけでなく、現在の向きに対する
+	// 移動方向(前後左右)の変化もアニメーションを再生し直すきっかけにする。
+	// ロックオン中は正面が移動方向に追従しなくなる(UpdateLockOnFacing参照)ため、
+	// MovementState自体はWalkのまま前進⇔後退⇔横歩きが切り替わることがあり、
+	// 従来の「MovementStateが変わった時だけPlay」する仕組みだけでは
+	// この切り替わりを拾えない。
+	const EvadeDirection walkDirection = ClassifyEvadeDirection(input.GetMoveDirection());
+	const bool stateChanged = (movementState_ != nextState);
+	const bool walkDirectionChanged = (nextState == MovementState::Walk && walkDirection != lastWalkDirection_);
+
+	if (stateChanged) {
 		movementState_ = nextState;
 		ApplyMovementState(movementState_);
-		PlayMovementAnimation(movementState_);
+	}
+
+	if (stateChanged || walkDirectionChanged) {
+		lastWalkDirection_ = walkDirection;
+		PlayMovementAnimation(movementState_, walkDirection);
 	}
 }
 
@@ -25,6 +39,20 @@ void PlayerStatusController::HandleActionInput(PlayerInputComponent& input)
 	// 明示し、将来Stateが増えた際にCanStart*系のオーバーライド漏れが
 	// あってもスタン無敵貫通が起きないようにする。
 	if (IsStaggered()) return;
+
+	// ロックオンの切り替え。Attack/Evade/Guardのように現在のCombatStateで
+	// 実行可否を制限する必要が無いため(戦闘中でも対象を切り替えたい/
+	// 外したいことがある)、CanStart*系のポリモーフィズムには乗せず、
+	// ここで直接処理する。既にロック中ならこの入力で解除、未ロックなら
+	// 画面中心に最も近い対象をロックするトグル動作にしている。
+	if (input.ConsumeLockPressed()) {
+		if (IsLockedOn()) {
+			ClearLockOn();
+		}
+		else {
+			TryLockOn();
+		}
+	}
 
 	// Guardの開始可否もAttack/Evadeと同じくCanStartGuard()/TryStartGuard()
 	// (=State側のポリモーフィズム)に委ねる。CombatState::Noneのハードコード

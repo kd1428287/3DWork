@@ -26,7 +26,7 @@ public:
 
 	// 描画対象のKdPolygonを返す。座標(頂点)の更新は実装側(データ保持側)の
 	// 責務とし、PolygonRenderComponentは受け取ったものをそのまま描画するだけ。
-	virtual KdPolygon& GetPolygon() = 0;
+	virtual KdPolygon* GetPolygon() = 0;
 
 	// 「今描画すべき状態か」。
 	// 例: KdTrailPolygonの頂点が2未満(未生成)の間はfalseを返す等。

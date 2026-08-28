@@ -27,7 +27,7 @@ public:
 
 	// 描画対象のKdModelを返す。座標(頂点)の更新は実装側(データ保持側)の
 	// 責務とし、ModelRenderComponentは受け取ったものをそのまま描画するだけ。
-	virtual KdModelWork& GetModel() = 0;
+	virtual KdModelWork* GetModel() = 0;
 
 	// 「今描画すべき状態か」。
 	// 例: KdTrailModelの頂点が2未満(未生成)の間はfalseを返す等。

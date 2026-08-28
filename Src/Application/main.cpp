@@ -4,6 +4,9 @@
 
 #include "../Framework/Font/KdFont.h"
 
+// ※ EditorViewportの実際の配置フォルダに合わせてパスを調整してください
+#include "Editor/EditorViewport.h"
+
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // エントリーポイント
 // アプリケーションはこの関数から進行する
@@ -69,7 +72,10 @@ void Application::Update()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void Application::KdBeginDraw(bool usePostProcess)
 {
-	KdDirect3D::Instance().ClearBackBuffer();
+	// 3D描画先を切り替える
+	//	・エディタ表示中 … オフスクリーン(Sceneウィンドウ用バッファ)
+	//	・エディタ非表示中 … バックバッファへ直接フルスクリーン描画
+	EditorViewport::Instance().BeginSceneDraw();
 
 	KdShaderManager::Instance().WorkAmbientController().Draw();
 
@@ -82,7 +88,18 @@ void Application::KdBeginDraw(bool usePostProcess)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void Application::KdPostDraw()
 {
-	// Imguiのレンダリング
+	if (EditorViewport::Instance().IsEnabled())
+	{
+		// バックバッファをクリアし、ImGui(ドッキングUI)用のレンダーターゲットに戻す
+		KdDirect3D::Instance().ClearBackBuffer();
+
+		ID3D11RenderTargetView* rtvs[] = { KdDirect3D::Instance().WorkBackBuffer()->WorkRTView() };
+		KdDirect3D::Instance().WorkDevContext()->OMSetRenderTargets(1, rtvs, KdDirect3D::Instance().WorkZBuffer()->WorkDSView());
+	}
+	// エディタ非表示中：ゲーム画面はBeginSceneDraw()で既にバックバッファへ直接描画済みのため、
+	// ここで再クリアするとゲーム画面が消えてしまうので何もしない
+
+	// Imguiのレンダリング(エディタ非表示中は中身が空でも軽量に呼べる)
 	KdDebugGUI::Instance().GuiProcess();
 
 	// BackBuffer -> 画面表示
@@ -198,20 +215,20 @@ bool Application::Init(int w, int h)
 	//===================================================================
 	// ゲーム固有の初期化
 	//===================================================================
-	// 例えばカーソルを消したい場合
+	// カーソルを消す(エディタ表示中は"Pause"入力でShowCursor(TRUE)に切り替わる)
 	ShowCursor(false);
 
 	// Input
 	// 1. キーボード用のコレクターを作成
 	auto keyboardDevice = std::make_unique<KdInputCollector>();
 
-	// ボタンの登録
+	// ボタンの登録: "Jump" アクションに [スペースキー] を割り当て
 	keyboardDevice->AddButton("Evade", new KdInputButtonForWindows(VK_SPACE));
-	keyboardDevice->AddButton("Attack", new KdInputButtonForWindows({ 'Z', VK_LBUTTON , VK_RETURN }));
+	keyboardDevice->AddButton("Attack", new KdInputButtonForWindows({ 'Z', VK_LBUTTON }));
 	keyboardDevice->AddButton("Guard", new KdInputButtonForWindows({ VK_RBUTTON }));
 	keyboardDevice->AddButton("Dash", new KdInputButtonForWindows({ VK_LSHIFT }));
-	keyboardDevice->AddButton("Pause", new KdInputButtonForWindows({ 'T'}));
-	keyboardDevice->AddButton("Lock", new KdInputButtonForWindows({ VK_MBUTTON}));
+	keyboardDevice->AddButton("Pause", new KdInputButtonForWindows({ 'T' }));
+	keyboardDevice->AddButton("Lock", new KdInputButtonForWindows({ VK_MBUTTON }));
 
 	std::string buff;
 	for (int i = 0; i < 10; i++)
@@ -281,7 +298,7 @@ void Application::Execute()
 	{
 		// 処理開始時間Get
 		m_fpsController.UpdateStartTime();
-		//KdDebugGUI::Instance().ClearLog();
+		KdDebugGUI::Instance().ClearLog();
 
 		std::string str = "3D_Action FPS: " + std::to_string(Application::Instance().GetNowFPS());
 		SetWindowTextA(m_window.GetWndHandle(), str.c_str());
@@ -289,8 +306,13 @@ void Application::Execute()
 		if (KdInputManager::Instance().IsPress("Pause")) {
 			static bool flg = true;
 			flg = !flg;
-			ShowCursor(true);
 			KdInputManager::Instance().SetAxisConfineToWindowCenter("Look", flg);
+
+			// エディタ描画のON/OFFを切り替え
+			EditorViewport::Instance().ToggleEnabled();
+
+			// エディタOFF中(プレイ中)はカーソルを隠し、ON中(編集中)は表示する
+			ShowCursor(EditorViewport::Instance().IsEnabled());
 		}
 
 		// ゲーム終了指定があるときはループ終了

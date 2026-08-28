@@ -129,6 +129,7 @@
 #include "Application/Engine/EventBus/EventBus.h"
 #include "Application/Engine/EventBus/Event/Event.h"
 #include "Application/Core/Handle.h"
+#include "Application/Core/SceneContext.h"
 #include "Application/Core/GameObject.h"
 #include "Application/Core/ObjectManager.h"   
 

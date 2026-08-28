@@ -1,8 +1,10 @@
 ﻿#include "../main.h"
 
 #include "MapEditor.h"
+#include "EditorViewport.h"
 
 #include <fstream>
+#include <filesystem>
 // 未導入の場合はSave/Loadごと削除するか、独自の保存形式に差し替えてください
 #include "nlohmann/json.hpp"
 
@@ -42,6 +44,7 @@ void MapEditor::Update()
 	DrawMainMenu();
 	DrawHierarchy();
 	DrawInspector();
+	DrawAssetPicker();
 	DrawGizmo();
 }
 
@@ -155,7 +158,7 @@ void MapEditor::DrawInspector()
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // ギズモ描画・操作
-//	ShaderManager の カメラCB(mView / mProjection) を使用
+//	KdShaderManager の カメラCB(mView / mProjection) を使用
 //	※メンバ名はプロジェクト側の実際の型に合わせて調整してください
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void MapEditor::DrawGizmo()
@@ -165,8 +168,10 @@ void MapEditor::DrawGizmo()
 	ImGuizmo::SetOrthographic(false);
 	ImGuizmo::SetDrawlist();
 
-	ImGuiIO& io = ImGui::GetIO();
-	ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+	// 画面全体ではなく、Sceneウィンドウ内の画像表示範囲を基準にする
+	const ImVec2& rectPos = EditorViewport::Instance().GetScreenPos();
+	const ImVec2& rectSize = EditorViewport::Instance().GetScreenSize();
+	ImGuizmo::SetRect(rectPos.x, rectPos.y, rectSize.x, rectSize.y);
 
 	const auto& cameraCB = KdShaderManager::Instance().GetCameraCB();
 	const DirectX::SimpleMath::Matrix& view = cameraCB.mView;
@@ -187,6 +192,98 @@ void MapEditor::DrawGizmo()
 	if (ImGuizmo::IsUsing())
 	{
 		ImGuizmo::DecomposeMatrixToComponents(matrix, &obj.pos.x, &obj.rotate.x, &obj.scale.x);
+	}
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// アセット(モデル)選択ウィンドウ
+//	Asset/Model 以下の .gltf/.glb を一覧表示し、選択中オブジェクトに割り当てる
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void MapEditor::DrawAssetPicker()
+{
+	ImGui::Begin("Assets");
+
+	// 初回のみ自動スキャン
+	if (!m_assetListLoaded)
+	{
+		RefreshModelFileList();
+		m_assetListLoaded = true;
+	}
+
+	if (ImGui::Button("Refresh"))
+	{
+		RefreshModelFileList();
+	}
+
+	ImGui::Separator();
+
+	if (m_selected < 0 || m_selected >= (int)m_objects.size())
+	{
+		ImGui::TextDisabled("オブジェクトを選択してください");
+		ImGui::End();
+		return;
+	}
+
+	MapObject& obj = m_objects[m_selected];
+
+	ImGui::Text("Current : %s", obj.modelPath.empty() ? "(None)" : obj.modelPath.c_str());
+	ImGui::Separator();
+
+	for (auto& path : m_modelFileList)
+	{
+		bool isSelected = (obj.modelPath == path);
+		if (ImGui::Selectable(path.c_str(), isSelected))
+		{
+			obj.SetModel(path);
+		}
+	}
+
+	ImGui::End();
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// Asset/Model 以下を走査してモデルファイル一覧を更新する
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void MapEditor::RefreshModelFileList()
+{
+	m_modelFileList.clear();
+
+	namespace fs = std::filesystem;
+
+	const std::string root = "Asset/Model";	// ※実際のモデル格納フォルダに合わせて調整
+
+	if (!fs::exists(root)) return;
+
+	for (auto& entry : fs::recursive_directory_iterator(root))
+	{
+		if (!entry.is_regular_file()) continue;
+
+		std::string ext = entry.path().extension().string();
+		if (ext != ".gltf" && ext != ".glb") continue;
+
+		// 表示・JSON保存の一貫性のため区切り文字をスラッシュに統一
+		m_modelFileList.push_back(entry.path().generic_string());
+	}
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 配置済みオブジェクトの実描画
+//	SceneManager::Draw() など、3D描画パスから呼び出すこと
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void MapEditor::DrawPlacedObjects()
+{
+	for (auto& obj : m_objects)
+	{
+		// モデル未割り当てのオブジェクトはスキップ
+		if (!obj.modelWork.IsEnable()) continue;
+
+		// ノード行列の再計算が必要なら計算(SetModelData直後など)
+		if (obj.modelWork.NeedCalcNodeMatrices())
+		{
+			obj.modelWork.CalcNodeMatrices();
+		}
+
+		KdShaderManager::Instance().m_StandardShader.DrawModel(obj.modelWork, obj.GetMatrix());
 	}
 }
 
@@ -222,7 +319,8 @@ void MapEditor::Save(const std::string& path)
 			{ "name",   obj.name },
 			{ "pos",    { obj.pos.x, obj.pos.y, obj.pos.z } },
 			{ "rotate", { obj.rotate.x, obj.rotate.y, obj.rotate.z } },
-			{ "scale",  { obj.scale.x, obj.scale.y, obj.scale.z } }
+			{ "scale",  { obj.scale.x, obj.scale.y, obj.scale.z } },
+			{ "model",  obj.modelPath }
 			});
 	}
 
@@ -317,6 +415,14 @@ void MapEditor::Load(const std::string& path)
 		obj.pos = { e.at("pos")[0],    e.at("pos")[1],    e.at("pos")[2] };
 		obj.rotate = { e.at("rotate")[0], e.at("rotate")[1], e.at("rotate")[2] };
 		obj.scale = { e.at("scale")[0],  e.at("scale")[1],  e.at("scale")[2] };
+
+		// "model"キーは旧バージョンのJSONには存在しないため value() でデフォルト値対応
+		std::string modelPath = e.value("model", std::string());
+		if (!modelPath.empty())
+		{
+			obj.SetModel(modelPath);	// ここで実際のモデル読み込みが走る
+		}
+
 		m_objects.push_back(obj);
 	}
 

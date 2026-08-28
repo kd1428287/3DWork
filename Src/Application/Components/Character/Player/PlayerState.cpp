@@ -133,9 +133,9 @@ void StateEvade::Enter(PlayerStatusController* controller) {
 	// 自動スケーリングする(詳細はModelAnimatorComponent::Play参照)。
 	const float targetDuration = data.activeDuration + data.recoveryDuration;
 	controller->PlayAnimation(data.GetAnimationName(evadeDir), false, targetDuration, data.useRootMotion);
-	if (!data.useRootMotion) {
+	//if (!data.useRootMotion) {
 		controller->RequestStepMove(data.evadeDirection, data.evadeDistance, data.activeDuration + data.recoveryDuration);
-	}
+	//}
 }
 
 void StateEvade::Exit(PlayerStatusController* controller) {

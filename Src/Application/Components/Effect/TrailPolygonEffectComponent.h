@@ -1,7 +1,6 @@
 ﻿#pragma once
 #include "../Transform/TransformComponent.h"
 #include "../Tags/IPolygonRenderSource.h"
-//#include "KdTrailPolygon.h"
 
 // ============================================================
 // KdTrailPolygonの「データ管理」を担当するコンポーネント。

@@ -150,8 +150,6 @@ public:
 		if (!CanStartGuard()) return false;
 		currentGuard_ = baseGuardData_;
 		TransitionTo(&stateGuard_);
-		/*stateMachine_.ForceTransitionTo(this, &stateGuard_);
-		OnStateChanged(&stateGuard_);*/
 		return true;
 	}
 
@@ -190,30 +188,7 @@ public:
 			? lockOnComponent_->GetLockedTarget()
 			: lockOnComponent_->FindNearestToScreenCenter();
 
-		if (lockOnComponent_->IsLockedOn())
-		{
-			target = lockOnComponent_->GetLockedTarget();
-		}
-		else {
-			target = lockOnComponent_->FindNearestToScreenCenter();
-		}
-
-		if (target == nullptr) return;
-
-		TransformComponent* targetTransform = target->GetComponent<TransformComponent>();
-		if (targetTransform == nullptr) return;
-
-		Math::Vector3 dir = targetTransform->GetPosition() - transform_->GetPosition();
-		dir.y = 0.0f;
-		if (dir.LengthSquared() <= kDirectionEpsilon) return;
-		dir.Normalize();
-		dir = -dir;
-
-		// 【要確認】+Z前方・DirectX左手系を想定したyaw角の算出。
-		// TransformComponentの回転表現/SetRotation()の実際のシグネチャに
-		// 合わせて調整すること(ClassifyEvadeDirectionの座標系前提と同じ確認が必要)。
-		const float yaw = std::atan2(dir.x, dir.z);
-		transform_->SetRotation(Math::Quaternion::CreateFromAxisAngle(Math::Vector3::Up, yaw));
+		FaceTowards(target);
 	}
 
 	// --- Stateからの移動リクエスト --------------------------------------
@@ -303,7 +278,8 @@ public:
 		if (inputComponent_ == nullptr) return;
 		movementState_ = inputComponent_->GetDesiredMovementState();
 		ApplyMovementState(movementState_);
-		PlayMovementAnimation(movementState_);
+		lastWalkDirection_ = ClassifyEvadeDirection(inputComponent_->GetMoveDirection());
+		PlayMovementAnimation(movementState_, lastWalkDirection_);
 	}
 
 	// --- ライフサイクル --------------------------------------------------
@@ -313,6 +289,12 @@ public:
 			HandleMovementInput(*inputComponent_);
 			HandleActionInput(*inputComponent_);
 		}
+
+		// ロック中は、移動(None状態)中であっても向きをロック対象方向へ固定する。
+		// 攻撃/回避/ガード/怯み中はOnStateChanged()側で既にFacingDirectionComponentが
+		// 無効化されており、各State自身が向きを管理するため対象外とする
+		// (詳細はUpdateLockOnFacing()参照)。
+		UpdateLockOnFacing();
 
 		UpdateMovementState(deltaTime);
 
@@ -370,6 +352,53 @@ private:
 	void ApplyMovementState(MovementState state);
 	void UpdateMovementState(float deltaTime);
 
+	// 対象(target)の方向へ水平方向の向きを合わせる共通処理。
+	// FaceAttackTarget()(攻撃開始時、その場限りで一度だけ向きを合わせる)と
+	// UpdateLockOnFacing()(ロック中、移動していても毎フレーム向きを固定し
+	// 続ける)の両方から呼ばれる。
+	void FaceTowards(GameObject* target) {
+		if (target == nullptr || transform_ == nullptr) return;
+
+		TransformComponent* targetTransform = target->GetComponent<TransformComponent>();
+		if (targetTransform == nullptr) return;
+
+		Math::Vector3 dir = targetTransform->GetPosition() - transform_->GetPosition();
+		dir.y = 0.0f;
+		if (dir.LengthSquared() <= kDirectionEpsilon) return;
+		dir.Normalize();
+		dir = -dir;
+
+		// 【要確認】+Z前方・DirectX左手系を想定したyaw角の算出。
+		// TransformComponentの回転表現/SetRotation()の実際のシグネチャに
+		// 合わせて調整すること(ClassifyEvadeDirectionの座標系前提と同じ確認が必要)。
+		const float yaw = std::atan2(dir.x, dir.z);
+		transform_->SetRotation(Math::Quaternion::CreateFromAxisAngle(Math::Vector3::Up, yaw));
+	}
+
+	// ロック中、移動(CombatState::None)中でも向きをロック対象へ固定する。
+	// 通常はFacingDirectionComponentが移動方向へ自動追従させるが、
+	// ロック中はそれを止め、代わりにここでロック対象方向へ強制的に
+	// 向かせる(いわゆる「横歩き/バックステップしながら正面は敵を向き続ける」
+	// アクションゲームの一般的な挙動)。
+	//
+	// 攻撃/回避/ガード/怯み中はOnStateChanged()側で既にFacingDirectionComponentを
+	// 無効化した上で各Stateが個別に向きを管理している(FaceAttackTarget/
+	// ClassifyEvadeDirection等)ため、ここでは何もしない。
+	void UpdateLockOnFacing() {
+		if (facingDirectionComponent_ == nullptr) return;
+		if (GetCombatState() != CombatState::None) return;
+
+		const bool lockedOn = lockOnComponent_ != nullptr && lockOnComponent_->IsLockedOn();
+
+		// ロック中は自動追従(移動方向を向く)を止め、こちらで明示的に向きを
+		// 固定する。ロックが外れたら通常の自動追従に戻す。
+		facingDirectionComponent_->SetUpdateEnabled(!lockedOn);
+
+		if (lockedOn) {
+			FaceTowards(lockOnComponent_->GetLockedTarget());
+		}
+	}
+
 	// ModelAnimatorComponent側で抽出されたルートモーション移動量
 	// (ボーンのローカル/モデル空間、まだ回転を反映していない値)を、
 	// キャラクターの現在の向きでワールド空間に変換してTransformへ加算する。
@@ -398,10 +427,18 @@ private:
 
 	// Stand/Walk/Runそれぞれのアニメーションをループ再生する。
 	// アイドルを基本状態として扱うため、Standでは明示的にkIdleAnimationを再生する。
-	void PlayMovementAnimation(MovementState state) {
+	//
+	// Walkは、Evade同様に「現在の向きに対して移動入力がどちら寄りか」
+	// (walkDirection)によって前後左右でクリップを出し分ける
+	// (walkAnimSet_/DirectionalAnimationSet参照)。ロックオン中は正面が
+	// 移動方向に追従しなくなる(UpdateLockOnFacing参照)ため、この分岐が
+	// 特に意味を持つ(例: 敵を向いたまま横歩き/バックステップ移動する)。
+	// Runは現状方向分岐を持たず、既定のkRunAnimationを常に再生する
+	// (要望が出た場合はwalkAnimSet_と同様の仕組みを追加すること)。
+	void PlayMovementAnimation(MovementState state, EvadeDirection walkDirection = EvadeDirection::Forward) {
 		switch (state) {
 		case MovementState::Stand: PlayAnimation(kIdleAnimation, true); break;
-		case MovementState::Walk:  PlayAnimation(kWalkAnimation, true); break;
+		case MovementState::Walk:  PlayAnimation(walkAnimSet_.GetAnimationName(walkDirection), true); break;
 		case MovementState::Run:   PlayAnimation(kRunAnimation, true); break;
 		}
 	}
@@ -531,9 +568,20 @@ private:
 	float walkSpeed_ = 2.0f;
 	float runSpeed_ = 5.0f;
 
+	// Walk中、現在の向きに対する移動方向(前後左右)によって再生するクリップを
+	// 分岐させるためのデータ(仮の名前。実アセットが揃うまでの暫定値として
+	// 4方向とも"Walk"を入れている。CreateDebugEvadeData()と同じ考え方)。
+	DirectionalAnimationSet walkAnimSet_;
+
+	// HandleMovementInput()が「前フレームと比べて方向区分が変わったか」を
+	// 判定するために保持する、直近のWalk方向区分。MovementState自体は
+	// 変わらないまま前進⇔後退⇔横歩きが切り替わるケース
+	// (特にロックオン中)を拾うために必要(kWalkAnimation単一運用だった頃は
+	// 不要だった)。
+	EvadeDirection lastWalkDirection_ = EvadeDirection::Forward;
+
 	// Stand/Walk/Runのアニメーション名(仮)。
 	static constexpr const char* kIdleAnimation = "Idle";
-	static constexpr const char* kWalkAnimation = "Walk";
 	static constexpr const char* kRunAnimation = "Walk"; //"Run";
 
 	// 大スタン(のけぞり)の硬直時間(仮)。小スタンはattack->hitStunSecondsを

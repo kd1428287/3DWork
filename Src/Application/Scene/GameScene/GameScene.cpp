@@ -33,8 +33,6 @@ void GameScene::Init()
 {
 	BaseScene::Init();
 
-	ShowCursor(false);
-
 	// factory
 	terrainFactory_ = std::make_unique<TerrainFactory>();
 	auto* terrain = terrainFactory_->CreateTerrain(*objManager_,0);

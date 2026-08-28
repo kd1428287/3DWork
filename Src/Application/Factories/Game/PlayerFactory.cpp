@@ -64,7 +64,6 @@ namespace
 		auto* collider = player->AddComponent<ColliderComponent>();
 		player->AddComponent<GroundSensorComponent>();
 		player->AddComponent<FacingDirectionComponent>();
-		player->AddComponent<WireFrameComponent>();
 
 		// 体幹(パリィ/ガードの削り合い)管理用。数値の詳細(最大値・
 		// 回復速度等)はPostureComponentのデフォルト値のまま、別途調整する。
@@ -78,6 +77,8 @@ namespace
 		//player->AddComponent<PlayerStatusUIComponent>();
 
 		player->AddComponent<PlayerLockOnComponent>();
+
+		player->AddComponent<TwoBoneIKComponent>("mixamorig:RightShoulder", "mixamorig:RightArm", "mixamorig:RightForeArm", "mixamorig:RightHand");
 
 		// Y方向の半径をCharacterCollisionDefaults::kFootOffsetと一致させて
 		// いる点が重要。Bodyの下端がfootOffsetまで届いていないと、Bodyが

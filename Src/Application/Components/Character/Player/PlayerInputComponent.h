@@ -38,7 +38,7 @@ public:
 
 	// --- 外部（InputSystemなど）から毎フレーム入力を注入する関数 ---
 
-	void SetMoveDirection(Math::Vector3 direction) { 
+	void SetMoveDirection(Math::Vector3 direction) {
 		moveDirection_ = direction;
 	}
 
@@ -46,6 +46,17 @@ public:
 	// PushCommand(先行入力バッファ)とは性質が違うため、都度上書きするだけにする。
 	void SetGuardHeld(bool held) { guardHeld_ = held; }
 	void SetDashHeld(bool held) { dashHeld_ = held; }
+
+	// Lockは押した瞬間だけ意味を持つ単発入力だが、Attack/Evadeのように
+	// 「一定時間分の猶予を持たせて後から消費される」必要が無い
+	// (ロックオンの成立/解除に先行入力の概念はそぐわない)。
+	// そのためPushCommand(先行入力バッファ)には積まず、単純に
+	// 「このフレーム押されたか」を保持するだけのフラグとして扱う。
+	// InputSystem::Update()からIsPress("Lock")の瞬間にSetLockPressed()が
+	// 呼ばれ、PlayerStatusController::HandleActionInput()が同じフレーム内で
+	// ConsumeLockPressed()を呼んで読み捨てる想定(1フレーム内で
+	// セット→消費が完結するため、Update()側での寿命管理は不要)。
+	void SetLockPressed() { lockPressed_ = true; }
 
 	// ボタンが押された瞬間に呼ばれる（バッファにキューイング）
 	// この瞬間のmoveDirection_を正規化してスナップショットしておく
@@ -98,6 +109,16 @@ public:
 	bool IsGuardHeld() const { return guardHeld_; }
 	bool IsDashHeld() const { return dashHeld_; }
 
+	// このフレームLockが押されていたかを取り出し、同時にフラグを消費(false)する。
+	// HasCommand()に相当する「覗き見だけ」の版は用意していない。Lockは
+	// CanStart*系のような実行可否判定を挟まず常に処理してよい入力のため、
+	// ConsumeCommand()相当の一発だけで足りる。
+	bool ConsumeLockPressed() {
+		bool pressed = lockPressed_;
+		lockPressed_ = false;
+		return pressed;
+	}
+
 	// 移動方向とDashキーの状態から、今フレームの移動意思をMovementStateとして
 	// 解決する。キーボード操作前提のため、アナログの傾き量ではなく
 	// Dashキーが押されているか否かでWalk/Runを切り替える。
@@ -111,9 +132,16 @@ public:
 		return moveDirection_;
 	}
 
+	// moveDirection_の読み取り専用アクセサ。GetDesiredVelocity()は
+	// IMovementSource側の都合でconstにできないため、const参照からも
+	// 呼べる版を別途用意する(PlayerStatusController::HandleMovementInput
+	// がWalk中の前後左右判定に使う。ClassifyEvadeDirection参照)。
+	Math::Vector3 GetMoveDirection() const { return moveDirection_; }
+
 private:
 	Math::Vector3 moveDirection_;
 	bool dashHeld_ = false;
 	bool guardHeld_ = false;
+	bool lockPressed_ = false; // このフレームLockが押されたか(消費されるまで保持)
 	std::vector<BufferedInput> inputBuffer_; // 先行入力バッファ(Attack/Evadeのみ)
 };

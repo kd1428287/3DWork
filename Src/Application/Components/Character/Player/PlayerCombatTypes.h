@@ -184,6 +184,29 @@ struct EvadeMoveData
 	}
 };
 
+// 歩行(Walk)アニメーションの前後左右分岐用データ。EvadeMoveDataの
+// animationNameForward等+GetAnimationName()と同じ考え方だが、Evadeのように
+// 発動秒数やuseRootMotion等の付随データを持たないため、専用の軽量な型として
+// 切り出す(PlayerStatusController::walkAnimSet_参照)。
+struct DirectionalAnimationSet
+{
+	std::string forward = "ForwardWalk";
+	std::string backward = "BackWalk";
+	std::string left = "LeftWalk";
+	std::string right = "RightWalk";
+
+	const std::string& GetAnimationName(EvadeDirection dir) const
+	{
+		switch (dir) {
+		case EvadeDirection::Backward: return backward;
+		case EvadeDirection::Left:     return left;
+		case EvadeDirection::Right:    return right;
+		case EvadeDirection::Forward:
+		default:                       return forward;
+		}
+	}
+};
+
 struct GuardMoveData
 {
 	// Guard開始からこの秒数以内に被弾すると、通常のブロックではなく

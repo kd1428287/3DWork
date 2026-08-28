@@ -1,5 +1,4 @@
-﻿// PlayerState.h
-#pragma once
+﻿#pragma once
 #include "PlayerCombatTypes.h"
 #include "../StateMachine/StateMachine.h"
 
@@ -32,7 +31,6 @@ public:
 	virtual bool IsInParryWindow(const PlayerStatusController* controller) const { return false; }
 };
 
-
 class StateNone : public IPlayerState {
 public:
 	// Noneに戻った瞬間、現在の入力状態に合わせてIdle/Walk/Runへ
@@ -48,7 +46,6 @@ public:
 	bool CanStartEvade(const PlayerStatusController* controller) const override { return true; }
 	bool CanStartGuard(const PlayerStatusController* controller) const override { return true; }
 };
-
 
 class StateAttack : public IPlayerState {
 public:
@@ -98,6 +95,9 @@ public:
 	float GetElapsed() const override { return elapsed_; }
 
 	bool IsInParryWindow(const PlayerStatusController* controller) const override;
+
+	//bool CanStartAttack(const PlayerStatusController* controller) const override { return true; }
+	//bool CanStartEvade(const PlayerStatusController* controller) const override { return true; }
 
 private:
 	// パリィ判定はGuard内部のサブフェーズとして扱う。将来「パリィ成立時だけ

@@ -565,7 +565,8 @@ void KdDirect3D::DrawVertices(D3D_PRIMITIVE_TOPOLOGY topology, int vertexCount, 
 void KdDirect3D::ClearBackBuffer()
 {
 	// バックバッファクリア
-	m_pDeviceContext->ClearRenderTargetView(m_backBuffer->WorkRTView(), kBlackColor);
+	//m_pDeviceContext->ClearRenderTargetView(m_backBuffer->WorkRTView(), kBlackColor);
+	m_pDeviceContext->ClearRenderTargetView(m_backBuffer->WorkRTView(), kRedColor);
 
 	// Zバッファクリア
 	m_pDeviceContext->ClearDepthStencilView(m_zBuffer->WorkDSView(),
