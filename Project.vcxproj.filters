@@ -483,9 +483,6 @@
     <ClInclude Include="Src\Application\Components\Sensors\GroundSensorComponent.h">
       <Filter>Src\Application\Components\Sensors</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Factories\Game\EnemyDefinition.h">
-      <Filter>Src\Application\Factories\Game</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Components\Transform\SocketComponent.h">
       <Filter>Src\Application\Components\Transform</Filter>
     </ClInclude>

@@ -10,7 +10,7 @@
 #include "../../Factories/Game/PlayerFactory.h"
 #include "../../Factories/Map/TerrainFactory.h"
 #include "../../Factories/Game/EnemyFactory.h"
-#include "../../Factories/Game/EnemyDefinition.h"
+#include "../../Components/Character/Enemy/EnemyDefinition.h"
 #include "../../Factories/Common/CameraFactory.h"
 
 // component

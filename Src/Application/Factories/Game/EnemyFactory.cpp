@@ -1,8 +1,8 @@
 ﻿#include "EnemyFactory.h"
-#include "EnemyDefinition.h"
 
 
 #include "../../Components/Character/Enemy/EnemyStatusController.h"
+#include "../../Components/Character/Enemy/EnemyDefinition.h"
 #include "../../Components/Character/Enemy/Brute/BruteStatusController.h"
 #include "../../Components/Character/Enemy/Boss/BossStatusController.h"
 #include "../../Components/Character/Enemy/LockOnTargetComponent.h"
@@ -170,17 +170,20 @@ namespace
 	}
 
 	// --- 意思決定層(ビヘイビアツリー) ----------------------------------
-	// 【要確認・暫定】EnemyBTControllerはEnemyStatusController*を
-	// コンストラクタで直接受け取り、GetComponent<EnemyStatusController>()
-	// による自己解決はしない(CreateStatusController()のコメント参照:
-	// Brute/BossStatusControllerとして登録されているため、基底型での
-	// GetComponent()は常に失敗する)。
+	// EnemyBTControllerはEnemyStatusController*をコンストラクタで直接
+	// 受け取り、GetComponent<EnemyStatusController>()による自己解決は
+	// しない(CreateStatusController()のコメント参照: Brute/Boss
+	// StatusControllerとして登録されているため、基底型でのGetComponent()
+	// は常に失敗する)。
 	//
-	// また、EnemyBTController内部が呼んでいるstatus->CanAct()/
-	// TryStartAttack()/IsAttacking()/GetDefinition().attackRangeは、
-	// 実際のEnemyStatusController.h/EnemyStatusData.hの内容が未確認の
-	// ため、名前が実物と一致しているか未検証。実ヘッダを共有してもらえ
-	// れば、こことEnemyBTController.h側を実物のAPIに合わせて調整する。
+	// BT側(EnemyActionAttack)は毎フレームstatus->IsAttacking()/
+	// TryStartAttack(targetPosition)を呼び、実際の攻撃モーション進行
+	// (Windup/Active/Recovery、攻撃開始時のプレイヤーへの向き直し)は
+	// StateAttack(EnemyState.h/.cpp)が担当する(実装確認済み。詳細は
+	// EnemyStatusController.hのクラス冒頭コメント参照)。
+	//
+	// BossStatusControllerがTryStartAttack()をoverrideする場合、
+	// シグネチャ(targetPosition引数)を合わせる必要がある点に注意。
 	void AttachBehaviorTree(GameObject* enemy, EnemyStatusController* status)
 	{
 		enemy->AddComponent<EnemyBTController>(status);

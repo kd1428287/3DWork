@@ -357,7 +357,6 @@
     <ClInclude Include="Src\Application\Factories\Effect\EffectDefinition.h" />
     <ClInclude Include="Src\Application\Factories\Effect\EffectFactory.h" />
     <ClInclude Include="Src\Application\Factories\GameObjectFactory.h" />
-    <ClInclude Include="Src\Application\Factories\Game\EnemyDefinition.h" />
     <ClInclude Include="Src\Application\Factories\Game\EnemyFactory.h" />
     <ClInclude Include="Src\Application\Factories\Game\PlayerFactory.h" />
     <ClInclude Include="Src\Application\Factories\Map\MapData.h" />

@@ -163,7 +163,7 @@ void EnemyStateAttack::Enter(EnemyStatusController* controller) {
 	const float targetDuration = controller->GetAttackWindupDuration()
 		+ controller->GetAttackActiveDuration()
 		+ controller->GetAttackRecoveryDuration();
-	controller->PlayAnimation("Attack", false, targetDuration);
+	//controller->PlayAnimation("Attack", false, targetDuration);
 }
 
 void EnemyStateAttack::Update(EnemyStatusController* controller, float deltaTime) {
