@@ -16,11 +16,20 @@ struct EnemyStatusData {
 	// パトロールAI: 基準点からこの距離だけ離れたら折り返す
 	float patrolDistance = 3.0f;
 
-	// 仮の攻撃タイマー(実際の攻撃AIが実装されるまでの暫定値)。
-	// 一定間隔(attackInterval)ごとに、attackActiveDurationの間だけ
-	// 武器のHitBoxを有効化する。
-	float attackInterval = 1.0f;
+	// 攻撃1回分の時間パラメータ。以前はattackIntervalによる「一定間隔で
+	// 自動発生」方式だったが、BT(EnemyBTController)が開始タイミングを
+	// 判断するようになったため撤去し、代わりに「BTが開始を選んだ時に
+	// 実行する単発攻撃」のWindup/Active/Recoveryとして再構成した
+	// (PlayerのAttackMoveDataと同じ3フェーズ構成。コンボは持たない)。
+	// attackActiveDuration(HitBoxが有効な時間)は以前と同じ意味のまま
+	// 流用している。
+	float attackWindupDuration = 0.4f;
 	float attackActiveDuration = 0.2f;
+	float attackRecoveryDuration = 0.5f;
+
+	// BT側(EnemyBTController::IsPlayerInAttackRange())が、この間合い
+	// 以内にいる時だけ攻撃を試みる。
+	float attackRange = 2.0f;
 
 	// ノックバックの安全域クランプ(地面すり抜け対策)。
 	// 詳細はEnemyStatusController::ClampKnockbackParams/

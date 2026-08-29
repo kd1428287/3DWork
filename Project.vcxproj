@@ -285,9 +285,16 @@
     <ClInclude Include="Src\Application\Components\Camera\CameraOrbitComponent.h" />
     <ClInclude Include="Src\Application\Components\Camera\CameraViewComponent.h" />
     <ClInclude Include="Src\Application\Components\Camera\CameraTargetComponent.h" />
+    <ClInclude Include="Src\Application\Components\Character\BehaviorTree\BTComposite.h" />
+    <ClInclude Include="Src\Application\Components\Character\BehaviorTree\BTCondition.h" />
+    <ClInclude Include="Src\Application\Components\Character\BehaviorTree\BTNodeStatus.h" />
+    <ClInclude Include="Src\Application\Components\Character\BehaviorTree\IBTNode.h" />
     <ClInclude Include="Src\Application\Components\Character\Data\HealthComponent.h" />
     <ClInclude Include="Src\Application\Components\Character\Data\PostureComponent.h" />
     <ClInclude Include="Src\Application\Components\Character\Enemy\Brute\BruteStatusController.h" />
+    <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyActionAttack.h" />
+    <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyBTController.h" />
+    <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyDefinition.h" />
     <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyState.h" />
     <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyStatusController.h" />
     <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyStatusData.h" />
@@ -339,6 +346,7 @@
     <ClInclude Include="Src\Application\Core\ObjectManager.h" />
     <ClInclude Include="Src\Application\Core\SceneContext.h" />
     <ClInclude Include="Src\Application\Editor\EditorViewport.h" />
+    <ClInclude Include="Src\Application\Editor\EffectEditor.h" />
     <ClInclude Include="Src\Application\Editor\ImGuizmo.h" />
     <ClInclude Include="Src\Application\Editor\MapEditor.h" />
     <ClInclude Include="Src\Application\Engine\EventBus\EventBus.h" />
@@ -416,6 +424,7 @@
     <ClCompile Include="..\Library\imgui\imgui_stdlib.cpp" />
     <ClCompile Include="..\Library\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\Library\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="Src\Application\Components\Character\Enemy\EnemyActionAttack.cpp" />
     <ClCompile Include="Src\Application\Components\Character\Enemy\EnemyState.cpp" />
     <ClCompile Include="Src\Application\Components\Character\Enemy\EnemyStatusController.cpp" />
     <ClCompile Include="Src\Application\Components\Character\Player\PlayerCombatDataTable.cpp" />
@@ -425,6 +434,7 @@
     <ClCompile Include="Src\Application\Components\UI\Enemy\EnemyHPBarComponent.cpp" />
     <ClCompile Include="Src\Application\Components\UI\Player\PlayerStatusUIComponent.cpp" />
     <ClCompile Include="Src\Application\Editor\EditorViewport.cpp" />
+    <ClCompile Include="Src\Application\Editor\EffectEditor.cpp" />
     <ClCompile Include="Src\Application\Editor\ImGuizmo.cpp" />
     <ClCompile Include="Src\Application\Editor\MapEditor.cpp" />
     <ClCompile Include="Src\Application\Factories\Common\CameraFactory.cpp" />

@@ -141,3 +141,72 @@ void StateParryStun::Update(EnemyStatusController* controller, float deltaTime) 
 void StateParryStun::Exit(EnemyStatusController* controller) {
 	controller->SetMovementEnabled(true);
 }
+
+// --- EnemyStateAttack ---
+// (PlayerState.h側の同名クラスとの衝突回避のためリネーム。EnemyState.h
+// 冒頭コメント参照)
+// BT(EnemyBTController)がTryStartAttack()を呼ぶことで開始する、
+// Windup→Active→Recoveryの単発攻撃State。PlayerState.cppのStateAttackと
+// 同じ3フェーズ構成だが、コンボ・踏み込み移動は持たない
+// (現状の敵側移動AIがX軸パトロールのみの簡易実装のため、まずは
+//  その場で攻撃するだけの最小構成にしている)。
+void EnemyStateAttack::Enter(EnemyStatusController* controller) {
+	phase_ = Phase::Windup;
+	elapsed_ = 0.0f;
+
+	// 攻撃中は移動しない(StateParryStun::Enterと同じ考え方)。
+	controller->SetDesiredDirection(Math::Vector3::Zero);
+
+	// 攻撃全体(Windup+Active+Recovery)の秒数を目標としてアニメーション
+	// 速度を自動スケーリングする(PlayerStatusController::PlayAnimationの
+	// 同種コメント参照)。
+	const float targetDuration = controller->GetAttackWindupDuration()
+		+ controller->GetAttackActiveDuration()
+		+ controller->GetAttackRecoveryDuration();
+	controller->PlayAnimation("Attack", false, targetDuration);
+}
+
+void EnemyStateAttack::Update(EnemyStatusController* controller, float deltaTime) {
+	elapsed_ += deltaTime;
+
+	switch (phase_) {
+	case Phase::Windup:
+		if (elapsed_ >= controller->GetAttackWindupDuration()) {
+			phase_ = Phase::Active;
+			elapsed_ = 0.0f;
+			controller->SetWeaponHitBoxEnabled(true); // 攻撃判定が実際に発生する一瞬だけ有効化
+		}
+		break;
+
+	case Phase::Active:
+		if (elapsed_ >= controller->GetAttackActiveDuration()) {
+			phase_ = Phase::Recovery;
+			elapsed_ = 0.0f;
+			controller->SetWeaponHitBoxEnabled(false); // 判定の発生窓を閉じる
+		}
+		break;
+
+	case Phase::Recovery:
+		if (elapsed_ >= controller->GetAttackRecoveryDuration()) {
+			// StateKnockback/StateParryStunと同じく、基準点から見て
+			// 今どちら側にいるかで自然に続きのパトロールへ戻す。
+			// (BT側は次のTickで再度射程判定を行い、まだ射程内なら
+			//  改めてTryStartAttack()を呼んで連続攻撃になる)
+			const float traveled = controller->GetCurrentPosition().x - controller->GetBasePosition().x;
+			if (traveled >= 0.0f) {
+				controller->ChangeStateToWalkRight();
+			}
+			else {
+				controller->ChangeStateToWalkLeft();
+			}
+		}
+		break;
+	}
+}
+
+void EnemyStateAttack::Exit(EnemyStatusController* controller) {
+	// Knockback/ParryStun等に途中で割り込まれた場合でも、HitBoxが
+	// 有効なまま残らないよう無条件に閉じる
+	// (PlayerState.cpp::StateAttack::Exitと同じ考え方)。
+	controller->SetWeaponHitBoxEnabled(false);
+}

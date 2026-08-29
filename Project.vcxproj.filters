@@ -184,6 +184,12 @@
     <Filter Include="Src\Application\Factories\Effect">
       <UniqueIdentifier>{bfb61705-a2fc-4236-965b-a8640a004df3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\Components\Character\Enemy\Warrock">
+      <UniqueIdentifier>{055457c9-e35c-4796-ba22-c3de85b5fd5e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Components\Character\BehaviorTree">
+      <UniqueIdentifier>{b21f2ba2-de30-43d6-93bb-09439eadddee}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -630,6 +636,30 @@
     <ClInclude Include="Src\Application\Components\Effect\TrailPolygonEffectComponent.h">
       <Filter>Src\Application\Components\Effect</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyBTController.h">
+      <Filter>Src\Application\Components\Character\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\BehaviorTree\BTComposite.h">
+      <Filter>Src\Application\Components\Character\BehaviorTree</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\BehaviorTree\BTCondition.h">
+      <Filter>Src\Application\Components\Character\BehaviorTree</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\BehaviorTree\BTNodeStatus.h">
+      <Filter>Src\Application\Components\Character\BehaviorTree</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\BehaviorTree\IBTNode.h">
+      <Filter>Src\Application\Components\Character\BehaviorTree</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Editor\EffectEditor.h">
+      <Filter>Src\Application\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyDefinition.h">
+      <Filter>Src\Application\Components\Character\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyActionAttack.h">
+      <Filter>Src\Application\Components\Character\Enemy</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -829,6 +859,12 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Factories\Effect\EffectFactory.cpp">
       <Filter>Src\Application\Factories\Effect</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Editor\EffectEditor.cpp">
+      <Filter>Src\Application\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\Character\Enemy\EnemyActionAttack.cpp">
+      <Filter>Src\Application\Components\Character\Enemy</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

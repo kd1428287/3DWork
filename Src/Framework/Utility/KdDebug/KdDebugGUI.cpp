@@ -1,8 +1,9 @@
 ﻿#include "../../../Application/main.h"
 
 #include "KdDebugGUI.h"
-#include "../../../Application/Editor/EditorViewport.h"
 #include "../../../Application/Editor/MapEditor.h"
+#include "../../../Application/Editor/EditorViewport.h"
+#include "../../../Application/Editor/EffectEditor.h"
 
 // DockBuilder系APIを使うために必要(公式にも初期配置構築の定番として使われる内部ヘッダ)
 #include "imgui_internal.h"
@@ -10,8 +11,8 @@
 KdDebugGUI::KdDebugGUI()
 {}
 KdDebugGUI::~KdDebugGUI()
-{
-	GuiRelease();
+{ 
+	GuiRelease(); 
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -38,10 +39,16 @@ static void SetupDefaultDockLayout(ImGuiID dockspaceId)
 	// 下：Assets + Log(画面高さの30%) 、残った部分がScene(中央上)
 	ImGuiID bottom = ImGui::DockBuilderSplitNode(center, ImGuiDir_Down, 0.30f, nullptr, &center);
 
-	ImGui::DockBuilderDockWindow("Hierarchy", left);
-	ImGui::DockBuilderDockWindow("Inspector", right);
-	ImGui::DockBuilderDockWindow("Scene", center);
-	ImGui::DockBuilderDockWindow("Assets", bottom);
+	ImGui::DockBuilderDockWindow("Hierarchy",  left);
+	ImGui::DockBuilderDockWindow("Effect Hierarchy", left);	// Hierarchyとタブ化
+
+	ImGui::DockBuilderDockWindow("Inspector",  right);
+	ImGui::DockBuilderDockWindow("Effect Inspector", right);	// Inspectorとタブ化
+
+	ImGui::DockBuilderDockWindow("Scene",      center);
+
+	ImGui::DockBuilderDockWindow("Assets",     bottom);
+	ImGui::DockBuilderDockWindow("Effect Assets", bottom);	// Assetsとタブ化
 	ImGui::DockBuilderDockWindow("Log Window", bottom);	// Assetsと同じノードなのでタブ化される
 
 	ImGui::DockBuilderFinish(dockspaceId);
@@ -72,7 +79,7 @@ void KdDebugGUI::GuiInit(int w, int h)
 #include "imgui/ja_glyph_ranges.h"
 	ImFontConfig config;
 	config.MergeMode = true;
-	// 応急措置
+	//応急措置
 	config.MergeMode = false;
 	io.Fonts->AddFontDefault();
 	// 日本語対応
@@ -132,6 +139,11 @@ void KdDebugGUI::GuiProcess()
 
 		// マップエディタ(Hierarchy / Inspector / Assets / ギズモ)
 		MapEditor::Instance().Update();
+
+		// エフェクト配置エディタ(Effect Hierarchy / Effect Inspector / Effect Assets / ギズモ)
+		//	※ImGuizmo::BeginFrame()はMapEditor::Update()内で既に呼ばれているため、
+		//	  EffectEditor::Update()内では呼ばない
+		EffectEditor::Instance().Update();
 	}
 
 	//===========================================================
@@ -141,7 +153,7 @@ void KdDebugGUI::GuiProcess()
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 }
 
-void KdDebugGUI::AddLog(const char* fmt, ...)
+void KdDebugGUI::AddLog(const char* fmt,...)
 {
 	// 初期化されてないなら動作させない
 	if (!m_uqLog) return;

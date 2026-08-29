@@ -117,3 +117,30 @@ private:
 	// 調整する想定。
 	static constexpr float kParryStunDuration = 0.6f;
 };
+
+// ============================================================
+// BT(EnemyBTController)がプレイヤーとの間合いを見て開始を判断する、
+// 単発攻撃State。Player側のStateAttackと同じWindup→Active→Recoveryの
+// 3フェーズ構成だが、コンボは持たない(単発のみ)。
+//
+// 以前のUpdateAttackTimer()(一定間隔でHitBoxを開閉するだけの暫定処理)
+// を置き換える、実際の攻撃モーション進行を担当する。
+//
+// 【命名】PlayerState.h側にも同名のStateAttack(グローバルスコープ、
+// IPlayerState派生)が存在し、両ヘッダが同一翻訳単位でincludeされると
+// 再定義エラーになる。このプロジェクトはStateクラスを名前空間で
+// 囲っていないため、衝突する側(こちら)にEnemyStateAttackという
+// プレフィックス付きの名前を付けて回避する。他のEnemy側State
+// (StateWalkRight等)はPlayer側と重複しないためこのままにしている。
+// ============================================================
+class EnemyStateAttack : public IEnemyState {
+public:
+	void Enter(EnemyStatusController* controller) override;
+	void Update(EnemyStatusController* controller, float deltaTime) override;
+	void Exit(EnemyStatusController* controller) override;
+
+private:
+	enum class Phase { Windup, Active, Recovery };
+	Phase phase_ = Phase::Windup;
+	float elapsed_ = 0.0f;
+};

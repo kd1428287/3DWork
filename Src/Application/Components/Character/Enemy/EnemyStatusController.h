@@ -43,15 +43,25 @@
 // --- 派生クラスについて ---------------------------------------------
 // このクラスは雑魚敵(BruteStatusController)・ボス(BossStatusController)の
 // 共通基底として使う。パトロール/ノックバック/死亡/パリィ怯みといった
-// 共通の挙動はここに残し、敵種ごとに差し替えたい部分(現状は
-// UpdateAttackTimer()による仮攻撃AI)だけをvirtualにして派生クラス側で
-// 上書きできるようにしている。State(StateWalkRight等)はEnemyStatusController*
-// を扱うだけなので、派生クラスをそのままStateMachineに乗せても変更不要。
+// 共通の挙動はここに残し、敵種ごとに差し替えたい部分(攻撃AI)だけを
+// virtualにして派生クラス側で上書きできるようにしている。
 //
-// チューニング値(patrolDistance、攻撃間隔等)はEnemyStatusData(別ファイル)
-// にまとめてコンストラクタで受け取る形にした。将来的にJSON等の外部データ
-// から読み込んだEnemyStatusDataをそのまま渡せるようにするための下準備
-// (実際のJSON読み込み処理自体はまだ未実装)。
+// 【変更履歴: 攻撃AIをタイマー駆動からBT駆動へ】
+// 以前はUpdateAttackTimer()という一定間隔で自動的に武器のHitBoxを
+// 有効化するだけの暫定タイマーだったが、EnemyBTController(ビヘイビア
+// ツリー)がプレイヤーとの距離を見て開始タイミングを判断できるように
+// なったため撤去した。代わりに、BT側のAction(EnemyActionAttack)から
+// 呼ばれるTryStartAttack()(virtual)を新しい拡張ポイントにしている。
+// Boss等が複数パターンの攻撃AIに差し替えたい場合は、UpdateAttackTimer()
+// ではなくTryStartAttack()をoverrideすること。
+//
+// State(StateWalkRight等)はEnemyStatusController*を扱うだけなので、
+// 派生クラスをそのままStateMachineに乗せても変更不要。
+//
+// チューニング値(patrolDistance、攻撃タイミング等)はEnemyStatusData
+// (別ファイル)にまとめてコンストラクタで受け取る形にした。将来的に
+// JSON等の外部データから読み込んだEnemyStatusDataをそのまま渡せる
+// ようにするための下準備(実際のJSON読み込み処理自体はまだ未実装)。
 // ============================================================
 class EnemyStatusController : public ComponentBase, public IMovementSource {
 public:
@@ -99,15 +109,11 @@ public:
 	}
 
 	void Update(float deltaTime) override {
-		// 実際の攻撃AI(射程判定、プレイヤーへの接近等)はまだ無いため、
-		// 暫定的に一定間隔で武器のHitBoxを短時間有効化するだけの
-		// タイマーを回す(詳細はUpdateAttackTimer()参照)。パトロール/
-		// ノックバック等のStateMachineとは独立に、常にこのタイマーだけ
-		// 先に進める。UpdateAttackTimer()はvirtualなので、派生クラス
-		// (BossStatusController等)が独自の攻撃パターンに差し替えられる。
-		UpdateAttackTimer(deltaTime);
-
-		// 戦闘状態の更新は共通StateMachineに丸投げ
+		// 攻撃AIはBT(EnemyBTController)がTryStartAttack()を呼ぶことで
+		// 開始される。ここでは(以前のUpdateAttackTimer()のような)独自の
+		// タイマーは回さず、StateMachineの更新に徹する
+		// (EnemyStateAttack自身のWindup/Active/Recovery進行はstateMachine_.Update()
+		//  経由でEnemyStateAttack::Update()が担当する)。
 		stateMachine_.Update(this, deltaTime);
 	}
 
@@ -119,6 +125,14 @@ public:
 	Math::Vector3 GetCurrentPosition() const {
 		return transform_ ? transform_->GetPosition() : basePosition_;
 	}
+
+	// EnemyStateAttackが参照する攻撃1回分の時間パラメータ。
+	float GetAttackWindupDuration() const { return data_.attackWindupDuration; }
+	float GetAttackActiveDuration() const { return data_.attackActiveDuration; }
+	float GetAttackRecoveryDuration() const { return data_.attackRecoveryDuration; }
+
+	// EnemyBTController::IsPlayerInAttackRange()が参照する間合い。
+	float GetAttackRange() const { return data_.attackRange; }
 
 	// --- 状態遷移(Stateから呼ばれる) ---------------------------------------
 
@@ -160,6 +174,36 @@ public:
 
 		stateMachine_.ForceTransitionTo(this, &stateParryStun_);
 	}
+
+	// --- 攻撃AI(BT駆動) --------------------------------------------------
+	// EnemyBTController::EnemyActionAttackから、プレイヤーが射程内に
+	// いる間毎フレーム呼ばれる想定。virtualにしてあるので、Boss等で
+	// 複数パターンから技を選ぶ攻撃AIに差し替えたい場合はoverrideすること
+	// (以前のUpdateAttackTimer()に代わる拡張ポイント)。
+	//
+	// targetPositionは攻撃開始時に振り向かせたい座標(通常はプレイヤーの
+	// 現在位置)。BT側は射程判定のためにどのみちプレイヤー座標を持って
+	// いるので、ついでにここへ渡してもらう形にした。パトロール
+	// (StateWalkRight/Left)はX軸移動のみの簡易実装で、攻撃中は
+	// SetDesiredDirection(Zero)で移動を止めるため回転の手がかりが無く、
+	// このターゲット指定が無いと直前のパトロール方向を向いたまま
+	// 攻撃してしまう(実際に見た目上そうなっていた挙動)。
+	//
+	// 既に攻撃中(IsAttacking())なら何もせずtrueを返す(idempotent)。
+	// これにより、BT側が「攻撃中かどうかを気にせず毎フレーム呼ぶ」だけで
+	// 安全に使える(呼ぶたびにWindupから再始動してしまう事故を防ぐ)。
+	// 向き直しも開始の一瞬だけ(Windup開始時に1回スナップ)で、Player側の
+	// FaceAttackTarget()と同じく攻撃中に追従はしない。
+	virtual bool TryStartAttack(const Math::Vector3& targetPosition) {
+		if (IsAttacking()) return true;
+		if (!CanAttack()) return false;
+
+		FaceHorizontalTarget(targetPosition);
+		stateMachine_.ForceTransitionTo(this, &stateAttack_);
+		return true;
+	}
+
+	bool IsAttacking() const { return stateMachine_.Current() == &stateAttack_; }
 
 	// --- StateKnockbackから呼ばれる、VelocityComponentへの橋渡し -----------
 	// EnemyStatusController自身はVelocityComponentを直接知らなくても
@@ -235,6 +279,14 @@ public:
 		weaponAttackSource_ = weaponAttackSource;
 	}
 
+	// 武器のHitBoxのenabled切り替えと、多段ヒット防止用記録のクリア
+	// (PlayerStatusController::SetWeaponHitBoxEnabled()と同じ役割)。
+	// 以前はUpdateAttackTimer()専用の内部処理としてprotectedだったが、
+	// EnemyStateAttack(EnemyState.h/.cpp、別クラス階層)からも呼ぶ必要があるため
+	// publicへ変更した(PlayerStatusController::SetWeaponHitBoxEnabled()も
+	// 同様にpublic)。
+	void SetWeaponHitBoxEnabled(bool enabled);
+
 	// --- アニメーション再生 -----------------------------------------------
 	// PlayerStatusController::PlayAnimation()と同じ考え方。State側が
 	// 具体的なModelAnimatorComponentを直接知らずに再生できるようにする
@@ -248,19 +300,11 @@ public:
 protected:
 	// --- 派生クラス(Brute/Boss)が差し替える・再利用するための拡張ポイント ---
 
-	// 実際の攻撃AI(射程判定、プレイヤーへの接近、攻撃モーション等)が
-	// 実装されるまでの暫定処置。一定間隔でSetWeaponHitBoxEnabled(true)し、
-	// 一定時間後に閉じるだけ(実装はcpp)。virtualにしてあるので、Boss等で
-	// 複数パターンの攻撃AIに完全に差し替えたい場合はoverrideすること。
-	virtual void UpdateAttackTimer(float deltaTime);
-
-	// PlayerStatusController::SetWeaponHitBoxEnabled()と同じ役割
-	// (武器のHitBoxのenabled切り替えと、多段ヒット防止用記録のクリア)。
-	// 派生クラスが独自のUpdateAttackTimer()から呼べるようprotectedにしている。
-	void SetWeaponHitBoxEnabled(bool enabled);
-
-	// ノックバック中/死亡後/パリィ怯み中は攻撃できない
-	// (Stateインスタンスへのポインタ比較で判定)。
+	// ノックバック中/死亡後/パリィ怯み中/攻撃中は新たな攻撃を開始できない
+	// (Stateインスタンスへのポインタ比較で判定)。TryStartAttack()内部で
+	// 使う。「攻撃中は攻撃できない」は一見当たり前だが、TryStartAttack()
+	// 側で先にIsAttacking()をチェックして継続扱いにしているため、実際に
+	// ここへ来るのは「まだ攻撃していない」ケースだけになる。
 	bool CanAttack() const {
 		IEnemyState* current = stateMachine_.Current();
 		return current != &stateKnockback_ && current != &stateDead_ && current != &stateParryStun_;
@@ -272,13 +316,8 @@ protected:
 	}
 
 	// コンストラクタで受け取ったチューニング値。派生クラスの
-	// UpdateAttackTimer()等から直接参照できるようprotectedにしている。
+	// TryStartAttack()等から直接参照できるようprotectedにしている。
 	EnemyStatusData data_;
-
-	// 仮攻撃タイマーの内部状態。派生クラスが独自のUpdateAttackTimer()を
-	// 書く場合、流用してもよいし、派生クラス側に別のメンバを持たせてもよい。
-	float attackIntervalTimer_ = 0.0f;
-	float hitBoxActiveTimer_ = 0.0f;
 
 private:
 	void TransitionTo(IEnemyState* nextState) {
@@ -311,6 +350,7 @@ private:
 	StateKnockback stateKnockback_;
 	StateDead stateDead_;
 	StateParryStun stateParryStun_;
+	EnemyStateAttack stateAttack_; // PlayerState.h側のStateAttackとの名前衝突回避(EnemyState.h参照)
 
 	// 共通StateMachine基盤(PlayerStatusControllerと同じテンプレートを使い回す)
 	StateMachine<EnemyStatusController, IEnemyState> stateMachine_;
@@ -335,4 +375,15 @@ private:
 	// 参照するようになったため、static関数からインスタンスメソッドに変更した。
 	KnockbackParams ClampKnockbackParams(KnockbackParams params);
 	Math::Vector3 ClampKnockbackDirection(const Math::Vector3& direction);
+
+	// --- 攻撃開始時の向き直し(実装は.cpp) -----------------------------
+	// TryStartAttack()から呼ばれる。targetPositionへ水平方向だけ
+	// 一瞬で振り向かせる(Slerpによる補間はしない、Player側の
+	// FaceAttackTarget()と同じ簡易実装)。
+	//
+	// 【要確認】TransformComponentの回転設定APIの実際のシグネチャに
+	// 合わせて調整すること(atan2+Quaternion::CreateFromAxisAngleを
+	// 仮定して書いている。PlayerStatusController::FaceAttackTarget()の
+	// 同種コメント参照)。
+	void FaceHorizontalTarget(const Math::Vector3& targetPosition);
 };

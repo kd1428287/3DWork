@@ -6,6 +6,7 @@
 #include "../../Components/Character/Enemy/Brute/BruteStatusController.h"
 #include "../../Components/Character/Enemy/Boss/BossStatusController.h"
 #include "../../Components/Character/Enemy/LockOnTargetComponent.h"
+#include "../../Components/Character/Enemy/EnemyBTController.h"
 #include "../../Components/Character/Data/PostureComponent.h"
 #include "../../Components/Character/Data/HealthComponent.h"
 #include "../../Components/Transform/TransformComponent.h"
@@ -26,10 +27,170 @@
 
 namespace
 {
-	// 武器の取り付け先ソケットを生成する。PlayerFactory::CreateSocket()と
-	// 同じ考え方(BoneSocketComponentでスケルトンの特定ボーンに追従させる)。
-	// EnemyもPlayerと同じWalking.gltf(mixamoリグ)を使うようになったため、
-	// 同じボーン名("mixamorig:RightHand")がそのまま使える。
+	// ============================================================
+	// BuildEnemy()を構成する各ステップ。責務ごとに分けることで、
+	// BuildEnemy()自体は「どの順で何を組み立てるか」の見取り図として
+	// 読めるようにする(既存のCreateWeaponSocket/CreateWeaponと同じ
+	// 匿名名前空間ヘルパーの流儀に揃えた)。
+	// ============================================================
+
+	// --- Transform / Movement ---------------------------------------
+	void CreateTransformAndMovement(GameObject* enemy, const EnemyDefinition& def, const Math::Vector3& position)
+	{
+		TransformComponent* transform = enemy->AddComponent<TransformComponent>();
+		transform->SetPosition(position);
+		enemy->AddComponent<MovementComponent>(def.moveSpeed);
+	}
+
+	// --- 見た目(スケルトン+モデル描画) --------------------------------
+	// 武器をボーンソケット経由で手に追従させるため、SkeletonComponentの
+	// ポインタを呼び出し側(BuildEnemy)へ返す(武器ソケット生成時に使う)。
+	SkeletonComponent* AttachVisuals(GameObject* enemy, const EnemyDefinition& def)
+	{
+		// PlayerFactory::AttachVisuals()と同じモデル(Walking.gltf、mixamoリグ)を
+		// 使うようにした。武器をボーンソケット経由で手に追従させるため、
+		// 以前のbox.gltf(単純な箱、ボーン無し)では対応するボーンが見つからず
+		// 単位行列にフォールバックしてしまい、追従が成立しなかったため。
+		//
+		// 注意: モデルをbox.gltfからWalking.gltf(人型)へ変更したことで、
+		// これまでワイヤーフレームを見ながら調整していたHurtBox/Bodyの寸法が
+		// 新しい見た目のシルエットと合わなくなっている可能性がある。
+		// 一度ワイヤーフレーム表示で確認し、必要なら再調整すること。
+		SkeletonComponent* skeleton = enemy->AddComponent<SkeletonComponent>();
+		skeleton->SetModelData(def.modelPath);
+		enemy->AddComponent<ModelRenderComponent>();
+		return skeleton;
+	}
+
+	// --- 戦闘制御(Stateパターン、Brute/Bossの出し分け) -----------------
+	EnemyStatusController* CreateStatusController(GameObject* enemy, const EnemyDefinition& def)
+	{
+		// EnemyStatusController::Start()内でMovementComponentへ
+		// SetMovementSource(this)する。GetComponent<T>()はマップ参照なので、
+		// AddComponentの順序には依存しない。
+		//
+		// def.typeに応じて実際に生成する派生クラスを出し分ける。以降の処理
+		// (SetWeapon/RegisterOwnedObject等)はEnemyStatusControllerの公開
+		// インターフェースしか使っていないため、基底クラスのポインタとして
+		// 受け取るだけで問題ない。
+		//
+		// 【注意】この戻り値(基底クラスポインタ)以外の経路、たとえば
+		// どこかでGetComponent<EnemyStatusController>()のように基底型を
+		// 指定して検索しようとすると、GameObject::GetComponent<T>()は
+		// Tの具体型そのものでしか検索できない実装のため、実際に登録
+		// されているBruteStatusController/BossStatusControllerを
+		// 見つけられずnullptrになる。AttachBehaviorTree()がこの戻り値を
+		// コンストラクタ経由で直接受け渡しているのはこの問題を避けるため。
+		switch (def.type) {
+		case EnemyDefinition::EnemyType::Boss:
+			return enemy->AddComponent<BossStatusController>(def.statusData);
+		case EnemyDefinition::EnemyType::Brute:
+		default:
+			return enemy->AddComponent<BruteStatusController>(def.statusData);
+		}
+	}
+
+	// --- 当たり判定(HurtBox+Body) -------------------------------------
+	void CreateColliders(GameObject* enemy, const EnemyDefinition& def)
+	{
+		// 被弾判定(トリガー、攻撃判定専用)。collideMaskをHitBoxだけに
+		// 絞っているため、これだけでは地形(Ground)を含めどのカテゴリとも
+		// 物理的に判定しない(お互いのcollideMask/categoryMaskが噛み合う
+		// 必要があるため。ColliderComponent::CanCollideWith参照)。
+		ColliderComponent* collider = enemy->AddComponent<ColliderComponent>();
+		CollisionShapeEntry& hurtBox = collider->AddCapsule("HurtBox", def.bodyRadius,
+			Math::Vector3(0.0f, def.bodyRadius, 0.0f),
+			Math::Vector3(0.0f, (CharacterCollisionDefaults::kFootOffset * 2) - def.bodyRadius, 0.0f),
+			ColliderCategory::HurtBox, ColliderCategory::HitBox);
+		// 押し返し(物理応答)はせず、重なり検知(イベント)だけ行う。
+		// isTrigger未設定のままだと通常のBump同様の押し返しが働いてしまい、
+		// ノックバック方向とは無関係にHitBox/HurtBoxの重なり解消で位置が
+		// 押し出されてしまう不具合があった(実際に発生した不具合)。
+		hurtBox.isTrigger = true;
+
+		// 物理的な「胴体」形状。地形・壁など(Bump/Ground)と実際に押し合い、
+		// GravityComponentによる落下を地面で受け止めるのはこちらの役目。
+		// HurtBoxとは別の形状として持たせているのは、「攻撃を受ける範囲」と
+		// 「物理的に押し返される範囲」は本来別の概念であり、将来的に
+		// 「攻撃判定は少し大きいが体は細い」といった調整を独立にできるように
+		// するため。isTrigger=false(デフォルト)なので押し返しが有効になる。
+		//
+		// 下端をGroundSensorComponentのfootOffsetと一致させている点が重要。
+		// footOffsetは「Transform原点から足裏までの距離」を表すため、Bodyの
+		// 下端がここまで届いていないと、Bodyが地面に乗って静止した高さと、
+		// GroundSensorComponentが接地レイを飛ばす基準高さがズレる。ズレると
+		// 接地レイの発射点が地面の内部/下から始まる形になり、「発射点がAABB
+		// 内部から始まるケースは非対応」(GroundSensorComponent.h参照)という
+		// 制約によって永遠に接地を検出できず、重力が際限なく積み上がって
+		// 最終的に地面を貫通する(実際に発生していた不具合の根本原因)。
+		// 生の数値ではなくCharacterCollisionDefaults::kFootOffsetを直接参照
+		// することで、GroundSensorComponent側のデフォルト値とここが将来
+		// 食い違わないようにしている(詳細はCharacterCollisionDefaults.h参照)。
+		using CharacterCollisionDefaults::kFootOffset;
+		collider->AddCapsule("Body", def.bodyRadius,
+			Math::Vector3(0.0f, kFootOffset - def.bodyRadius, 0.0f),
+			Math::Vector3(0.0f, kFootOffset + def.bodyRadius, 0.0f),
+			ColliderCategory::Bump);
+	}
+
+	// --- 物理(重力・速度・接地判定) -----------------------------------
+	void CreatePhysicsComponents(GameObject* enemy)
+	{
+		// GravityComponentをVelocityComponentより先にAddComponentしている。
+		// 「同名コンポーネントは追加順」で毎フレームUpdate()が呼ばれるため、
+		// この順序が「着地の瞬間、今フレームの速度クリアが位置反映より
+		// 先に間に合うかどうか」を左右する。VelocityComponentが先だと、
+		// 前フレームのPostUpdateで接地が確定していても、今フレームの
+		// VelocityComponent::Updateが「まだクリアされていない古い下向き
+		// 速度」を先に位置へ反映してしまい、着地の瞬間に地面へめり込む→
+		// CollisionSystemに押し戻される、を繰り返す不安定な挙動(バウンド)
+		// の原因になる。GravityComponentを先にすることで、着地判定に
+		// 基づく速度クリアが同じフレーム内のVelocityComponent::Updateより
+		// 前に確定するようにしている。
+		enemy->AddComponent<GravityComponent>();
+		enemy->AddComponent<VelocityComponent>();
+		enemy->AddComponent<GroundSensorComponent>();
+	}
+
+	// --- 戦闘補助(向き・体幹・HP・ロックオン・アニメーター) --------------
+	void CreateCombatSupportComponents(GameObject* enemy)
+	{
+		enemy->AddComponent<FacingDirectionComponent>();
+		//enemy->AddComponent<WireFrameComponent>();
+
+		// 体幹(パリィ/ガードの削り合い)管理用。
+		enemy->AddComponent<PostureComponent>();
+
+		// HP管理用。数値の詳細(最大値等)はHealthComponentのデフォルト値
+		// のまま、別途調整する。
+		enemy->AddComponent<HealthComponent>();
+		enemy->AddComponent<LockOnTargetComponent>();
+
+		enemy->AddComponent<ModelAnimatorComponent>()->SetFPS(60);
+	}
+
+	// --- 意思決定層(ビヘイビアツリー) ----------------------------------
+	// 【要確認・暫定】EnemyBTControllerはEnemyStatusController*を
+	// コンストラクタで直接受け取り、GetComponent<EnemyStatusController>()
+	// による自己解決はしない(CreateStatusController()のコメント参照:
+	// Brute/BossStatusControllerとして登録されているため、基底型での
+	// GetComponent()は常に失敗する)。
+	//
+	// また、EnemyBTController内部が呼んでいるstatus->CanAct()/
+	// TryStartAttack()/IsAttacking()/GetDefinition().attackRangeは、
+	// 実際のEnemyStatusController.h/EnemyStatusData.hの内容が未確認の
+	// ため、名前が実物と一致しているか未検証。実ヘッダを共有してもらえ
+	// れば、こことEnemyBTController.h側を実物のAPIに合わせて調整する。
+	void AttachBehaviorTree(GameObject* enemy, EnemyStatusController* status)
+	{
+		enemy->AddComponent<EnemyBTController>(status);
+	}
+
+	// --- 武器のソケット生成 --------------------------------------------
+	// PlayerFactory::CreateSocket()と同じ考え方(BoneSocketComponentで
+	// スケルトンの特定ボーンに追従させる)。EnemyもPlayerと同じ
+	// Walking.gltf(mixamoリグ)を使うようになったため、同じボーン名
+	// ("mixamorig:RightHand")がそのまま使える。
 	GameObject* CreateWeaponSocket(ObjectManager& objectManager, Handle<SkeletonComponent>& skeletonHandle) {
 		GameObject* socket = objectManager.Instantiate("enemy_weapon_socket");
 		if (!socket) return nullptr;
@@ -37,9 +198,10 @@ namespace
 		return socket;
 	}
 
-	// 武器本体を生成する。PlayerFactory::CreateWeapon()とほぼ同一の構成
-	// (見た目のモデルは仮のbox.gltfを共用)。IgnoreCollisionWith(enemy)で
-	// 自分自身とは判定しないようにしている点もPlayer側と同じ。
+	// --- 武器本体の生成 --------------------------------------------------
+	// PlayerFactory::CreateWeapon()とほぼ同一の構成(見た目のモデルは
+	// 仮のbox.gltfを共用)。IgnoreCollisionWith(enemy)で自分自身とは
+	// 判定しないようにしている点もPlayer側と同じ。
 	GameObject* CreateWeapon(ObjectManager& objectManager, GameObject* enemy, Handle<TransformComponent>& attachPoint) {
 		GameObject* weapon = objectManager.Instantiate("enemy_weapon");
 		if (!weapon) return nullptr;
@@ -80,6 +242,31 @@ namespace
 
 		return weapon;
 	}
+
+	// --- 武器の生成・取り付け・道連れ登録 ------------------------------
+	void AttachWeaponAndRegister(ObjectManager& objectManager, GameObject* enemy,
+		EnemyStatusController* status, Handle<SkeletonComponent>& skeletonHandle)
+	{
+		GameObject* weaponSocket = CreateWeaponSocket(objectManager, skeletonHandle);
+		Handle<TransformComponent> weaponAttachPoint(weaponSocket->GetComponent<BoneSocketComponent>());
+
+		GameObject* weapon = CreateWeapon(objectManager, enemy, weaponAttachPoint);
+		if (weapon != nullptr) {
+			status->SetWeapon(
+				Handle<ColliderComponent>(weapon->GetComponent<ColliderComponent>()),
+				Handle<AttackSourceComponent>(weapon->GetComponent<AttackSourceComponent>()));
+		}
+
+		// 武器・武器ソケットは敵本体とは別のGameObjectのため、敵が死亡して
+		// 消滅する際に道連れで破棄されるよう明示的に登録しておく
+		// (登録しないと、当たり判定は無効化されても見た目上ワールドに
+		//  浮いたまま残り続けてしまう。詳細はEnemyStatusController::
+		//  RequestDespawn()参照)。
+		status->RegisterOwnedObject(Handle<GameObject>(weaponSocket));
+		if (weapon != nullptr) {
+			status->RegisterOwnedObject(Handle<GameObject>(weapon));
+		}
+	}
 }
 
 EnemyFactory::EnemyFactory(const std::unordered_map<std::string, EnemyDefinition>& database) {
@@ -95,132 +282,16 @@ EnemyFactory::EnemyFactory(const std::unordered_map<std::string, EnemyDefinition
 GameObject* EnemyFactory::BuildEnemy(ObjectManager& objectManager, const EnemyDefinition& def, const Math::Vector3& position) {
 	GameObject* enemy = objectManager.Instantiate(def.name);
 
-	TransformComponent* transform = enemy->AddComponent<TransformComponent>();
-	transform->SetPosition(position);
+	CreateTransformAndMovement(enemy, def, position);
+	SkeletonComponent* skeleton = AttachVisuals(enemy, def);
+	EnemyStatusController* status = CreateStatusController(enemy, def);
+	CreateColliders(enemy, def);
+	CreatePhysicsComponents(enemy);
+	CreateCombatSupportComponents(enemy);
+	AttachBehaviorTree(enemy, status);
 
-	enemy->AddComponent<MovementComponent>(def.moveSpeed);
-
-	// PlayerFactory::AttachVisuals()と同じモデル(Walking.gltf、mixamoリグ)を
-	// 使うようにした。武器をボーンソケット経由で手に追従させるため、
-	// 以前のbox.gltf(単純な箱、ボーン無し)では対応するボーンが見つからず
-	// 単位行列にフォールバックしてしまい、追従が成立しなかったため。
-	//
-	// 注意: モデルをbox.gltfからWalking.gltf(人型)へ変更したことで、
-	// これまでワイヤーフレームを見ながら調整していたHurtBox/Bodyの寸法が
-	// 新しい見た目のシルエットと合わなくなっている可能性がある。
-	// 一度ワイヤーフレーム表示で確認し、必要なら再調整すること。
-	auto* skeleton = enemy->AddComponent<SkeletonComponent>();
-	skeleton->SetModelData(def.modelPath);
-
-	// EnemyStatusController::Start()内でMovementComponentへ
-	// SetMovementSource(this)する。GetComponent<T>()はマップ参照なので、
-	// AddComponentの順序には依存しない。
-	//
-	// def.typeに応じて実際に生成する派生クラスを出し分ける。以降の処理
-	// (SetWeapon/RegisterOwnedObject等)はEnemyStatusControllerの公開
-	// インターフェースしか使っていないため、基底クラスのポインタとして
-	// 受け取るだけで問題ない。
-	EnemyStatusController* status = nullptr;
-	switch (def.type) {
-	case EnemyDefinition::EnemyType::Boss:
-		status = enemy->AddComponent<BossStatusController>(def.statusData);
-		break;
-	case EnemyDefinition::EnemyType::Brute:
-	default:
-		status = enemy->AddComponent<BruteStatusController>(def.statusData);
-		break;
-	}
-
-	// 被弾判定(トリガー、攻撃判定専用)。collideMaskをHitBoxだけに
-	// 絞っているため、これだけでは地形(Ground)を含めどのカテゴリとも
-	// 物理的に判定しない(お互いのcollideMask/categoryMaskが噛み合う
-	// 必要があるため。ColliderComponent::CanCollideWith参照)。
-	ColliderComponent* collider = enemy->AddComponent<ColliderComponent>();
-	CollisionShapeEntry& hurtBox = collider->AddCapsule("HurtBox", def.bodyRadius,
-		Math::Vector3(0.0f, def.bodyRadius, 0.0f),
-		Math::Vector3(0.0f, (CharacterCollisionDefaults::kFootOffset * 2) - def.bodyRadius, 0.0f),
-		ColliderCategory::HurtBox, ColliderCategory::HitBox);
-	// 押し返し(物理応答)はせず、重なり検知(イベント)だけ行う。
-	// isTrigger未設定のままだと通常のBump同様の押し返しが働いてしまい、
-	// ノックバック方向とは無関係にHitBox/HurtBoxの重なり解消で位置が
-	// 押し出されてしまう不具合があった(実際に発生した不具合)。
-	hurtBox.isTrigger = true;
-
-	// 物理的な「胴体」形状。地形・壁など(Bump/Ground)と実際に押し合い、
-	// GravityComponentによる落下を地面で受け止めるのはこちらの役目。
-	// HurtBoxとは別の形状として持たせているのは、「攻撃を受ける範囲」と
-	// 「物理的に押し返される範囲」は本来別の概念であり、将来的に
-	// 「攻撃判定は少し大きいが体は細い」といった調整を独立にできるように
-	// するため。isTrigger=false(デフォルト)なので押し返しが有効になる。
-	//
-	// 下端をGroundSensorComponentのfootOffsetと一致させている点が重要。
-	// footOffsetは「Transform原点から足裏までの距離」を表すため、Bodyの
-	// 下端がここまで届いていないと、Bodyが地面に乗って静止した高さと、
-	// GroundSensorComponentが接地レイを飛ばす基準高さがズレる。ズレると
-	// 接地レイの発射点が地面の内部/下から始まる形になり、「発射点がAABB
-	// 内部から始まるケースは非対応」(GroundSensorComponent.h参照)という
-	// 制約によって永遠に接地を検出できず、重力が際限なく積み上がって
-	// 最終的に地面を貫通する(実際に発生していた不具合の根本原因)。
-	// 生の数値ではなくCharacterCollisionDefaults::kFootOffsetを直接参照
-	// することで、GroundSensorComponent側のデフォルト値とここが将来
-	// 食い違わないようにしている(詳細はCharacterCollisionDefaults.h参照)。
-	using CharacterCollisionDefaults::kFootOffset;
-	collider->AddCapsule("Body", def.bodyRadius,
-		Math::Vector3(0.0f, kFootOffset - def.bodyRadius, 0.0f),
-		Math::Vector3(0.0f, kFootOffset + def.bodyRadius, 0.0f),
-		ColliderCategory::Bump);
-
-	// GravityComponentをVelocityComponentより先にAddComponentしている。
-	// 「同名コンポーネントは追加順」で毎フレームUpdate()が呼ばれるため、
-	// この順序が「着地の瞬間、今フレームの速度クリアが位置反映より
-	// 先に間に合うかどうか」を左右する。VelocityComponentが先だと、
-	// 前フレームのPostUpdateで接地が確定していても、今フレームの
-	// VelocityComponent::Updateが「まだクリアされていない古い下向き
-	// 速度」を先に位置へ反映してしまい、着地の瞬間に地面へめり込む→
-	// CollisionSystemに押し戻される、を繰り返す不安定な挙動(バウンド)
-	// の原因になる。GravityComponentを先にすることで、着地判定に
-	// 基づく速度クリアが同じフレーム内のVelocityComponent::Updateより
-	// 前に確定するようにしている。
-	enemy->AddComponent<GravityComponent>();
-	enemy->AddComponent<VelocityComponent>();
-	enemy->AddComponent<GroundSensorComponent>();
-
-	enemy->AddComponent<ModelRenderComponent>();
-	enemy->AddComponent<FacingDirectionComponent>();
-	//enemy->AddComponent<WireFrameComponent>();
-
-	// 体幹(パリィ/ガードの削り合い)管理用。
-	enemy->AddComponent<PostureComponent>();
-
-	// HP管理用。数値の詳細(最大値等)はHealthComponentのデフォルト値
-	// のまま、別途調整する。
-	enemy->AddComponent<HealthComponent>();
-	enemy->AddComponent<LockOnTargetComponent>();
-
-	enemy->AddComponent<ModelAnimatorComponent>()->SetFPS(60);
-
-	// --- 武器のソケット生成・武器生成・登録 -------------------------------
-	// PlayerFactory::CreatePlayer()の武器生成部分と同じ流れ。
 	Handle<SkeletonComponent> skeletonHandle(skeleton);
-	GameObject* weaponSocket = CreateWeaponSocket(objectManager, skeletonHandle);
-	Handle<TransformComponent> weaponAttachPoint(weaponSocket->GetComponent<BoneSocketComponent>());
-
-	GameObject* weapon = CreateWeapon(objectManager, enemy, weaponAttachPoint);
-	if (weapon != nullptr) {
-		status->SetWeapon(
-			Handle<ColliderComponent>(weapon->GetComponent<ColliderComponent>()),
-			Handle<AttackSourceComponent>(weapon->GetComponent<AttackSourceComponent>()));
-	}
-
-	// 武器・武器ソケットは敵本体とは別のGameObjectのため、敵が死亡して
-	// 消滅する際に道連れで破棄されるよう明示的に登録しておく
-	// (登録しないと、当たり判定は無効化されても見た目上ワールドに
-	//  浮いたまま残り続けてしまう。詳細はEnemyStatusController::
-	//  RequestDespawn()参照)。
-	status->RegisterOwnedObject(Handle<GameObject>(weaponSocket));
-	if (weapon != nullptr) {
-		status->RegisterOwnedObject(Handle<GameObject>(weapon));
-	}
+	AttachWeaponAndRegister(objectManager, enemy, status, skeletonHandle);
 
 	return enemy;
 }

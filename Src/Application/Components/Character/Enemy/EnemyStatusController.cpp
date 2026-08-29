@@ -125,38 +125,10 @@ Math::Vector3 EnemyStatusController::ClampKnockbackDirection(const Math::Vector3
 	return Math::Vector3(horizontal.x, clampedY, horizontal.z);
 }
 
-// --- 簡易的な攻撃タイマー -------------------------------------------------
-// 基底クラスのデフォルト実装。Boss等で完全に異なる攻撃パターンが
-// 必要になったらoverrideすること(EnemyStatusController.hのコメント参照)。
-
-void EnemyStatusController::UpdateAttackTimer(float deltaTime) {
-	if (!CanAttack()) {
-		// ノックバック/死亡/パリィ怯み中は攻撃不可。発生中のHitBoxが
-		// あれば安全のため閉じ、タイマーもリセットしておく
-		// (再開後に「間隔を無視していきなり攻撃が出る」ことを防ぐため)。
-		if (hitBoxActiveTimer_ > 0.0f) {
-			hitBoxActiveTimer_ = 0.0f;
-			SetWeaponHitBoxEnabled(false);
-		}
-		attackIntervalTimer_ = 0.0f;
-		return;
-	}
-
-	if (hitBoxActiveTimer_ > 0.0f) {
-		hitBoxActiveTimer_ -= deltaTime;
-		if (hitBoxActiveTimer_ <= 0.0f) {
-			SetWeaponHitBoxEnabled(false);
-		}
-		return; // 発生中は次の間隔カウントを進めない
-	}
-
-	attackIntervalTimer_ += deltaTime;
-	if (attackIntervalTimer_ < data_.attackInterval) return;
-
-	attackIntervalTimer_ = 0.0f;
-	hitBoxActiveTimer_ = data_.attackActiveDuration;
-	SetWeaponHitBoxEnabled(true);
-}
+// --- 武器のHitBoxの有効/無効切り替え --------------------------------------
+// StateAttack(Windup→Active→Recovery)のActive開始/終了で呼ばれる
+// (以前はUpdateAttackTimer()専用だったが、BT駆動化に伴いStateAttackから
+// 呼ばれる形に変わった。処理内容自体は変更なし)。
 
 void EnemyStatusController::SetWeaponHitBoxEnabled(bool enabled) {
 	if (ColliderComponent* collider = weaponCollider_.Resolve()) {
@@ -164,10 +136,30 @@ void EnemyStatusController::SetWeaponHitBoxEnabled(bool enabled) {
 	}
 
 	if (enabled) {
-		// 新しい攻撃の開始として、前回までのヒット記録をクリアする
-		// (PlayerStatusController::SetWeaponHitBoxEnabled()と同じ理由)。
+		// 新しい攻撃の開始として、前回までのヒット記録をクリアする。
 		if (AttackSourceComponent* source = weaponAttackSource_.Resolve()) {
 			source->alreadyHit.clear();
 		}
 	}
+}
+
+// --- 攻撃開始時の向き直し ---------------------------------------------
+// 水平方向(Y差は無視)だけを見て、targetPositionの方を向くyaw角を
+// 一瞬で適用する。Slerpによる滑らかな補間はせず、Windup開始の1フレームで
+// スナップさせる簡易実装(PlayerStatusController::FaceAttackTarget()と
+// 同じ考え方)。
+void EnemyStatusController::FaceHorizontalTarget(const Math::Vector3& targetPosition) {
+	if (transform_ == nullptr) return;
+
+	Math::Vector3 dir = targetPosition - transform_->GetPosition();
+	dir.y = 0.0f;
+	if (dir.LengthSquared() < 1e-6f) return; // 真上/真下等、水平差が無い場合は向きを変えない
+
+	dir.Normalize();
+
+	// 【要確認】+Z前方・DirectX左手系を想定したyaw角の算出。
+	// TransformComponentの回転表現/SetRotation()の実際のシグネチャに
+	// 合わせて調整すること。
+	const float yaw = std::atan2(dir.x, dir.z);
+	transform_->SetRotation(Math::Quaternion::CreateFromAxisAngle(Math::Vector3::Up, yaw));
 }
