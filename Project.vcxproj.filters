@@ -501,12 +501,6 @@
     <ClInclude Include="Src\Application\Components\Character\Player\PlayerStatusController.h">
       <Filter>Src\Application\Components\Character\Player</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyState.h">
-      <Filter>Src\Application\Components\Character\Enemy</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyStatusController.h">
-      <Filter>Src\Application\Components\Character\Enemy</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Components\Character\StateMachine\StateMachine.h">
       <Filter>Src\Application\Components\Character\StateMachine</Filter>
     </ClInclude>
@@ -563,12 +557,6 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Scene\SceneType.h">
       <Filter>Src\Application\Scene</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\Character\Enemy\Brute\BruteStatusController.h">
-      <Filter>Src\Application\Components\Character\Enemy\Brute</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyStatusData.h">
-      <Filter>Src\Application\Components\Character\Enemy</Filter>
     </ClInclude>
     <ClInclude Include="Src\Application\Factories\Map\TerrainFactory.h">
       <Filter>Src\Application\Factories\Map</Filter>
@@ -633,9 +621,6 @@
     <ClInclude Include="Src\Application\Components\Effect\TrailPolygonEffectComponent.h">
       <Filter>Src\Application\Components\Effect</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyBTController.h">
-      <Filter>Src\Application\Components\Character\Enemy</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Components\Character\BehaviorTree\BTComposite.h">
       <Filter>Src\Application\Components\Character\BehaviorTree</Filter>
     </ClInclude>
@@ -654,9 +639,6 @@
     <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyDefinition.h">
       <Filter>Src\Application\Components\Character\Enemy</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyActionAttack.h">
-      <Filter>Src\Application\Components\Character\Enemy</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Components\Character\Enemy\Brute\BruteActions.h">
       <Filter>Src\Application\Components\Character\Enemy\Brute</Filter>
     </ClInclude>
@@ -665,6 +647,15 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Character\Enemy\Brute\BruteAIData.h">
       <Filter>Src\Application\Components\Character\Enemy\Brute</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyActions.h">
+      <Filter>Src\Application\Components\Character\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyAIController.h">
+      <Filter>Src\Application\Components\Character\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyAIData.h">
+      <Filter>Src\Application\Components\Character\Enemy</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -824,17 +815,11 @@
     <ClCompile Include="Src\Application\Components\Character\Player\PlayerState.cpp">
       <Filter>Src\Application\Components\Character\Player</Filter>
     </ClCompile>
-    <ClCompile Include="Src\Application\Components\Character\Enemy\EnemyState.cpp">
-      <Filter>Src\Application\Components\Character\Enemy</Filter>
-    </ClCompile>
     <ClCompile Include="Src\Application\Components\Collision\WireFrameComponent.cpp">
       <Filter>Src\Application\Components\Collision</Filter>
     </ClCompile>
     <ClCompile Include="Src\Application\Components\Character\Player\PlayerStatusController.cpp">
       <Filter>Src\Application\Components\Character\Player</Filter>
-    </ClCompile>
-    <ClCompile Include="Src\Application\Components\Character\Enemy\EnemyStatusController.cpp">
-      <Filter>Src\Application\Components\Character\Enemy</Filter>
     </ClCompile>
     <ClCompile Include="Src\Application\Scene\ResultScene\ResultScene.cpp">
       <Filter>Src\Application\Scene\Result</Filter>
@@ -869,14 +854,17 @@
     <ClCompile Include="Src\Application\Editor\EffectEditor.cpp">
       <Filter>Src\Application\Editor</Filter>
     </ClCompile>
-    <ClCompile Include="Src\Application\Components\Character\Enemy\EnemyActionAttack.cpp">
-      <Filter>Src\Application\Components\Character\Enemy</Filter>
-    </ClCompile>
     <ClCompile Include="Src\Application\Components\Character\Enemy\Brute\BruteActions.cpp">
       <Filter>Src\Application\Components\Character\Enemy\Brute</Filter>
     </ClCompile>
     <ClCompile Include="Src\Application\Components\Character\Enemy\Brute\BruteAIController.cpp">
       <Filter>Src\Application\Components\Character\Enemy\Brute</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\Character\Enemy\EnemyActions.cpp">
+      <Filter>Src\Application\Components\Character\Enemy</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\Character\Enemy\EnemyAIController.cpp">
+      <Filter>Src\Application\Components\Character\Enemy</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

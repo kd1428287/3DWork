@@ -193,20 +193,10 @@ private:
 		const float horizontalLenSq = dir.x * dir.x + dir.z * dir.z;
 		if (horizontalLenSq <= kMinDirectionLengthSq) return false;
 
-		// 【要確認/修正済み】+Z前方の左手系を想定したyaw/pitch算出。
-		// pitchは当初dir.yをそのまま使っていたが、実機で「接近するほど
-		// カメラが上を向いて対象を見失う」不具合が確認されたため、符号を
-		// 反転している(dir.yが負=対象が下にある時、下を向く向きになる
-		// よう修正)。もし逆に見える場合はここの符号を再度調整すること。
 		const float horizontalLen = std::sqrt(horizontalLenSq);
 		const float desiredYaw = std::atan2(dir.x, dir.z);
 		const float desiredPitch = std::atan2(-dir.y, horizontalLen);
 
-		// 【重要】現在の向きをtransform_->GetForward()から逆算すること
-		// (デコード)はしない。lockYaw_/lockPitch_というこのクラス自身の
-		// 状態として角度を保持し続け、Quaternionの中身を読み返さないことで、
-		// エンコード/デコードの往復不一致による振動を根本的に防ぐ
-		// (クラス冒頭コメント参照)。
 		if (!wasLockedLastFrame_) {
 			// ロックし始めた瞬間は、いきなり対象方向へスナップしてよい
 			// (滑らかに近づける基準となる「前回の向き」がまだ無いため)。
@@ -235,7 +225,7 @@ private:
 	}
 
 	TransformComponent* transform_ = nullptr;
-	CameraOrbitComponent* orbit_ = nullptr;        // 同一GameObjectの兄弟コンポーネントなので生ポインタのまま
+	CameraOrbitComponent* orbit_ = nullptr;        // 同一GameObjectの兄弟コンポーネントなので生ポインタGのまま
 	Handle<CameraTargetComponent> target_;         // 別GameObjectの参照なのでHandle化
 	Math::Vector3 localOffset_{ 0.0f, 0.0f, -10.0f };
 	bool followRotation_ = true;

@@ -1,41 +1,31 @@
 ﻿#pragma once
 #include <string>
-#include "EnemyStatusData.h"
+#include "EnemyAIData.h"
 
 // ============================================================
 // 敵1種類分のパラメータ。CSV/JSON等の外部データから読み込んで
 // database(std::unordered_map<std::string, EnemyDefinition>)を
 // 組み立てる想定(EnemyFactoryのコンストラクタ参照)。
 //
-// 実際のJSON等からの読み込み処理はまだ実装していないため、当面は
-// EnemyDefinitionDatabase.h側のCreateDebugEnemyDatabase()で
-// コード上に直書きしたデータを使う(読み込み処理が決まったら、
-// そちらの戻り値をこのdatabaseに差し替えるだけで良いようにしてある)。
+// 【変更】以前はEnemyType(Brute/Boss)で生成する派生クラス
+// (BruteStatusController/BossStatusController)を出し分けていたが、
+// 継承ベースの実行層を全面的に廃止し、単一のEnemyAIController
+// (データ駆動)に統合したため、EnemyTypeという分岐自体が不要になった。
+// 敵種の違いは全てaiData(EnemyAIData)の中身の違いとして表現する
+// (EnemyAIData::CreateDebugBruteAIData()/CreateDebugBossAIData()参照)。
 // ============================================================
 struct EnemyDefinition
 {
-	// どの派生クラス(EnemyStatusControllerの派生)を生成するか。
-	enum class EnemyType
-	{
-		Brute, // 雑魚敵
-		Boss,  // ボス(名称未定)
-	};
-
 	std::string name = "Enemy"; // GameObjectの表示名
-	EnemyType type = EnemyType::Brute;
 
-	// SkeletonComponent::SetModelData()にそのまま渡すパス。以前は
-	// EnemyFactory::BuildEnemy()内で決め打ちだったが、敵の種類ごとに
-	// 見た目のモデルが変わるようになったためこちらへ出した。
+	// SkeletonComponent::SetModelData()にそのまま渡すパス。敵の種類ごとに
+	// 見た目のモデルが変わる想定。
 	std::string modelPath = "Asset/Models/Character/Brute/Brute.gltf";
 
 	float moveSpeed = 1.5f;
 	float bodyRadius = 0.5f; // 被弾判定(Hurtbox)の球半径
 
-	// パトロール距離・攻撃タイマー・ノックバッククランプ等、
-	// EnemyStatusController(および派生クラス)向けのチューニング値。
-	// 以前はpatrolDistanceを単独フィールドとして持っていたが、
-	// EnemyStatusData側に統合したため、ここでは重複して持たない。
-	// 詳細はEnemyStatusData.h参照。
-	EnemyStatusData statusData;
+	// 意思決定・攻撃パターン等、EnemyAIController向けのチューニング値。
+	// 敵の種類ごとの違いは全てこのデータの中身で表現する。
+	EnemyAIData aiData;
 };

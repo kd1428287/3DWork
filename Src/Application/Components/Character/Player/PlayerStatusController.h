@@ -19,7 +19,7 @@
 #include "../../Effect/TrailPolygonEffectComponent.h" // 武器の攻撃軌跡エフェクト(パスは実際の配置に合わせて要調整)
 #include "../Data/PostureComponent.h"
 #include "../Data/HealthComponent.h"
-#include "../Enemy/EnemyStatusController.h"
+//#include "../Enemy/EnemyStatusController.h"
 #include "../../../Core/Handle.h"
 #include "../../../Systems/Collision/CollisionSystem.h"
 
