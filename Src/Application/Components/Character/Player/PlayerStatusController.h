@@ -481,25 +481,15 @@ private:
 		attack->alreadyHit.insert(GetOwner());
 
 		if (IsInParryWindow()) {
-			// 完全パリィ: 自分は体幹・HPともにノーダメージ。
-			// 攻撃者本体(ownerCharacter経由)の体幹を大きく削る。
-			// ownerCharacterが未設定/破棄済み(Resolve()==nullptr)の場合は
-			// 何もしない(現状Enemy側の攻撃は仮実装のため、この経路が
-			// 実際に通ることはまだ無い想定)。
 			if (GameObject* attacker = attack->ownerCharacter.Resolve()) {
 				if (PostureComponent* attackerPosture = attacker->GetComponent<PostureComponent>()) {
 					attackerPosture->AddPostureDamage(attack->parryPostureDamage);
 				}
 
-				// 現状は敵本体がAttackSourceComponentを直接持つ仮実装のため、
-				// GameObject経由でEnemyStatusControllerを直接呼び出している。
-				// この「PlayerがEnemyの具体型を直接知る」という結合は、
-				// 将来Player同様の武器オブジェクトをEnemyも持つようになり、
-				// 汎用的な「パリィされた時の反応」インターフェースへ整理する
-				// 際に見直すこと(現時点では意図的な仮実装)。
-				if (EnemyStatusController* enemyStatus = attacker->GetComponent<EnemyStatusController>()) {
-					enemyStatus->ChangeStateToParryStun();
-				}
+				// 【現状】パリィ時のリアクション自体はまだ実装しない(一旦保留)。
+				// 将来EnemyAIController側で反応を実装する際は、そちらのStart()で
+				// Subscribe<AttackSourceComponent::ParriedEvent>()すればよい。
+				attacker->GetLocalEventBus().Publish(AttackSourceComponent::ParriedEvent{});
 			}
 			// TODO: 弾き返しの演出(SE/VFX)は別途実装。
 		}

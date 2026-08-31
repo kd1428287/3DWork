@@ -8,7 +8,7 @@
 // HitBox(ColliderShape側でcategoryMask=HitBox, isTrigger=trueにした
 // 形状)を持つGameObjectにアタッチしておく、攻撃1回分のパラメータ置き場。
 // CollisionSystemが発行するCollisionEnterEventには「誰が当たったか」
-// (GameObject*)しか載っていないため、被弾側(EnemyStatusController等)は
+// (GameObject*)しか載っていないため、被弾側(EnemyAIController等)は
 // e.otherObject->GetComponent<AttackSourceComponent>()で攻撃データを
 // 引き当てる想定。
 //
@@ -21,6 +21,20 @@
 class AttackSourceComponent : public ComponentBase {
 public:
 	explicit AttackSourceComponent(GameObject* owner) : ComponentBase(owner) {}
+
+	// パリィされた際に、攻撃者自身(ownerCharacter)のローカルEventBusへ
+	// 発行されるイベント。「反応するかどうか」「どう反応するか」は
+	// 完全に攻撃者側(購読する側)に委ねる。被弾側(PlayerStatusController等)
+	// はGameObjectの具体的な型を一切知らずにこれをPublish()するだけで
+	// 済む(HealthComponent::DiedEvent/CollisionSystem::CollisionEnterEvent
+	// と同じ、GameObjectローカルバス経由の疎結合パターン)。
+	//
+	// 【現状】パリィ時のリアクション自体は未実装(一旦保留)。将来Enemy側に
+	// 反応を実装する際は、そのコンポーネントのStart()でこのイベントを
+	// Subscribe<AttackSourceComponent::ParriedEvent>()すればよい。
+	struct ParriedEvent : public Event
+	{
+	};
 
 	float damage = 10.0f;
 	float knockbackPower = 6.0f;
@@ -42,8 +56,9 @@ public:
 
 	// この攻撃の持ち主(武器なら、武器を装備しているキャラクター本体)
 	// への弱参照。パリィ成立時、被弾側から見て「攻撃者本体の
-	// PostureComponentを削る」ために必要になる(otherObjectは武器自体の
-	// GameObjectであり、キャラクター本体ではないため)。
+	// PostureComponentを削る」「攻撃者本体へParriedEventを発行する」ために
+	// 必要になる(otherObjectは武器自体のGameObjectであり、キャラクター
+	// 本体ではないため)。
 	// 生成側(PlayerFactory::CreateWeapon等)が明示的にセットすること。
 	// 未設定(Resolve()がnullptr)のままでも、その場合はパリィ処理側が
 	// 何もしないだけで安全に動作する。

@@ -1,9 +1,11 @@
 ﻿#include "EnemyHPBarComponent.h"
 #include "../../Transform/TransformComponent.h" // パスはプロジェクトに合わせて調整
+#include "../../Character/Data/PostureComponent.h" // パスはプロジェクトに合わせて調整
 
 void EnemyHPBarComponent::Start()
 {
 	health_ = GetOwner()->GetComponent<HealthComponent>();
+	posture_ = GetOwner()->GetComponent<PostureComponent>(); // 任意。無ければ体幹バーは描画しない
 	transform_ = GetOwner()->GetComponent<TransformComponent>();
 
 	if (health_) {
@@ -26,20 +28,31 @@ void EnemyHPBarComponent::OnDied(const HealthComponent::DiedEvent& e)
 
 void EnemyHPBarComponent::Update(float deltaTime)
 {
-	if (!health_ || !transform_) return;
+	if (!transform_) return;
 
 	if (isDead_) {
 		deathFadeElapsed_ += deltaTime;
 		if (deathFadeElapsed_ >= deathFadeDuration_) return; // フェード完了後は描画自体をやめる
 	}
 
+	if (health_) {
+		DrawBar(healthWorldOffset_, healthBarSize_, health_->GetRatio(), healthStyle_);
+	}
+	if (posture_) {
+		DrawBar(postureWorldOffset_, postureBarSize_, posture_->GetRatio(), postureStyle_);
+	}
+}
+
+void EnemyHPBarComponent::DrawBar(const Math::Vector3& worldOffset, const Math::Vector2& size,
+	float ratio, const GaugeBarStyle& style) const
+{
 	CameraComponent* activeCamera = nullptr;
 	if (auto* ctx = GetOwner()->GetContext()) {
 		activeCamera = ctx->activeCamera;
 	}
 	if (!activeCamera) return; // アクティブカメラが未登録なら描画のしようがない
 
-	const Math::Vector3 worldPos = transform_->GetPosition() + worldOffset_;
+	const Math::Vector3 worldPos = transform_->GetPosition() + worldOffset;
 
 	Math::Vector3 screenResult; // x,y: 画面中心原点のピクセル座標、z: 奥行き(カメラ背後判定に使う)
 	activeCamera->GetCamera().ConvertWorldToScreenDetail(worldPos, screenResult);
@@ -54,7 +67,7 @@ void EnemyHPBarComponent::Update(float deltaTime)
 	// 例: screenPos.x = screenResult.x + viewportWidth * 0.5f;
 	Math::Vector3 screenPos = screenResult;
 
-	GaugeBarStyle drawStyle = style_;
+	GaugeBarStyle drawStyle = style;
 	if (isDead_) {
 		// テクスチャの透過度を落とす手段(シェーダー側のアルファ乗算等)が
 		// 別途必要。ここではフェード進行度だけ計算しておく。
@@ -62,5 +75,5 @@ void EnemyHPBarComponent::Update(float deltaTime)
 		(void)alpha; // TODO: シェーダー側にアルファ値を渡すAPIに接続する
 	}
 
-	GaugeBarRenderer::Draw(screenPos, barSize_, health_->GetRatio(), drawStyle);
+	GaugeBarRenderer::Draw(screenPos, size, ratio, drawStyle);
 }

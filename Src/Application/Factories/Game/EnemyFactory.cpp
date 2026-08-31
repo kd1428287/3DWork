@@ -1,12 +1,8 @@
 ﻿#include "EnemyFactory.h"
 
-
-#include "../../Components/Character/Enemy/EnemyStatusController.h"
 #include "../../Components/Character/Enemy/EnemyDefinition.h"
-#include "../../Components/Character/Enemy/Brute/BruteStatusController.h"
-#include "../../Components/Character/Enemy/Boss/BossStatusController.h"
+#include "../../Components/Character/Enemy/EnemyAIController.h"
 #include "../../Components/Character/Enemy/LockOnTargetComponent.h"
-#include "../../Components/Character/Enemy/EnemyBTController.h"
 #include "../../Components/Character/Data/PostureComponent.h"
 #include "../../Components/Character/Data/HealthComponent.h"
 #include "../../Components/Transform/TransformComponent.h"
@@ -62,32 +58,14 @@ namespace
 		return skeleton;
 	}
 
-	// --- 戦闘制御(Stateパターン、Brute/Bossの出し分け) -----------------
-	EnemyStatusController* CreateStatusController(GameObject* enemy, const EnemyDefinition& def)
+	// --- 意思決定・実行(データ駆動EnemyAIController) -------------------
+	// 以前はdef.typeに応じてBrute/BossStatusController(継承ベース)を
+	// 出し分けていたが、その実行層自体を廃止しBTへ全面移行したため、
+	// 敵種によらず常に同じEnemyAIControllerをaiDataだけ変えて生成する
+	// 形に統一した(EnemyDefinition.h冒頭コメント参照)。
+	EnemyAIController* CreateAIController(GameObject* enemy, const EnemyDefinition& def)
 	{
-		// EnemyStatusController::Start()内でMovementComponentへ
-		// SetMovementSource(this)する。GetComponent<T>()はマップ参照なので、
-		// AddComponentの順序には依存しない。
-		//
-		// def.typeに応じて実際に生成する派生クラスを出し分ける。以降の処理
-		// (SetWeapon/RegisterOwnedObject等)はEnemyStatusControllerの公開
-		// インターフェースしか使っていないため、基底クラスのポインタとして
-		// 受け取るだけで問題ない。
-		//
-		// 【注意】この戻り値(基底クラスポインタ)以外の経路、たとえば
-		// どこかでGetComponent<EnemyStatusController>()のように基底型を
-		// 指定して検索しようとすると、GameObject::GetComponent<T>()は
-		// Tの具体型そのものでしか検索できない実装のため、実際に登録
-		// されているBruteStatusController/BossStatusControllerを
-		// 見つけられずnullptrになる。AttachBehaviorTree()がこの戻り値を
-		// コンストラクタ経由で直接受け渡しているのはこの問題を避けるため。
-		switch (def.type) {
-		case EnemyDefinition::EnemyType::Boss:
-			return enemy->AddComponent<BossStatusController>(def.statusData);
-		case EnemyDefinition::EnemyType::Brute:
-		default:
-			return enemy->AddComponent<BruteStatusController>(def.statusData);
-		}
+		return enemy->AddComponent<EnemyAIController>(def.aiData);
 	}
 
 	// --- 当たり判定(HurtBox+Body) -------------------------------------
@@ -169,26 +147,6 @@ namespace
 		enemy->AddComponent<ModelAnimatorComponent>()->SetFPS(60);
 	}
 
-	// --- 意思決定層(ビヘイビアツリー) ----------------------------------
-	// EnemyBTControllerはEnemyStatusController*をコンストラクタで直接
-	// 受け取り、GetComponent<EnemyStatusController>()による自己解決は
-	// しない(CreateStatusController()のコメント参照: Brute/Boss
-	// StatusControllerとして登録されているため、基底型でのGetComponent()
-	// は常に失敗する)。
-	//
-	// BT側(EnemyActionAttack)は毎フレームstatus->IsAttacking()/
-	// TryStartAttack(targetPosition)を呼び、実際の攻撃モーション進行
-	// (Windup/Active/Recovery、攻撃開始時のプレイヤーへの向き直し)は
-	// StateAttack(EnemyState.h/.cpp)が担当する(実装確認済み。詳細は
-	// EnemyStatusController.hのクラス冒頭コメント参照)。
-	//
-	// BossStatusControllerがTryStartAttack()をoverrideする場合、
-	// シグネチャ(targetPosition引数)を合わせる必要がある点に注意。
-	void AttachBehaviorTree(GameObject* enemy, EnemyStatusController* status)
-	{
-		enemy->AddComponent<EnemyBTController>(status);
-	}
-
 	// --- 武器のソケット生成 --------------------------------------------
 	// PlayerFactory::CreateSocket()と同じ考え方(BoneSocketComponentで
 	// スケルトンの特定ボーンに追従させる)。EnemyもPlayerと同じ
@@ -248,14 +206,14 @@ namespace
 
 	// --- 武器の生成・取り付け・道連れ登録 ------------------------------
 	void AttachWeaponAndRegister(ObjectManager& objectManager, GameObject* enemy,
-		EnemyStatusController* status, Handle<SkeletonComponent>& skeletonHandle)
+		EnemyAIController* ai, Handle<SkeletonComponent>& skeletonHandle)
 	{
 		GameObject* weaponSocket = CreateWeaponSocket(objectManager, skeletonHandle);
 		Handle<TransformComponent> weaponAttachPoint(weaponSocket->GetComponent<BoneSocketComponent>());
 
 		GameObject* weapon = CreateWeapon(objectManager, enemy, weaponAttachPoint);
 		if (weapon != nullptr) {
-			status->SetWeapon(
+			ai->SetWeapon(
 				Handle<ColliderComponent>(weapon->GetComponent<ColliderComponent>()),
 				Handle<AttackSourceComponent>(weapon->GetComponent<AttackSourceComponent>()));
 		}
@@ -263,11 +221,11 @@ namespace
 		// 武器・武器ソケットは敵本体とは別のGameObjectのため、敵が死亡して
 		// 消滅する際に道連れで破棄されるよう明示的に登録しておく
 		// (登録しないと、当たり判定は無効化されても見た目上ワールドに
-		//  浮いたまま残り続けてしまう。詳細はEnemyStatusController::
+		//  浮いたまま残り続けてしまう。詳細はEnemyAIController::
 		//  RequestDespawn()参照)。
-		status->RegisterOwnedObject(Handle<GameObject>(weaponSocket));
+		ai->RegisterOwnedObject(Handle<GameObject>(weaponSocket));
 		if (weapon != nullptr) {
-			status->RegisterOwnedObject(Handle<GameObject>(weapon));
+			ai->RegisterOwnedObject(Handle<GameObject>(weapon));
 		}
 	}
 }
@@ -287,14 +245,13 @@ GameObject* EnemyFactory::BuildEnemy(ObjectManager& objectManager, const EnemyDe
 
 	CreateTransformAndMovement(enemy, def, position);
 	SkeletonComponent* skeleton = AttachVisuals(enemy, def);
-	EnemyStatusController* status = CreateStatusController(enemy, def);
+	EnemyAIController* ai = CreateAIController(enemy, def);
 	CreateColliders(enemy, def);
 	CreatePhysicsComponents(enemy);
 	CreateCombatSupportComponents(enemy);
-	AttachBehaviorTree(enemy, status);
 
 	Handle<SkeletonComponent> skeletonHandle(skeleton);
-	AttachWeaponAndRegister(objectManager, enemy, status, skeletonHandle);
+	AttachWeaponAndRegister(objectManager, enemy, ai, skeletonHandle);
 
 	return enemy;
 }
