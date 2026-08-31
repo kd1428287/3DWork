@@ -1,8 +1,8 @@
 ﻿#include "../../../Application/main.h"
 
 #include "KdDebugGUI.h"
-#include "../../../Application/Editor/MapEditor.h"
 #include "../../../Application/Editor/EditorViewport.h"
+#include "../../../Application/Editor/MapEditor.h"
 #include "../../../Application/Editor/EffectEditor.h"
 
 // DockBuilder系APIを使うために必要(公式にも初期配置構築の定番として使われる内部ヘッダ)
@@ -11,8 +11,8 @@
 KdDebugGUI::KdDebugGUI()
 {}
 KdDebugGUI::~KdDebugGUI()
-{ 
-	GuiRelease(); 
+{
+	GuiRelease();
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -39,16 +39,10 @@ static void SetupDefaultDockLayout(ImGuiID dockspaceId)
 	// 下：Assets + Log(画面高さの30%) 、残った部分がScene(中央上)
 	ImGuiID bottom = ImGui::DockBuilderSplitNode(center, ImGuiDir_Down, 0.30f, nullptr, &center);
 
-	ImGui::DockBuilderDockWindow("Hierarchy",  left);
-	ImGui::DockBuilderDockWindow("Effect Hierarchy", left);	// Hierarchyとタブ化
-
-	ImGui::DockBuilderDockWindow("Inspector",  right);
-	ImGui::DockBuilderDockWindow("Effect Inspector", right);	// Inspectorとタブ化
-
-	ImGui::DockBuilderDockWindow("Scene",      center);
-
-	ImGui::DockBuilderDockWindow("Assets",     bottom);
-	ImGui::DockBuilderDockWindow("Effect Assets", bottom);	// Assetsとタブ化
+	ImGui::DockBuilderDockWindow("Hierarchy", left);
+	ImGui::DockBuilderDockWindow("Inspector", right);
+	ImGui::DockBuilderDockWindow("Scene", center);
+	ImGui::DockBuilderDockWindow("Assets", bottom);
 	ImGui::DockBuilderDockWindow("Log Window", bottom);	// Assetsと同じノードなのでタブ化される
 
 	ImGui::DockBuilderFinish(dockspaceId);
@@ -65,6 +59,7 @@ void KdDebugGUI::GuiInit(int w, int h)
 
 	ImGuiIO& io = ImGui::GetIO();
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;	// ドッキング機能を有効化(要 Dear ImGui docking ブランチ)
+	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;	// マルチビューポート機能を有効化(ウィンドウを画面外に出すと別OSウィンドウになる)
 
 	// Setup Dear ImGui style
 	// ImGui::StyleColorsDark();
@@ -79,7 +74,6 @@ void KdDebugGUI::GuiInit(int w, int h)
 #include "imgui/ja_glyph_ranges.h"
 	ImFontConfig config;
 	config.MergeMode = true;
-	//応急措置
 	config.MergeMode = false;
 	io.Fonts->AddFontDefault();
 	// 日本語対応
@@ -151,9 +145,17 @@ void KdDebugGUI::GuiProcess()
 	//===========================================================
 	ImGui::Render();
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+
+	// マルチビューポート：ドッキングウィンドウを画面外にドラッグして分離した「別ウィンドウ」の更新・描画
+	//	(メインウィンドウの描画とは別に、ここでまとめて処理する)
+	if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+	{
+		ImGui::UpdatePlatformWindows();
+		ImGui::RenderPlatformWindowsDefault();
+	}
 }
 
-void KdDebugGUI::AddLog(const char* fmt,...)
+void KdDebugGUI::AddLog(const char* fmt, ...)
 {
 	// 初期化されてないなら動作させない
 	if (!m_uqLog) return;

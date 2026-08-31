@@ -5,6 +5,8 @@
 
 #include <fstream>
 #include <filesystem>
+#include <commdlg.h>	// GetOpenFileNameA用
+#pragma comment(lib, "comdlg32.lib")
 // 未導入の場合はSave/Loadごと削除するか、独自の保存形式に差し替えてください
 #include "nlohmann/json.hpp"
 
@@ -203,16 +205,45 @@ void MapEditor::DrawAssetPicker()
 {
 	ImGui::Begin("Assets");
 
-	// 初回のみ自動スキャン
+	// 初回のみ登録済みリストを読み込む
 	if (!m_assetListLoaded)
 	{
-		RefreshModelFileList();
+		LoadModelRegistry(m_registryPathBuf);
 		m_assetListLoaded = true;
 	}
 
-	if (ImGui::Button("Refresh"))
+	if (ImGui::Button("+ Add File..."))
 	{
-		RefreshModelFileList();
+		AddModelViaFileDialog();
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("- Remove") && m_selectedAsset >= 0)
+	{
+		RemoveRegisteredModel(m_selectedAsset);
+	}
+
+	ImGui::Separator();
+
+	if (m_modelFileList.empty())
+	{
+		ImGui::TextDisabled("登録されたモデルがありません。「+ Add File...」から追加してください");
+	}
+
+	for (int i = 0; i < (int)m_modelFileList.size(); i++)
+	{
+		const std::string& path = m_modelFileList[i];
+
+		bool isSelected = (m_selectedAsset == i);
+		if (ImGui::Selectable(path.c_str(), isSelected))
+		{
+			m_selectedAsset = i;
+
+			// オブジェクトが選択中なら、クリックしたアセットをそのまま割り当てる
+			if (m_selected >= 0 && m_selected < (int)m_objects.size())
+			{
+				m_objects[m_selected].SetModel(path);
+			}
+		}
 	}
 
 	ImGui::Separator();
@@ -225,18 +256,7 @@ void MapEditor::DrawAssetPicker()
 	}
 
 	MapObject& obj = m_objects[m_selected];
-
 	ImGui::Text("Current : %s", obj.modelPath.empty() ? "(None)" : obj.modelPath.c_str());
-	ImGui::Separator();
-
-	for (auto& path : m_modelFileList)
-	{
-		bool isSelected = (obj.modelPath == path);
-		if (ImGui::Selectable(path.c_str(), isSelected))
-		{
-			obj.SetModel(path);
-		}
-	}
 
 	ImGui::End();
 }
@@ -244,26 +264,96 @@ void MapEditor::DrawAssetPicker()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // Asset/Model 以下を走査してモデルファイル一覧を更新する
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void MapEditor::RefreshModelFileList()
+void MapEditor::LoadModelRegistry(const std::string& path)
 {
 	m_modelFileList.clear();
 
+	std::ifstream ifs(path);
+	if (!ifs) return;	// 未作成(初回起動)ならリストが空のまま始まる
+
+	try
+	{
+		nlohmann::json j;
+		ifs >> j;
+
+		for (auto& e : j)
+		{
+			m_modelFileList.push_back(e.get<std::string>());
+		}
+	}
+	catch (...)
+	{
+		KdDebugGUI::Instance().AddLog("MapEditor: アセット一覧の読み込みに失敗 %s\n", path.c_str());
+	}
+}
+
+void MapEditor::SaveModelRegistry(const std::string& path)
+{
+	nlohmann::json j = m_modelFileList;
+
+	std::ofstream ofs(path);
+	if (!ofs)
+	{
+		KdDebugGUI::Instance().AddLog("MapEditor: アセット一覧の保存に失敗 %s\n", path.c_str());
+		return;
+	}
+
+	ofs << j.dump(2);
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// Windowsのファイル選択ダイアログでモデルファイルを1つ登録する
+//	選択されたファイルは実行ディレクトリからの相対パスに変換して登録・保存する
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void MapEditor::AddModelViaFileDialog()
+{
+	char fileBuf[MAX_PATH] = {};
+
+	OPENFILENAMEA ofn = {};
+	ofn.lStructSize = sizeof(ofn);
+	ofn.hwndOwner = Application::Instance().GetWindowHandle();
+	ofn.lpstrFilter = "Model Files (*.gltf;*.glb)\0*.gltf;*.glb\0All Files (*.*)\0*.*\0";
+	ofn.lpstrFile = fileBuf;
+	ofn.nMaxFile = sizeof(fileBuf);
+	ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
+
+	if (!GetOpenFileNameA(&ofn))
+	{
+		return;	// キャンセルされた
+	}
+
 	namespace fs = std::filesystem;
 
-	const std::string root = "Asset/Model";	// ※実際のモデル格納フォルダに合わせて調整
-
-	if (!fs::exists(root)) return;
-
-	for (auto& entry : fs::recursive_directory_iterator(root))
+	std::string relativePath;
+	try
 	{
-		if (!entry.is_regular_file()) continue;
-
-		std::string ext = entry.path().extension().string();
-		if (ext != ".gltf" && ext != ".glb") continue;
-
-		// 表示・JSON保存の一貫性のため区切り文字をスラッシュに統一
-		m_modelFileList.push_back(entry.path().generic_string());
+		fs::path full = fs::absolute(fileBuf);
+		fs::path base = fs::absolute(".");
+		relativePath = fs::relative(full, base).generic_string();
 	}
+	catch (...)
+	{
+		relativePath = fileBuf;	// 変換に失敗した場合はフルパスのまま登録
+	}
+
+	// 既に登録済みなら何もしない
+	for (auto& p : m_modelFileList)
+	{
+		if (p == relativePath) return;
+	}
+
+	m_modelFileList.push_back(relativePath);
+	SaveModelRegistry(m_registryPathBuf);
+}
+
+void MapEditor::RemoveRegisteredModel(int index)
+{
+	if (index < 0 || index >= (int)m_modelFileList.size()) return;
+
+	m_modelFileList.erase(m_modelFileList.begin() + index);
+	m_selectedAsset = -1;
+
+	SaveModelRegistry(m_registryPathBuf);
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////

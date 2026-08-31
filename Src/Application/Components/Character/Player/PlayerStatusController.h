@@ -16,6 +16,7 @@
 #include "../../Animation/ModelAnimatorComponent.h"
 #include "../../Collision/ColliderComponent.h"
 #include "../../Collision/AttackSourceComponent.h"
+#include "../../Effect/TrailPolygonEffectComponent.h" // 武器の攻撃軌跡エフェクト(パスは実際の配置に合わせて要調整)
 #include "../Data/PostureComponent.h"
 #include "../Data/HealthComponent.h"
 #include "../Enemy/EnemyStatusController.h"
@@ -207,9 +208,13 @@ public:
 	// AttackSourceComponentをここに登録してもらう想定
 	// (武器はソケット経由でアタッチされる別GameObjectのため、Handle経由の
 	//  弱参照で保持する。武器が破棄された場合はResolve()がnullptrを返す)。
-	void SetWeapon(Handle<ColliderComponent> weaponCollider, Handle<AttackSourceComponent> weaponAttackSource) {
+	// weaponTrailは省略可能(Handle<TrailPolygonComponent>のデフォルト構築=
+	// 未設定状態)。トレイル無しの武器を今後追加する可能性を考慮している。
+	void SetWeapon(Handle<ColliderComponent> weaponCollider, Handle<AttackSourceComponent> weaponAttackSource,
+		Handle<TrailPolygonComponent> weaponTrail = {}) {
 		weaponCollider_ = weaponCollider;
 		weaponAttackSource_ = weaponAttackSource;
+		weaponTrail_ = weaponTrail;
 	}
 
 	// StateAttack::Updateから、AttackActiveフェーズの開始/終了に合わせて
@@ -232,6 +237,21 @@ public:
 			//  始まる直前まで記録を残しておくため)
 			if (AttackSourceComponent* source = weaponAttackSource_.Resolve()) {
 				source->alreadyHit.clear();
+			}
+		}
+	}
+
+	// StateAttack::UpdateからSetWeaponHitBoxEnabled()と同じタイミング
+	// (AttackActiveフェーズの開始/終了)で呼ばれ、武器のトレイルエフェクトの
+	// 記録開始/停止を切り替える。武器が未登録(weaponTrail_.Resolve()==nullptr)
+	// の場合は何もしない。
+	void SetWeaponTrailEmitting(bool emitting) {
+		if (TrailPolygonComponent* trail = weaponTrail_.Resolve()) {
+			if (emitting) {
+				trail->StartEmit();
+			}
+			else {
+				trail->StopEmit();
 			}
 		}
 	}
@@ -560,6 +580,7 @@ private:
 	// SetWeapon()経由でPlayerFactory側からセットされる想定。
 	Handle<ColliderComponent> weaponCollider_;
 	Handle<AttackSourceComponent> weaponAttackSource_;
+	Handle<TrailPolygonComponent> weaponTrail_;
 
 	ScopedSubscriber subscriber_;
 

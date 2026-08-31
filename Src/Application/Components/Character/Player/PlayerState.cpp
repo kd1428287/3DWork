@@ -58,12 +58,14 @@ void StateAttack::Update(PlayerStatusController* controller, float deltaTime) {
 			controller->RequestStepMove(data.stepDirection, data.stepDistance, data.stepDuration);
 		}
 		controller->SetWeaponHitBoxEnabled(true); // 攻撃判定が実際に発生する一瞬だけ有効化
+		controller->SetWeaponTrailEmitting(true); // 武器の軌跡エフェクトもHitBoxと同じ窓で記録開始
 		KdDebugGUI::Instance().AddLog("\nAttackActive");
 	}
 	else if (phase_ == CombatState::AttackActive && elapsed_ >= data.activeDuration) {
 		phase_ = CombatState::AttackRecovery;
 		elapsed_ = 0.0f;
 		controller->SetWeaponHitBoxEnabled(false); // 判定の発生窓を閉じる
+		controller->SetWeaponTrailEmitting(false); // 軌跡エフェクトの記録も停止(既に生成済みの頂点はStopEmit後も自然に流れて消える)
 		KdDebugGUI::Instance().AddLog("\nAttackRecovery");
 	}
 	else if (phase_ == CombatState::AttackRecovery && elapsed_ >= data.recoveryDuration) {
@@ -84,6 +86,10 @@ void StateAttack::Exit(PlayerStatusController* controller) {
 	// 既に無効化済みのケースがほとんどだが、その経路を通らない
 	// 中断にも安全に対応できるよう、Exitで無条件に無効化しておく。
 	controller->SetWeaponHitBoxEnabled(false);
+
+	// HitBoxと同じ理由で、AttackActive中に割り込まれた場合でも
+	// トレイルの記録が停止せずに残ってしまわないよう、無条件で止める。
+	controller->SetWeaponTrailEmitting(false);
 }
 
 bool StateAttack::CanStartEvade(const PlayerStatusController* controller) const {
@@ -134,7 +140,7 @@ void StateEvade::Enter(PlayerStatusController* controller) {
 	const float targetDuration = data.activeDuration + data.recoveryDuration;
 	controller->PlayAnimation(data.GetAnimationName(evadeDir), false, targetDuration, data.useRootMotion);
 	//if (!data.useRootMotion) {
-		controller->RequestStepMove(data.evadeDirection, data.evadeDistance, data.activeDuration + data.recoveryDuration);
+	controller->RequestStepMove(data.evadeDirection, data.evadeDistance, data.activeDuration + data.recoveryDuration);
 	//}
 }
 

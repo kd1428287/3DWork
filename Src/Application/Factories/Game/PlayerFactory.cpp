@@ -9,6 +9,8 @@
 #include "../../Components/Character/Player/PlayerInputComponent.h"
 #include "../../Components/Camera/CameraTargetComponent.h"
 #include "../../Components/Render/ModelRenderComponent.h"
+#include "../../Components/Render/PolygonRenderComponent.h" 
+#include "../../Components/Effect/TrailPolygonEffectComponent.h"
 #include "../../Components/Animation/ModelAnimatorComponent.h"
 #include "../../Components/Animation/SkeletonComponent.h"
 #include "../../Components/Animation/BoneSocketComponent.h"
@@ -43,7 +45,7 @@ namespace
 		auto* animator = player->AddComponent<ModelAnimatorComponent>();
 		animator->SetFPS(60);
 		animator->SetRootMotionBoneName("mixamorig:Hips");
-		animator->SetRootMotionForwardAxis(RootMotionAxis::Y,-1.0f);
+		animator->SetRootMotionForwardAxis(RootMotionAxis::Y, -1.0f);
 		animator->SetRootMotionScale(0.01f);
 
 		return skeleton;
@@ -168,7 +170,8 @@ GameObject* PlayerFactory::CreatePlayer(ObjectManager& objectManager)
 	if (weapon != nullptr) {
 		player->GetComponent<PlayerStatusController>()->SetWeapon(
 			Handle<ColliderComponent>(weapon->GetComponent<ColliderComponent>()),
-			Handle<AttackSourceComponent>(weapon->GetComponent<AttackSourceComponent>()));
+			Handle<AttackSourceComponent>(weapon->GetComponent<AttackSourceComponent>()),
+			Handle<TrailPolygonComponent>(weapon->GetComponent<TrailPolygonComponent>()));
 	}
 
 	weapon->AddComponent<TwoBoneIKComponent>(
@@ -227,6 +230,15 @@ GameObject* PlayerFactory::CreateWeapon(ObjectManager& objectManager, GameObject
 	attackSource->ownerCharacter = Handle<GameObject>(player);
 
 	weapon->AddComponent<WireFrameComponent>();
+
+	// 攻撃の軌跡エフェクト。TrailPolygonComponentはデータ管理のみを担当し、
+	// 実際の描画はPolygonRenderComponent(IPolygonRenderSourceを同じ
+	// GameObject上から自動的に見つけて描画する側)が行うため、両方をセットで
+	// 付ける必要がある(TrailPolygonEffectComponent.h冒頭コメント参照)。
+	// 発生/停止のタイミングはPlayerStatusController::SetWeaponTrailEmitting()
+	// 経由でStateAttack側から制御する(SetWeaponHitBoxEnabledと同じ窓)。
+	weapon->AddComponent<PolygonRenderComponent>();
+	weapon->AddComponent<TrailPolygonComponent>();
 
 	return weapon;
 }

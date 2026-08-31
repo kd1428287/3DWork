@@ -1,6 +1,9 @@
 ﻿#pragma once
+#include <cmath>
 #include "../../Components/Character/Player/PlayerInputComponent.h"
 #include "../../Components/Camera/CameraOrbitComponent.h"
+#include "../../Components/Camera/CameraComponent.h"
+#include "../../Core/SceneContext.h"
 
 // ============================================================
 // 入力システム。
@@ -21,6 +24,18 @@
 // 回転させてからPlayerInputComponentへ渡す。これにより「カメラの前方向が
 // そのままキャラの前進方向になる」カメラ相対移動になる
 // (CameraOrbitComponent未登録時はワールド軸基準のまま、従来通り)。
+//
+// 【ロックオン対応】"Move"軸の基準にするyawは、CameraOrbitComponent::
+// GetYaw()(マウス操作による軌道角度)ではなく、実際に今写っている
+// カメラの向き(SceneContext::activeCameraのGetForward())から求める。
+// ロック中はCameraFollowComponent側がカメラの向きをロック対象へ
+// 向けており、その間CameraOrbitComponent::GetYaw()は更新されない
+// (ロック開始時点の値のまま)ため、GetYaw()を基準にすると「実際に
+// 画面に写っている前方向」と「十字入力の前方向」がズレてしまう。
+// activeCameraの実際の向きを基準にすれば、ロック中でも非ロック中でも
+// 常に画面上の前方向へ移動するようになる。activeCameraが取得できない、
+// あるいはカメラがほぼ真上/真下を向いていてyawを決められない場合のみ、
+// 従来通りCameraOrbitComponent::GetYaw()にフォールバックする。
 //
 // キー/パッドとゲーム内動作の対応付け自体はKdInputCollector側
 // (AddButton/AddAxisで名前付き登録する部分)の責務であり、
@@ -54,9 +69,29 @@ public:
 			// 見上げている間に前進しようとした時にキャラが宙(または地面)へ
 			// 向かおうとしてしまうため。
 			//
-			// CameraOrbitComponentが未登録(固定カメラ等)の場合は、従来通り
-			// ワールド軸に対する入力としてそのまま扱う。
-			if (cameraOrbit_ != nullptr) {
+			// 実際に今写っているカメラの向き(activeCameraのGetForward())を
+			// 基準にする(クラス冒頭コメントの【ロックオン対応】参照)。
+			bool usedActualCameraForward = false;
+			if (SceneContext* context = playerInput_->GetOwner()->GetContext()) {
+				if (CameraComponent* camera = context->activeCamera) {
+					Math::Vector3 camForward = camera->GetForward();
+					camForward.y = 0.0f;
+					if (camForward.LengthSquared() > kMinCameraForwardLengthSq) {
+						camForward.Normalize();
+						const float yaw = std::atan2(-camForward.x, -camForward.z);
+						const Math::Quaternion yawOnly =
+							Math::Quaternion::CreateFromAxisAngle(Math::Vector3::Up, yaw);
+						moveDir = Math::Vector3::Transform(moveDir, yawOnly);
+						usedActualCameraForward = true;
+					}
+				}
+			}
+
+			// activeCameraが無い、あるいはカメラがほぼ真上/真下を向いていて
+			// yawを決められない場合は、従来通りCameraOrbitComponentの
+			// 軌道角度にフォールバックする(CameraOrbitComponent未登録
+			// (固定カメラ等)の場合は、ワールド軸に対する入力としてそのまま扱う)。
+			if (!usedActualCameraForward && cameraOrbit_ != nullptr) {
 				const Math::Quaternion yawOnly =
 					Math::Quaternion::CreateFromYawPitchRoll(cameraOrbit_->GetYaw(), 0.0f, 0.0f);
 				moveDir = Math::Vector3::Transform(moveDir, yawOnly);
@@ -100,4 +135,9 @@ public:
 private:
 	PlayerInputComponent* playerInput_ = nullptr;
 	CameraOrbitComponent* cameraOrbit_ = nullptr;
+
+	// activeCameraの水平前方ベクトルがこれ以下(ほぼ真上/真下を向いている)
+	// の場合は、そこからyawを決めずCameraOrbitComponent側にフォールバックする、
+	// という閾値。
+	static constexpr float kMinCameraForwardLengthSq = 1e-6f;
 };

@@ -3,6 +3,9 @@
 #include "EffectEditor.h"
 #include "EditorViewport.h"
 
+// DockBuilder系APIを使うために必要
+#include "imgui_internal.h"
+
 #include <fstream>
 #include <filesystem>
 // 未導入の場合はSave/Loadごと削除するか、独自の保存形式に差し替えてください
@@ -28,6 +31,32 @@ bool EffectObject::IsPlaying() const
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// EffectEditor専用ドックスペースの初期レイアウト
+//	左：Effect Hierarchy / 中央：Effect Inspector / 下：Effect Editor(メニュー) + Effect Assets(タブ)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+static void SetupEffectDockLayout(ImGuiID dockspaceId, const ImVec2& size)
+{
+	ImGui::DockBuilderRemoveNode(dockspaceId);
+	ImGui::DockBuilderAddNode(dockspaceId, ImGuiDockNodeFlags_DockSpace);
+	ImGui::DockBuilderSetNodeSize(dockspaceId, size);
+
+	ImGuiID center = dockspaceId;
+
+	// 左：Effect Hierarchy(幅30%)
+	ImGuiID left = ImGui::DockBuilderSplitNode(center, ImGuiDir_Left, 0.30f, nullptr, &center);
+
+	// 下：Effect Editor(メニュー) + Effect Assets(タブ)、高さ35%
+	ImGuiID bottom = ImGui::DockBuilderSplitNode(center, ImGuiDir_Down, 0.35f, nullptr, &center);
+
+	ImGui::DockBuilderDockWindow("Effect Hierarchy", left);
+	ImGui::DockBuilderDockWindow("Effect Inspector", center);	// 残った中央上
+	ImGui::DockBuilderDockWindow("Effect Assets", bottom);
+	ImGui::DockBuilderDockWindow("Effect Editor", bottom);	// Effect Assetsとタブ化
+
+	ImGui::DockBuilderFinish(dockspaceId);
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 毎フレーム更新
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectEditor::Update()
@@ -41,6 +70,32 @@ void EffectEditor::Update()
 	}
 
 	CheckHotReload();
+
+	//-------------------------------------------------------
+	// エフェクトエディタ専用のコンテナウィンドウ
+	//	メインビューポートの右外側に初期配置することで、
+	//	マルチビューポート機能により起動時から「別ウィンドウ」として分離表示される
+	//-------------------------------------------------------
+	ImGuiViewport* mainViewport = ImGui::GetMainViewport();
+
+	ImGui::SetNextWindowPos(
+		ImVec2(mainViewport->Pos.x + mainViewport->Size.x + 20.0f, mainViewport->Pos.y),
+		ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowSize(ImVec2(900.0f, 700.0f), ImGuiCond_FirstUseEver);
+
+	ImGui::Begin("Effect Editor Window");
+	{
+		ImGuiID effectDockId = ImGui::GetID("EffectDockSpace");
+
+		// このIDのノードがまだ存在しない場合のみ、既定レイアウトを構築する
+		if (ImGui::DockBuilderGetNode(effectDockId) == nullptr)
+		{
+			SetupEffectDockLayout(effectDockId, ImGui::GetContentRegionAvail());
+		}
+
+		ImGui::DockSpace(effectDockId, ImVec2(0, 0));
+	}
+	ImGui::End();
 
 	DrawMainMenu();
 	DrawHierarchy();
@@ -201,7 +256,7 @@ void EffectEditor::DrawGizmo()
 	ImGuizmo::SetOrthographic(false);
 	ImGuizmo::SetDrawlist();
 
-	const ImVec2& rectPos  = EditorViewport::Instance().GetScreenPos();
+	const ImVec2& rectPos = EditorViewport::Instance().GetScreenPos();
 	const ImVec2& rectSize = EditorViewport::Instance().GetScreenSize();
 	ImGuizmo::SetRect(rectPos.x, rectPos.y, rectSize.x, rectSize.y);
 
@@ -434,13 +489,13 @@ void EffectEditor::Load(const std::string& path)
 	for (auto& e : j)
 	{
 		EffectObject obj;
-		obj.name       = e.at("name").get<std::string>();
+		obj.name = e.at("name").get<std::string>();
 		obj.effectPath = e.value("effect", std::string());
-		obj.pos    = { e.at("pos")[0],    e.at("pos")[1],    e.at("pos")[2] };
+		obj.pos = { e.at("pos")[0],    e.at("pos")[1],    e.at("pos")[2] };
 		obj.rotate = { e.at("rotate")[0], e.at("rotate")[1], e.at("rotate")[2] };
-		obj.scale  = { e.at("scale")[0],  e.at("scale")[1],  e.at("scale")[2] };
-		obj.speed  = e.value("speed", 1.0f);
-		obj.loop   = e.value("loop", false);
+		obj.scale = { e.at("scale")[0],  e.at("scale")[1],  e.at("scale")[2] };
+		obj.speed = e.value("speed", 1.0f);
+		obj.loop = e.value("loop", false);
 
 		m_objects.push_back(obj);
 	}

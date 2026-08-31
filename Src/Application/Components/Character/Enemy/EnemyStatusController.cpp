@@ -157,9 +157,6 @@ void EnemyStatusController::FaceHorizontalTarget(const Math::Vector3& targetPosi
 
 	dir.Normalize();
 
-	// 【要確認】+Z前方・DirectX左手系を想定したyaw角の算出。
-	// TransformComponentの回転表現/SetRotation()の実際のシグネチャに
-	// 合わせて調整すること。
-	const float yaw = std::atan2(dir.x, dir.z);
+	const float yaw = std::atan2(-dir.x, -dir.z);
 	transform_->SetRotation(Math::Quaternion::CreateFromAxisAngle(Math::Vector3::Up, yaw));
 }

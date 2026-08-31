@@ -291,6 +291,9 @@
     <ClInclude Include="Src\Application\Components\Character\BehaviorTree\IBTNode.h" />
     <ClInclude Include="Src\Application\Components\Character\Data\HealthComponent.h" />
     <ClInclude Include="Src\Application\Components\Character\Data\PostureComponent.h" />
+    <ClInclude Include="Src\Application\Components\Character\Enemy\Brute\BruteActions.h" />
+    <ClInclude Include="Src\Application\Components\Character\Enemy\Brute\BruteAIController.h" />
+    <ClInclude Include="Src\Application\Components\Character\Enemy\Brute\BruteAIData.h" />
     <ClInclude Include="Src\Application\Components\Character\Enemy\Brute\BruteStatusController.h" />
     <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyActionAttack.h" />
     <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyBTController.h" />
@@ -423,6 +426,8 @@
     <ClCompile Include="..\Library\imgui\imgui_stdlib.cpp" />
     <ClCompile Include="..\Library\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\Library\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="Src\Application\Components\Character\Enemy\Brute\BruteActions.cpp" />
+    <ClCompile Include="Src\Application\Components\Character\Enemy\Brute\BruteAIController.cpp" />
     <ClCompile Include="Src\Application\Components\Character\Enemy\EnemyActionAttack.cpp" />
     <ClCompile Include="Src\Application\Components\Character\Enemy\EnemyState.cpp" />
     <ClCompile Include="Src\Application\Components\Character\Enemy\EnemyStatusController.cpp" />

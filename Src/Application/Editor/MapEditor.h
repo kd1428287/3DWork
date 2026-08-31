@@ -23,14 +23,22 @@ struct MapObject
 	DirectX::SimpleMath::Matrix GetMatrix() const;
 
 	// モデルファイルを読み込んで modelWork にセットする
+	//	KdAssets::Instance().m_modeldatas (KdDataStorage) を直接経由することで、
+	//	読込失敗時にクラッシュせずログを出して抜けられるようにしている
 	void SetModel(const std::string& path)
 	{
 		modelPath = path;
 		if (path.empty()) return;
 
-		// 内部で KdAssets::Instance().m_modeldatas.GetData(path) を呼び、
-		// 未読込なら読み込み・キャッシュ済みならキャッシュを使い回す
-		modelWork.SetModelData(path);
+		std::shared_ptr<KdModelData> data = KdAssets::Instance().m_modeldatas.GetData(path);
+
+		if (!data)
+		{
+			KdDebugGUI::Instance().AddLog("MapEditor: モデル読み込み失敗 %s\n", path.c_str());
+			return;
+		}
+
+		modelWork.SetModelData(data);
 	}
 };
 
@@ -71,8 +79,15 @@ private:
 	// マップデータ(JSON)の外部変更を検知して自動リロードする
 	void CheckHotReload();
 
-	// Asset/Model 以下を走査してモデルファイル一覧を更新する
-	void RefreshModelFileList();
+	// 登録済みアセット一覧の読み込み/保存(JSON)
+	void LoadModelRegistry(const std::string& path);
+	void SaveModelRegistry(const std::string& path);
+
+	// Windowsのファイル選択ダイアログでモデルファイルを1つ登録する
+	void AddModelViaFileDialog();
+
+	// 登録済みアセット一覧から指定indexを除外する(ファイル自体は削除しない)
+	void RemoveRegisteredModel(int index);
 
 	std::vector<MapObject>	m_objects;
 	int						m_selected = -1;
@@ -85,9 +100,11 @@ private:
 
 	char	m_filePathBuf[260] = "Asset/Data/map.json";
 
-	// アセット一覧(モデルファイルパス)
+	// アセット一覧(登録済みモデルファイルパス)
 	std::vector<std::string>	m_modelFileList;
 	bool						m_assetListLoaded = false;
+	int							m_selectedAsset = -1;						// 一覧内での選択(削除用)
+	char						m_registryPathBuf[260] = "Asset/Data/ModelAssets.json";	// 登録一覧の保存先
 
 	// ホットリロード関連
 	bool		m_autoReload = true;	// trueなら外部変更を自動検知
