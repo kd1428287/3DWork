@@ -273,6 +273,7 @@
     <ClInclude Include="..\Library\tinygltf\stb_image.h" />
     <ClInclude Include="..\Library\tinygltf\stb_image_write.h" />
     <ClInclude Include="..\Library\tinygltf\tiny_gltf.h" />
+    <ClInclude Include="Src\Application\Components\Animation\ArmIKComponents.h" />
     <ClInclude Include="Src\Application\Components\Animation\BoneSocketComponent.h" />
     <ClInclude Include="Src\Application\Components\Animation\ModelAnimatorComponent.h" />
     <ClInclude Include="Src\Application\Components\Animation\RootMotionExtractor.h" />
@@ -336,6 +337,7 @@
     <ClInclude Include="Src\Application\Components\Render\PolygonRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Render\SpriteRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Sensors\GroundSensorComponent.h" />
+    <ClInclude Include="Src\Application\Components\Tags\IAnimationPostProcess.h" />
     <ClInclude Include="Src\Application\Components\Tags\ICameraTarget.h" />
     <ClInclude Include="Src\Application\Components\Tags\ICollidable.h" />
     <ClInclude Include="Src\Application\Components\Tags\IModelRenderSource.h" />

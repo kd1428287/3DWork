@@ -675,6 +675,12 @@
     <ClInclude Include="Src\Application\Components\Character\Enemy\Brute\BruteBehavior.h">
       <Filter>Src\Application\Components\Character\Enemy\Brute</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Components\Animation\ArmIKComponents.h">
+      <Filter>Src\Application\Components\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Tags\IAnimationPostProcess.h">
+      <Filter>Src\Application\Components\Tags</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">

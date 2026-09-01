@@ -1,9 +1,10 @@
-﻿// TwoBoneIKComponent.h (新規)
+﻿// TwoBoneIKComponent.h
 #pragma once
 #include <string>
 #include "TwoBoneIK.h"
 #include "../Animation/SkeletonComponent.h"
 #include "../Transform/TransformComponent.h"
+#include "../Tags/IAnimationPostProcess.h"
 
 // ============================================================
 // TwoBoneIKComponent
@@ -14,18 +15,31 @@
 // 関節のローカル回転を上書きする。腕・脚のどちらにも同じ実装を使い回せる
 // (TwoBoneIK::Solveがチェーンの意味を一切知らないため)。
 //
-// --- 実行順序について(重要) ----------------------------------------
-// SkeletonComponent::Update()(FKでm_localTransformを確定し、
-// CalcNodeMatrices()でm_worldTransformへ反映)より"後"に、この
-// コンポーネントのUpdate()が同フレーム内で呼ばれる必要がある。
-// 同名コンポーネントは追加順でUpdate()が呼ばれる仕様のため、
-// 必ずAddComponent<SkeletonComponent>()の後にAddComponent<TwoBoneIKComponent>()
-// すること(逆順だと1フレーム古いFKポーズを基準にIKを解いてしまう)。
+// --- 実行順序・複数チェーンについて -----------------------------------
+// IAnimationPostProcessを実装しており、SolveIK()はSkeletonComponentの
+// PostUpdate()(gameplayロジックのUpdate()より"後")から、具体的な型を
+// 問わずGetTagged<IAnimationPostProcess>()経由で呼ばれる。SetTarget()が
+// Update()内でのgameplay結果に依存するケース(照準・接地IK等)を想定した
+// 順序。FKはこれより前(SkeletonComponent::PreUpdate())に完了済みなので、
+// SolveIK()内で参照するFKポーズは同フレームのものであることが保証される。
 //
-// ローカル回転を書き換えた後、SkeletonComponentの次回Update()を待たず
-// この場でCalcNodeMatrices()を明示的に呼び直している。これにより、
-// mid/end以下の子ボーン(BoneSocketComponent経由で武器を追従させている
-// 手首等)のワールド行列が、同フレーム内で正しく更新される。
+// GameObjectは型ごとに1インスタンストまでしか持てない(GameObject.h
+// 参照)ため、左腕・右腕のように複数チェーンを同一GameObjectへ同時に
+// 付けたい場合は、本クラスをそのまま複数付けるのではなく、下記のように
+// 型を分けるだけの薄いサブクラスを用意すること:
+//
+//   class LeftArmIKComponent : public TwoBoneIKComponent {
+//   public:
+//       using TwoBoneIKComponent::TwoBoneIKComponent;
+//   };
+//
+// SolveIK()自体はローカル回転の書き込みのみ行い、CalcNodeMatrices()は
+// 呼ばない(呼ぶと、同一SkeletonComponentに複数のIAnimationPostProcessが
+// 付いている場合にその数だけ再計算が重複してしまうため)。書き換え後の
+// 再計算は、SkeletonComponent::PostUpdate()が全SolveIK()呼び出しの後で
+// 1回だけFinalize()を呼ぶことでまとめて行う。これにより、mid/end以下の
+// 子ボーン(BoneSocketComponent経由で武器を追従させている手首等)の
+// ワールド行列も同フレーム内で正しく更新される。
 //
 // --- 現在の実装の割り切り --------------------------------------------
 // ・endボーン自身の向き(手首の捻り等)は補正しない。root/midの回転
@@ -34,7 +48,7 @@
 //   存在する前提で実装している。無ければSkeletonComponent側に
 //   同等のpublicメソッドを1つ追加すること。
 // ============================================================
-class TwoBoneIKComponent : public ComponentBase {
+class TwoBoneIKComponent : public ComponentBase, public IAnimationPostProcess {
 public:
 	// rootParentBoneName: rootボーンの親(例: 肩チェーンなら"mixamorig:RightShoulder")。
 	//                     rootのローカル回転はこの親から見た相対回転のため必要。
@@ -46,7 +60,8 @@ public:
 		, rootParentBoneName_(std::move(rootParentBoneName))
 		, rootBoneName_(std::move(rootBoneName))
 		, midBoneName_(std::move(midBoneName))
-		, endBoneName_(std::move(endBoneName)) {}
+		, endBoneName_(std::move(endBoneName)) {
+	}
 
 	void Start() override {
 		skeleton_ = GetOwner()->GetComponent<SkeletonComponent>();
@@ -63,7 +78,12 @@ public:
 
 	void ClearTarget() { hasTarget_ = false; }
 
-	void Update(float /*deltaTime*/) override {
+	// IAnimationPostProcess実装。SkeletonComponent::PostUpdate()から、
+	// gameplayロジックのUpdate()より後に呼ばれる。ローカル回転の
+	// 書き込みのみを行い、CalcNodeMatrices()の呼び出しは呼び出し元
+	// (SkeletonComponent::PostUpdate()の一括Finalize()呼び出し)に委ねる
+	// (詳細はファイル冒頭の「実行順序・複数チェーンについて」参照)。
+	void SolveIK() override {
 		if (!hasTarget_ || skeleton_ == nullptr) return;
 
 		KdModelWork& model = skeleton_->WorkModel();
@@ -129,11 +149,10 @@ public:
 			* Math::Matrix::CreateFromQuaternion(midNewLocalRot)
 			* Math::Matrix::CreateTranslation(midLocalPos);
 
-		// SkeletonComponent::Update()は既にこのフレームの計算を終えている
-		// (ダーティフラグが下りた状態)。ローカル回転の書き換え分を
-		// mid/end以下の子ボーンへ反映させるため、ここで明示的に
-		// 再計算を強制する。
-		model.CalcNodeMatrices();
+		// ここではCalcNodeMatrices()を呼ばない。SolveIK()はローカル回転の
+		// 書き込みだけを行う関数であり、再計算はSkeletonComponent::
+		// PostUpdate()側の一括Finalize()呼び出しで行われる想定
+		// (詳細はファイル冒頭の「実行順序・複数チェーンについて」参照)。
 	}
 
 private:

@@ -1,6 +1,12 @@
 ﻿#pragma once
 #include "../../Core/Handle.h"
 #include "../Tags/IModelRenderSource.h"
+#include "../Tags/IAnimationPostProcess.h"
+
+// ポインタで持つだけなのでヘッダの取り込みは不要。ModelAnimatorComponent.h
+// 側がSkeletonComponent.hをincludeしているため、ここでincludeすると
+// 循環インクルードになる。
+class ModelAnimatorComponent;
 
 // ============================================================
 // SkeletonComponent: 骨格アニメーション(FK)を担当する。
@@ -14,6 +20,32 @@
 // 既にメッシュ描画用に別のKdModelWorkを持つコンポーネントがある場合は
 // 二重計算・アニメのズレを避けるため、そちらではなくこの
 // SkeletonComponentが持つKdModelWorkを描画側からも参照すること。
+//
+// --- FK/IKのオーケストレーターとしての役割について ---------------------
+// このコンポーネントは自分自身のFK計算だけでなく、同じGameObject上の
+// アニメーション関連コンポーネント(ModelAnimatorComponent、および
+// IAnimationPostProcessを実装するIK群)を明示的に呼び出す司令塔を兼ねる。
+// GameObject::PreUpdate()/PostUpdate()という既存の2フェーズに乗せる
+// (グローバルなレジストリやECS的な一括処理は導入しない。単一の
+// GameObject内で完結する処理のため、既存のcomponentOrder_駆動で十分)。
+//
+//   PreUpdate(dt):  ModelAnimatorComponent::AdvanceFK(dt) → Finalize()
+//   (通常の)Update(dt): gameplayロジック(この時点でルートモーション量は
+//                        今フレーム分が確定済み。1フレーム遅延なし)
+//   PostUpdate(dt): 全IAnimationPostProcess::SolveIK() → Finalize()
+//                   (SetTarget()がgameplayロジックの結果に依存する
+//                    照準・接地IK等を、同フレームの目標で解ける)
+//
+// IK側は具体的な型(TwoBoneIKComponentのどのサブクラスか)を一切知らず、
+// GetTagged<IAnimationPostProcess>()で拾う。左腕/右腕のように同種を
+// 複数同時に使う場合は、GameObjectが型ごとに1インスタンスまでという
+// 制約(GameObject.h参照)があるため、TwoBoneIKComponentをサブクラス化
+// して型を分けること(例: LeftArmIKComponent : public TwoBoneIKComponent)。
+//
+// Finalize()は上記2箇所それぞれの終端で呼ばれる。NeedCalcNodeMatrices()
+// による内部ダーティ判定があるため、書き込みが発生しなかった側の呼び出し
+// (IKが1つも付いていないオブジェクトのPostUpdate()側など)は実質的に
+// コストゼロになる。
 // ============================================================
 class SkeletonComponent : public ComponentBase, IModelRenderSource {
 public:
@@ -22,23 +54,40 @@ public:
 	void SetModelData(std::string_view fileName) { m_modelWork.SetModelData(KdAssets::Instance().m_modeldatas.GetData(fileName)); }
 	void SetModelData(const std::shared_ptr<KdModelData>& data) { m_modelWork.SetModelData(data); }
 
-	void Start() override {
-		if(selfTransform_ = GetOwner()->GetComponent<TransformComponent>());
+	// 【重要】ModelAnimatorComponentは上で前方宣言しているだけなので、
+	// この2つの本体はここに書けない。Start()内のGetComponent<ModelAnimatorComponent>()
+	// (内部でstatic_cast<ModelAnimatorComponent*>する)、およびPreUpdate()内の
+	// animator_->AdvanceFK()呼び出しは、どちらもModelAnimatorComponentの
+	// 完全な型定義を要求する。循環インクルード(ModelAnimatorComponent.hが
+	// このファイルをincludeしている)を避けつつ両方を成立させるため、
+	// 定義本体はModelAnimatorComponent.hの末尾、両クラスの定義が出揃った
+	// 後に置いている。
+	void Start() override;
+	void PreUpdate(float deltaTime) override;
+
+	// IKステージ: gameplayロジックのUpdate()より後に呼ばれる想定
+	// (GameObject::PostUpdate()経由)。IAnimationPostProcessを実装する
+	// 全コンポーネント(IK等)にローカル回転を書き込ませてから、
+	// 1回だけFinalize()で確定させる(個々のSolveIK()側はCalcNodeMatrices()
+	// 相当を呼ばない約束になっている。詳細はIAnimationPostProcess.h参照)。
+	void PostUpdate(float deltaTime) override {
+		for (IAnimationPostProcess* postProcess : GetOwner()->GetTagged<IAnimationPostProcess>()) {
+			postProcess->SolveIK();
+		}
+		Finalize();
 	}
 
-	void Update(float /*deltaTime*/) override {
-		// TODO: アニメーション再生中はここでキー補間して
-		// m_modelWork.WorkNodes()内のm_localTransformを書き換える(FKの入力)。
-		// FK専用の今の段階では、外部からWorkNodes()を直接書き換えてもらう
-		// 想定でも良い。
-
+	// CalcNodeMatrices()の呼び出しと、BoneSocketComponent側キャッシュ
+	// 無効化用のバージョン更新をここに集約する。PreUpdate()/PostUpdate()
+	// それぞれの終端から呼ばれるため、1フレームに最大2回呼ばれる。
+	// 実際に書き込みが起きた(NeedCalcNodeMatrices()がtrueの)時だけ
+	// バージョンを進めることで、無駄な再計算誘発を避ける。
+	void Finalize() {
 		if (m_modelWork.NeedCalcNodeMatrices())
 		{
 			m_modelWork.CalcNodeMatrices();
+			++m_boneVersion;
 		}
-
-		// BoneSocketComponent側のキャッシュを無効化するためのバージョン更新
-		++m_boneVersion;
 	}
 
 	// ボーンのモデルローカル空間行列
@@ -74,5 +123,6 @@ public:
 private:
 	KdModelWork m_modelWork;
 	TransformComponent* selfTransform_ = nullptr; // 兄弟コンポーネント
+	ModelAnimatorComponent* animator_ = nullptr;   // 兄弟コンポーネント(付いていなければnullptr)
 	uint32_t m_boneVersion = 0;
 };

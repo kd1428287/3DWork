@@ -74,7 +74,10 @@ public:
 
 	void Awake() override
 	{
-		// ファクトリー内でPlayするため
+		// ファクトリー内でPlayするため(Start()を待たずこの時点で
+		// skeleton_を解決しておく。Start()は初回PreUpdate()まで
+		// 呼ばれないため、AddComponent()直後にPlay()したい呼び出し元に
+		// 間に合わない)。
 		skeleton_ = GetOwner()->GetComponent<SkeletonComponent>();
 	}
 
@@ -132,14 +135,14 @@ public:
 		// ルートモーション抽出中に別アニメーションへ切り替わった場合、
 		// 旧アニメーションの最終位置と新アニメーションの先頭位置の差分を
 		// 1フレームの移動量として誤って計上しないよう、基準位置を
-		// 次のUpdate()の冒頭で取り直す(このタイミングではまだ
+		// 次のAdvanceFK()の冒頭で取り直す(このタイミングではまだ
 		// AdvanceTime()が走っておらず、ボーンが新アニメーションの
 		// 姿勢に更新されていないため、ここでは取り直せない)。
 		rootMotion_.NotifyAnimationChanged();
 
 		// targetDurationSecondsが指定された場合、m_maxLength(このクリップの
 		// 実際の長さ)と目標秒数の比から「1秒あたりに進めるアニメーション
-		// 時間」を逆算し、以降のUpdate()ではSetFPS()の値ではなくこちらを使う。
+		// 時間」を逆算し、以降のAdvanceFK()ではSetFPS()の値ではなくこちらを使う。
 		if (targetDurationSeconds > 0.0f && animData->m_maxLength > 0.0f) {
 			targetSpeedOverride_ = animData->m_maxLength / targetDurationSeconds;
 		}
@@ -153,7 +156,18 @@ public:
 	//   ※ KdGLTFLoader側でアニメーションキーの時間を「秒」で読み込んでいるか
 	//     「フレーム数」で読み込んでいるかによって、ここで渡すべき値の意味が
 	//     変わる。もし秒単位ならfps引数には単純にdeltaTimeを渡すこと。
-	void Update(float deltaTime) override
+	//
+	// 【駆動方式について】ComponentBase::Update()はオーバーライドしない
+	// (既定の何もしない実装のまま)。代わりにSkeletonComponent::PreUpdate()
+	// から明示的に呼ばれる(SkeletonComponentがFK/IKオーケストレーターを
+	// 兼ねるため。詳細はSkeletonComponent.h冒頭参照)。gameplayロジックの
+	// Update()より前に完了させることで、ConsumeRootMotionDelta()が
+	// 同フレーム内でキャラクター側に使ってもらえるようにする狙いがある
+	// (1フレーム遅延の根絶)。
+	// このメソッド自体はSkeletonComponent::Finalize()(CalcNodeMatrices())
+	// を呼ばない。ローカル変換の書き込みまでがここの責務で、確定は
+	// 呼び出し元(SkeletonComponent::PreUpdate())に委ねる。
+	void AdvanceFK(float deltaTime)
 	{
 		if (!skeleton_) { return; }
 
@@ -275,3 +289,29 @@ private:
 	// (詳細はRootMotionExtractor.h参照)。
 	RootMotionExtractor					rootMotion_;
 };
+
+// ============================================================
+// SkeletonComponent::Start() / PreUpdate() の遅延定義
+//
+// SkeletonComponent.hはModelAnimatorComponentを前方宣言のみしており、
+// 本体をそちらのクラス定義内に書くと「認識できない型」エラーになる
+// (GetComponent<T>()のstatic_cast、AdvanceFK()の呼び出しはどちらも
+// 完全な型定義を要求するため)。循環インクルード(このファイルが
+// SkeletonComponent.hをincludeしている)を避けつつ両方を成立させるため、
+// 両クラスの定義が出揃うこの位置で定義する。
+// ============================================================
+inline void SkeletonComponent::Start()
+{
+	selfTransform_ = GetOwner()->GetComponent<TransformComponent>();
+	// ModelAnimatorComponentを持たない(外部からWorkNodes()を直接
+	// 書き換えるだけの)SkeletonComponentも存在しうる(nullptrのままでよい)。
+	animator_ = GetOwner()->GetComponent<ModelAnimatorComponent>();
+}
+
+inline void SkeletonComponent::PreUpdate(float deltaTime)
+{
+	if (animator_ != nullptr) {
+		animator_->AdvanceFK(deltaTime);
+	}
+	Finalize();
+}
