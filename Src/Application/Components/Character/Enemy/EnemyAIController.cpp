@@ -2,38 +2,6 @@
 #include <cmath>
 #include <cstdlib>
 
-void EnemyAIController::BuildTree()
-{
-	auto attackSeq = std::make_unique<BTSequence<EnemyAIController>>();
-	attackSeq->AddChild(std::make_unique<BTCondition<EnemyAIController>>(
-		[](EnemyAIController* c) { return c->IsTargetInAttackRange(); }));
-	attackSeq->AddChild(std::make_unique<EnemyActionAttack>());
-
-	auto chaseSeq = std::make_unique<BTSequence<EnemyAIController>>();
-	chaseSeq->AddChild(std::make_unique<BTCondition<EnemyAIController>>(
-		[](EnemyAIController* c) { return c->HasTarget(); }));
-	chaseSeq->AddChild(std::make_unique<EnemyActionChase>());
-
-	// 待機→巡回のループ。EnemyActionIdleが指定秒数Runningを返し続け、
-	// Successで初めてEnemyActionPatrolへ進む(BTSequenceのresumption動作)。
-	// Patrolが1地点に到達してSuccessを返すと、このSequence自体がSuccessで
-	// 完了してrunningIndex_が0へ戻るため、次にSelectorから呼ばれた時は
-	// 再びIdleから始まる(=次のウェイポイントでまた足を止める)。
-	auto patrolSeq = std::make_unique<BTSequence<EnemyAIController>>();
-	patrolSeq->AddChild(std::make_unique<EnemyActionIdle>());
-	patrolSeq->AddChild(std::make_unique<EnemyActionPatrol>());
-
-	// 優先度順(攻撃 > 追跡 > 待機/巡回)。reactive版BTSelectorのため、
-	// 毎フレーム必ず攻撃条件から評価し直す(追跡中でも間合いに入った瞬間に
-	// 即座に攻撃へ切り替わる)。
-	auto selector = std::make_unique<BTSelector<EnemyAIController>>();
-	selector->AddChild(std::move(attackSeq));
-	selector->AddChild(std::move(chaseSeq));
-	selector->AddChild(std::move(patrolSeq));
-
-	root_ = std::move(selector);
-}
-
 void EnemyAIController::UpdateTargetAcquisition()
 {
 	targetTransform_ = FindPlayerTransform();
@@ -117,15 +85,10 @@ void EnemyAIController::FaceHorizontalTarget(const Math::Vector3& targetPosition
 	transform_->SetRotation(Math::Quaternion::CreateFromAxisAngle(Math::Vector3::Up, yaw));
 }
 
-// --- 被弾/死亡処理 ---------------------------------------------------
-// 旧EnemyStatusController::OnCollisionEnter/OnDiedの責務を復元したもの。
-// BruteAIController時代はここが丸ごと欠落しており、ダメージが一切
-// 入らなかった(唯一の実装へ昇格させる過程で発覚)。
-//
-// 【スコープ外のまま残っている点】
-// ノックバック等の被弾リアクション(吹っ飛び演出)は実装していない。
-// ダメージ・体幹削り・最終的な死亡は機能するが、殴られてもその場に
-// 立ち続ける(=硬直や仰け反りが無い)点は未実装として残っている。
+// --- 被弾処理 -----------------------------------------------------------
+// ダメージ適用と多段ヒット防止だけをここで行い、その先の反応(体幹削り・
+// 被弾リアクション要求等)は敵種ごとに異なるためBehaviorへ委譲する
+// (IEnemyBehavior::OnHit()参照)。
 void EnemyAIController::OnCollisionEnter(const CollisionSystem::CollisionEnterEvent& e)
 {
 	if (isDead_) return;
@@ -142,20 +105,23 @@ void EnemyAIController::OnCollisionEnter(const CollisionSystem::CollisionEnterEv
 	if (healthComponent_ != nullptr) {
 		healthComponent_->TakeDamage(attack->damage);
 	}
-	if (postureComponent_ != nullptr) {
-		postureComponent_->AddPostureDamage(attack->postureDamage);
-		if (postureComponent_->IsBroken()) {
-			// TODO: 崩し状態への反応(専用の被弾リアクション)は
-			// スコープ外のため未実装。
-		}
+
+	if (behavior_) {
+		behavior_->OnHit(this, *attack);
 	}
 }
 
+// --- 死亡処理 -------------------------------------------------------------
+// 移動停止・当たり判定無効化・消滅タイマー開始という全敵種共通の処理を
+// ここで行い、Dyingアニメーション等の演出はBehavior::OnDied()へ委譲する。
+// 消滅までの猶予秒数もBehavior::GetDespawnDelay()から取る(ボスは
+// 死亡演出に合わせて長めの値を返す想定。WarrockBehavior::
+// GetDespawnDelay()参照)。
 void EnemyAIController::OnDied()
 {
 	if (isDead_) return;
 	isDead_ = true;
-	despawnTimer_ = kDespawnDelay;
+	despawnTimer_ = behavior_ ? behavior_->GetDespawnDelay() : 1.5f;
 
 	// 移動・当たり判定を止める。当たり判定を無効化することで、以降
 	// CollisionSystemがこのGameObjectをペア判定の対象から除外し、
@@ -166,9 +132,9 @@ void EnemyAIController::OnDied()
 		collider->SetEnabled(false);
 	}
 
-	// TODO: 死亡アニメーション/エフェクトは未実装のためコメントアウト
-	// (PlayerState.cpp::StateStagger::Enterと同じ考え方)。
-	// PlayAnimation("Death", false, kDespawnDelay);
+	if (behavior_) {
+		behavior_->OnDied(this);
+	}
 }
 
 void EnemyAIController::RequestDespawn()
@@ -183,4 +149,20 @@ void EnemyAIController::RequestDespawn()
 	}
 
 	context->objectManager->Destroy(GetOwner());
+}
+
+// --- ルートモーション -----------------------------------------------------
+// PlayerStatusController::ApplyRootMotion()と同じ考え方。ボーンのローカル
+// (≒モデル)空間の移動量を、キャラクターの現在のワールド回転で変換して
+// からワールド移動量として加算する(Vector3::Transform(vector, quaternion)
+// は回転のみを適用し、平行移動は含まないため、そのままデルタの変換に使える)。
+void EnemyAIController::ApplyRootMotion()
+{
+	if (modelAnimatorComponent_ == nullptr || transform_ == nullptr) return;
+
+	Math::Vector3 localDelta = modelAnimatorComponent_->ConsumeRootMotionDelta();
+	if (localDelta.LengthSquared() <= 0.0f) return;
+
+	Math::Vector3 worldDelta = Math::Vector3::Transform(localDelta, transform_->GetRotation());
+	transform_->Translate(worldDelta);
 }

@@ -5,14 +5,21 @@
 class EnemyAIController;
 
 // ============================================================
-// EnemyAIControllerが使う4つのAction(待機/巡回/追跡/攻撃)をまとめた
-// ファイル。PlayerState.h/EnemyState.hが複数のStateクラスを1ファイルに
-// まとめているのと同じ流儀(1つのControllerに紐づく、互いに関連の深い
-// 小さなクラス群は1ファイルにまとめる)に合わせている。
+// EnemyAIControllerが使うAction(待機/巡回/追跡)をまとめたファイル。
+// PlayerState.h/EnemyState.hが複数のStateクラスを1ファイルにまとめて
+// いるのと同じ流儀(1つのControllerに紐づく、互いに関連の深い小さな
+// クラス群は1ファイルにまとめる)に合わせている。
 //
 // 【改名について】旧BruteActionIdle/Patrol/Chase/AttackをEnemyAI*へ改名。
 // Brute専用ではなく全敵種で共用するクラスであるため
 // (EnemyAIController.h冒頭コメント参照)。
+//
+// 【攻撃(Attack)について】
+// 以前はEnemyActionAttackとしてここに実装があったが、Windup/Active/
+// Recoveryの3フェーズ実行はWarrockActionAttackと完全に同一のコピーに
+// なっていたため、BTWeightedAttackAction<T>(BTWeightedAttackAction.h)
+// へ共通化した。EnemyAIController::BuildTree()では
+// BTWeightedAttackAction<EnemyAIController>を直接使う。
 // ============================================================
 
 // 「待機」: 現在地でEnemyAIData::idleDuration秒だけ足を止める。
@@ -56,37 +63,4 @@ class EnemyActionChase : public IBTNode<EnemyAIController>
 {
 public:
 	BTNodeStatus Tick(EnemyAIController* context, float deltaTime) override;
-};
-
-// 「攻撃」: 現在の距離で使える攻撃パターン(EnemyAIData::attacks)から
-// 重み付き抽選で1つ選び、Windup→Active→Recoveryの3フェーズで実行する。
-// 攻撃パターンを増やす場合はEnemyAIData::attacksに要素を追加するだけで
-// よく、このノード自体の変更は不要(拡張性の担保。Bossの多彩な攻撃も
-// これで表現する)。
-//
-// 一度攻撃を開始したら(Windupに入ったら)、Recoveryが終わるまで
-// 選んだ技を最後までやり切る(Player/EnemyのStateAttackと同じ
-// 「一度コミットしたら踏みとどまる」設計)。
-//
-// 【IBTNode::Reset()の制約について】
-// IBTNode<T>::Reset()はcontext引数を受け取らない仕様のため、Windup/Active
-// 中に(将来実装される被弾リアクション等で)中断された場合、本来なら
-// SetWeaponHitBoxEnabled(false)でHitBoxを閉じたいが、Reset()の中からは
-// controllerを直接参照できない。そのためTick()の冒頭で直前のcontextを
-// lastContext_へキャッシュしておき、Reset()からはそれを使う回避策を
-// 取っている。
-class EnemyActionAttack : public IBTNode<EnemyAIController>
-{
-public:
-	BTNodeStatus Tick(EnemyAIController* context, float deltaTime) override;
-	void Reset() override;
-
-private:
-	enum class Phase { NotStarted, Windup, Active, Recovery };
-	Phase phase_ = Phase::NotStarted;
-	float elapsed_ = 0.0f;
-	const EnemyAttackDefinition* current_ = nullptr;
-
-	// Reset()がcontextを受け取れない制約への回避策(クラス冒頭コメント参照)。
-	EnemyAIController* lastContext_ = nullptr;
 };

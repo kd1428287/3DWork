@@ -5,13 +5,11 @@
 // デバッグ用: Warrock(ボス)想定のEnemyAIDataプリセット。
 //
 // 【EnemyAIData型を流用している理由】
-// WarrockAIController/WarrockActionsのロジックはEnemyAIController/
-// EnemyActionsとは完全に独立したWarrock専用の実装(WarrockAIController.h
-// 冒頭コメント参照)。ここでEnemyAIData型を使っているのはロジックの
-// 共有が目的ではなく、EnemyDefinition::aiData(ファクトリー側が扱う
-// 共通のデータ構造)へそのまま載せるための「データの器」を合わせて
-// いるだけ。BuildTree()・各Actionは今後Warrock固有の内容へ育てていく
-// (現時点ではEnemyと近い形だが、これは出発点にすぎない)。
+// WarrockBehavior/WarrockActionsの判断層はBruteBehavior/EnemyActionsとは
+// 完全に独立したWarrock専用の実装(WarrockBehavior.h冒頭コメント参照)。
+// ここでEnemyAIData型を使っているのはロジックの共有が目的ではなく、
+// EnemyDefinition::aiData(ファクトリー側が扱う共通のデータ構造)へ
+// そのまま載せるための「データの器」を合わせているだけ。
 //
 // この関数は「EnemyAIDataという共通の器に、Warrock用の値を詰めて返す」
 // だけの、CreateDebugBruteAIData()/CreateDebugBossAIData()
@@ -70,6 +68,7 @@ inline EnemyAIData CreateDebugWarrockAIData()
 	jumpAttack.recoveryDuration = 0.9f;
 	jumpAttack.maxRange = 5.0f;
 	jumpAttack.weight = 0.6f; // 隙の大きい大技は選ばれる比率を下げる
+	jumpAttack.useRootMotion = true;
 	data.attacks.push_back(jumpAttack);
 
 	return data;

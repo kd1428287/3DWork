@@ -12,6 +12,7 @@
 #include "../../Factories/Game/EnemyFactory.h"
 #include "../../Components/Character/Enemy/EnemyDefinition.h"
 #include "../../Components/Character/Enemy/Warrock/WarrockAIData.h"
+#include "../../Components/Character/Enemy/Brute/BruteAIData.h"
 #include "../../Components/Character/Enemy/EnemyDefinition.h"
 #include "../../Factories/Common/CameraFactory.h"
 

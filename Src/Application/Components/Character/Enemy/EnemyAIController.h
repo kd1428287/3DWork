@@ -3,16 +3,18 @@
 #include <memory>
 #include <string>
 #include "EnemyAIData.h"
-#include "EnemyActions.h"
-#include "IEnemyAIController.h"
+#include "IEnemyBehavior.h"
+#include "../BehaviorTree/BTWeightedAttackAction.h"
 #include "../BehaviorTree/IBTNode.h"
 #include "../BehaviorTree/BTNodeStatus.h"
 #include "../BehaviorTree/BTComposite.h"
 #include "../BehaviorTree/BTCondition.h"
+#include "../BehaviorTree/BTOneShotAnimationAction.h"
 #include "../Player/PlayerStatusController.h"
 #include "../../Transform/TransformComponent.h"
 #include "../../Movement/MovementComponent.h"
 #include "../../Movement/IMovementSource.h"
+#include "../../Movement/FacingDirectionComponent.h"
 #include "../../Animation/ModelAnimatorComponent.h"
 #include "../../Collision/ColliderComponent.h"
 #include "../../Collision/AttackSourceComponent.h"
@@ -22,50 +24,60 @@
 #include "../../../Core/Handle.h"
 
 // ============================================================
-// 全ての敵種で共用する、唯一のAI実行/意思決定コンポーネント。
+// 全ての敵種で共用する、唯一のAI実行コンポーネント。
 //
-// 【この一般化について・経緯】
-// 以前はEnemyStatusController(継承ベース、BruteStatusController/
-// BossStatusControllerで敵種を出し分け)+EnemyBTController(意思決定)
-// という2コンポーネント構成だった。継承ベースの実行層を全面的に廃止し、
-// BT駆動のAIへ一本化するにあたり、Brute専用のつもりで作った
-// BruteAIControllerが実際にはBrute固有の要素を持っていなかったため、
-// そのままEnemyAIControllerへ改名して全敵種の唯一の実装とした。
-// 敵種ごとの違いはEnemyAIData(コンストラクタで受け取る)の中身だけで
-// 表現し、C++の型を増やす必要はない(EnemyAIData::CreateDebugBruteAIData()/
-// CreateDebugBossAIData()参照)。
+// 【今回の再設計について】
+// 以前はEnemyAIController/WarrockAIControllerという別々のコンポーネント
+// を敵種ごとに用意し、IEnemyAIControllerという最小限の共通インター
+// フェース経由でEnemyFactoryから武器を取り付けていた。しかし実行層
+// (移動・索敵・アニメーション・武器制御)がほぼ完全に重複していたため、
+// コンポーネント自体をこのEnemyAIController1種類に統合し、敵種ごとの
+// 判断層・固有反応だけをIEnemyBehavior(コンストラクタで受け取る、
+// IEnemyBehavior.h参照)へ切り出した。
 //
-// 意思決定(BT)と実行(移動・アニメーション・武器制御)を1つの
-// コンポーネントに統合しているのは、継承由来のGetComponent<T>()問題が
-// 無くなったため、分ける動機(型解決の迂回)自体が消えたことによる。
+// 現在デバッグ表示で動かしながら詳細を詰めているのはWarrock
+// (WarrockBehavior)。被弾リアクション・咆哮・死亡演出といった
+// Warrock側の要件を基準にOnHit()/OnDied()/OnSpawned()等のフックの
+// 形を決めている。汎用敵(BruteBehavior)側はこの形に合わせて今後
+// 育てていく想定で、現時点のBruteBehaviorの実装内容に引きずられて
+// このコンポーネント自体の形を決めているわけではない。
 //
-// 【IEnemyAIControllerについて】
-// Warrockのように専用の(継承関係を持たない)AIControllerを追加した
-// ため、EnemyFactory側が敵種によらず武器を取り付けられるよう、
-// 最小限の共通インターフェースIEnemyAIControllerを実装する
-// (IEnemyAIController.h参照)。
+// 【体幹(Posture)について】
+// 体幹削り・パリィといった反応はWarrockには存在しない
+// (WarrockBehavior::OnHit()参照)ため、共通処理には含めず、
+// PostureComponentへのアクセスだけをGetPostureComponent()経由で
+// Behavior側に提供している。体幹を使う敵種のBehaviorがOnHit()内で
+// 自分から呼び出す形にした。
 //
-// 【今回追加した被弾/死亡処理について】
-// BruteAIController時代はここが丸ごと抜けており、敵を殴ってもダメージが
-// 入らず、HPが0になっても消滅しないという欠落があった(唯一の実装として
-// 昇格させるにあたって発覚)。旧EnemyStatusController::OnCollisionEnter/
-// OnDied/RegisterOwnedObject/RequestDespawnの責務をここに復元している。
-// ただしノックバック等の被弾リアクション(吹っ飛び演出)は今回もスコープ外
-// のまま(意思決定AIとは別の関心事という以前の判断を踏襲)。ダメージ・
-// 体幹削り・死亡は機能するが、殴られても見た目上その場に立ち続ける点は
-// 未実装として残っている。
+// 【ルートモーションについて】
+// PlayerStatusControllerと同じ仕組み(ModelAnimatorComponent::
+// SetRootMotionBoneName()/ConsumeRootMotionDelta())をそのまま使う。
+// PlayAnimation()にuseRootMotion=trueを渡した技は、EnemyAttackDefinition::
+// useRootMotionが立っている技としてBTWeightedAttackAction<T>から自動的に
+// 渡される(EnemyAIData.h参照)。実際の移動適用はApplyRootMotion()
+// (Update()から毎フレーム呼ぶ)側の役目。
 //
-// 【ツリー構成】(BuildTree()参照)
-// Selector(reactive)
-// ├─ Sequence: Condition(攻撃間合い内?) → EnemyActionAttack
-// ├─ Sequence: Condition(ターゲットを検知中?) → EnemyActionChase
-// └─ Sequence: EnemyActionIdle → EnemyActionPatrol (待機→巡回のループ)
+// 【ルートモーション中の向き自動追従について・修正】
+// FacingDirectionComponentは「前フレームからの位置差分」を移動方向とみなし
+// 向きを追従させるが、ApplyRootMotion()による移動もこれをトリガーしてしまう。
+// さらにApplyRootMotion()自体が「現在の向き」を使ってローカル→ワールド変換
+// するため、向きが変わる→次フレームの変換方向が変わる→位置差分の方向が
+// 変わる→また向きが変わる、という正のフィードバックループになり、
+// ルートモーション再生中にモデルの向きが意図せず暴れる不具合があった
+// (FacingDirectionComponent.h側にも同種の干渉についての教訓コメントあり)。
+// Player側がuseRootMotion技でStepMove/向き自動更新を無効化しているのと
+// 同じ考え方で、PlayAnimation()にuseRootMotion=trueが渡された間は
+// FacingDirectionComponent::SetUpdateEnabled(false)で自動追従を止める。
+//
+// 【ツリー構成】敵種ごとに異なる(各Behavior::BuildTree()参照)。
+// このコンポーネント自体はどの木が組まれるか関知しない。
 // ============================================================
-class EnemyAIController : public ComponentBase, public IMovementSource, public IEnemyAIController
+class EnemyAIController : public ComponentBase, public IMovementSource
 {
 public:
-	explicit EnemyAIController(GameObject* owner, const EnemyAIData& data)
-		: ComponentBase(owner), data_(data) {}
+	EnemyAIController(GameObject* owner, const EnemyAIData& data, std::unique_ptr<IEnemyBehavior> behavior)
+		: ComponentBase(owner), data_(data), behavior_(std::move(behavior)) {
+	}
 
 	void Start() override
 	{
@@ -74,6 +86,9 @@ public:
 		modelAnimatorComponent_ = GetOwner()->GetComponent<ModelAnimatorComponent>();
 		postureComponent_ = GetOwner()->GetComponent<PostureComponent>();
 		healthComponent_ = GetOwner()->GetComponent<HealthComponent>();
+		// 無くてもよい(任意)。存在する場合のみルートモーション中の
+		// 向き自動追従の一時停止に使う(クラス冒頭コメント参照)。
+		facingDirectionComponent_ = GetOwner()->GetComponent<FacingDirectionComponent>();
 
 		if (movementComponent_ != nullptr) {
 			movementComponent_->SetMovementSource(this);
@@ -91,7 +106,8 @@ public:
 			diedSubscriber_ = ScopedSubscriber(&localBus, diedId);
 		}
 
-		BuildTree();
+		root_ = behavior_->BuildTree(this);
+		behavior_->OnSpawned(this);
 	}
 
 	void Update(float deltaTime) override
@@ -109,12 +125,19 @@ public:
 
 		UpdateTargetAcquisition();
 		if (root_ != nullptr) root_->Tick(this, deltaTime);
+
+		// ModelAnimatorComponentが今フレーム抽出したルートモーション移動量を
+		// キャラクターのTransformへ反映する。root_->Tick()の後に置いているのは、
+		// この中でPlayAnimation()による技の切り替えが起こりうるため、その
+		// 切り替え後の状態も踏まえてから最後に一度だけ消費したいという理由
+		// (PlayerStatusController::Update()と同じ考え方)。
+		ApplyRootMotion();
 	}
 
 	// --- IMovementSourceの実装 ---------------------------------------------
 	Math::Vector3 GetDesiredVelocity() override { return desiredVelocity_; }
 
-	// --- Actionノードから呼ばれるAPI ---------------------------------------
+	// --- 実行層API(各Behaviorが組み立てるActionノードから呼ばれる) --------
 	const EnemyAIData& GetData() const { return data_; }
 
 	Math::Vector3 GetPosition() const {
@@ -140,7 +163,8 @@ public:
 	}
 
 	// 現在の距離で使える攻撃パターンの中から重み付き抽選で1つ選ぶ。
-	// 該当が無ければnullptr(実装は.cpp側)。
+	// 該当が無ければnullptr(実装は.cpp側)。BTWeightedAttackAction<T>から
+	// 呼ばれる。
 	const EnemyAttackDefinition* ChooseAttack() const;
 
 	Math::Vector3 GetCurrentPatrolPoint() const {
@@ -165,24 +189,41 @@ public:
 	// PlayerStatusController::FaceAttackTarget()と同じ考え方。実装は.cpp側)。
 	void FaceHorizontalTarget(const Math::Vector3& targetPosition);
 
-	// 同じループアニメーションを毎フレーム再生し直さないための薄いラッパー
-	// (EnemyActionIdle/Patrol/Chaseが継続して毎フレーム呼ぶ前提のため)。
+	// 同じループアニメーションを毎フレーム再生し直さないための薄いラッパー。
 	void PlayAnimationIfChanged(const std::string& name, bool loop) {
 		if (name == currentAnimationName_) return;
 		PlayAnimation(name, loop);
 	}
 
-	void PlayAnimation(const std::string& name, bool loop = false, float targetDurationSeconds = -1.0f) {
+	// useRootMotionは、この技がアニメーションクリップのルートモーションで
+	// 動くかどうか(PlayerStatusController::PlayAnimationと同じ考え方)。
+	// 呼ぶたびに必ずModelAnimatorComponent::SetRootMotionBoneName()で
+	// 明示的に設定し直すことで、前回別の技がルートモーションを有効に
+	// していた場合でも、この技がfalseなら確実に無効化される。
+	// 実際にワールド移動量へ変換して適用するのはApplyRootMotion()
+	// (Update()から毎フレーム呼ぶ)側の役目。
+	//
+	// 【修正】useRootMotionがtrueの間はFacingDirectionComponentの向き
+	// 自動追従を止める。ApplyRootMotion()による位置移動を「入力移動」と
+	// 誤認して向きを変え続け、その回転が次フレームのルートモーション
+	// 変換方向にまで影響してフィードバックループになる不具合があった
+	// (クラス冒頭コメント参照)。useRootMotionがfalseに戻った時は
+	// 自動追従を再開する。
+	void PlayAnimation(const std::string& name, bool loop = false, float targetDurationSeconds = -1.0f, bool useRootMotion = false) {
 		currentAnimationName_ = name;
 		if (modelAnimatorComponent_ != nullptr) {
+			modelAnimatorComponent_->SetRootMotionBoneName(useRootMotion ? kRootMotionBoneName : "");
 			modelAnimatorComponent_->Play(name, loop, targetDurationSeconds);
+		}
+		if (facingDirectionComponent_ != nullptr) {
+			facingDirectionComponent_->SetUpdateEnabled(!useRootMotion);
 		}
 	}
 
 	// --- 武器の攻撃判定 --------------------------------------------------
 	// 生成元(EnemyFactory)から、武器のColliderComponent/
 	// AttackSourceComponentを登録してもらう想定。
-	void SetWeapon(Handle<ColliderComponent> weaponCollider, Handle<AttackSourceComponent> weaponAttackSource) override {
+	void SetWeapon(Handle<ColliderComponent> weaponCollider, Handle<AttackSourceComponent> weaponAttackSource) {
 		weaponCollider_ = weaponCollider;
 		weaponAttackSource_ = weaponAttackSource;
 	}
@@ -198,30 +239,51 @@ public:
 		}
 	}
 
+	// --- 体幹 --------------------------------------------------------------
+	// 体幹削り/パリィを使う敵種のBehaviorだけが、自分のOnHit()内から
+	// 使う(IEnemyBehavior.h参照)。使わない敵種(Warrock等)は単に
+	// 呼ばない。
+	PostureComponent* GetPostureComponent() const { return postureComponent_; }
+
 	// --- 死亡時の道連れ破棄 -------------------------------------------------
 	// このEnemyが生成した(=このEnemyが消えたら道連れで消えるべき)
 	// 付随オブジェクト(武器・武器ソケット等)を登録する。EnemyFactory側で
-	// 生成直後に呼んでもらう想定(以前のEnemyStatusController::
-	// RegisterOwnedObject()と同じ役割)。
-	void RegisterOwnedObject(Handle<GameObject> obj) override {
+	// 生成直後に呼んでもらう想定。
+	void RegisterOwnedObject(Handle<GameObject> obj) {
 		ownedObjects_.push_back(obj);
 	}
 
 private:
-	void BuildTree();
 	void UpdateTargetAcquisition();
 	TransformComponent* FindPlayerTransform() const;
 	void OnCollisionEnter(const CollisionSystem::CollisionEnterEvent& e);
 	void OnDied();
 	void RequestDespawn();
 
+	// ModelAnimatorComponent側で抽出されたルートモーション移動量
+	// (ボーンのローカル/モデル空間、まだ回転を反映していない値)を、
+	// キャラクターの現在の向きでワールド空間に変換してTransformへ加算する。
+	// 実装は.cpp側(PlayerStatusController::ApplyRootMotion()と同じ考え方)。
+	//
+	// 【呼び出し順序の前提・未確認】ModelAnimatorComponent::Update()が
+	// このフレーム内で既に実行済みである必要がある。GameObject側の
+	// コンポーネント更新順が型をまたいでもAddComponentした順序通りに
+	// 保証されるか未確認のため、EnemyFactory側でModelAnimatorComponentを
+	// このコンポーネントより先にAddComponentするよう明示的に順序を揃えて
+	// いる(EnemyFactory.cpp::BuildEnemy()参照)。
+	void ApplyRootMotion();
+
 	EnemyAIData data_;
+	std::unique_ptr<IEnemyBehavior> behavior_;
 
 	TransformComponent* transform_ = nullptr;
 	MovementComponent* movementComponent_ = nullptr;
 	ModelAnimatorComponent* modelAnimatorComponent_ = nullptr;
 	PostureComponent* postureComponent_ = nullptr;
 	HealthComponent* healthComponent_ = nullptr;
+	// 無くてもよい(任意)。ルートモーション中の向き自動追従の一時停止に使う
+	// (PlayAnimation()参照)。
+	FacingDirectionComponent* facingDirectionComponent_ = nullptr;
 
 	Handle<ColliderComponent> weaponCollider_;
 	Handle<AttackSourceComponent> weaponAttackSource_;
@@ -230,6 +292,11 @@ private:
 	Math::Vector3 desiredVelocity_{};
 	std::string currentAnimationName_;
 
+	// PlayAnimation(useRootMotion=true)の際にModelAnimatorComponent::
+	// SetRootMotionBoneName()へ渡すボーン名。PlayerStatusController::
+	// kRootMotionBoneNameと同じ値(Mixamoリグのhipボーン名)を想定している。
+	static constexpr const char* kRootMotionBoneName = "mixamorig:Hips";
+
 	size_t patrolIndex_ = 0;
 
 	// ヒステリシス付き索敵状態。detectionRangeで捕捉し、loseTargetRangeより
@@ -237,8 +304,6 @@ private:
 	bool hasTarget_ = false;
 	TransformComponent* targetTransform_ = nullptr;
 
-	// 死亡演出から消滅までの猶予秒数(仮の値。旧StateDead::kDespawnDelayと同じ)。
-	static constexpr float kDespawnDelay = 1.5f;
 	bool isDead_ = false;
 	float despawnTimer_ = 0.0f;
 

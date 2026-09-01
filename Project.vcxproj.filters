@@ -642,9 +642,6 @@
     <ClInclude Include="Src\Application\Components\Character\Enemy\Brute\BruteActions.h">
       <Filter>Src\Application\Components\Character\Enemy\Brute</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\Character\Enemy\Brute\BruteAIController.h">
-      <Filter>Src\Application\Components\Character\Enemy\Brute</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Components\Character\Enemy\Brute\BruteAIData.h">
       <Filter>Src\Application\Components\Character\Enemy\Brute</Filter>
     </ClInclude>
@@ -660,14 +657,23 @@
     <ClInclude Include="Src\Application\Components\Character\Enemy\Warrock\WarrockActions.h">
       <Filter>Src\Application\Components\Character\Enemy\Warrock</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\Character\Enemy\Warrock\WarrockAIController.h">
-      <Filter>Src\Application\Components\Character\Enemy\Warrock</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Components\Character\Enemy\Warrock\WarrockAIData.h">
       <Filter>Src\Application\Components\Character\Enemy\Warrock</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\Character\Enemy\IEnemyAIController.h">
+    <ClInclude Include="Src\Application\Components\Character\Enemy\Warrock\WarrockBehavior.h">
+      <Filter>Src\Application\Components\Character\Enemy\Warrock</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\Enemy\IEnemyBehavior.h">
       <Filter>Src\Application\Components\Character\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\BehaviorTree\BTOneShotAnimationAction.h">
+      <Filter>Src\Application\Components\Character\BehaviorTree</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\BehaviorTree\BTWeightedAttackAction.h">
+      <Filter>Src\Application\Components\Character\BehaviorTree</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\Enemy\Brute\BruteBehavior.h">
+      <Filter>Src\Application\Components\Character\Enemy\Brute</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -869,9 +875,6 @@
     <ClCompile Include="Src\Application\Components\Character\Enemy\Brute\BruteActions.cpp">
       <Filter>Src\Application\Components\Character\Enemy\Brute</Filter>
     </ClCompile>
-    <ClCompile Include="Src\Application\Components\Character\Enemy\Brute\BruteAIController.cpp">
-      <Filter>Src\Application\Components\Character\Enemy\Brute</Filter>
-    </ClCompile>
     <ClCompile Include="Src\Application\Components\Character\Enemy\EnemyActions.cpp">
       <Filter>Src\Application\Components\Character\Enemy</Filter>
     </ClCompile>
@@ -881,8 +884,11 @@
     <ClCompile Include="Src\Application\Components\Character\Enemy\Warrock\WarrockActions.cpp">
       <Filter>Src\Application\Components\Character\Enemy\Warrock</Filter>
     </ClCompile>
-    <ClCompile Include="Src\Application\Components\Character\Enemy\Warrock\WarrockAIController.cpp">
+    <ClCompile Include="Src\Application\Components\Character\Enemy\Warrock\WarrockBehavior.cpp">
       <Filter>Src\Application\Components\Character\Enemy\Warrock</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\Character\Enemy\Brute\BruteBehavior.cpp">
+      <Filter>Src\Application\Components\Character\Enemy\Brute</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
