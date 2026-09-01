@@ -485,10 +485,6 @@ private:
 				if (PostureComponent* attackerPosture = attacker->GetComponent<PostureComponent>()) {
 					attackerPosture->AddPostureDamage(attack->parryPostureDamage);
 				}
-
-				// 【現状】パリィ時のリアクション自体はまだ実装しない(一旦保留)。
-				// 将来EnemyAIController側で反応を実装する際は、そちらのStart()で
-				// Subscribe<AttackSourceComponent::ParriedEvent>()すればよい。
 				attacker->GetLocalEventBus().Publish(AttackSourceComponent::ParriedEvent{});
 			}
 			// TODO: 弾き返しの演出(SE/VFX)は別途実装。

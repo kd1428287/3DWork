@@ -657,6 +657,18 @@
     <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyAIData.h">
       <Filter>Src\Application\Components\Character\Enemy</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\Enemy\Warrock\WarrockActions.h">
+      <Filter>Src\Application\Components\Character\Enemy\Warrock</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\Enemy\Warrock\WarrockAIController.h">
+      <Filter>Src\Application\Components\Character\Enemy\Warrock</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\Enemy\Warrock\WarrockAIData.h">
+      <Filter>Src\Application\Components\Character\Enemy\Warrock</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\Enemy\IEnemyAIController.h">
+      <Filter>Src\Application\Components\Character\Enemy</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -865,6 +877,12 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Components\Character\Enemy\EnemyAIController.cpp">
       <Filter>Src\Application\Components\Character\Enemy</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\Character\Enemy\Warrock\WarrockActions.cpp">
+      <Filter>Src\Application\Components\Character\Enemy\Warrock</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\Character\Enemy\Warrock\WarrockAIController.cpp">
+      <Filter>Src\Application\Components\Character\Enemy\Warrock</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

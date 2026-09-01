@@ -1,7 +1,9 @@
 ﻿#include "EnemyFactory.h"
 
 #include "../../Components/Character/Enemy/EnemyDefinition.h"
+#include "../../Components/Character/Enemy/IEnemyAIController.h"
 #include "../../Components/Character/Enemy/EnemyAIController.h"
+#include "../../Components/Character/Enemy/Warrock/WarrockAIController.h"
 #include "../../Components/Character/Enemy/LockOnTargetComponent.h"
 #include "../../Components/Character/Data/PostureComponent.h"
 #include "../../Components/Character/Data/HealthComponent.h"
@@ -19,6 +21,7 @@
 #include "../../Components/Animation/ModelAnimatorComponent.h"
 #include "../../Components/Render/ModelRenderComponent.h"
 #include "../../Components/Sensors/GroundSensorComponent.h"
+#include "../../Components/UI/Enemy/EnemyHPBarComponent.h"
 
 
 namespace
@@ -35,6 +38,8 @@ namespace
 	{
 		TransformComponent* transform = enemy->AddComponent<TransformComponent>();
 		transform->SetPosition(position);
+		transform->SetScale(def.modelScale);
+		//transform->SetScale({ 2.f,2.f,2.f });
 		enemy->AddComponent<MovementComponent>(def.moveSpeed);
 	}
 
@@ -58,14 +63,27 @@ namespace
 		return skeleton;
 	}
 
-	// --- 意思決定・実行(データ駆動EnemyAIController) -------------------
+	// --- 意思決定・実行(AIController) ----------------------------------
+	// def.type(EnemyType)を見て、アタッチするAIControllerの型を切り替える。
 	// 以前はdef.typeに応じてBrute/BossStatusController(継承ベース)を
 	// 出し分けていたが、その実行層自体を廃止しBTへ全面移行したため、
-	// 敵種によらず常に同じEnemyAIControllerをaiDataだけ変えて生成する
-	// 形に統一した(EnemyDefinition.h冒頭コメント参照)。
-	EnemyAIController* CreateAIController(GameObject* enemy, const EnemyDefinition& def)
+	// EnemyType自体を一度廃止していた。今回、Warrockのようにパラメータ
+	// だけでなくロジック(BuildTree()構造)自体が異なる敵種を追加した
+	// ため、「どのAIControllerをアタッチするか」を選ぶ用途に限定して
+	// EnemyTypeを復活させている(EnemyDefinition.h冒頭コメント参照)。
+	// 戻り値をIEnemyAIController*にしているのは、EnemyAIControllerと
+	// WarrockAIControllerが継承関係を持たない完全に独立した実装のため
+	// (両者が共通で実装する最小限のインターフェース。
+	//  IEnemyAIController.h参照)。
+	IEnemyAIController* CreateAIController(GameObject* enemy, const EnemyDefinition& def)
 	{
-		return enemy->AddComponent<EnemyAIController>(def.aiData);
+		switch (def.type) {
+		case EnemyType::Warrock:
+			return enemy->AddComponent<WarrockAIController>(def.aiData);
+		case EnemyType::Brute:
+		default:
+			return enemy->AddComponent<EnemyAIController>(def.aiData);
+		}
 	}
 
 	// --- 当たり判定(HurtBox+Body) -------------------------------------
@@ -144,6 +162,8 @@ namespace
 		enemy->AddComponent<HealthComponent>();
 		enemy->AddComponent<LockOnTargetComponent>();
 
+		//enemy->AddComponent<EnemyHPBarComponent>();
+
 		enemy->AddComponent<ModelAnimatorComponent>()->SetFPS(60);
 	}
 
@@ -205,8 +225,13 @@ namespace
 	}
 
 	// --- 武器の生成・取り付け・道連れ登録 ------------------------------
+	// IEnemyAIController経由で扱うため、EnemyAIController/
+	// WarrockAIControllerのどちらがアタッチされていても同じコードで
+	// 武器を取り付けられる。RegisterOwnedObject()はデフォルトで
+	// 空実装のため、死亡処理を持たない敵種(Warrock等)ではここで
+	// 登録しても実質何も起きない(IEnemyAIController.h参照)。
 	void AttachWeaponAndRegister(ObjectManager& objectManager, GameObject* enemy,
-		EnemyAIController* ai, Handle<SkeletonComponent>& skeletonHandle)
+		IEnemyAIController* ai, Handle<SkeletonComponent>& skeletonHandle)
 	{
 		GameObject* weaponSocket = CreateWeaponSocket(objectManager, skeletonHandle);
 		Handle<TransformComponent> weaponAttachPoint(weaponSocket->GetComponent<BoneSocketComponent>());
@@ -245,7 +270,7 @@ GameObject* EnemyFactory::BuildEnemy(ObjectManager& objectManager, const EnemyDe
 
 	CreateTransformAndMovement(enemy, def, position);
 	SkeletonComponent* skeleton = AttachVisuals(enemy, def);
-	EnemyAIController* ai = CreateAIController(enemy, def);
+	IEnemyAIController* ai = CreateAIController(enemy, def);
 	CreateColliders(enemy, def);
 	CreatePhysicsComponents(enemy);
 	CreateCombatSupportComponents(enemy);

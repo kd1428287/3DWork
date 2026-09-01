@@ -21,7 +21,10 @@ public:
 	// 陰影のないオブジェクト(背景など)
 	void DrawUnLit() override					{ if (layer_ & RenderLayer::DrawUnLit)DrawModel(); }
 	// 陰影のあるオブジェクト(光源の影響を受ける)
-	void DrawLit() override						{ if (layer_ & RenderLayer::DrawLit)DrawModel(); }
+	void DrawLit() override						
+	{ 
+		if (layer_ & RenderLayer::DrawLit)DrawModel();
+	}
 	// エフェクト(陰影なし)
 	void DrawEffect() override					{ if (layer_ & RenderLayer::DrawEffect)DrawModel(); }
 	// 自ら光るオブジェクト・ブルーム対象

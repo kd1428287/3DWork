@@ -11,6 +11,8 @@
 #include "../../Factories/Map/TerrainFactory.h"
 #include "../../Factories/Game/EnemyFactory.h"
 #include "../../Components/Character/Enemy/EnemyDefinition.h"
+#include "../../Components/Character/Enemy/Warrock/WarrockAIData.h"
+#include "../../Components/Character/Enemy/EnemyDefinition.h"
 #include "../../Factories/Common/CameraFactory.h"
 
 // component
@@ -38,9 +40,17 @@ void GameScene::Init()
 	auto* terrain = terrainFactory_->CreateTerrain(*objManager_,0);
 
 	std::unordered_map<std::string, EnemyDefinition> map;
-	map.emplace("enemy", EnemyDefinition{});
+	EnemyDefinition def;
+	def.name = "Brute";
+	def.aiData = CreateDebugBruteAIData();
+	map.emplace("Brute", def);
+	def.name = "Warrock";
+	def.modelPath = "Asset/Models/Character/Warrock/Warrock.gltf";
+	def.aiData = CreateDebugWarrockAIData();
+	map.emplace("Warrock", def);
 	enemyFactory_ = std::make_unique<EnemyFactory>(map);
-	enemyFactory_->CreateEnemy(*objManager_, "enemy", Math::Vector3(0, 0, 5));
+	//enemyFactory_->CreateEnemy(*objManager_, "Brute", Math::Vector3(0, 0, 5));
+	enemyFactory_->CreateEnemy(*objManager_, "Warrock", Math::Vector3(10, 0, 5));
 
 	playerFactory_ = std::make_unique<PlayerFactory>();
 	auto* player = playerFactory_->CreatePlayer(*objManager_);

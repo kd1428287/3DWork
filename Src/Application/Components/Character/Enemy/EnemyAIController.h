@@ -4,6 +4,7 @@
 #include <string>
 #include "EnemyAIData.h"
 #include "EnemyActions.h"
+#include "IEnemyAIController.h"
 #include "../BehaviorTree/IBTNode.h"
 #include "../BehaviorTree/BTNodeStatus.h"
 #include "../BehaviorTree/BTComposite.h"
@@ -38,6 +39,12 @@
 // コンポーネントに統合しているのは、継承由来のGetComponent<T>()問題が
 // 無くなったため、分ける動機(型解決の迂回)自体が消えたことによる。
 //
+// 【IEnemyAIControllerについて】
+// Warrockのように専用の(継承関係を持たない)AIControllerを追加した
+// ため、EnemyFactory側が敵種によらず武器を取り付けられるよう、
+// 最小限の共通インターフェースIEnemyAIControllerを実装する
+// (IEnemyAIController.h参照)。
+//
 // 【今回追加した被弾/死亡処理について】
 // BruteAIController時代はここが丸ごと抜けており、敵を殴ってもダメージが
 // 入らず、HPが0になっても消滅しないという欠落があった(唯一の実装として
@@ -54,7 +61,7 @@
 // ├─ Sequence: Condition(ターゲットを検知中?) → EnemyActionChase
 // └─ Sequence: EnemyActionIdle → EnemyActionPatrol (待機→巡回のループ)
 // ============================================================
-class EnemyAIController : public ComponentBase, public IMovementSource
+class EnemyAIController : public ComponentBase, public IMovementSource, public IEnemyAIController
 {
 public:
 	explicit EnemyAIController(GameObject* owner, const EnemyAIData& data)
@@ -175,7 +182,7 @@ public:
 	// --- 武器の攻撃判定 --------------------------------------------------
 	// 生成元(EnemyFactory)から、武器のColliderComponent/
 	// AttackSourceComponentを登録してもらう想定。
-	void SetWeapon(Handle<ColliderComponent> weaponCollider, Handle<AttackSourceComponent> weaponAttackSource) {
+	void SetWeapon(Handle<ColliderComponent> weaponCollider, Handle<AttackSourceComponent> weaponAttackSource) override {
 		weaponCollider_ = weaponCollider;
 		weaponAttackSource_ = weaponAttackSource;
 	}
@@ -196,7 +203,7 @@ public:
 	// 付随オブジェクト(武器・武器ソケット等)を登録する。EnemyFactory側で
 	// 生成直後に呼んでもらう想定(以前のEnemyStatusController::
 	// RegisterOwnedObject()と同じ役割)。
-	void RegisterOwnedObject(Handle<GameObject> obj) {
+	void RegisterOwnedObject(Handle<GameObject> obj) override {
 		ownedObjects_.push_back(obj);
 	}
 

@@ -53,6 +53,8 @@ void KdShaderManager::Init()
 	m_rasterizerStates[(int)KdRasterizerState::CullNone]	= KdDirect3D::Instance().CreateRasterizerState(D3D11_CULL_NONE, D3D11_FILL_SOLID, true, false);
 	m_rasterizerStates[(int)KdRasterizerState::CullFront]	= KdDirect3D::Instance().CreateRasterizerState(D3D11_CULL_FRONT, D3D11_FILL_SOLID, true, false);
 	m_rasterizerStates[(int)KdRasterizerState::CullBack]	= KdDirect3D::Instance().CreateRasterizerState(D3D11_CULL_BACK, D3D11_FILL_SOLID, true, false);
+	// Plus ワイヤーフレーム表示可能になる
+	m_rasterizerStates[(int)KdRasterizerState::WireFrame]	= KdDirect3D::Instance().CreateRasterizerState(D3D11_CULL_NONE, D3D11_FILL_WIREFRAME, true, false);
 
 	// 初期ラスタライザステートの設定
 	KdDirect3D::Instance().WorkDevContext()->RSSetState(m_rasterizerStates[(int)KdRasterizerState::CullBack]);

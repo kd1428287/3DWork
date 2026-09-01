@@ -1,8 +1,8 @@
-#pragma once
+﻿#pragma once
 
-#include "ComponentBase.h"
-#include "../Objects/GameObject.h"
-#include "../Objects/SceneContext.h"
+#include "../ComponentBase.h"
+#include "../../Core/GameObject.h"
+#include "../../Core/SceneContext.h"
 
 // ============================================================
 // 対象のtimeScale_を一定時間だけ下げる「スロウ」効果。

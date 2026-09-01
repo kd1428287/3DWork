@@ -298,7 +298,11 @@
     <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyAIController.h" />
     <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyAIData.h" />
     <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyDefinition.h" />
+    <ClInclude Include="Src\Application\Components\Character\Enemy\IEnemyAIController.h" />
     <ClInclude Include="Src\Application\Components\Character\Enemy\LockOnTargetComponent.h" />
+    <ClInclude Include="Src\Application\Components\Character\Enemy\Warrock\WarrockActions.h" />
+    <ClInclude Include="Src\Application\Components\Character\Enemy\Warrock\WarrockAIController.h" />
+    <ClInclude Include="Src\Application\Components\Character\Enemy\Warrock\WarrockAIData.h" />
     <ClInclude Include="Src\Application\Components\Character\Player\PlayerCombatDataTable.h" />
     <ClInclude Include="Src\Application\Components\Character\Player\PlayerCombatTypes.h" />
     <ClInclude Include="Src\Application\Components\Character\Player\PlayerInputComponent.h" />
@@ -427,6 +431,8 @@
     <ClCompile Include="Src\Application\Components\Character\Enemy\Brute\BruteAIController.cpp" />
     <ClCompile Include="Src\Application\Components\Character\Enemy\EnemyActions.cpp" />
     <ClCompile Include="Src\Application\Components\Character\Enemy\EnemyAIController.cpp" />
+    <ClCompile Include="Src\Application\Components\Character\Enemy\Warrock\WarrockActions.cpp" />
+    <ClCompile Include="Src\Application\Components\Character\Enemy\Warrock\WarrockAIController.cpp" />
     <ClCompile Include="Src\Application\Components\Character\Player\PlayerCombatDataTable.cpp" />
     <ClCompile Include="Src\Application\Components\Character\Player\PlayerState.cpp" />
     <ClCompile Include="Src\Application\Components\Character\Player\PlayerStatusController.cpp" />

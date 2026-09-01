@@ -23,7 +23,7 @@ public:
 	void SetModelData(const std::shared_ptr<KdModelData>& data) { m_modelWork.SetModelData(data); }
 
 	void Start() override {
-		selfTransform_ = GetOwner()->GetComponent<TransformComponent>();
+		if(selfTransform_ = GetOwner()->GetComponent<TransformComponent>());
 	}
 
 	void Update(float /*deltaTime*/) override {
@@ -58,6 +58,7 @@ public:
 
 		// スケールの二重伝播を避けるためUnscaled行列を使う
 		Math::Matrix ownerMat = selfTransform_ ? selfTransform_->GetUnscaledMatrix() : Math::Matrix::Identity;
+		ownerMat = selfTransform_->GetWorldMatrix();
 
 		outMatrix = localMat * ownerMat;
 		return true;
