@@ -214,7 +214,8 @@ GameObject* PlayerFactory::CreateWeapon(ObjectManager& objectManager, GameObject
 	// PlayerStatusController::SetWeaponHitBoxEnabled()経由で有効化する
 	// 前提のため、生成直後はfalseにしておく。
 	CollisionShapeEntry& hitBox = collision->AddBox(
-		"HitBox", Math::Vector3(0.1f, 0.1f, 0.75f), Math::Vector3(0.f, 0.f, 0.75f), ColliderCategory::HitBox);
+		//"HitBox", Math::Vector3(0.1f, 0.1f, 0.75f), Math::Vector3(0.f, 0.f, 0.75f), ColliderCategory::HitBox);
+		"HitBox", Math::Vector3(0.1f, 0.1f, 0.75f) * 3, Math::Vector3(0.f, 0.f, 0.75f), ColliderCategory::HitBox);
 	hitBox.enabled = false;
 	// 押し返し(物理応答)はせず、重なり検知(イベント)だけ行う。
 	// isTrigger未設定のままだと通常のBump同様の押し返しが働いてしまう

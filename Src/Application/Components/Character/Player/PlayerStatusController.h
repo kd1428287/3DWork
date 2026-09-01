@@ -7,7 +7,7 @@
 #include "PlayerCombatDataTable.h"
 #include "PlayerInputComponent.h"
 #include "PlayerLockOnComponent.h"
-#include "../../Movement/MovementComponent.h" // 既存の依存として
+#include "../../Movement/MovementComponent.h" 
 #include "../../Movement/VelocityComponent.h"
 #include "../../Movement/FacingDirectionComponent.h"
 #include "../../Transform/TransformComponent.h"
@@ -16,10 +16,9 @@
 #include "../../Animation/ModelAnimatorComponent.h"
 #include "../../Collision/ColliderComponent.h"
 #include "../../Collision/AttackSourceComponent.h"
-#include "../../Effect/TrailPolygonEffectComponent.h" // 武器の攻撃軌跡エフェクト(パスは実際の配置に合わせて要調整)
+#include "../../Effect/TrailPolygonEffectComponent.h" 
 #include "../Data/PostureComponent.h"
 #include "../Data/HealthComponent.h"
-//#include "../Enemy/EnemyStatusController.h"
 #include "../../../Core/Handle.h"
 #include "../../../Systems/Collision/CollisionSystem.h"
 

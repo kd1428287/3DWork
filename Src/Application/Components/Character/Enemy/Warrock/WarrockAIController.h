@@ -229,7 +229,7 @@ private:
 	Math::Vector3 desiredVelocity_{};
 	std::string currentAnimationName_;
 
-
+	static constexpr const char* kRootMotionBoneName = "mixamorig:Hips";
 
 	// ヒステリシス付き索敵状態。detectionRangeで捕捉し、loseTargetRangeより
 	// 大きく離れるまでは捕捉状態を維持する(境界上でのChase/Idle往復を防ぐ)。

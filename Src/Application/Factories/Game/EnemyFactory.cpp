@@ -39,7 +39,6 @@ namespace
 		TransformComponent* transform = enemy->AddComponent<TransformComponent>();
 		transform->SetPosition(position);
 		transform->SetScale(def.modelScale);
-		//transform->SetScale({ 2.f,2.f,2.f });
 		enemy->AddComponent<MovementComponent>(def.moveSpeed);
 	}
 
@@ -127,6 +126,13 @@ namespace
 			Math::Vector3(0.0f, kFootOffset - def.bodyRadius, 0.0f),
 			Math::Vector3(0.0f, kFootOffset + def.bodyRadius, 0.0f),
 			ColliderCategory::Bump);
+
+		/*collider->AddCapsule("Body", def.bodyRadius,
+			Math::Vector3(0.0f, kFootOffset - def.bodyRadius, 0.0f),
+			Math::Vector3(0.0f, kFootOffset + def.bodyRadius, 0.0f),
+			ColliderCategory::Bump);*/
+
+		enemy->AddComponent<WireFrameComponent>();
 	}
 
 	// --- 物理(重力・速度・接地判定) -----------------------------------

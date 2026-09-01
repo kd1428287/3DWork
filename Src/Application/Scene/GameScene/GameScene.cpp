@@ -45,7 +45,9 @@ void GameScene::Init()
 	def.aiData = CreateDebugBruteAIData();
 	map.emplace("Brute", def);
 	def.name = "Warrock";
+	def.type = EnemyType::Warrock;
 	def.modelPath = "Asset/Models/Character/Warrock/Warrock.gltf";
+	def.modelScale = { 2.0f,2.0f,2.0f };
 	def.aiData = CreateDebugWarrockAIData();
 	map.emplace("Warrock", def);
 	enemyFactory_ = std::make_unique<EnemyFactory>(map);
