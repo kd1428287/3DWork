@@ -102,7 +102,7 @@ namespace
 	}
 
 	// --- 戦闘補助(向き・体幹・HP・ロックオン・アニメーター) --------------
-	void CreateCombatSupportComponents(GameObject* enemy)
+	void CreateCombatSupportComponents(GameObject* enemy, const EnemyDefinition& def)
 	{
 		enemy->AddComponent<FacingDirectionComponent>();
 
@@ -118,7 +118,7 @@ namespace
 		animator->SetFPS(60);
 		animator->SetRootMotionBoneName("mixamorig:Hips");
 		animator->SetRootMotionForwardAxis(RootMotionAxis::Y, -1.0f);
-		animator->SetRootMotionScale(0.01f);
+		animator->SetRootMotionScale(0.01f * def.modelScale.x);
 	}
 
 	// --- 武器のソケット生成 --------------------------------------------
@@ -141,7 +141,7 @@ namespace
 
 		auto* collision = weapon->AddComponent<ColliderComponent>();
 		CollisionShapeEntry& hitBox = collision->AddBox(
-			"HitBox", Math::Vector3(1.f, 1.f, 0.1f), Math::Vector3(1.f, 1.f, 0.f), ColliderCategory::HitBox);
+			"HitBox", Math::Vector3(5.f, 5.f, 5.1f), Math::Vector3(1.f, 1.f, 0.f), ColliderCategory::HitBox);
 		hitBox.enabled = false;
 		hitBox.isTrigger = true;
 		collision->IgnoreCollisionWith(enemy);
@@ -198,7 +198,7 @@ GameObject* EnemyFactory::BuildEnemy(ObjectManager& objectManager, const EnemyDe
 	// 追加する)は、EnemyAIController(ルートモーション消費のため
 	// ModelAnimatorComponent::Update()が自分より先に走っている前提。
 	// EnemyAIController.h::ApplyRootMotion()コメント参照)より前に呼ぶ。
-	CreateCombatSupportComponents(enemy);
+	CreateCombatSupportComponents(enemy, def);
 
 	EnemyAIController* ai = CreateAIController(enemy, def);
 	CreateColliders(enemy, def);

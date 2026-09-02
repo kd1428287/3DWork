@@ -23,6 +23,7 @@
 //   void FaceHorizontalTarget(const Math::Vector3&)
 //   void PlayAnimation(const std::string&, bool, float, bool)
 //   void SetWeaponHitBoxEnabled(bool)
+//   void NotifyAttackCompleted()
 //
 // 【IBTNode::Reset()の制約について】
 // IBTNode<T>::Reset()はcontext引数を受け取らない仕様のため、Active中
@@ -31,6 +32,12 @@
 // 直前のcontextをlastContext_へキャッシュしておき、Reset()からは
 // それを使う回避策を取っている(旧EnemyActionAttack/WarrockActionAttack
 // と同じ回避策)。
+//
+// 【攻撃インターバルについて】
+// Recoveryフェーズが完了しSuccessを返す直前にcontext->NotifyAttackCompleted()
+// を呼び、次の攻撃までのインターバル(EnemyAIData::attackIntervalDuration)を
+// 開始させる。中断(Reset()経由)された場合はこの通知を行わない
+// (攻撃をやり切っていない以上、インターバルを課す理由が無いため)。
 //
 // 【今後の展望・改善案3】
 // もし「攻撃の形そのもの」(例: JumpAttackだけ移動を伴う突進にする等)
@@ -55,17 +62,10 @@ public:
 			elapsed_ = 0.0f;
 
 			context->StopMovement();
+			context->FaceHorizontalTarget(context->GetTargetPositionOrSelf());
 
-			// ルートモーションで動く技(JumpAttack等)は、アニメーション側が
-			// 踏み込みと同時に向きも作り込んでいる想定のため、ここで手動の
-			// 正面合わせを行うと、Windup開始時点の向きとアニメーション自体が
-			// 意図する向きが競合してしまう(Player側のStateAttack::Update()で
-			// useRootMotionがtrueの技だけRequestStepMove()を呼ばないのと
-			// 同じ考え方)。
-			if (!current_->useRootMotion) {
-				context->FaceHorizontalTarget(context->GetTargetPositionOrSelf());
-			}
-
+			// 攻撃全体(Windup+Active+Recovery)の秒数を目標としてアニメーション
+			// 速度を自動スケーリングする(Player/EnemyのPlayAnimationと同じ考え方)。
 			const float totalDuration = current_->windupDuration + current_->activeDuration + current_->recoveryDuration;
 			context->PlayAnimation(current_->animationName, false, totalDuration, current_->useRootMotion);
 		}
@@ -91,6 +91,9 @@ public:
 
 		case Phase::Recovery:
 			if (elapsed_ >= current_->recoveryDuration) {
+				// 攻撃1回分をやり切った時だけ、次の攻撃までのインターバルを
+				// 開始させる(クラス冒頭コメント参照)。
+				context->NotifyAttackCompleted();
 				Reset();
 				return BTNodeStatus::Success;
 			}

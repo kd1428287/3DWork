@@ -68,61 +68,23 @@ struct EnemyAIData
 	// 境界上でChase/Patrolを毎フレーム往復してしまう事故を防ぐ。
 	float loseTargetRange = 9.0f;
 
+	// EnemyActionMaintainDistance(EnemyActions.h参照)が使う、
+	// ターゲットとの間合い。この距離以下まで近づいたら接近をやめて
+	// その場に停止する(近すぎても後退はしない設計)。Chaseのように
+	// 距離0まで詰めたくない敵(遠距離攻撃タイプ等)向けの汎用値。
+	float maintainDistance = 3.0f;
+
+	// 攻撃が1回終わってから、次の攻撃を選択できるようになるまでの
+	// インターバル秒数(EnemyAIController::NotifyAttackCompleted()/
+	// IsAttackOnCooldown()参照)。0ならインターバル無し(従来通り
+	// Recovery終了直後から即座に次の攻撃を選べる)。
+	// 「攻撃と攻撃の間」という敵の意思決定全体に関わる値であり、
+	// 個々の技の性能ではないため、EnemyAttackDefinitionではなく
+	// こちらに置く。インターバル中でも移動(追跡/巡回/待機)は
+	// 制限されない(攻撃Sequenceの入り口だけで判定するため)。
+	float attackIntervalDuration = 0.0f;
+
 	// 攻撃パターン。3種類程度を想定しているが、配列なのでいくつでも
 	// 追加できる(拡張性の担保)。
 	std::vector<EnemyAttackDefinition> attacks;
 };
-
-// ============================================================
-// デバッグ用: コード上に直書きしたEnemyAIDataを返す。
-// JSON等の外部データ読み込みが決まったら、この関数の戻り値を
-// そちらに差し替えるだけでよい(Player/EnemyのCreateDebugXxx()と同じ方針)。
-// ============================================================
-
-// ============================================================
-// デバッグ用: ボス想定のEnemyAIData。継承クラスを新設する代わりに、
-// このデータの中身だけでBrute相当と別物の挙動を表現できることを示す例
-// (patrolPointsを空にして「持ち場で待つ」ボスにしている)。
-// ============================================================
-inline EnemyAIData CreateDebugBossAIData()
-{
-	EnemyAIData data;
-
-	// patrolPointsは意図的に空のまま。EnemyActionIdleが単独の待機AIとして
-	// 機能し、プレイヤーが近づくまで持ち場から動かない。
-	data.chaseSpeed = 4.0f;
-	data.detectionRange = 10.0f;
-	data.loseTargetRange = 14.0f;
-
-	EnemyAttackDefinition slash;
-	slash.name = "Slash";
-	slash.animationName = "BossSlash";
-	slash.windupDuration = 0.3f;
-	slash.activeDuration = 0.25f;
-	slash.recoveryDuration = 0.4f;
-	slash.maxRange = 2.5f;
-	slash.weight = 1.5f;
-	data.attacks.push_back(slash);
-
-	EnemyAttackDefinition slam;
-	slam.name = "Slam";
-	slam.animationName = "BossSlam";
-	slam.windupDuration = 0.5f;
-	slam.activeDuration = 0.3f;
-	slam.recoveryDuration = 0.7f;
-	slam.maxRange = 3.5f;
-	slam.weight = 1.0f;
-	data.attacks.push_back(slam);
-
-	EnemyAttackDefinition chargeLunge;
-	chargeLunge.name = "ChargeLunge";
-	chargeLunge.animationName = "BossChargeLunge";
-	chargeLunge.windupDuration = 0.6f;
-	chargeLunge.activeDuration = 0.25f;
-	chargeLunge.recoveryDuration = 0.9f;
-	chargeLunge.maxRange = 5.0f;
-	chargeLunge.weight = 0.6f; // 隙の大きい大技は選ばれる比率を下げる
-	data.attacks.push_back(chargeLunge);
-
-	return data;
-}

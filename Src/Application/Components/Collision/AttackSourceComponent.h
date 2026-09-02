@@ -34,6 +34,13 @@ public:
 	// Subscribe<AttackSourceComponent::ParriedEvent>()すればよい。
 	struct ParriedEvent : public Event
 	{
+		// パリィが成立した攻撃自身のparryPostureDamageをそのまま運ぶ。
+		// 発行側(パリィ判定を行う箇所、Player側のガード/パリィ判定コードを
+		// 想定。未実装)がこのAttackSourceComponentインスタンスから読み取って
+		// ここへ詰める。攻撃(武器/技)ごとに値を変えたい(parryPostureDamage
+		// フィールド自体のコメント参照)ため、値そのものをイベントへ
+		// 載せて運ぶ必要がある。
+		float parryPostureDamage = 0.0f;
 	};
 
 	float damage = 10.0f;

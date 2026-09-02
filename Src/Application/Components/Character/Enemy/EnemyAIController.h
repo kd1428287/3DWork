@@ -76,8 +76,7 @@ class EnemyAIController : public ComponentBase, public IMovementSource
 {
 public:
 	EnemyAIController(GameObject* owner, const EnemyAIData& data, std::unique_ptr<IEnemyBehavior> behavior)
-		: ComponentBase(owner), data_(data), behavior_(std::move(behavior)) {
-	}
+		: ComponentBase(owner), data_(data), behavior_(std::move(behavior)) {}
 
 	void Start() override
 	{
@@ -106,6 +105,15 @@ public:
 			diedSubscriber_ = ScopedSubscriber(&localBus, diedId);
 		}
 
+		// 自分自身の攻撃がパリィされた時、AttackSourceComponent::ownerCharacter
+		// (=自分自身)のローカルEventBusへParriedEventが発行される想定
+		// (AttackSourceComponent::ParriedEvent冒頭コメント参照)。
+		// 反応するかどうか・どう反応するかはBehavior側に委ねるため、
+		// ここでは単に受け取ってOnParried()経由でbehavior_へ転送するだけ。
+		const SubscriptionId parriedId = localBus.Subscribe<AttackSourceComponent::ParriedEvent>(
+			[this](const AttackSourceComponent::ParriedEvent& e) { OnParried(e); });
+		parriedSubscriber_ = ScopedSubscriber(&localBus, parriedId);
+
 		root_ = behavior_->BuildTree(this);
 		behavior_->OnSpawned(this);
 	}
@@ -121,6 +129,13 @@ public:
 				RequestDespawn();
 			}
 			return;
+		}
+
+		// 攻撃インターバルはBTのTick有無に関わらず常に進める(追跡中や
+		// 待機中でも、次に攻撃可能になるまでの時間経過自体は止めない)。
+		if (attackCooldownTimer_ > 0.0f) {
+			attackCooldownTimer_ -= deltaTime;
+			if (attackCooldownTimer_ < 0.0f) attackCooldownTimer_ = 0.0f;
 		}
 
 		UpdateTargetAcquisition();
@@ -166,6 +181,17 @@ public:
 	// 該当が無ければnullptr(実装は.cpp側)。BTWeightedAttackAction<T>から
 	// 呼ばれる。
 	const EnemyAttackDefinition* ChooseAttack() const;
+
+	// 攻撃のインターバル中かどうか。BuildTree()側の攻撃Sequenceの入り口
+	// (Condition)でIsTargetInAttackRange()と併せてチェックする想定
+	// (WarrockBehavior::BuildTree()参照)。インターバル中でも移動
+	// (追跡/巡回/待機)は制限しない。
+	bool IsAttackOnCooldown() const { return attackCooldownTimer_ > 0.0f; }
+
+	// 攻撃1回(Windup+Active+Recovery)が完了した直後にBTWeightedAttackAction<T>
+	// から呼ばれる(BTWeightedAttackAction.h参照)。EnemyAIData::
+	// attackIntervalDurationをそのままクールダウンの残り時間として設定する。
+	void NotifyAttackCompleted() { attackCooldownTimer_ = data_.attackIntervalDuration; }
 
 	Math::Vector3 GetCurrentPatrolPoint() const {
 		if (data_.patrolPoints.empty()) return GetPosition();
@@ -257,6 +283,7 @@ private:
 	void UpdateTargetAcquisition();
 	TransformComponent* FindPlayerTransform() const;
 	void OnCollisionEnter(const CollisionSystem::CollisionEnterEvent& e);
+	void OnParried(const AttackSourceComponent::ParriedEvent& e);
 	void OnDied();
 	void RequestDespawn();
 
@@ -297,6 +324,10 @@ private:
 	// kRootMotionBoneNameと同じ値(Mixamoリグのhipボーン名)を想定している。
 	static constexpr const char* kRootMotionBoneName = "mixamorig:Hips";
 
+	// 攻撃1回終了後、次の攻撃を許可するまでの残り秒数。0以下なら攻撃可能。
+	// Update()で毎フレーム減算する(IsAttackOnCooldown()/NotifyAttackCompleted()参照)。
+	float attackCooldownTimer_ = 0.0f;
+
 	size_t patrolIndex_ = 0;
 
 	// ヒステリシス付き索敵状態。detectionRangeで捕捉し、loseTargetRangeより
@@ -308,6 +339,7 @@ private:
 	float despawnTimer_ = 0.0f;
 
 	ScopedSubscriber collisionSubscriber_;
+	ScopedSubscriber parriedSubscriber_;
 	ScopedSubscriber diedSubscriber_;
 
 	std::unique_ptr<IBTNode<EnemyAIController>> root_;

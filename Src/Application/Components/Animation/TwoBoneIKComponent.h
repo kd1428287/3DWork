@@ -1,6 +1,4 @@
-﻿// TwoBoneIKComponent.h
-#pragma once
-#include <string>
+﻿#pragma once
 #include "TwoBoneIK.h"
 #include "../Animation/SkeletonComponent.h"
 #include "../Transform/TransformComponent.h"
@@ -44,6 +42,9 @@
 // --- 現在の実装の割り切り --------------------------------------------
 // ・endボーン自身の向き(手首の捻り等)は補正しない。root/midの回転
 //   だけを解いて、end位置をtargetへ近づけるところまでに留めている。
+// ・ボーンの解決(FindWorkNode()による名前検索)は初回のSolveIK()呼び出し
+//   時に一度だけ行い、以降は解決済みのNode*を直接使う(RootMotionExtractor
+//   と同じ方式)。初回に見つからなかった場合は毎フレーム再探索しない。
 // ・KdModelWork::FindNode()に、書き込み可能なNode*を返す非const版が
 //   存在する前提で実装している。無ければSkeletonComponent側に
 //   同等のpublicメソッドを1つ追加すること。
@@ -60,8 +61,7 @@ public:
 		, rootParentBoneName_(std::move(rootParentBoneName))
 		, rootBoneName_(std::move(rootBoneName))
 		, midBoneName_(std::move(midBoneName))
-		, endBoneName_(std::move(endBoneName)) {
-	}
+		, endBoneName_(std::move(endBoneName)) {}
 
 	void Start() override {
 		skeleton_ = GetOwner()->GetComponent<SkeletonComponent>();
@@ -86,12 +86,12 @@ public:
 	void SolveIK() override {
 		if (!hasTarget_ || skeleton_ == nullptr) return;
 
-		KdModelWork& model = skeleton_->WorkModel();
-		KdModelWork::Node* rootParent = model.FindWorkNode(rootParentBoneName_);
-		KdModelWork::Node* root = model.FindWorkNode(rootBoneName_);
-		KdModelWork::Node* mid = model.FindWorkNode(midBoneName_);
-		KdModelWork::Node* end = model.FindWorkNode(endBoneName_);
-		if (rootParent == nullptr || root == nullptr || mid == nullptr || end == nullptr) return;
+		ResolveBonesIfNeeded();
+		if (rootParent_ == nullptr || root_ == nullptr || mid_ == nullptr || end_ == nullptr) return;
+		KdModelWork::Node* rootParent = rootParent_;
+		KdModelWork::Node* root = root_;
+		KdModelWork::Node* mid = mid_;
+		KdModelWork::Node* end = end_;
 
 		// 現在(FK)のモデル空間での回転・位置を取得する。オーナー
 		// (GameObject)の回転はrootParent/root/mid全てに等しく乗るだけで、
@@ -156,6 +156,21 @@ public:
 	}
 
 private:
+	// ボーンの解決を初回のみ行い、以降は文字列検索せずポインタを直接使う
+	// (RootMotionExtractorと同じ考え方。見つからなくても毎フレーム
+	// 再探索はしない — モデル未ロード等で一時的に見つからない場合は
+	// そのまま無効なチェーンとして扱われる)。
+	void ResolveBonesIfNeeded() {
+		if (bonesResolved_) return;
+
+		KdModelWork& model = skeleton_->WorkModel();
+		rootParent_ = model.FindWorkNode(rootParentBoneName_);
+		root_ = model.FindWorkNode(rootBoneName_);
+		mid_ = model.FindWorkNode(midBoneName_);
+		end_ = model.FindWorkNode(endBoneName_);
+		bonesResolved_ = true;
+	}
+
 	SkeletonComponent* skeleton_ = nullptr;
 	TransformComponent* ownerTransform_ = nullptr; // 兄弟コンポーネント
 
@@ -163,6 +178,13 @@ private:
 	std::string rootBoneName_;
 	std::string midBoneName_;
 	std::string endBoneName_;
+
+	// 上記4つの名前から一度だけ解決したノードポインタのキャッシュ。
+	KdModelWork::Node* rootParent_ = nullptr;
+	KdModelWork::Node* root_ = nullptr;
+	KdModelWork::Node* mid_ = nullptr;
+	KdModelWork::Node* end_ = nullptr;
+	bool bonesResolved_ = false;
 
 	bool hasTarget_ = false;
 	Math::Vector3 target_;

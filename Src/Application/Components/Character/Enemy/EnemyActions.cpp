@@ -59,3 +59,27 @@ BTNodeStatus EnemyActionChase::Tick(EnemyAIController* context, float /*deltaTim
 	context->PlayAnimationIfChanged("Run", true);
 	return BTNodeStatus::Running;
 }
+
+// --- EnemyActionMaintainDistance ---
+BTNodeStatus EnemyActionMaintainDistance::Tick(EnemyAIController* context, float /*deltaTime*/)
+{
+	if (!context->HasTarget()) return BTNodeStatus::Failure;
+
+	Math::Vector3 toTarget = context->GetTargetPositionOrSelf() - context->GetPosition();
+	toTarget.y = 0.0f;
+
+	const float maintainDistance = context->GetData().maintainDistance;
+
+	// 間合い(maintainDistance)以下まで来たら、それ以上は接近せずその場で
+	// 停止する(近すぎても後退はしない設計。EnemyActions.h冒頭コメント参照)。
+	if (toTarget.LengthSquared() <= maintainDistance * maintainDistance) {
+		context->StopMovement();
+		context->PlayAnimationIfChanged("Idle", true);
+		return BTNodeStatus::Running;
+	}
+
+	toTarget.Normalize();
+	context->SetDesiredVelocity(toTarget * context->GetData().chaseSpeed);
+	context->PlayAnimationIfChanged("Run", true);
+	return BTNodeStatus::Running;
+}

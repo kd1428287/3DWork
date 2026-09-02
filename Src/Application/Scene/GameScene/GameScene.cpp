@@ -45,6 +45,7 @@ void GameScene::Init()
 	def.name = "Brute";
 	def.aiData = CreateDebugBruteAIData();
 	map.emplace("Brute", def);
+	def = {};
 	def.name = "Warrock";
 	def.type = EnemyType::Warrock;
 	def.modelPath = "Asset/Models/Character/Warrock/Warrock.gltf";

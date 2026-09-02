@@ -107,7 +107,6 @@ public:
 
 		// スケールの二重伝播を避けるためUnscaled行列を使う
 		Math::Matrix ownerMat = selfTransform_ ? selfTransform_->GetUnscaledMatrix() : Math::Matrix::Identity;
-		ownerMat = selfTransform_->GetWorldMatrix();
 
 		outMatrix = localMat * ownerMat;
 		return true;

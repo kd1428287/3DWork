@@ -5,10 +5,10 @@
 class EnemyAIController;
 
 // ============================================================
-// EnemyAIControllerが使うAction(待機/巡回/追跡)をまとめたファイル。
-// PlayerState.h/EnemyState.hが複数のStateクラスを1ファイルにまとめて
-// いるのと同じ流儀(1つのControllerに紐づく、互いに関連の深い小さな
-// クラス群は1ファイルにまとめる)に合わせている。
+// EnemyAIControllerが使うAction(待機/巡回/追跡/間合い維持)をまとめた
+// ファイル。PlayerState.h/EnemyState.hが複数のStateクラスを1ファイルに
+// まとめているのと同じ流儀(1つのControllerに紐づく、互いに関連の深い
+// 小さなクラス群は1ファイルにまとめる)に合わせている。
 //
 // 【改名について】旧BruteActionIdle/Patrol/Chase/AttackをEnemyAI*へ改名。
 // Brute専用ではなく全敵種で共用するクラスであるため
@@ -20,6 +20,13 @@ class EnemyAIController;
 // なっていたため、BTWeightedAttackAction<T>(BTWeightedAttackAction.h)
 // へ共通化した。EnemyAIController::BuildTree()では
 // BTWeightedAttackAction<EnemyAIController>を直接使う。
+//
+// 【間合い維持(MaintainDistance)について】
+// Chaseは距離0までひたすら詰め続けるのに対し、こちらはEnemyAIData::
+// maintainDistanceまで近づいたら接近をやめてその場に停止する
+// (近すぎても後退はしない設計)。遠距離攻撃タイプの敵のように
+// 「一定の間合いを保ちたい」用途向け。Warrock固有ではなく汎用Action
+// として全敵種で共用する。
 // ============================================================
 
 // 「待機」: 現在地でEnemyAIData::idleDuration秒だけ足を止める。
@@ -60,6 +67,22 @@ private:
 // 入った瞬間はそちらが優先されてこのノードは呼ばれなくなる
 // (EnemyAIController::BuildTree()参照)。
 class EnemyActionChase : public IBTNode<EnemyAIController>
+{
+public:
+	BTNodeStatus Tick(EnemyAIController* context, float deltaTime) override;
+};
+
+// 「間合い維持」: ターゲットまでEnemyAIData::maintainDistanceより離れて
+// いる間はChaseと同じく接近し続け、その距離以下まで近づいたら接近を
+// やめてその場に停止する(近すぎても後退はしない。要件通りの片方向
+// 実装)。停止中もHasTarget()を毎フレーム見ており、ターゲットを見失えば
+// Chase同様Failureを返してSelectorのフォールバックに委ねる。
+//
+// Chaseと違い「間合いに入ったら止まる」ため、遠距離攻撃タイプの敵の
+// ように詰め続けたくない敵向け。攻撃Sequence自体はこのノードとは別に
+// 各Behavior::BuildTree()側でIsTargetInAttackRange()等を使って組む想定
+// (EnemyActionChase冒頭コメントと同じ位置づけ)。
+class EnemyActionMaintainDistance : public IBTNode<EnemyAIController>
 {
 public:
 	BTNodeStatus Tick(EnemyAIController* context, float deltaTime) override;

@@ -27,8 +27,8 @@
 // ここに値を足し、CreateAIController()のswitchにケースを足すこと。
 enum class EnemyType
 {
-	Brute,   // 汎用EnemyAIController(データ駆動、雑魚敵向け)
-	Warrock, // Warrock専用WarrockAIController(BuildTree()自体が固有)
+	Brute,   
+	Warrock,
 };
 
 struct EnemyDefinition

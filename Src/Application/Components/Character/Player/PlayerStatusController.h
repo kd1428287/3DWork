@@ -500,6 +500,23 @@ private:
 			if (healthComponent_ != nullptr) {
 				healthComponent_->TakeDamage(attack->damage * attack->chipDamageRatio);
 			}
+			// ガード時でもノックバックする
+			if (velocityComponent_ != nullptr && transform_ != nullptr) {
+				Math::Vector3 dir = transform_->GetForward();
+				if (GameObject* attacker = attack->ownerCharacter.Resolve()) {
+					if (TransformComponent* attackerTransform = attacker->GetComponent<TransformComponent>()) {
+						dir = transform_->GetPosition() - attackerTransform->GetPosition();
+						dir.y = 0.0f;
+						if (dir.LengthSquared() < 1e-6f) {
+							dir = transform_->GetForward();
+						}
+						else {
+							dir.Normalize();
+						}
+					}
+				}
+				velocityComponent_->AddImpulse(dir *  1.1f);
+			}
 		}
 		else {
 			// 通常被弾: ダメージ+体幹ダメージ+ノックバックを付与し、

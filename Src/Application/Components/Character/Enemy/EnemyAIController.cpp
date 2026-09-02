@@ -111,6 +111,19 @@ void EnemyAIController::OnCollisionEnter(const CollisionSystem::CollisionEnterEv
 	}
 }
 
+// --- 被パリィ処理 ---------------------------------------------------------
+// 自分自身の攻撃がパリィされた時に、ParriedEvent経由で呼ばれる。
+// 「反応するかどうか」「どう反応するか」は完全にBehavior側に委ねるため、
+// ここでは単に転送するだけ(OnCollisionEnter()がダメージ適用まで自分で
+// 行った上でBehaviorへ委譲しているのとは異なり、パリィ自体には
+// EnemyAIController側で共通して行うべき処理が無いため)。
+void EnemyAIController::OnParried(const AttackSourceComponent::ParriedEvent& e)
+{
+	if (behavior_) {
+		behavior_->OnParried(this, e);
+	}
+}
+
 // --- 死亡処理 -------------------------------------------------------------
 // 移動停止・当たり判定無効化・消滅タイマー開始という全敵種共通の処理を
 // ここで行い、Dyingアニメーション等の演出はBehavior::OnDied()へ委譲する。
