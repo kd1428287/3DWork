@@ -515,7 +515,7 @@ private:
 						}
 					}
 				}
-				velocityComponent_->AddImpulse(dir *  1.1f);
+				velocityComponent_->AddImpulse(dir *  2.f);
 			}
 		}
 		else {

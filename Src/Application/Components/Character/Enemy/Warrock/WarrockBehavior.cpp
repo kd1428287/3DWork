@@ -21,7 +21,7 @@ namespace
 	// 尺だけ小スタン(kHitReactionDuration)より長くして「大きく怯んで
 	// いる」ことを表現する。【要確認】専用アニメーションが用意でき
 	// 次第差し替えること。
-	constexpr float kBigStaggerDuration = 1.2f;
+	constexpr float kBigStaggerDuration = 3.f;
 
 	// Dyingアニメーション終了後、さらに少し間を置いてから消滅させる
 	// (ボスの死亡演出として唐突に消えないようにするための余白)。
@@ -67,6 +67,17 @@ std::unique_ptr<IBTNode<EnemyAIController>> WarrockBehavior::BuildTree(EnemyAICo
 				posture->Reset();
 			}
 		}));
+
+	auto parriedSeq = std::make_unique<BTSequence<EnemyAIController>>();
+	parriedSeq->AddChild(std::make_unique<BTCondition<EnemyAIController>>(
+		[this](EnemyAIController*) {return parriedPending_; }));
+	parriedSeq->AddChild(std::make_unique<BTOneShotAnimationAction<EnemyAIController>>(
+		[this](EnemyAIController* c) {
+			c->StopMovement();
+			c->PlayAnimation("SmallReaction", false, kHitReactionDuration);
+		},
+		kHitReactionDuration,
+		[this](EnemyAIController*) {parriedPending_ = false; }));
 
 	auto reactionSeq = std::make_unique<BTSequence<EnemyAIController>>();
 	reactionSeq->AddChild(std::make_unique<BTCondition<EnemyAIController>>(
@@ -121,11 +132,12 @@ std::unique_ptr<IBTNode<EnemyAIController>> WarrockBehavior::BuildTree(EnemyAICo
 		[](EnemyAIController* c) { return c->HasTarget(); }));
 	chaseSeq->AddChild(std::make_unique<EnemyActionMaintainDistance>());
 
-	// 優先度順(大スタン > 被弾リアクション > 咆哮 > 攻撃 > 追跡 > 待機)。
+	// 優先度順(大スタン > パリィリアクション > 被弾リアクション > 咆哮 > 攻撃 > 追跡 > 待機)。
 	// reactive版BTSelectorのため、毎フレーム必ず先頭(大スタン)
 	// から評価し直す。
 	auto selector = std::make_unique<BTSelector<EnemyAIController>>();
 	selector->AddChild(std::move(bigStaggerSeq));
+	selector->AddChild(std::move(parriedSeq));
 	selector->AddChild(std::move(reactionSeq));
 	selector->AddChild(std::move(roarSeq));
 	selector->AddChild(std::move(attackSeq));

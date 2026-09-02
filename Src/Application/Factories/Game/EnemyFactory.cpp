@@ -90,7 +90,7 @@ namespace
 			Math::Vector3(0.0f, kFootOffset + def.bodyRadius, 0.0f),
 			ColliderCategory::Bump);
 
-		enemy->AddComponent<WireFrameComponent>();
+		//enemy->AddComponent<WireFrameComponent>();
 	}
 
 	// --- 物理(重力・速度・接地判定) -----------------------------------
@@ -104,14 +104,16 @@ namespace
 	// --- 戦闘補助(向き・体幹・HP・ロックオン・アニメーター) --------------
 	void CreateCombatSupportComponents(GameObject* enemy, const EnemyDefinition& def)
 	{
-		enemy->AddComponent<FacingDirectionComponent>();
+		auto* facing = enemy->AddComponent<FacingDirectionComponent>();
+		facing->SetRotationSpeed(3.f);
 
 		// 体幹(パリィ/ガードの削り合い)管理用。全敵種に一律で付けている
 		// (使うかどうかはBehavior::OnHit()側の判断。BruteBehavior::
 		// OnHit()参照)。
 		enemy->AddComponent<PostureComponent>();
 
-		enemy->AddComponent<HealthComponent>();
+		auto* health = enemy->AddComponent<HealthComponent>();
+		health->SetMax(1000.f, true);
 		enemy->AddComponent<LockOnTargetComponent>();
 
 		auto* animator = enemy->AddComponent<ModelAnimatorComponent>();

@@ -36,7 +36,8 @@ namespace
 	// SkeletonComponentはソケット生成側でHandleとして必要になるため返す。
 	SkeletonComponent* AttachVisuals(GameObject* player)
 	{
-		player->AddComponent<TransformComponent>()->SetPosition({ 0.f, 0.f, 0.f });
+		auto* transform = player->AddComponent<TransformComponent>();
+		transform->SetPosition({ 0.f, 0.f, 0.f });
 		player->AddComponent<ModelRenderComponent>();
 
 		auto* skeleton = player->AddComponent<SkeletonComponent>();
@@ -196,7 +197,7 @@ GameObject* PlayerFactory::CreateWeapon(ObjectManager& objectManager, GameObject
 	if (!weapon) return nullptr;
 
 	auto* transform = weapon->AddComponent<TransformComponent>();
-
+	
 	auto* socket = weapon->AddComponent<AttachToSocketComponent>(handle);
 	socket->SetLocalRotation(Math::Quaternion::CreateFromYawPitchRoll(
 		-90, DirectX::XMConvertToRadians(180), 0.0f));
