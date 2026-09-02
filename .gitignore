@@ -22,3 +22,4 @@ x64/
 *.shaderInc
 
 imgui.ini
+Src/Application/DIspatcher/EffectEvents.h

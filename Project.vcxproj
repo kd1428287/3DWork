@@ -353,11 +353,13 @@
     <ClInclude Include="Src\Application\Core\Handle.h" />
     <ClInclude Include="Src\Application\Core\ObjectManager.h" />
     <ClInclude Include="Src\Application\Core\SceneContext.h" />
+    <ClInclude Include="Src\Application\DIspatcher\EffectDispatcher.h" />
     <ClInclude Include="Src\Application\Editor\EditorViewport.h" />
     <ClInclude Include="Src\Application\Editor\EffectEditor.h" />
     <ClInclude Include="Src\Application\Editor\ImGuizmo.h" />
     <ClInclude Include="Src\Application\Editor\MapEditor.h" />
     <ClInclude Include="Src\Application\Engine\EventBus\EventBus.h" />
+    <ClInclude Include="Src\Application\Engine\EventBus\Event\EffectEvents.h" />
     <ClInclude Include="Src\Application\Engine\EventBus\Event\Event.h" />
     <ClInclude Include="Src\Application\Engine\EventBus\Event\SceneEvents.h" />
     <ClInclude Include="Src\Application\Engine\SystemManager\SystemManager.h" />
@@ -366,6 +368,8 @@
     <ClInclude Include="Src\Application\Factories\Effect\EffectFactory.h" />
     <ClInclude Include="Src\Application\Factories\GameObjectFactory.h" />
     <ClInclude Include="Src\Application\Factories\Game\EnemyFactory.h" />
+    <ClInclude Include="Src\Application\Factories\Game\PlayerDefinition.h" />
+    <ClInclude Include="Src\Application\Factories\Game\PlayerDefinitionLoader.h" />
     <ClInclude Include="Src\Application\Factories\Game\PlayerFactory.h" />
     <ClInclude Include="Src\Application\Factories\Map\MapData.h" />
     <ClInclude Include="Src\Application\Factories\Map\MapLoader.h" />
@@ -404,6 +408,7 @@
     <ClInclude Include="Src\Framework\Direct3D\KdModel.h" />
     <ClInclude Include="src\Framework\Direct3D\KdTexture.h" />
     <ClInclude Include="Src\Framework\Math\KdUVAnimation.h" />
+    <ClInclude Include="Src\Framework\Shader\GPUParticle\KdGPUParticle.h" />
     <ClInclude Include="Src\Framework\Shader\KdAmbientController.h" />
     <ClInclude Include="Src\Framework\Shader\KdRenderTargetChange.h" />
     <ClInclude Include="Src\Framework\Shader\StandardShader\KdStandardShader.h" />
@@ -443,6 +448,7 @@
     <ClCompile Include="Src\Application\Components\Collision\WireFrameComponent.cpp" />
     <ClCompile Include="Src\Application\Components\UI\Enemy\EnemyHPBarComponent.cpp" />
     <ClCompile Include="Src\Application\Components\UI\Player\PlayerStatusUIComponent.cpp" />
+    <ClCompile Include="Src\Application\DIspatcher\EffectDispatcher.cpp" />
     <ClCompile Include="Src\Application\Editor\EditorViewport.cpp" />
     <ClCompile Include="Src\Application\Editor\EffectEditor.cpp" />
     <ClCompile Include="Src\Application\Editor\ImGuizmo.cpp" />
@@ -450,6 +456,7 @@
     <ClCompile Include="Src\Application\Factories\Common\CameraFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\Effect\EffectFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\Game\EnemyFactory.cpp" />
+    <ClCompile Include="Src\Application\Factories\Game\PlayerDefinitionLoader.cpp" />
     <ClCompile Include="Src\Application\Factories\Game\PlayerFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\Map\MapLoader.cpp" />
     <ClCompile Include="Src\Application\Factories\Map\TerrainFactory.cpp" />
@@ -482,6 +489,7 @@
     <ClCompile Include="Src\Framework\Direct3D\KdModel.cpp" />
     <ClCompile Include="src\Framework\Direct3D\KdTexture.cpp" />
     <ClCompile Include="Src\Framework\Math\KdUVAnimation.cpp" />
+    <ClCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle.cpp" />
     <ClCompile Include="Src\Framework\Shader\KdAmbientController.cpp" />
     <ClCompile Include="Src\Framework\Shader\KdRenderTargetChange.cpp" />
     <ClCompile Include="Src\Framework\Shader\StandardShader\KdStandardShader.cpp" />
@@ -506,12 +514,28 @@
   <ItemGroup>
     <None Include="Asset\Data\Game\EnemyData.json" />
     <None Include="Asset\Data\Game\EnemySchema.json" />
+    <None Include="Src\Framework\Shader\GPUParticle\inc_KdGPUParticle.hlsli" />
     <None Include="Src\Framework\Shader\inc_KdCommon.hlsli" />
     <None Include="Src\Framework\Shader\PostProcessShader\inc_KdPostProcessShader.hlsli" />
     <None Include="Src\Framework\Shader\SpriteShader\inc_KdSpriteShader.hlsli" />
     <None Include="Src\Framework\Shader\StandardShader\inc_KdStandardShader.hlsli" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle_CS_Emit.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle_CS_Init.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle_CS_Update.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle_VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+    </FxCompile>
     <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_Blur.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>

@@ -22,6 +22,8 @@
 #include "../../../Core/Handle.h"
 #include "../../../Systems/Collision/CollisionSystem.h"
 
+#include "../../../Engine/EventBus/Event/EffectEvents.h"
+
 class PlayerStatusController : public ComponentBase
 {
 public:
@@ -486,11 +488,19 @@ private:
 				}
 				attacker->GetLocalEventBus().Publish(AttackSourceComponent::ParriedEvent{});
 			}
-			// TODO: 弾き返しの演出(SE/VFX)は別途実装。
+
+			// 弾き返しの火花エフェクト
+			// e.otherObject = 相手側の武器(AttackSourceComponentの持ち主)
+			// weaponCollider_ = 自分側の武器(コンストラクタ後にSetWeapon()等で登録済み想定)
+			SpawnWeaponClashEffect(e.otherObject, /*isParry=*/true);
 		}
 		else if (IsGuarding()) {
 			// 通常ブロック: 自分の体幹を削り、HPにも軽減済みのチップ
 			// ダメージを適用する。
+
+			// 通常ブロックの火花エフェクト(パリィ成功時より控えめ)
+			SpawnWeaponClashEffect(e.otherObject, /*isParry=*/false);
+
 			if (postureComponent_ != nullptr) {
 				postureComponent_->AddPostureDamage(attack->postureDamage);
 				if (postureComponent_->IsBroken()) {
@@ -515,7 +525,7 @@ private:
 						}
 					}
 				}
-				velocityComponent_->AddImpulse(dir *  2.f);
+				velocityComponent_->AddImpulse(dir * 2.f);
 			}
 		}
 		else {
@@ -565,6 +575,36 @@ private:
 
 			ApplyStagger(/*isLarge=*/postureBroken, postureBroken ? kLargeStaggerDuration : attack->hitStunSeconds);
 		}
+	}
+
+	// --- 鍔迫り合いの火花エフェクト送信 -----------------------------------
+	// OnCollisionEnter()のパリィ/ガード分岐から呼ばれる。
+	// attackerWeaponObjは相手側の武器GameObject(AttackSourceComponentの持ち主。
+	// e.otherObjectをそのまま渡す想定)。自分側の武器はweaponCollider_から解決する。
+	// 双方のTransformComponentが取れない場合、またはシーンバスが
+	// 取得できない場合は何もしない(片方の武器が既に破棄済み等の異常系)。
+	void SpawnWeaponClashEffect(GameObject* attackerWeaponObj, bool isParry)
+	{
+		if (attackerWeaponObj == nullptr) return;
+
+		TransformComponent* attackerWeaponTransform = attackerWeaponObj->GetComponent<TransformComponent>();
+		if (attackerWeaponTransform == nullptr) return;
+
+		ColliderComponent* myWeaponCollider = weaponCollider_.Resolve();
+		if (myWeaponCollider == nullptr) return;
+
+		TransformComponent* myWeaponTransform = myWeaponCollider->GetOwner()->GetComponent<TransformComponent>();
+		if (myWeaponTransform == nullptr) return;
+
+		SceneContext* context = GetOwner()->GetContext();
+		if (context == nullptr || context->eventBus == nullptr) return;
+
+		// 衝突位置は正確な接触点ではなく、両武器座標の中間点で近似する
+		const Math::Vector3 clashPos =
+			(attackerWeaponTransform->GetPosition() + myWeaponTransform->GetPosition()) * 0.5f;
+
+		PublishWeaponClashEffect(*context->eventBus, clashPos,
+			myWeaponTransform->GetForward(), attackerWeaponTransform->GetForward(), isParry);
 	}
 
 	// 兄弟コンポーネント

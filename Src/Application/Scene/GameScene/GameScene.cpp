@@ -5,9 +5,11 @@
 #include "../../Systems/InputSystem.h"
 #include "../../Systems/Collision/ColliderRegistry.h"
 #include "../../Systems/Collision/CollisionSystem.h"
+#include "../../DIspatcher/EffectDispatcher.h"
 
 // factory
 #include "../../Factories/Game/PlayerFactory.h"
+#include "../../Factories/Game/PlayerDefinitionLoader.h"
 #include "../../Factories/Map/TerrainFactory.h"
 #include "../../Factories/Game/EnemyFactory.h"
 #include "../../Components/Character/Enemy/EnemyDefinition.h"
@@ -30,6 +32,11 @@ void GameScene::OnUpdate(float deltaTime)
 {
 	// systemManager_の実行順にまとめたので、ここにはそこに乗らない
 	// GameScene固有の処理(例: クリア判定など)だけを書く
+}
+
+void GameScene::OnDrawEffects()
+{
+	effectDispatcher_->Draw();
 }
 
 void GameScene::Init()
@@ -57,7 +64,9 @@ void GameScene::Init()
 	enemyFactory_->CreateEnemy(*objManager_, "Warrock", Math::Vector3(10, 0, 5));
 
 	playerFactory_ = std::make_unique<PlayerFactory>();
-	auto* player = playerFactory_->CreatePlayer(*objManager_);
+	PlayerDefinition pDef;
+	PlayerDefinitionLoader::LoadFromFile("Asset/Data/Game/Player.json", pDef);
+	auto* player = playerFactory_->CreatePlayer(*objManager_, pDef);
 
 	cameraFactory_ = std::make_unique<CameraFactory>();
 	//player->GetComponent<CameraTargetComponent>()->GetGeneration();
@@ -71,6 +80,9 @@ void GameScene::Init()
 	colliderRegistry_ = std::make_unique<ColliderRegistry>();
 	collisionSystem_ = std::make_unique<CollisionSystem>();
 
+	effectDispatcher_ = std::make_unique<EffectDispatcher>();
+	effectDispatcher_->Init(*localBus_);
+
 	// 旧PreUpdate/PostUpdateで表現しようとしていた順序を、ここで明示的に登録する
 	// 入力 → コライダー情報の更新 → 当たり判定、の順で毎フレーム実行される
 	systemManager_->SetExecutionOrder(
@@ -79,6 +91,7 @@ void GameScene::Init()
 		[this](float dt) { objManager_->Update(dt); },
 		[this](float dt) { colliderRegistry_->Refresh(*objManager_); },
 		[this](float dt) { collisionSystem_->Update(*colliderRegistry_); },
+		[this](float dt) { effectDispatcher_->Update(dt); },
 		[this](float dt) { objManager_->PostUpdate(dt); },
 		[this](float dt) { objManager_->Flush(); }
 	);

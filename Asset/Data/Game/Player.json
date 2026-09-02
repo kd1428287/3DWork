@@ -1,0 +1,60 @@
+{
+	"visuals": {
+		"modelPath": "Asset/Models/Character/Player/Player.gltf",
+		"animatorFPS": 60,
+		"rootMotionBoneName": "mixamorig:Hips",
+		"rootMotionAxis": "Y",
+		"rootMotionAxisSign": -1.0,
+		"rootMotionScale": 0.01
+	},
+
+	"combatStats": {
+		"maxHealth": 100.0
+	},
+
+	"colliders": [
+		{
+			"name": "Body",
+			"radius": 0.4,
+			"start": [0.0, 0.4, 0.0],
+			"end": [0.0, 0.0, 0.0],
+			"category": "Bump"
+		},
+		{
+			"name": "HurtBox",
+			"radius": 0.3,
+			"start": [0.0, 0.3, 0.0],
+			"end": [0.0, 0.0, 0.0],
+			"category": "HurtBox",
+			"interactsWith": "HitBox",
+			"isTrigger": true
+		}
+	],
+
+	"walkSpeed": 2.0,
+
+	"auxiliarySocketBones": [
+		"mixamorig:LeftHand",
+		"mixamorig:LeftForeArm",
+		"mixamorig:LeftArm",
+		"mixamorig:LeftShoulder"
+	],
+	"weaponSocketBone": "mixamorig:RightHand",
+
+	"rightArmIK": {
+		"rootBone": "mixamorig:RightShoulder",
+		"midBone": "mixamorig:RightArm",
+		"tipParentBone": "mixamorig:RightForeArm",
+		"tipBone": "mixamorig:RightHand"
+	},
+
+	"weapon": {
+		"modelPath": "Asset/Models/Character/Player/Tachi.gltf",
+		"socketLocalPosition": [0.05, 0.1, 0.0],
+		"socketLocalEulerRotationDeg": [-90.0, 180.0, 0.0],
+		"hitBox": {
+			"halfExtents": [0.3, 0.3, 2.25],
+			"offset": [0.0, 0.0, 0.75]
+		}
+	}
+}

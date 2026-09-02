@@ -3,12 +3,10 @@
 #include "EffectEditor.h"
 #include "EditorViewport.h"
 
-// DockBuilder系APIを使うために必要
 #include "imgui_internal.h"
 
 #include <fstream>
 #include <filesystem>
-// 未導入の場合はSave/Loadごと削除するか、独自の保存形式に差し替えてください
 #include "nlohmann/json.hpp"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -119,6 +117,12 @@ void EffectEditor::DrawMainMenu()
 	ImGui::SameLine();
 	ImGui::Checkbox("Auto Reload", &m_autoReload);
 
+	ImGui::Separator();
+
+	if (ImGui::Button("Play All")) { PlayAllPreview(); }
+	ImGui::SameLine();
+	if (ImGui::Button("Stop All")) { StopAllPreview(); }
+
 	ImGui::Text("Effects : %d", (int)m_objects.size());
 
 	ImGui::End();
@@ -216,6 +220,19 @@ void EffectEditor::DrawInspector()
 	else
 	{
 		if (ImGui::Button("Stop")) StopPreview(obj);
+		ImGui::SameLine();
+
+		if (!obj.paused)
+		{
+			if (ImGui::Button("Pause")) SetPreviewPause(obj, true);
+		}
+		else
+		{
+			if (ImGui::Button("Resume")) SetPreviewPause(obj, false);
+		}
+		ImGui::SameLine();
+
+		if (ImGui::Button("Restart")) PlayPreview(obj);
 	}
 
 	ImGui::Separator();
@@ -305,6 +322,8 @@ void EffectEditor::DrawAssetPicker()
 	{
 		RefreshEffectFileList();
 	}
+	ImGui::SameLine();
+	ImGui::Checkbox("Auto Preview", &m_autoPreviewOnSelect);
 
 	ImGui::Separator();
 
@@ -328,6 +347,12 @@ void EffectEditor::DrawAssetPicker()
 			// 差し替え前に現在のプレビューは一旦停止する
 			StopPreview(obj);
 			obj.effectPath = path;
+
+			// Auto Preview有効時は選択した瞬間にその場で再生し、見た目をすぐ確認できるようにする
+			if (m_autoPreviewOnSelect)
+			{
+				PlayPreview(obj);
+			}
 		}
 	}
 
@@ -365,11 +390,12 @@ void EffectEditor::PlayPreview(EffectObject& obj)
 {
 	if (obj.effectPath.empty()) return;
 
-	// 既に再生中なら一旦止めてから再生し直す
+	// 既に再生中なら一旦止めてから再生し直す(Restartもこの関数で兼ねる)
 	StopPreview(obj);
 
 	auto wp = KdEffekseerManager::GetInstance().Play(obj.effectPath, obj.pos, 1.0f, obj.speed, obj.loop);
 	obj.wpPlaying = wp;
+	obj.paused = false;
 
 	if (auto sp = wp.lock())
 	{
@@ -387,6 +413,16 @@ void EffectEditor::StopPreview(EffectObject& obj)
 		KdEffekseerManager::GetInstance().StopEffect(sp->GetHandle());
 	}
 	obj.wpPlaying.reset();
+	obj.paused = false;
+}
+
+void EffectEditor::SetPreviewPause(EffectObject& obj, bool pause)
+{
+	auto sp = obj.wpPlaying.lock();
+	if (!sp) return;
+
+	KdEffekseerManager::GetInstance().SetPause(sp->GetHandle(), pause);
+	obj.paused = pause;
 }
 
 void EffectEditor::PlayAllLooping()
@@ -394,6 +430,17 @@ void EffectEditor::PlayAllLooping()
 	for (auto& obj : m_objects)
 	{
 		if (obj.loop && !obj.IsPlaying())
+		{
+			PlayPreview(obj);
+		}
+	}
+}
+
+void EffectEditor::PlayAllPreview()
+{
+	for (auto& obj : m_objects)
+	{
+		if (!obj.effectPath.empty())
 		{
 			PlayPreview(obj);
 		}

@@ -190,6 +190,12 @@
     <Filter Include="Src\Application\Components\Character\BehaviorTree">
       <UniqueIdentifier>{b21f2ba2-de30-43d6-93bb-09439eadddee}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Framework\Shader\GPUParticle">
+      <UniqueIdentifier>{df09a086-ce53-4b76-88f6-314556437333}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Dispatcher">
+      <UniqueIdentifier>{fb2683e9-1a72-4db4-8136-7f7d1991d130}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -681,6 +687,21 @@
     <ClInclude Include="Src\Application\Components\Tags\IAnimationPostProcess.h">
       <Filter>Src\Application\Components\Tags</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Framework\Shader\GPUParticle\KdGPUParticle.h">
+      <Filter>Src\Framework\Shader\GPUParticle</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Factories\Game\PlayerDefinition.h">
+      <Filter>Src\Application\Factories\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Factories\Game\PlayerDefinitionLoader.h">
+      <Filter>Src\Application\Factories\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\DIspatcher\EffectDispatcher.h">
+      <Filter>Src\Application\Dispatcher</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Engine\EventBus\Event\EffectEvents.h">
+      <Filter>Src\Application\Engine\EventBus\Event</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -896,6 +917,15 @@
     <ClCompile Include="Src\Application\Components\Character\Enemy\Brute\BruteBehavior.cpp">
       <Filter>Src\Application\Components\Character\Enemy\Brute</Filter>
     </ClCompile>
+    <ClCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle.cpp">
+      <Filter>Src\Framework\Shader\GPUParticle</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Factories\Game\PlayerDefinitionLoader.cpp">
+      <Filter>Src\Application\Factories\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\DIspatcher\EffectDispatcher.cpp">
+      <Filter>Src\Application\Dispatcher</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Src\Framework\Shader\inc_KdCommon.hlsli">
@@ -915,6 +945,9 @@
     </None>
     <None Include="Asset\Data\Game\EnemySchema.json">
       <Filter>Data\Game</Filter>
+    </None>
+    <None Include="Src\Framework\Shader\GPUParticle\inc_KdGPUParticle.hlsli">
+      <Filter>Src\Framework\Shader\GPUParticle</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -953,6 +986,21 @@
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\StandardShader\KdStandardShader_VS_UnLit.hlsl">
       <Filter>Src\Framework\Shader\StandardShader</Filter>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle_CS_Emit.hlsl">
+      <Filter>Src\Framework\Shader\GPUParticle</Filter>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle_CS_Init.hlsl">
+      <Filter>Src\Framework\Shader\GPUParticle</Filter>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle_CS_Update.hlsl">
+      <Filter>Src\Framework\Shader\GPUParticle</Filter>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle_PS.hlsl">
+      <Filter>Src\Framework\Shader\GPUParticle</Filter>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle_VS.hlsl">
+      <Filter>Src\Framework\Shader\GPUParticle</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

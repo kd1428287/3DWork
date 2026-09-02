@@ -49,6 +49,7 @@ void BaseScene::Draw()
 	KdShaderManager::Instance().m_StandardShader.BeginUnLit();
 	{
 		objManager_->DrawEffect();
+		OnDrawEffects();
 	}
 	KdShaderManager::Instance().m_StandardShader.EndUnLit();
 

@@ -25,6 +25,9 @@ struct EffectObject
 	// エディタ上でプレビュー再生中のインスタンス(未再生ならlock()がnullptr)
 	std::weak_ptr<KdEffekseerObject> wpPlaying;
 
+	// 現在一時停止中かどうか(再生中のみ意味を持つ、JSONには保存しない)
+	bool paused = false;
+
 	// pos/rotate/scale から4x4行列を生成
 	DirectX::SimpleMath::Matrix GetMatrix() const;
 
@@ -54,6 +57,10 @@ public:
 	void PlayAllLooping();
 	void StopAllPreview();
 
+	// 配置済みの全エフェクトをプレビュー再生する(loop設定に関わらず全て)
+	//	「Effect Editor」ウィンドウの Play All ボタンから呼ばれる
+	void PlayAllPreview();
+
 private:
 
 	void DrawMainMenu();
@@ -74,9 +81,10 @@ private:
 	// EffekseerPath 以下を走査して .efk ファイル一覧を更新する
 	void RefreshEffectFileList();
 
-	// プレビュー再生の開始/停止
+	// プレビュー再生の開始/停止/一時停止
 	void PlayPreview(EffectObject& obj);
 	void StopPreview(EffectObject& obj);
+	void SetPreviewPause(EffectObject& obj, bool pause);
 
 	std::vector<EffectObject>	m_objects;
 	int							m_selected = -1;
@@ -92,6 +100,7 @@ private:
 	// アセット一覧(.efkファイルパス)
 	std::vector<std::string>	m_effectFileList;
 	bool						m_assetListLoaded = false;
+	bool						m_autoPreviewOnSelect = true;	// Assetsで選択した瞬間にプレビュー再生するか
 
 	// ホットリロード関連
 	bool		m_autoReload = true;

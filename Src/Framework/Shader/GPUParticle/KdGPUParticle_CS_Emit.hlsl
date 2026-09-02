@@ -1,0 +1,61 @@
+#include "inc_KdGPUParticle.hlsli"
+
+// パーティクル本体バッファ(読み書き)
+RWStructuredBuffer<Particle>	g_ParticleBuffer : register(u0);
+
+// リングバッファの書き込みカーソル(要素数1)
+// ※発生のたびにインクリメントし、MaxParticleNumで折り返す事で
+//   「一番古い(生きていても)パーティクルから上書きしていく」方式
+//   AppendStructuredBuffer等の死亡リスト方式と違い、
+//   カウンタ枯渇による未定義動作が起きないシンプルな実装
+RWStructuredBuffer<uint>		g_EmitCounter	 : register(u1);
+
+cbuffer cbGPUParticleEmit : register(b0)
+{
+	float3	g_EmitPos;				// 発生座標
+	int		g_EmitCount;			// 今回発生させる数
+
+	float3	g_EmitVelocityMin;		// 初速の範囲(最小)
+	float	g_EmitSizeMin;			// サイズの範囲(最小)
+
+	float3	g_EmitVelocityMax;		// 初速の範囲(最大)
+	float	g_EmitSizeMax;			// サイズの範囲(最大)
+
+	float4	g_EmitColor;			// 色
+
+	float	g_EmitLifeMin;			// 寿命の範囲(最小)
+	float	g_EmitLifeMax;			// 寿命の範囲(最大)
+	uint	g_MaxParticleNum;		// パーティクルの最大数
+	float	g_RandomSeed;			// 乱数シード(毎回変える事)
+};
+
+//================================
+// 新規パーティクルの発生
+// ※スレッド数はC++側でEmitCountぶん(256の倍数に切り上げ)Dispatchする
+//================================
+[numthreads(256, 1, 1)]
+void main(uint3 id : SV_DispatchThreadID)
+{
+	// 今回発生させる数を超えたスレッドは何もしない
+	if ((int)id.x >= g_EmitCount) { return; }
+
+	// リングバッファの書き込み位置を1つ確保
+	uint rawIndex;
+	InterlockedAdd(g_EmitCounter[0], 1, rawIndex);
+
+	uint index = rawIndex % g_MaxParticleNum;
+
+	// スレッド毎に異なる乱数シードを作る
+	float seed = g_RandomSeed + (float)id.x * 0.918273f;
+
+	Particle p;
+	p.Position	= g_EmitPos;
+	p.Velocity	= RandRange3(g_EmitVelocityMin, g_EmitVelocityMax, seed);
+	p.Size		= RandRange(g_EmitSizeMin, g_EmitSizeMax, seed + 3.0f);
+	p.Color		= g_EmitColor;
+	p.LifeMax	= RandRange(g_EmitLifeMin, g_EmitLifeMax, seed + 4.0f);
+	p.Life		= p.LifeMax;
+	p._pad		= float3(0, 0, 0);
+
+	g_ParticleBuffer[index] = p;
+}
