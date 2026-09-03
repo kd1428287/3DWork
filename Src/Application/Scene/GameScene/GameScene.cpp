@@ -76,6 +76,7 @@ void GameScene::Init()
 	inputSystem_ = std::make_unique<InputSystem>();
 	inputSystem_->RegisterPlayer(player->GetComponent<PlayerInputComponent>());
 	inputSystem_->RegisterCameraOrbit(camera->GetComponent<CameraOrbitComponent>());
+	inputSystem_->RegisterObjectManager(objManager_.get());
 
 	colliderRegistry_ = std::make_unique<ColliderRegistry>();
 	collisionSystem_ = std::make_unique<CollisionSystem>();

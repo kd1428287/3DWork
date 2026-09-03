@@ -120,6 +120,7 @@ public:
 
 	void Enter(PlayerStatusController* controller) override;
 	void Update(PlayerStatusController* controller, float deltaTime) override;
+	void Exit(PlayerStatusController* controller) override;
 
 	CombatState GetDetailedState() const override {
 		return isLarge_ ? CombatState::StaggerLarge : CombatState::StaggerSmall;

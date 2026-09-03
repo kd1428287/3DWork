@@ -13,6 +13,16 @@
 // TagInterfaces.h に列挙した型であれば、GameObject自体を変更せずに
 // 自動で登録・除去・走査の対象になる。
 // ============================================================
+
+namespace ObjectFlags
+{
+	constexpr uint32_t None = 0;
+	constexpr uint32_t AlwaysActive = 1 << 1;
+	constexpr uint32_t Gameplay = 1 << 2; 
+	constexpr uint32_t UI = 1 << 3;
+	constexpr uint32_t System = 1 << 4; 
+}
+
 class GameObject {
 public:
 	// contextはSceneが所有する非所有参照の束。
@@ -224,6 +234,13 @@ public:
 		return result;
 	}
 
+	void SetFlags(uint8_t flags) { objectFlags_ = flags; }
+	void AddFlag(uint8_t flag) { objectFlags_ |= flag; }
+	void RemoveFlag(uint8_t flag) { objectFlags_ &= ~flag; }
+
+	uint8_t GetFlags() const { return objectFlags_; }
+	bool HasFlag(uint8_t flag) const { return (objectFlags_ & flag) != 0; }
+
 	EventBus& GetLocalEventBus() { return localEventBus_; }
 
 private:
@@ -303,6 +320,8 @@ private:
 	// RequestAddComponent/RequestRemoveComponentで積まれた、
 	// まだ反映されていない付け外し予約。
 	std::vector<std::function<void()>> pendingActions_;
+
+	uint8_t objectFlags_ = ObjectFlags::Gameplay;
 
 	EventBus localEventBus_; // このGameObject宛てのイベント専用バス
 };

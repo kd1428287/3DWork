@@ -1,6 +1,7 @@
 ﻿// PlayerStatusController.cpp
 #include "PlayerStatusController.h"
 #include "../../Movement/TweenMoveComponent.h"
+#include <algorithm> // std::min/std::max (RequestStepMoveTowardsTarget)
 
 void PlayerStatusController::HandleMovementInput(const PlayerInputComponent& input)
 {
@@ -54,9 +55,6 @@ void PlayerStatusController::HandleActionInput(PlayerInputComponent& input)
 		}
 	}
 
-	// Guardの開始可否もAttack/Evadeと同じくCanStartGuard()/TryStartGuard()
-	// (=State側のポリモーフィズム)に委ねる。CombatState::Noneのハードコード
-	// 比較はここには置かない。
 	if (input.IsGuardHeld()) {
 		TryStartGuard();
 	}
@@ -66,8 +64,6 @@ void PlayerStatusController::HandleActionInput(PlayerInputComponent& input)
 
 	if (input.HasCommand(ActionCommand::Evade) && CanStartEvade()) {
 		EvadeMoveData data = baseEvadeData_;
-		// 積まれた瞬間の方向スナップショットをそのまま使う
-		// (消費するこのフレームの生入力ではなく)。
 		input.ConsumeCommand(ActionCommand::Evade, data.evadeDirection);
 		TryStartEvade(data);
 	}
@@ -105,8 +101,6 @@ void PlayerStatusController::RequestStepMove(const Math::Vector3& direction, flo
 	if (transform == nullptr) return;
 
 	// 無入力(棒立ち)での要求は、モデルの向いている方向へフォールバックする。
-	// (方向自体は呼び出し元でPlayerInputComponent::PushCommand時点で
-	// 正規化済みであることを前提とする)
 	Math::Vector3 dir = direction;
 	if (dir.LengthSquared() <= kDirectionEpsilon) {
 		dir = transform->GetForward();
@@ -120,4 +114,49 @@ void PlayerStatusController::RequestStepMove(const Math::Vector3& direction, flo
 void PlayerStatusController::CancelStepMove()
 {
 	GetOwner()->RequestRemoveComponent<TweenMoveComponent>();
+}
+
+void PlayerStatusController::RequestStepMoveTowardsTarget(const Math::Vector3& fallbackDirection, float stepDistance,
+	float engageDistance, float duration)
+{
+	GameObject* target = currentAttackTarget_.Resolve();
+	if (target == nullptr) {
+		// 対象が見つからない(未ロック+画面中心付近に敵がいない等)場合は、
+		// 決め打ち移動にフォールバックする。
+		RequestStepMove(fallbackDirection, stepDistance, duration);
+		return;
+	}
+
+	TransformComponent* targetTransform = target->GetComponent<TransformComponent>();
+	TransformComponent* transform = GetOwner()->GetComponent<TransformComponent>();
+	if (targetTransform == nullptr || transform == nullptr) {
+		RequestStepMove(fallbackDirection, stepDistance, duration);
+		return;
+	}
+
+	Math::Vector3 toTarget = targetTransform->GetPosition() - transform->GetPosition();
+	toTarget.y = 0.0f;
+	const float distanceToTarget = toTarget.Length();
+
+	// 詰める距離 = 「今の距離からengageDistance分を残した距離」だが、
+	// 一度の踏み込みで詰めてよい量はstepDistanceを上限とする
+	const float closingDistance = std::min(stepDistance, std::max(0.0f, distanceToTarget - engageDistance));
+
+	if (closingDistance <= kDirectionEpsilon) {
+		return;
+	}
+
+	Math::Vector3 dir = toTarget;
+	if (dir.LengthSquared() <= kDirectionEpsilon) {
+		// 対象とほぼ同じ座標にいる(通常は起こらない想定)場合のみ、
+		// モデルの向いている方向へフォールバックする(RequestStepMoveと同じ考え方)。
+		dir = transform->GetForward();
+	}
+	else {
+		dir.Normalize();
+	}
+
+	const Math::Vector3 from = transform->GetPosition();
+	const Math::Vector3 to = from + dir * closingDistance;
+	GetOwner()->RequestAddComponent<TweenMoveComponent>(from, to, duration);
 }

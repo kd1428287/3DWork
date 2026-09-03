@@ -1,4 +1,5 @@
 ﻿#include "EffectDispatcher.h"
+#include "../Components/Tags/IRenderable.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 初期化：各エフェクト用のKdGPUParticle生成、対応表登録、イベント購読
@@ -163,8 +164,8 @@ void EffectDispatcher::OnWeaponClash(const Events::Effect::WeaponClashEffectEven
 	baseDir.Normalize();
 
 	// パリィ成功時は派手に、通常ガードのブロックは控えめにする
-	const UINT mainCount = e.IsParry ? 40 : 12;
-	const UINT emberCount = e.IsParry ? 15 : 5;
+	const UINT mainCount = e.IsParry ? 120 : 60;
+	const UINT emberCount = e.IsParry ? 75 : 50;
 
 	//------------------------------------------
 	// 勢いよく飛ぶ火花(メイン)
@@ -175,8 +176,8 @@ void EffectDispatcher::OnWeaponClash(const Events::Effect::WeaponClashEffectEven
 	mainParam.VelocityMax = baseDir * 4.0f + Math::Vector3(1.0f, 1.5f, 1.0f);
 	mainParam.SizeMin = 0.02f;
 	mainParam.SizeMax = 0.06f;
-	mainParam.LifeMin = 0.1f;
-	mainParam.LifeMax = 0.25f;
+	mainParam.LifeMin = 0.45f;
+	mainParam.LifeMax = 0.8f;
 	mainParam.Color = { 1.0f, 0.85f, 0.4f, 1.0f }; // 明るいオレンジ〜黄色
 
 	m_clashSparkParticle->Emit(mainParam, mainCount);

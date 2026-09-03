@@ -26,6 +26,7 @@
 #include "../../Components/Collision/WireFrameComponent.h"
 #include "../../Components/Sensors/GroundSensorComponent.h"
 #include "../../Components/UI/Player/PlayerStatusUIComponent.h"
+#include "../../Components/Effect/TrailPolygonEffectComponent.h"
 
 namespace
 {
@@ -239,7 +240,11 @@ GameObject* PlayerFactory::CreateWeapon(ObjectManager& objectManager, GameObject
 	// 発生/停止のタイミングはPlayerStatusController::SetWeaponTrailEmitting()
 	// 経由でStateAttack側から制御する(SetWeaponHitBoxEnabledと同じ窓)。
 	weapon->AddComponent<PolygonRenderComponent>();
-	weapon->AddComponent<TrailPolygonComponent>();
+	auto* trail = weapon->AddComponent<TrailPolygonComponent>("Asset/Textures/Game/Effect/Trail.png");
+	trail->StartEmit();
+	//trail->SetPattern(KdTrailPolygon::Trail_Pattern::eBillboard);
+	trail->SetPattern(KdTrailPolygon::Trail_Pattern::eVertices);
+	trail->SetBaseTip({ 0,0,0 }, weaponDefinition.hitBox.offset);
 
 	return weapon;
 }

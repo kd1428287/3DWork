@@ -228,6 +228,7 @@ bool Application::Init(int w, int h)
 	keyboardDevice->AddButton("Guard", new KdInputButtonForWindows({ VK_RBUTTON }));
 	keyboardDevice->AddButton("Dash", new KdInputButtonForWindows({ VK_LSHIFT }));
 	keyboardDevice->AddButton("Pause", new KdInputButtonForWindows({ 'T' }));
+	keyboardDevice->AddButton("Editor", new KdInputButtonForWindows({ VK_F1 }));
 	keyboardDevice->AddButton("Lock", new KdInputButtonForWindows({ VK_MBUTTON }));
 
 	std::string buff;
@@ -303,17 +304,7 @@ void Application::Execute()
 		std::string str = "3D_Action FPS: " + std::to_string(Application::Instance().GetNowFPS());
 		SetWindowTextA(m_window.GetWndHandle(), str.c_str());
 
-		if (KdInputManager::Instance().IsPress("Pause")) {
-			static bool flg = true;
-			flg = !flg;
-			KdInputManager::Instance().SetAxisConfineToWindowCenter("Look", flg);
-
-			// エディタ描画のON/OFFを切り替え
-			EditorViewport::Instance().ToggleEnabled();
-
-			// エディタOFF中(プレイ中)はカーソルを隠し、ON中(編集中)は表示する
-			ShowCursor(EditorViewport::Instance().IsEnabled());
-		}
+		
 
 		// ゲーム終了指定があるときはループ終了
 		if (m_endFlag)

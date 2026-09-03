@@ -4,6 +4,7 @@
 #include "../../Components/Camera/CameraOrbitComponent.h"
 #include "../../Components/Camera/CameraComponent.h"
 #include "../../Core/SceneContext.h"
+#include "../Editor/EditorViewport.h"
 
 // ============================================================
 // 入力システム。
@@ -55,22 +56,15 @@ class InputSystem {
 public:
 	void RegisterPlayer(PlayerInputComponent* input) { playerInput_ = input; }
 	void RegisterCameraOrbit(CameraOrbitComponent* orbit) { cameraOrbit_ = orbit; }
+	void RegisterObjectManager(ObjectManager* obj) { objManager_ = obj; }
 
 	void Update(float /*deltaTime*/) {
 		if (playerInput_ != nullptr) {
 			// --- 移動方向 ---------------------------------------------
-			// "Move"という名前で登録された軸入力(KdInputAxisForWindows等)を取得。
-			// x:左右, y:前後 のローカルな移動意思として扱う。
 			const Math::Vector2 axis = KdInputManager::Instance().GetAxisState("Move");
 			Math::Vector3 moveDir{ axis.x, 0.0f, axis.y };
 
-			// カメラの水平方向(yaw)を移動方向の基準にする(カメラ相対移動)。
-			// ピッチ(見上げ/見下ろし)は意図的に含めない。含めてしまうと、
-			// 見上げている間に前進しようとした時にキャラが宙(または地面)へ
-			// 向かおうとしてしまうため。
-			//
-			// 実際に今写っているカメラの向き(activeCameraのGetForward())を
-			// 基準にする(クラス冒頭コメントの【ロックオン対応】参照)。
+			// カメラの水平方向(yaw)を移動方向の基準にする
 			bool usedActualCameraForward = false;
 			if (SceneContext* context = playerInput_->GetOwner()->GetContext()) {
 				if (CameraComponent* camera = context->activeCamera) {
@@ -110,13 +104,6 @@ public:
 			if (KdInputManager::Instance().IsPress("Evade")) {
 				playerInput_->PushCommand(ActionCommand::Evade);
 			}
-			// パリィは独立した入力を持たない。Guardボタン押下(SetGuardHeld)の
-			// 開始直後の数フレームが、そのままパリィ判定窓になる
-			// (PlayerStatusController::IsInParryWindow()参照)。
-
-			// "Lock"は押した瞬間だけ意味を持つ単発入力。Attack/Evadeと違い
-			// 先行入力バッファ(PushCommand)には積まず、専用のフラグとして
-			// 素通しする(PlayerInputComponent::SetLockPressed()参照)。
 			if (KdInputManager::Instance().IsPress("Lock")) {
 				playerInput_->SetLockPressed();
 			}
@@ -124,17 +111,40 @@ public:
 
 		if (cameraOrbit_ != nullptr) {
 			// --- マウス視点回転 -----------------------------------------
-			// "Look"軸(KdInputAxisForWindowsMouse)は1フレームの移動量(ピクセル)を
-			// そのまま返す。ラジアンへの変換・感度・ピッチのクランプは
-			// CameraOrbitComponent側の責務。
 			const Math::Vector2 look = KdInputManager::Instance().GetAxisState("Look");
 			cameraOrbit_->SetLookDelta(look);
+		}
+
+		if (KdInputManager::Instance().IsPress("Pause")) {
+			static bool flg = true;
+			flg = !flg;
+			KdInputManager::Instance().SetAxisConfineToWindowCenter("Look", flg);
+
+			flg ?
+				objManager_->AddMask(ObjectFlags::Gameplay) :
+				objManager_->RemoveMask(ObjectFlags::Gameplay);
+		}
+
+		if (KdInputManager::Instance().IsPress("Editor")) {
+			// エディタ描画のON/OFFを切り替え
+			EditorViewport::Instance().ToggleEnabled();
+
+			bool flg = EditorViewport::Instance().IsEnabled();
+			KdInputManager::Instance().SetAxisConfineToWindowCenter("Look", !flg);
+
+			// エディタOFF中(プレイ中)はカーソルを隠し、ON中(編集中)は表示する
+			ShowCursor(flg);
+
+			!flg ?
+				objManager_->AddMask(ObjectFlags::Gameplay) :
+				objManager_->RemoveMask(ObjectFlags::Gameplay);
 		}
 	}
 
 private:
 	PlayerInputComponent* playerInput_ = nullptr;
 	CameraOrbitComponent* cameraOrbit_ = nullptr;
+	ObjectManager* objManager_ = nullptr;
 
 	// activeCameraの水平前方ベクトルがこれ以下(ほぼ真上/真下を向いている)
 	// の場合は、そこからyawを決めずCameraOrbitComponent側にフォールバックする、

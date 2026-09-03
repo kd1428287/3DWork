@@ -13,6 +13,7 @@ ComboAttackTable CreateDebugComboAttackTable()
 	table[0].recoveryDuration = 0.25f;
 	table[0].stepDistance = 2.0f;
 	table[0].stepDuration = 0.4f;
+	table[0].engageDistance = 1.2f; // 差し込み技なので間合いはやや近め
 	table[0].recoveryEvadeCancelStart = 0.10f;
 	table[0].recoveryAttackCancelStart = 0.12f;
 	table[0].blendDuration = 0.12f; // Noneからの遷移なので通常よりやや長め
@@ -24,6 +25,7 @@ ComboAttackTable CreateDebugComboAttackTable()
 	table[1].recoveryDuration = 0.30f;
 	table[1].stepDistance = 1.6f;
 	table[1].stepDuration = 0.4f;
+	table[1].engageDistance = 1.2f;
 	table[1].recoveryEvadeCancelStart = 0.15f;
 	table[1].recoveryAttackCancelStart = 0.18f;
 	table[1].blendDuration = 0.08f; // 前段からの継続。短めにして繋ぎの唐突さを緩和
@@ -35,6 +37,7 @@ ComboAttackTable CreateDebugComboAttackTable()
 	table[2].recoveryDuration = 0.32f;
 	table[2].stepDistance = 1.6f;
 	table[2].stepDuration = 0.4f;
+	table[2].engageDistance = 1.3f;
 	table[2].recoveryEvadeCancelStart = 0.16f;
 	table[2].recoveryAttackCancelStart = 0.20f;
 	table[2].blendDuration = 0.08f;
@@ -46,6 +49,7 @@ ComboAttackTable CreateDebugComboAttackTable()
 	table[3].recoveryDuration = 0.35f;
 	table[3].stepDistance = 1.7f;
 	table[3].stepDuration = 0.4f;
+	table[3].engageDistance = 1.3f;
 	table[3].recoveryEvadeCancelStart = 0.18f;
 	table[3].recoveryAttackCancelStart = 0.22f;
 	table[3].blendDuration = 0.08f;
@@ -66,8 +70,8 @@ ComboAttackTable CreateDebugComboAttackTable()
 	table[4].recoveryAttackCancelStart = 0.50f;
 	table[4].blendDuration = 0.1f; // フィニッシュ技。次はNoneへ戻るだけなので通常寄りの値
 	// フィニッシュ技はルートモーション付きのクリップを使う想定。
-	// stepDistance/stepDirection/stepDurationはuseRootMotion=trueの間
-	// 無視される(StateAttack::Update参照)。
+	// stepDistance/stepDirection/stepDuration/engageDistanceはuseRootMotion=true
+	// の間無視される(StateAttack::Update参照)。
 	table[4].useRootMotion = true;
 	table[4].animationName = "Attack5";
 

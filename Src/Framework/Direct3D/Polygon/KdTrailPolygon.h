@@ -95,5 +95,5 @@ private:
 	std::deque<Math::Matrix>	m_pointList;
 
 	// 軌跡の長さ
-	UINT			m_length = 20;
+	UINT			m_length = 40;
 };

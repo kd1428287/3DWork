@@ -21,7 +21,6 @@
 #include "../Data/HealthComponent.h"
 #include "../../../Core/Handle.h"
 #include "../../../Systems/Collision/CollisionSystem.h"
-
 #include "../../../Engine/EventBus/Event/EffectEvents.h"
 
 class PlayerStatusController : public ComponentBase
@@ -184,11 +183,23 @@ public:
 	// StateAttack::Enter()から呼ばれる。facingDirectionComponent_はAttack中
 	// 無効化されているため、ここで明示的に向きを合わせる必要がある。
 	void FaceAttackTarget() {
+		// 対象が見つからない場合も含め、まず前回の記録をクリアする
+		// (前回攻撃時の対象が今回は見つからない/死亡した等のケースで、
+		//  古い対象への参照がRequestStepMoveTowardsTarget側に残らないようにする)。
+		currentAttackTarget_ = {};
+
 		if (lockOnComponent_ == nullptr || transform_ == nullptr) return;
 
 		GameObject* target = lockOnComponent_->IsLockedOn()
 			? lockOnComponent_->GetLockedTarget()
 			: lockOnComponent_->FindNearestToScreenCenter();
+
+		// StateAttack::Enter()時点で向き合わせに使った対象を、そのまま
+		// AttackActive開始時の踏み込み移動(RequestStepMoveTowardsTarget)
+		// でも間合い計算に使い回す。攻撃中に敵が動いても同一対象を
+		// 参照し続けたいため(踏み込み中に毎フレーム再選定はしない)、
+		// Handle経由で弱参照として保持しておく。
+		currentAttackTarget_ = Handle<GameObject>(target);
 
 		FaceTowards(target);
 	}
@@ -200,6 +211,20 @@ public:
 	// ここに閉じ込め、StateはTransformComponent/TweenMoveComponentを
 	// 直接知らなくて済むようにする。
 	void RequestStepMove(const Math::Vector3& direction, float distance, float duration);
+
+	// StateAttackから、対象との間合い(engageDistance)を保つ踏み込み移動を
+	// リクエストする際に使う。FaceAttackTarget()で記録したcurrentAttackTarget_
+	// との現在距離を見て、
+	//   詰める距離 = clamp(現在距離 - engageDistance, 0, stepDistance)
+	// だけ対象方向へ踏み込む(stepDistanceは「一度の踏み込みで詰めてよい
+	// 距離」の上限として働く)。既にengageDistance以内まで近づいている
+	// 場合は移動しない(向きはFaceAttackTarget()で既に合わせ済み)。
+	//
+	// 対象が見つからない(currentAttackTarget_が無効)場合は、従来通り
+	// fallbackDirection/stepDistanceによる決め打ち移動(RequestStepMove)に
+	// フォールバックする。
+	void RequestStepMoveTowardsTarget(const Math::Vector3& fallbackDirection, float stepDistance,
+		float engageDistance, float duration);
 
 	// 進行中のステップ移動があれば止める(フェーズ遷移や状態の中断時に使う)。
 	void CancelStepMove();
@@ -489,18 +514,13 @@ private:
 				attacker->GetLocalEventBus().Publish(AttackSourceComponent::ParriedEvent{});
 			}
 
-			// 弾き返しの火花エフェクト
-			// e.otherObject = 相手側の武器(AttackSourceComponentの持ち主)
-			// weaponCollider_ = 自分側の武器(コンストラクタ後にSetWeapon()等で登録済み想定)
 			SpawnWeaponClashEffect(e.otherObject, /*isParry=*/true);
 		}
 		else if (IsGuarding()) {
 			// 通常ブロック: 自分の体幹を削り、HPにも軽減済みのチップ
-			// ダメージを適用する。
-
 			// 通常ブロックの火花エフェクト(パリィ成功時より控えめ)
 			SpawnWeaponClashEffect(e.otherObject, /*isParry=*/false);
-
+			// ダメージを適用する。
 			if (postureComponent_ != nullptr) {
 				postureComponent_->AddPostureDamage(attack->postureDamage);
 				if (postureComponent_->IsBroken()) {
@@ -623,6 +643,13 @@ private:
 	Handle<ColliderComponent> weaponCollider_;
 	Handle<AttackSourceComponent> weaponAttackSource_;
 	Handle<TrailPolygonComponent> weaponTrail_;
+
+	// FaceAttackTarget()で選定した、現在の攻撃で狙っている対象への弱参照。
+	// RequestStepMoveTowardsTarget()が踏み込み距離(間合い)の計算に使う。
+	// 弱参照にしているのは、踏み込み中に対象が破棄された場合でも
+	// Resolve()がnullptrを返すだけで安全にフォールバックできるようにするため
+	// (weaponCollider_等と同じ考え方)。
+	Handle<GameObject> currentAttackTarget_;
 
 	ScopedSubscriber subscriber_;
 

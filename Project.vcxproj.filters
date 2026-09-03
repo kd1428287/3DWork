@@ -609,12 +609,6 @@
     <ClInclude Include="Src\Application\Editor\EditorViewport.h">
       <Filter>Src\Application\Editor</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Factories\Effect\EffectDefinition.h">
-      <Filter>Src\Application\Factories\Effect</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Factories\Effect\EffectFactory.h">
-      <Filter>Src\Application\Factories\Effect</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Components\Render\PolygonRenderComponent.h">
       <Filter>Src\Application\Components\Render</Filter>
     </ClInclude>
@@ -701,6 +695,9 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Engine\EventBus\Event\EffectEvents.h">
       <Filter>Src\Application\Engine\EventBus\Event</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Systems\TimeScaleSystem.h">
+      <Filter>Src\Application\Systems</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -892,9 +889,6 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Editor\EditorViewport.cpp">
       <Filter>Src\Application\Editor</Filter>
-    </ClCompile>
-    <ClCompile Include="Src\Application\Factories\Effect\EffectFactory.cpp">
-      <Filter>Src\Application\Factories\Effect</Filter>
     </ClCompile>
     <ClCompile Include="Src\Application\Editor\EffectEditor.cpp">
       <Filter>Src\Application\Editor</Filter>

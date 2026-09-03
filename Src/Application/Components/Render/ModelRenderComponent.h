@@ -23,7 +23,11 @@ public:
 	// 陰影のあるオブジェクト(光源の影響を受ける)
 	void DrawLit() override						
 	{ 
+		//KdShaderManager::Instance().ChangeRasterizerState(KdRasterizerState::WireFrame);
+
 		if (layer_ & RenderLayer::DrawLit)DrawModel();
+
+		//KdShaderManager::Instance().UndoRasterizerState();
 	}
 	// エフェクト(陰影なし)
 	void DrawEffect() override					{ if (layer_ & RenderLayer::DrawEffect)DrawModel(); }

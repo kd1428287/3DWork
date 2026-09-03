@@ -48,18 +48,21 @@ public:
 		context_.unscaledDeltaTime = deltaTime;
 
 		for (auto& obj : objects_) {
+			if ((obj->GetFlags() & currentUpdateMask_) == 0)continue;
 			obj->PreUpdate(deltaTime);
 		}
 	}
 
 	void Update(float deltaTime) {
 		for (auto& obj : objects_) {
+			if ((obj->GetFlags() & currentUpdateMask_) == 0)continue;
 			obj->Update(deltaTime);
 		}
 	}
 
 	void PostUpdate(float deltaTime) {
 		for (auto& obj : objects_) {
+			if ((obj->GetFlags() & currentUpdateMask_) == 0)continue;
 			obj->PostUpdate(deltaTime);
 		}
 	}
@@ -105,7 +108,6 @@ public:
 	std::size_t GetObjectCount() const { return objects_.size(); }
 
 	// Systemがオブジェクト全体を走査したい場合に使う
-	// (例: ターン開始時に全カードをアンタップする、など)
 	template <typename Func>
 	void ForEachObject(Func&& func) {
 		for (auto& obj : objects_) {
@@ -125,6 +127,14 @@ public:
 		return result;
 	}
 
+	void SetTimeScale(float timeScale, uint8_t targetMask)
+	{
+		for (auto& obj : objects_) {
+			if ((obj->GetFlags() & targetMask) == 0)continue;
+			obj->SetTimeScale(timeScale);
+		}
+	}
+
 	void SetColliderRegistry(ColliderRegistry* colliderRegistry)
 	{
 		context_.colliderRegistry = colliderRegistry;
@@ -135,8 +145,14 @@ public:
 		context_.activeCamera = camera;
 	}
 
+	void SetMasks(uint8_t masks) { currentUpdateMask_ = masks; }
+	void AddMask(uint8_t mask) { currentUpdateMask_ |= mask; }
+	void RemoveMask(uint8_t Mask) { currentUpdateMask_ &= ~Mask; }
+
 private:
 	std::vector<std::unique_ptr<GameObject>> objects_;
 	std::vector<GameObject*> pendingDestroy_;
-	SceneContext context_;  // ObjectManager(Sceneの相当物)がこの実体を所有する
+	SceneContext context_; 
+	uint8_t currentUpdateMask_ = 
+		ObjectFlags::Gameplay | ObjectFlags::UI | ObjectFlags::AlwaysActive;
 };

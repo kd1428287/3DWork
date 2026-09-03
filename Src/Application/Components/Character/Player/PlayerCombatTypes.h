@@ -117,10 +117,21 @@ struct AttackMoveData
 	float activeDuration = 0.25f;
 	float recoveryDuration = 0.3f;
 
-	float stepDistance = 0.5f; //	攻撃入力時対象方向か入力方向に移動
+	float stepDistance = 0.5f; //	攻撃入力時対象方向か入力方向に移動。対象が見つからない場合の決め打ち移動距離、
+	// および対象がいる場合の「一度の踏み込みで詰めてよい距離」の上限として使う(engageDistance参照)。
 	// Windupが終わった瞬間(AttackActiveへの切り替わり)に開始する
 	// 踏み込み移動の所要時間(StateAttack::Update参照)。
 	float stepDuration = 0.1f;
+
+	// 対象(ロック対象、または画面中心に最も近い敵)がいる場合、踏み込み後に
+	// 対象との間で保ちたい距離(間合い)。ずっと対象へ前進し続けるのではなく、
+	// 「現在の距離 - engageDistance」だけ(ただしstepDistanceを上限として)
+	// 詰める踏み込み量をStateAttack側で毎回計算するために使う
+	// (PlayerStatusController::RequestStepMoveTowardsTarget参照)。
+	// 技ごとに異なる間合いを持たせたいため(例: リーチの長い技は大きめに)、
+	// AttackMoveData側の値として個別に持つ。対象が見つからない場合は
+	// 従来通りstepDistance/stepDirectionでの決め打ち移動にフォールバックする。
+	float engageDistance = 1.2f;
 
 	// recoveryDuration内で、ここから先は回避によるキャンセルを許可する
 	// 開始タイミング(秒)。recoveryDuration以上にすればキャンセル不可の技になる。

@@ -54,8 +54,13 @@ void StateAttack::Update(PlayerStatusController* controller, float deltaTime) {
 		// useRootMotionがtrueの技(Attack5等)は、この決め打ち移動の
 		// 代わりにアニメーションのルートモーションで動くため呼ばない
 		// (PlayerStatusController::ApplyRootMotion参照)。
+		//
+		// 対象へずっと前進し続けるのではなく、engageDistance(技ごとの間合い)
+		// までしか詰めないようにする。対象が見つからない場合は
+		// 従来通りstepDirection/stepDistanceの決め打ち移動にフォールバックする
+		// (PlayerStatusController::RequestStepMoveTowardsTarget参照)。
 		if (!data.useRootMotion) {
-			controller->RequestStepMove(data.stepDirection, data.stepDistance, data.stepDuration);
+			controller->RequestStepMoveTowardsTarget(data.stepDirection, data.stepDistance, data.engageDistance, data.stepDuration);
 		}
 		controller->SetWeaponHitBoxEnabled(true); // 攻撃判定が実際に発生する一瞬だけ有効化
 		controller->SetWeaponTrailEmitting(true); // 武器の軌跡エフェクトもHitBoxと同じ窓で記録開始
@@ -219,3 +224,6 @@ void StateStagger::Update(PlayerStatusController* controller, float deltaTime) {
 		controller->ChangeStateToNone();
 	}
 }
+
+void StateStagger::Exit(PlayerStatusController* controller)
+{}

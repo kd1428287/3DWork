@@ -364,8 +364,6 @@
     <ClInclude Include="Src\Application\Engine\EventBus\Event\SceneEvents.h" />
     <ClInclude Include="Src\Application\Engine\SystemManager\SystemManager.h" />
     <ClInclude Include="Src\Application\Factories\Common\CameraFactory.h" />
-    <ClInclude Include="Src\Application\Factories\Effect\EffectDefinition.h" />
-    <ClInclude Include="Src\Application\Factories\Effect\EffectFactory.h" />
     <ClInclude Include="Src\Application\Factories\GameObjectFactory.h" />
     <ClInclude Include="Src\Application\Factories\Game\EnemyFactory.h" />
     <ClInclude Include="Src\Application\Factories\Game\PlayerDefinition.h" />
@@ -387,6 +385,7 @@
     <ClInclude Include="Src\Application\Systems\Collision\CollisionSystem.h" />
     <ClInclude Include="Src\Application\Systems\Collision\RaycastSystem.h" />
     <ClInclude Include="Src\Application\Systems\InputSystem.h" />
+    <ClInclude Include="Src\Application\Systems\TimeScaleSystem.h" />
     <ClInclude Include="Src\Framework\Direct3D\KdMaterial.h" />
     <ClInclude Include="Src\Framework\Direct3D\Polygon\KdPolygon.h" />
     <ClInclude Include="Src\Framework\Direct3D\Polygon\KdSquarePolygon.h" />
@@ -454,7 +453,6 @@
     <ClCompile Include="Src\Application\Editor\ImGuizmo.cpp" />
     <ClCompile Include="Src\Application\Editor\MapEditor.cpp" />
     <ClCompile Include="Src\Application\Factories\Common\CameraFactory.cpp" />
-    <ClCompile Include="Src\Application\Factories\Effect\EffectFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\Game\EnemyFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\Game\PlayerDefinitionLoader.cpp" />
     <ClCompile Include="Src\Application\Factories\Game\PlayerFactory.cpp" />

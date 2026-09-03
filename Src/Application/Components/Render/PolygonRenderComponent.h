@@ -22,6 +22,10 @@ public:
 	explicit PolygonRenderComponent(GameObject* owner)
 		: ComponentBase(owner) {}
 
+	void Start()override
+	{
+		transform_ = GetOwner()->GetComponent<TransformComponent>();
+	}
 	void GenerateDepthMapFromLight() override	{ if (layer_ & RenderLayer::GenerateDepthMapFromLight)DrawAll(); }
 	void DrawUnLit() override					{ if (layer_ & RenderLayer::DrawUnLit)DrawAll(); }
 	void DrawLit() override						{ if (layer_ & RenderLayer::DrawLit)DrawAll(); }
@@ -49,9 +53,12 @@ private:
 			// TODO: 実際のKdPolygon側の描画API名に置き換える。
 			// (例: KdShaderManager::Instance().m_〇〇Shader.DrawPolygon(*polygon) 等、
 			//  ModelRenderComponent::DrawModel()のm_StandardShader.DrawModel()に相当するもの)
+			KdShaderManager::Instance().m_StandardShader.DrawPolygon(*polygon/*, transform_->GetUnscaledMatrix()*/);
+
 			
 		}
 	}
 
+	TransformComponent* transform_ = nullptr;
 	uint8_t layer_ = RenderLayer::DrawEffect;
 };
