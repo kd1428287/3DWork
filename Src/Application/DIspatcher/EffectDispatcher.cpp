@@ -2,17 +2,20 @@
 #include "../Components/Tags/IRenderable.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 初期化：各エフェクト用のKdGPUParticle生成、対応表登録、イベント購読
+// 初期化：JSONからのエフェクトデータ読み込み、各パーティクル生成、イベント購読
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-bool EffectDispatcher::Init(EventBus& bus)
+bool EffectDispatcher::Init(EventBus& bus, const std::string& effectDataPath)
 {
 	m_bus = &bus;
+
+	// 先にJSONを読み込む(鍔迫り合い用パーティクルのMaxParticleNumがここで決まる為)
+	LoadEffectData(effectDataPath);
 
 	//------------------------------------------
 	// 鍔迫り合いの火花専用パーティクル
 	//------------------------------------------
 	m_clashSparkParticle = std::make_shared<KdGPUParticle>();
-	if (!m_clashSparkParticle->Init(2000))
+	if (!m_clashSparkParticle->Init(m_weaponClashParams.MaxParticleNum))
 	{
 		assert(0 && "EffectDispatcher：火花用パーティクル初期化失敗");
 		return false;
@@ -20,36 +23,6 @@ bool EffectDispatcher::Init(EventBus& bus)
 
 	// TODO：既存のリソース管理の仕組みに合わせてテクスチャをロードしてセットする
 	// 例：m_clashSparkTexture = KdResourceFactory::Instance().GetTexture("Asset/Texture/spark.png");
-
-	//------------------------------------------
-	// 単純エフェクト(座標だけで足りるもの)の対応表
-	// ※ここでは例としてFootDustのみ登録。HitSpark/BloodSplatterも
-	//   必要になったタイミングで同様にエントリを追加する
-	//------------------------------------------
-	{
-		SimpleEffectEntry entry;
-
-		entry.Particle = std::make_shared<KdGPUParticle>();
-		if (!entry.Particle->Init(500))
-		{
-			assert(0 && "EffectDispatcher：FootDust用パーティクル初期化失敗");
-			return false;
-		}
-
-		// TODO：テクスチャは実際のアセットに差し替える
-		// entry.Texture = KdResourceFactory::Instance().GetTexture("Asset/Texture/dust.png");
-
-		entry.ParamTemplate.VelocityMin = { -0.3f, 0.0f, -0.3f };
-		entry.ParamTemplate.VelocityMax = { 0.3f, 0.5f, 0.3f };
-		entry.ParamTemplate.SizeMin = 0.05f;
-		entry.ParamTemplate.SizeMax = 0.1f;
-		entry.ParamTemplate.LifeMin = 0.3f;
-		entry.ParamTemplate.LifeMax = 0.6f;
-		entry.ParamTemplate.Color = { 0.6f, 0.5f, 0.4f, 1.0f };
-		entry.EmitCount = 15;
-
-		m_simpleEffects[EffectId::FootDust] = entry;
-	}
 
 	//------------------------------------------
 	// イベント購読
@@ -64,6 +37,53 @@ bool EffectDispatcher::Init(EventBus& bus)
 		&bus,
 		bus.Subscribe<Events::Effect::WeaponClashEffectEvent>(
 			[this](const Events::Effect::WeaponClashEffectEvent& e) { OnWeaponClash(e); }));
+
+	return true;
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// effectDataPathをEffectDataLoaderで読み込み、m_simpleEffectsとm_weaponClashParamsを構築する
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+bool EffectDispatcher::LoadEffectData(const std::string& effectDataPath)
+{
+	m_simpleEffects.clear();
+
+	EffectDataFile data;
+	if (!EffectDataLoader::Load(effectDataPath, data))
+	{
+		// JSONが無い/読み込み失敗：m_weaponClashParamsはデフォルト値(元のハードコード値)のまま、
+		// m_simpleEffectsは空のまま(単純エフェクトは発生しなくなる)で継続する
+		return false;
+	}
+
+	m_weaponClashParams = data.WeaponClash;
+
+	for (auto& def : data.Effects)
+	{
+		EffectId id;
+		if (!EffectDataLoader::NameToEffectId(def.Name, id))
+		{
+			// EffectIdに対応しない名前(タイポ等)は無視する
+			continue;
+		}
+
+		SimpleEffectEntry entry;
+
+		entry.Particle = std::make_shared<KdGPUParticle>();
+		if (!entry.Particle->Init(def.Params.MaxParticleNum))
+		{
+			assert(0 && "EffectDispatcher：JSONから読み込んだエフェクト用パーティクル初期化失敗");
+			continue;
+		}
+
+		// TODO：既存のリソース管理の仕組みに合わせてdef.Params.TexturePathからテクスチャをロードしてセットする
+		// 例：entry.Texture = KdResourceFactory::Instance().GetTexture("Asset/Texture/" + def.Params.TexturePath);
+
+		//entry.ParamTemplate = def.Params.ToEmitParameter({ 0.0f, 0.0f, 0.0f });	// Positionはイベント発生時に上書きする
+		//entry.EmitCount = (UINT)std::max(0, def.Params.EmitCount);
+
+		m_simpleEffects[id] = entry;
+	}
 
 	return true;
 }
@@ -133,7 +153,7 @@ void EffectDispatcher::OnGenericEffectSpawn(const Events::Effect::GenericEffectS
 {
 	auto it = m_simpleEffects.find(e.Id);
 
-	// 対応表に無いEffectIdは無視(未登録のエフェクトを指定した呼び出し側のミス)
+	// 対応表に無いEffectIdは無視(JSON未定義、または呼び出し側のミス)
 	if (it == m_simpleEffects.end()) { return; }
 
 	SimpleEffectEntry& entry = it->second;
@@ -146,6 +166,8 @@ void EffectDispatcher::OnGenericEffectSpawn(const Events::Effect::GenericEffectS
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 鍔迫り合いの火花発生イベントの処理
+//	発生方向(baseDir)の計算のみここで行い、Emitパラメータ自体は
+//	m_weaponClashParams(JSONから読み込んだ、またはデフォルトの)Main/Emberに委譲する
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectDispatcher::OnWeaponClash(const Events::Effect::WeaponClashEffectEvent& e)
 {
@@ -163,37 +185,12 @@ void EffectDispatcher::OnWeaponClash(const Events::Effect::WeaponClashEffectEven
 
 	baseDir.Normalize();
 
-	// パリィ成功時は派手に、通常ガードのブロックは控えめにする
-	const UINT mainCount = e.IsParry ? 120 : 60;
-	const UINT emberCount = e.IsParry ? 75 : 50;
+	// パリィ成功時は派手に、通常ガードのブロックは控えめにする(Count自体もJSONで調整可能)
+	m_clashSparkParticle->Emit(
+		m_weaponClashParams.Main.ToEmitParameter(e.Position, baseDir),
+		m_weaponClashParams.Main.GetEmitCount(e.IsParry));
 
-	//------------------------------------------
-	// 勢いよく飛ぶ火花(メイン)
-	//------------------------------------------
-	KdGPUParticle::EmitParameter mainParam;
-	mainParam.Position = e.Position;
-	mainParam.VelocityMin = baseDir * 1.0f - Math::Vector3(1.0f, 0.5f, 1.0f);
-	mainParam.VelocityMax = baseDir * 4.0f + Math::Vector3(1.0f, 1.5f, 1.0f);
-	mainParam.SizeMin = 0.02f;
-	mainParam.SizeMax = 0.06f;
-	mainParam.LifeMin = 0.45f;
-	mainParam.LifeMax = 0.8f;
-	mainParam.Color = { 1.0f, 0.85f, 0.4f, 1.0f }; // 明るいオレンジ〜黄色
-
-	m_clashSparkParticle->Emit(mainParam, mainCount);
-
-	//------------------------------------------
-	// ゆっくり落ちるくすぶり(厚みを出すための2回目のEmit)
-	//------------------------------------------
-	KdGPUParticle::EmitParameter emberParam;
-	emberParam.Position = e.Position;
-	emberParam.VelocityMin = baseDir * 0.3f - Math::Vector3(0.3f, 0.1f, 0.3f);
-	emberParam.VelocityMax = baseDir * 1.0f + Math::Vector3(0.3f, 0.3f, 0.3f);
-	emberParam.SizeMin = 0.02f;
-	emberParam.SizeMax = 0.05f;
-	emberParam.LifeMin = 0.3f;
-	emberParam.LifeMax = 0.6f;
-	emberParam.Color = { 1.0f, 0.5f, 0.1f, 1.0f }; // 暗めの赤オレンジ
-
-	m_clashSparkParticle->Emit(emberParam, emberCount);
+	m_clashSparkParticle->Emit(
+		m_weaponClashParams.Ember.ToEmitParameter(e.Position, baseDir),
+		m_weaponClashParams.Ember.GetEmitCount(e.IsParry));
 }

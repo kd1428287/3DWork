@@ -21,7 +21,8 @@ cbuffer cbGPUParticleEmit : register(b0)
 	float3	g_EmitVelocityMax;		// 初速の範囲(最大)
 	float	g_EmitSizeMax;			// サイズの範囲(最大)
 
-	float4	g_EmitColor;			// 色
+	float4	g_EmitColorMin;			// 色
+	float4	g_EmitColorMax;			// 色
 
 	float	g_EmitLifeMin;			// 寿命の範囲(最小)
 	float	g_EmitLifeMax;			// 寿命の範囲(最大)
@@ -52,7 +53,7 @@ void main(uint3 id : SV_DispatchThreadID)
 	p.Position	= g_EmitPos;
 	p.Velocity	= RandRange3(g_EmitVelocityMin, g_EmitVelocityMax, seed);
 	p.Size		= RandRange(g_EmitSizeMin, g_EmitSizeMax, seed + 3.0f);
-	p.Color		= g_EmitColor;
+	p.Color		= RandRange4(g_EmitColorMin, g_EmitColorMax, seed + 5.0f);
 	p.LifeMax	= RandRange(g_EmitLifeMin, g_EmitLifeMax, seed + 4.0f);
 	p.Life		= p.LifeMax;
 	p._pad		= float3(0, 0, 0);

@@ -48,3 +48,9 @@ float RandRange(float minValue, float maxValue, float seed)
 {
 	return lerp(minValue, maxValue, Rand(seed));
 }
+
+float4 RandRange4(float4 minValue, float4 maxValue, float seed)
+{
+	float4 t = float4(Rand(seed), Rand(seed + 1.234f), Rand(seed + 2.468f), Rand(seed + 3.702f));
+	return lerp(minValue, maxValue, t);
+}

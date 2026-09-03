@@ -5,9 +5,8 @@
 
 #include <fstream>
 #include <filesystem>
-#include <commdlg.h>	// GetOpenFileNameA用
+#include <commdlg.h>	
 #pragma comment(lib, "comdlg32.lib")
-// 未導入の場合はSave/Loadごと削除するか、独自の保存形式に差し替えてください
 #include "nlohmann/json.hpp"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////

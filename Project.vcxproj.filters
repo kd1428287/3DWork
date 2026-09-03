@@ -181,9 +181,6 @@
     <Filter Include="Src\Application\Components\UI\Enemy">
       <UniqueIdentifier>{b8ce769d-5920-4d9c-8274-dd43e2e48887}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Src\Application\Factories\Effect">
-      <UniqueIdentifier>{bfb61705-a2fc-4236-965b-a8640a004df3}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Src\Application\Components\Character\Enemy\Warrock">
       <UniqueIdentifier>{055457c9-e35c-4796-ba22-c3de85b5fd5e}</UniqueIdentifier>
     </Filter>
@@ -195,6 +192,9 @@
     </Filter>
     <Filter Include="Src\Application\Dispatcher">
       <UniqueIdentifier>{fb2683e9-1a72-4db4-8136-7f7d1991d130}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Effect">
+      <UniqueIdentifier>{e955f44d-5d16-4418-b326-cbd4ca208c0c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -699,6 +699,24 @@
     <ClInclude Include="Src\Application\Systems\TimeScaleSystem.h">
       <Filter>Src\Application\Systems</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Framework\Utility\JsonLoader.h">
+      <Filter>Src\Framework\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Effect\EffectParams.h">
+      <Filter>Src\Application\Effect</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Effect\EffectDataLoader.h">
+      <Filter>Src\Application\Effect</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Effect\ITextureProvider.h">
+      <Filter>Src\Application\Effect</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Effect\KdAssetsTextureProvider.h">
+      <Filter>Src\Application\Effect</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Effect\EffectInstance.h">
+      <Filter>Src\Application\Effect</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -919,6 +937,21 @@
     </ClCompile>
     <ClCompile Include="Src\Application\DIspatcher\EffectDispatcher.cpp">
       <Filter>Src\Application\Dispatcher</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Framework\Utility\JsonLoader.cpp">
+      <Filter>Src\Framework\Utility</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Effect\EffectDataLoader.cpp">
+      <Filter>Src\Application\Effect</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Effect\EffectParams.cpp">
+      <Filter>Src\Application\Effect</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Effect\KdAssetsTextureProvider.cpp">
+      <Filter>Src\Application\Effect</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Effect\EffectInstance.cpp">
+      <Filter>Src\Application\Effect</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

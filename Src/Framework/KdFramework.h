@@ -12,6 +12,7 @@
 // 便利機能
 #include "Utility/KdUtility.h"
 #include "Utility/KdCSVData.h"
+#include "Utility/JsonLoader.h"
 #include "Utility/KdFPSController.h"
 #include "Utility/KdRandom.h"
 

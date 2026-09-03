@@ -45,18 +45,19 @@ public:
 	// 発生パラメータ
 	struct EmitParameter
 	{
-		Math::Vector3	Position;					// 発生座標
+		Math::Vector3	Position;
 
-		Math::Vector3	VelocityMin = { -1,-1,-1 };	// 初速の範囲(最小)
-		Math::Vector3	VelocityMax = { 1, 1, 1 };	// 初速の範囲(最大)
+		Math::Vector3	VelocityMin = { -1,-1,-1 };
+		Math::Vector3	VelocityMax = { 1, 1, 1 };
 
-		float			SizeMin = 0.1f;				// サイズの範囲(最小)
-		float			SizeMax = 0.3f;				// サイズの範囲(最大)
+		float			SizeMin = 0.1f;
+		float			SizeMax = 0.3f;
 
-		float			LifeMin = 0.5f;				// 寿命の範囲(最小・秒)
-		float			LifeMax = 1.5f;				// 寿命の範囲(最大・秒)
+		float			LifeMin = 0.5f;
+		float			LifeMax = 1.5f;
 
-		Math::Vector4	Color = { 1,1,1,1 };		// 色(RGBA)
+		Math::Vector4	ColorMin = { 1,1,1,1 };
+		Math::Vector4	ColorMax = { 1,1,1,1 };
 	};
 
 	//================================================
@@ -137,7 +138,8 @@ private:
 		Math::Vector3	EmitVelocityMax;
 		float			EmitSizeMax = 0.0f;
 
-		Math::Vector4	EmitColor = { 1,1,1,1 };
+		Math::Vector4	EmitColorMin = { 1,1,1,1 };
+		Math::Vector4	EmitColorMax = { 1,1,1,1 };
 
 		float			EmitLifeMin = 0.0f;
 		float			EmitLifeMax = 0.0f;

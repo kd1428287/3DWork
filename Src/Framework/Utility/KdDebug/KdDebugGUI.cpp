@@ -72,10 +72,14 @@ void KdDebugGUI::GuiInit(int w, int h)
 	ImGui_ImplDX11_Init(KdDirect3D::Instance().WorkDev(), KdDirect3D::Instance().WorkDevContext());
 
 #include "imgui/ja_glyph_ranges.h"
+
+	ImFontConfig configDefault;
+	configDefault.SizePixels = 13.0f; // ← 明示的に指定(マージ側と揃える)
+	io.Fonts->AddFontDefault(&configDefault);
+
 	ImFontConfig config;
 	config.MergeMode = true;
-	config.MergeMode = false;
-	io.Fonts->AddFontDefault();
+	//io.Fonts->AddFontDefault();
 	// 日本語対応
 	io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\msgothic.ttc", 13.0f, &config, glyphRangesJapanese);
 	m_uqLog = std::make_unique<ImGuiAppLog>();
@@ -116,18 +120,6 @@ void KdDebugGUI::GuiProcess()
 		// ログウィンドウ
 		m_uqLog->Draw("Log Window");
 
-		//=====================================================
-		// ログ出力 ・・・ AddLog("～") で追加
-		//=====================================================
-
-	//	m_uqLog->AddLog("hello world\n");
-
-		//=====================================================
-		// 別ソースファイルからログを出力する場合
-		//=====================================================
-
-	//	KdDebugGUI::Instance().AddLog("TestLog\n");
-
 		// ゲーム画面を表示するSceneウィンドウ(中身はオフスクリーンに描画されたゲーム画面)
 		EditorViewport::Instance().DrawSceneWindow();
 
@@ -137,7 +129,8 @@ void KdDebugGUI::GuiProcess()
 		// エフェクト配置エディタ(Effect Hierarchy / Effect Inspector / Effect Assets / ギズモ)
 		//	※ImGuizmo::BeginFrame()はMapEditor::Update()内で既に呼ばれているため、
 		//	  EffectEditor::Update()内では呼ばない
-		EffectEditor::Instance().Update();
+		
+		//EffectEditor::Instance().Update();
 	}
 
 	//===========================================================

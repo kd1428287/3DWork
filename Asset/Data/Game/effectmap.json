@@ -1,0 +1,102 @@
+{
+  "effects": [
+    {
+      "name": "HitSpark",
+      "pos": [0.0, 0.0, 0.0],
+      "rotate": [0.0, 0.0, 0.0],
+      "scale": [1.0, 1.0, 1.0],
+      "params": {
+        "maxParticleNum": 300,
+        "emitMode": "Burst",
+        "emitCount": 20,
+        "emitInterval": 0.0,
+        "emitRate": 30.0,
+        "velocityMin": [-2.0, -0.5, -2.0],
+        "velocityMax": [2.0, 3.0, 2.0],
+        "sizeMin": 0.05,
+        "sizeMax": 0.15,
+        "lifeMin": 0.15,
+        "lifeMax": 0.35,
+        "color": [1.0, 0.95, 0.6, 1.0],
+        "gravity": [0.0, -1.0, 0.0],
+        "texture": "spark01.png",
+        "blendMode": "Add"
+      }
+    },
+    {
+      "name": "FootDust",
+      "pos": [0.0, 0.0, 0.0],
+      "rotate": [0.0, 0.0, 0.0],
+      "scale": [1.0, 1.0, 1.0],
+      "params": {
+        "maxParticleNum": 150,
+        "emitMode": "Burst",
+        "emitCount": 8,
+        "emitInterval": 0.0,
+        "emitRate": 10.0,
+        "velocityMin": [-0.5, 0.1, -0.5],
+        "velocityMax": [0.5, 0.6, 0.5],
+        "sizeMin": 0.1,
+        "sizeMax": 0.25,
+        "lifeMin": 0.4,
+        "lifeMax": 0.8,
+        "color": [0.75, 0.68, 0.55, 0.6],
+        "gravity": [0.0, -0.3, 0.0],
+        "texture": "dust01.png",
+        "blendMode": "Alpha"
+      }
+    },
+    {
+      "name": "BloodSplatter",
+      "pos": [0.0, 0.0, 0.0],
+      "rotate": [0.0, 0.0, 0.0],
+      "scale": [1.0, 1.0, 1.0],
+      "params": {
+        "maxParticleNum": 200,
+        "emitMode": "Burst",
+        "emitCount": 15,
+        "emitInterval": 0.0,
+        "emitRate": 30.0,
+        "velocityMin": [-1.5, 0.3, -1.5],
+        "velocityMax": [1.5, 2.5, 1.5],
+        "sizeMin": 0.03,
+        "sizeMax": 0.1,
+        "lifeMin": 0.3,
+        "lifeMax": 0.6,
+        "color": [0.6, 0.02, 0.02, 1.0],
+        "gravity": [0.0, -2.0, 0.0],
+        "texture": "blood01.png",
+        "blendMode": "Alpha"
+      }
+    }
+  ],
+  "weaponClash": {
+    "maxParticleNum": 2000,
+    "main": {
+      "dirScaleMin": 1.0,
+      "dirScaleMax": 4.0,
+      "offsetMin": [1.0, 0.5, 1.0],
+      "offsetMax": [1.0, 1.5, 1.0],
+      "sizeMin": 0.02,
+      "sizeMax": 0.06,
+      "lifeMin": 0.45,
+      "lifeMax": 0.8,
+      "color": [1.0, 0.85, 0.4, 1.0],
+      "countParry": 120,
+      "countBlock": 60
+    },
+    "ember": {
+      "dirScaleMin": 0.3,
+      "dirScaleMax": 1.0,
+      "offsetMin": [0.3, 0.1, 0.3],
+      "offsetMax": [0.3, 0.3, 0.3],
+      "sizeMin": 0.02,
+      "sizeMax": 0.05,
+      "lifeMin": 0.3,
+      "lifeMax": 0.6,
+      "color": [1.0, 0.5, 0.1, 1.0],
+      "countParry": 75,
+      "countBlock": 50
+    }
+  }
+}
