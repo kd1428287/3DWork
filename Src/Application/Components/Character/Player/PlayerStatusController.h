@@ -16,7 +16,7 @@
 #include "../../Animation/ModelAnimatorComponent.h"
 #include "../../Collision/ColliderComponent.h"
 #include "../../Collision/AttackSourceComponent.h"
-#include "../../Effect/TrailPolygonEffectComponent.h" 
+#include "../../Effect/TrailPolygonComponent.h" 
 #include "../Data/PostureComponent.h"
 #include "../Data/HealthComponent.h"
 #include "../../../Core/Handle.h"

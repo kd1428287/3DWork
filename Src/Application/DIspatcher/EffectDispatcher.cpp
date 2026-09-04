@@ -21,8 +21,7 @@ bool EffectDispatcher::Init(EventBus& bus, const std::string& effectDataPath)
 		return false;
 	}
 
-	// TODO：既存のリソース管理の仕組みに合わせてテクスチャをロードしてセットする
-	// 例：m_clashSparkTexture = KdResourceFactory::Instance().GetTexture("Asset/Texture/spark.png");
+	m_clashSparkTexture = KdAssets::Instance().m_textures.GetData("Asset/Textures/Game/Effect/effect.png");
 
 	//------------------------------------------
 	// イベント購読
@@ -43,6 +42,9 @@ bool EffectDispatcher::Init(EventBus& bus, const std::string& effectDataPath)
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // effectDataPathをEffectDataLoaderで読み込み、m_simpleEffectsとm_weaponClashParamsを構築する
+//	単純エフェクトの生成・テクスチャ解決はEffectInstance::Init()に委譲する
+//	(EffectEditor側のプレビュー初期化と全く同じ経路を通る為、ここでGravity/テクスチャの
+//	 適用漏れが起きる余地は無い)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 bool EffectDispatcher::LoadEffectData(const std::string& effectDataPath)
 {
@@ -67,29 +69,21 @@ bool EffectDispatcher::LoadEffectData(const std::string& effectDataPath)
 			continue;
 		}
 
-		SimpleEffectEntry entry;
-
-		entry.Particle = std::make_shared<KdGPUParticle>();
-		if (!entry.Particle->Init(def.Params.MaxParticleNum))
+		EffectInstance instance;
+		if (!instance.Init(def.Params, &m_textureProvider))
 		{
-			assert(0 && "EffectDispatcher：JSONから読み込んだエフェクト用パーティクル初期化失敗");
+			// 失敗理由(KdGPUParticle初期化失敗)はEffectInstance::Init内でassert済み
 			continue;
 		}
 
-		// TODO：既存のリソース管理の仕組みに合わせてdef.Params.TexturePathからテクスチャをロードしてセットする
-		// 例：entry.Texture = KdResourceFactory::Instance().GetTexture("Asset/Texture/" + def.Params.TexturePath);
-
-		//entry.ParamTemplate = def.Params.ToEmitParameter({ 0.0f, 0.0f, 0.0f });	// Positionはイベント発生時に上書きする
-		//entry.EmitCount = (UINT)std::max(0, def.Params.EmitCount);
-
-		m_simpleEffects[id] = entry;
+		m_simpleEffects[id] = std::move(instance);
 	}
 
 	return true;
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 解放：購読解除、保持しているパーティクル・テクスチャの破棄
+// 解放：購読解除、保持しているエフェクト・パーティクル・テクスチャの破棄
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectDispatcher::Release()
 {
@@ -105,7 +99,11 @@ void EffectDispatcher::Release()
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 毎フレーム更新：保持している全パーティクルのシミュレーションを進める
+// 毎フレーム更新：保持している全エフェクトのシミュレーションを進める
+//	Gravityの適用はEffectInstance::Update()内で行われる。
+//	m_simpleEffectsはPlay()を使わずOnGenericEffectSpawn()の都度Emit()するだけの一発仕様の為、
+//	worldPos/baseDirを省略して呼んでよい(内部のm_isPlayingがfalseのままなので自動発生処理はスキップされ、
+//	Gravity適用のみが行われる)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectDispatcher::Update(float deltaTime)
 {
@@ -116,17 +114,13 @@ void EffectDispatcher::Update(float deltaTime)
 
 	for (auto& pair : m_simpleEffects)
 	{
-		SimpleEffectEntry& entry = pair.second;
-
-		if (entry.Particle)
-		{
-			entry.Particle->Update(deltaTime);
-		}
+		pair.second.Update(deltaTime);
 	}
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 描画：保持している全パーティクルを描画する
+// 描画：保持している全エフェクトを描画する
+//	テクスチャの解決はEffectInstance::Init/Reconfigure時に済んでいる
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectDispatcher::Draw()
 {
@@ -137,12 +131,7 @@ void EffectDispatcher::Draw()
 
 	for (auto& pair : m_simpleEffects)
 	{
-		SimpleEffectEntry& entry = pair.second;
-
-		if (entry.Particle)
-		{
-			entry.Particle->Draw(entry.Texture);
-		}
+		pair.second.Draw();
 	}
 }
 
@@ -156,18 +145,15 @@ void EffectDispatcher::OnGenericEffectSpawn(const Events::Effect::GenericEffectS
 	// 対応表に無いEffectIdは無視(JSON未定義、または呼び出し側のミス)
 	if (it == m_simpleEffects.end()) { return; }
 
-	SimpleEffectEntry& entry = it->second;
-
-	KdGPUParticle::EmitParameter param = entry.ParamTemplate;
-	param.Position = e.Position;
-
-	entry.Particle->Emit(param, entry.EmitCount);
+	// 単発発生：定義されている全Layersぶんをまとめて発生させる(baseDirは未使用の為省略)
+	it->second.Emit(e.Position);
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 鍔迫り合いの火花発生イベントの処理
 //	発生方向(baseDir)の計算のみここで行い、Emitパラメータ自体は
 //	m_weaponClashParams(JSONから読み込んだ、またはデフォルトの)Main/Emberに委譲する
+//	※EffectInstanceの対象範囲外。理由はEffectDispatcher.hのクラスコメント参照
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectDispatcher::OnWeaponClash(const Events::Effect::WeaponClashEffectEvent& e)
 {

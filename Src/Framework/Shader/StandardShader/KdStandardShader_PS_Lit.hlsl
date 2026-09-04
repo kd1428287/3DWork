@@ -44,7 +44,7 @@ float4 main(VSOutput In) : SV_Target0
 	float4 baseColor = g_baseTex.Sample(g_ss, In.UV) * g_BaseColor * In.Color;
 	
 	// Alphaテスト
-	if( baseColor.a < 0.05f )
+	if( baseColor.a < 0.55f )
 	{
 		discard;
 	}

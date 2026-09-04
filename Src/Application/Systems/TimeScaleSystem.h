@@ -23,5 +23,7 @@ private:
 	ObjectManager& objManager_;
 	std::vector<ScopedSubscriber> subscriptions_;
 
+	std::unordered_map<float, uint8_t> timeScales_;
+
 	float elapsed_{};
 };

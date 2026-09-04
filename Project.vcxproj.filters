@@ -618,7 +618,7 @@
     <ClInclude Include="Src\Application\Components\Tags\IModelRenderSource.h">
       <Filter>Src\Application\Components\Tags</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\Effect\TrailPolygonEffectComponent.h">
+    <ClInclude Include="Src\Application\Components\Effect\TrailPolygonComponent.h">
       <Filter>Src\Application\Components\Effect</Filter>
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Character\BehaviorTree\BTComposite.h">
@@ -1028,6 +1028,9 @@
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle_VS.hlsl">
       <Filter>Src\Framework\Shader\GPUParticle</Filter>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_ColorGrade.hlsl">
+      <Filter>Src\Framework\Shader\PostProcessShader</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

@@ -47,23 +47,27 @@ public:
 		// 常にこの値を参照する。
 		context_.unscaledDeltaTime = deltaTime;
 
+		float dt = deltaTime * timeScale_;
+
 		for (auto& obj : objects_) {
 			if ((obj->GetFlags() & currentUpdateMask_) == 0)continue;
-			obj->PreUpdate(deltaTime);
+			obj->PreUpdate(dt);
 		}
 	}
 
 	void Update(float deltaTime) {
+		float dt = deltaTime * timeScale_;
 		for (auto& obj : objects_) {
 			if ((obj->GetFlags() & currentUpdateMask_) == 0)continue;
-			obj->Update(deltaTime);
+			obj->Update(dt);
 		}
 	}
 
 	void PostUpdate(float deltaTime) {
+		float dt = deltaTime * timeScale_;
 		for (auto& obj : objects_) {
 			if ((obj->GetFlags() & currentUpdateMask_) == 0)continue;
-			obj->PostUpdate(deltaTime);
+			obj->PostUpdate(dt);
 		}
 	}
 
@@ -149,10 +153,13 @@ public:
 	void AddMask(uint8_t mask) { currentUpdateMask_ |= mask; }
 	void RemoveMask(uint8_t Mask) { currentUpdateMask_ &= ~Mask; }
 
+	void SetTimeScale(float timeScale) { timeScale_ = timeScale; }
+
 private:
 	std::vector<std::unique_ptr<GameObject>> objects_;
 	std::vector<GameObject*> pendingDestroy_;
 	SceneContext context_; 
+	float timeScale_ = 1.0f;
 	uint8_t currentUpdateMask_ = 
 		ObjectFlags::Gameplay | ObjectFlags::UI | ObjectFlags::AlwaysActive;
 };

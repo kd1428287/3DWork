@@ -130,7 +130,7 @@ void KdDebugGUI::GuiProcess()
 		//	※ImGuizmo::BeginFrame()はMapEditor::Update()内で既に呼ばれているため、
 		//	  EffectEditor::Update()内では呼ばない
 		
-		//EffectEditor::Instance().Update();
+		EffectEditor::Instance().Update();
 	}
 
 	//===========================================================

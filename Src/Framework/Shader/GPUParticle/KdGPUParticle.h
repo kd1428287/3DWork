@@ -30,15 +30,16 @@ public:
 	// ※HLSL側(inc_KdGPUParticle.hlsli の Particle構造体)とレイアウトを必ず一致させる事
 	struct Particle
 	{
-		Math::Vector3	Position;			// ワールド座標
-		float			Life = 0.0f;		// 残り寿命(秒) 0以下で死亡扱い
+		Math::Vector3	Position;
+		float			Life = 0.0f;
 
-		Math::Vector3	Velocity;			// 速度
-		float			Size = 0.1f;		// 表示サイズ(板ポリの一辺の長さ)
+		Math::Vector3	Velocity;
+		float			Size = 0.1f;
 
-		Math::Vector4	Color = { 1,1,1,1 };// 色(RGBA)
+		Math::Vector4	ColorStart = { 0.f,0.f,0.f, 1.0f };	// 発生直後の熱い色(1.0超で明るめに)
+		Math::Vector4	Color = { 0.f,0.f,0.f, 1.0f };						// 冷えた後の最終色
 
-		float			LifeMax = 1.0f;		// 発生時の寿命(フェードアウト計算に使用)
+		float			LifeMax = 1.0f;
 		float			_pad[3] = { 0,0,0 };
 	};
 
@@ -56,8 +57,11 @@ public:
 		float			LifeMin = 0.5f;
 		float			LifeMax = 1.5f;
 
-		Math::Vector4	ColorMin = { 1,1,1,1 };
-		Math::Vector4	ColorMax = { 1,1,1,1 };
+		Math::Vector4	ColorStartMin = { 2.0f, 2.0f, 1.5f, 1.0f };
+		Math::Vector4	ColorStartMax = { 2.0f, 2.0f, 1.5f, 1.0f };
+
+		Math::Vector4	ColorMin = { 0.f, 0.f, 0.f, 1.0f };
+		Math::Vector4	ColorMax = { 0.f, 0.f, 0.f, 1.0f };
 	};
 
 	//================================================
@@ -137,6 +141,9 @@ private:
 
 		Math::Vector3	EmitVelocityMax;
 		float			EmitSizeMax = 0.0f;
+
+		Math::Vector4	EmitColorStartMin = { 2.0f, 2.0f, 1.5f, 1.0f };
+		Math::Vector4	EmitColorStartMax = { 2.0f, 2.0f, 1.5f, 1.0f };
 
 		Math::Vector4	EmitColorMin = { 1,1,1,1 };
 		Math::Vector4	EmitColorMax = { 1,1,1,1 };

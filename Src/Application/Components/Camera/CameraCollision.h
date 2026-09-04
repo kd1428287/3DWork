@@ -6,35 +6,8 @@
 #include "../../Systems/Collision/RaycastSystem.h"
 
 // ============================================================
-// カメラの"貫通防止"だけを責務とするコンポーネント。
-//
-// CameraFollowComponentが計算した「理想のカメラ位置」を、ピボット
-// (追従対象)からの間にGround|Bumpの障害物があれば手前まで引き寄せる。
-// Follow側は貫通のことを一切知らないままでよく、このコンポーネントを
-// 外せば従来通り貫通ありのカメラに戻る。
-//
-// pivotTarget_はCameraFollowComponent::target_と同じ理由でHandleで持つ。
-// 自己ヒット除外用のGameObject*(ignoreOwner)は独立フィールドとして
-// 持たない。以前はSetPivotTarget()とSetIgnoreOwner()を別々に呼ぶ
-// 必要があり、対応がズレると自己ヒット(発射点が自分自身のBump
-// コライダー内部から始まり誤判定される問題。GroundSensorComponentの
-// 「発射点が形状内部から始まるケース非対応」と同根)が静かに復活する
-// 欠陥があった。ignoreOwnerをpivotTarget_->GetOwner()から毎回導出する
-// ことで、この2つがズレること自体を構造的に無くしている。
-//
-// 判定はRaycastSystem::RaycastClosest(単一レイ)を流用している。掃引球
-// ではないため、細い柱の角などをわずかにすり抜けるケースがある
-// (既知の制約。実際に問題が顕在化したら複数レイのオフセット方式等
-// への拡張を検討する)。
-//
-// --- 呼び出しタイミングについて -----------------------------------
-// GroundSensorComponentと同じ理由(ColliderRegistry::Refresh()が
-// ObjectManager::Update()の後に確定するため)で、Update()ではなく
-// PostUpdate()でレイを撃つ。かつ、同じGameObject上でCameraFollow
-// Component(理想位置を書き込む側)より"後"に追加すること
-// (この依存自体は未解決。将来的に明示的な実行優先度の仕組みが
-//  入ったらそちらに置き換えること)。
-//
+// カメラの貫通防止を責務とするコンポーネント。
+
 // --- 既知の制約 ---------------------------------------------------
 //   - ピボット自体が地形の内部にめり込んでいる場合、レイが
 //     「当たらない」と誤判定され、逆にカメラが壁を素通りする
@@ -125,7 +98,7 @@ private:
 	Handle<CameraTargetComponent> pivotTarget_;
 
 	Math::Vector3 pivotOffset_{ 0.0f, 1.0f, 0.0f };
-	float skinWidth_ = 0.1f;
+	float skinWidth_ = 0.3f;
 	float pullOutSpeed_ = 8.0f;
 	float currentDistance_ = -1.0f; // 未初期化フラグ
 	float sweepRadius_ = 0.15f;

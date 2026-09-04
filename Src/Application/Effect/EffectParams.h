@@ -41,8 +41,11 @@ struct DirectionalEmitShape
 	float	LifeMin = 0.45f;
 	float	LifeMax = 0.8f;
 
-	DirectX::SimpleMath::Vector4	ColorMin = { 1.0f, 0.85f, 0.4f, 1.0f };
-	DirectX::SimpleMath::Vector4	ColorMax = { 1.0f, 0.85f, 0.4f, 1.0f };
+	DirectX::SimpleMath::Vector4	ColorStartMin = { 0.1f, 0.1f, 0.1f, 1.0f };
+	DirectX::SimpleMath::Vector4	ColorStartMax = { 0.1f, 0.1f, 0.1f, 1.0f };
+
+	DirectX::SimpleMath::Vector4	ColorMin = { 0.1f, 0.85f, 0.4f, 1.0f };
+	DirectX::SimpleMath::Vector4	ColorMax = { 0.1f, 0.85f, 0.4f, 1.0f };
 
 	KdGPUParticle::EmitParameter ToEmitParameter(const DirectX::SimpleMath::Vector3& worldPos, const DirectX::SimpleMath::Vector3& baseDir) const;
 };
@@ -81,6 +84,7 @@ struct GPUParticleParams
 	// Continuous、またはBurstでEmitInterval>0の場合はtrue(=再生中はStop()が必要になる)
 	bool IsLooping() const;
 };
+
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 鍔迫り合いの火花のうち1層分(メイン/エンバー等)

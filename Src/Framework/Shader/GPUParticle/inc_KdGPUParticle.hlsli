@@ -8,16 +8,17 @@
 // パーティクル1粒のデータ
 struct Particle
 {
-	float3	Position;	// ワールド座標
-	float	Life;		// 残り寿命(秒) 0以下で死亡扱い
+	float3 Position;
+	float Life;
 
-	float3	Velocity;	// 速度
-	float	Size;		// 表示サイズ(板ポリの一辺の長さ)
+	float3 Velocity;
+	float Size;
 
-	float4	Color;		// 色(RGBA)
+	float4 ColorStart; // 発生直後の熱い色
+	float4 Color; // 冷えた後の最終色
 
-	float	LifeMax;	// 発生時の寿命(フェードアウト計算に使用)
-	float3	_pad;
+	float LifeMax;
+	float3 _pad;
 };
 
 // 描画シェーダー(VS→PS)の受け渡し用

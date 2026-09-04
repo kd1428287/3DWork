@@ -237,6 +237,8 @@ void KdGPUParticle::Emit(const EmitParameter& param, UINT count)
 	emit.EmitSizeMax = param.SizeMax;
 	emit.EmitLifeMin = param.LifeMin;
 	emit.EmitLifeMax = param.LifeMax;
+	emit.EmitColorStartMin = param.ColorStartMin;
+	emit.EmitColorStartMax = param.ColorStartMax;
 	emit.EmitColorMin = param.ColorMin;
 	emit.EmitColorMax = param.ColorMax;
 	emit.MaxParticleNum = m_maxParticleNum;

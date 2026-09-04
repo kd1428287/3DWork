@@ -48,6 +48,8 @@ static nlohmann::json ShapeToJson(const DirectionalEmitShape& s)
 		{ "sizeMax",     s.SizeMax },
 		{ "lifeMin",     s.LifeMin },
 		{ "lifeMax",     s.LifeMax },
+		{ "colorStartMin", { s.ColorStartMin.x, s.ColorStartMin.y, s.ColorStartMin.z, s.ColorStartMin.w } },
+		{ "colorStartMax", { s.ColorStartMax.x, s.ColorStartMax.y, s.ColorStartMax.z, s.ColorStartMax.w } },
 		{ "colorMin",    { s.ColorMin.x, s.ColorMin.y, s.ColorMin.z, s.ColorMin.w } },
 		{ "colorMax",    { s.ColorMax.x, s.ColorMax.y, s.ColorMax.z, s.ColorMax.w } },
 	};
@@ -76,6 +78,8 @@ static DirectionalEmitShape ShapeFromJson(const nlohmann::json& j, const Directi
 		s.ColorMin = v;
 		s.ColorMax = v;
 	}
+	if (j.contains("colorStartMin")) { auto& c = j.at("colorStartMin"); s.ColorStartMin = { c[0], c[1], c[2], c[3] }; }
+	if (j.contains("colorStartMax")) { auto& c = j.at("colorStartMax"); s.ColorStartMax = { c[0], c[1], c[2], c[3] }; }
 	if (j.contains("colorMin")) { auto& c = j.at("colorMin"); s.ColorMin = { c[0], c[1], c[2], c[3] }; }
 	if (j.contains("colorMax")) { auto& c = j.at("colorMax"); s.ColorMax = { c[0], c[1], c[2], c[3] }; }
 

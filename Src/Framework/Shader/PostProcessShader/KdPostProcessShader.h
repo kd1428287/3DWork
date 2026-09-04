@@ -15,6 +15,7 @@ public:
 	void SetFocusRange(float fore, float back) { m_cb0_DoFInfo.Work().FocusForeRange = fore; m_cb0_DoFInfo.Work().FocusBackRange = back; }
 
 	void SetBrightThreshold(float threshold) { m_cb0_BrightInfo.Work().Threshold = threshold; }
+	void SetExposure(float exposure) { m_cb0_ColorGradeInfo.Work().Exposure = exposure; }
 
 	struct Vertex
 	{
@@ -40,6 +41,7 @@ private:
 	void BlurProcess();
 	void LightBloomProcess();
 	void DepthOfFieldProcess();
+	void ColorGradeProcess();
 
 	void CreateBlurOffsetList(std::vector<Math::Vector3>& dstInfo, const std::shared_ptr<KdTexture>& spSrcTex, int samplingSize, const Math::Vector2& dir);
 
@@ -58,6 +60,7 @@ private:
 	ID3D11PixelShader* m_PS_Blur = nullptr;
 	ID3D11PixelShader* m_PS_DoF = nullptr;
 	ID3D11PixelShader* m_PS_Bright = nullptr;
+	ID3D11PixelShader* m_PS_ColorGrade = nullptr;
 
 	static const int kBlurSamplingRadius = 8;
 	static const int kLightBloomSamplingRadius = 4;
@@ -90,6 +93,15 @@ private:
 		int _blank[3] = { 0, 0, 0 };
 	};
 	KdConstantBuffer<cbBrightFilter>	m_cb0_BrightInfo;
+
+	struct cbColorGradeInfo
+	{
+		float Exposure = 1.0f;
+		int   _blank[3] = { 0, 0, 0 };
+	};
+	KdConstantBuffer<cbColorGradeInfo> m_cb0_ColorGradeInfo;
+
+	KdRenderTargetPack m_colorGradeRTPack; // 最終カラーグレーディング用RT
 
 	KdRenderTargetPack	m_postEffectRTPack;
 

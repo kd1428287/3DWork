@@ -71,11 +71,25 @@ bool KdPostProcessShader::Init()
 		}
 	}
 
+	{
+#include "KdPostProcessShader_PS_ColorGrade.shaderInc"
+
+		if (FAILED(KdDirect3D::Instance().WorkDev()->CreatePixelShader(
+			compiledBuffer, sizeof(compiledBuffer), nullptr, &m_PS_ColorGrade)))
+		{
+			assert(0 && "ピクセルシェーダー作成失敗(ColorGrade)");
+			Release();
+			return false;
+		}
+	}
+	
 	m_cb0_BlurInfo.Create();
 
 	m_cb0_DoFInfo.Create();
 
 	m_cb0_BrightInfo.Create();
+
+	m_cb0_ColorGradeInfo.Create();
 
 	const std::shared_ptr<KdTexture>& backBuffer = KdDirect3D::Instance().GetBackBuffer();
 	
@@ -103,6 +117,8 @@ bool KdPostProcessShader::Init()
 		lightBloomHeight /= 2;
 	}
 
+	m_colorGradeRTPack.CreateRenderTarget(backBuffer->GetWidth(), backBuffer->GetHeight());
+
 	// 画面全体に書き込む用の頂点情報
 	m_screenVert[0] = { {-1,-1,0}, {0, 1} };
 	m_screenVert[1] = { {-1, 1,0}, {0, 0} };
@@ -110,6 +126,9 @@ bool KdPostProcessShader::Init()
 	m_screenVert[3] = { { 1, 1,0}, {1, 0} };
 
 	SetBrightThreshold( 1.2f );
+	
+	SetExposure(1.0f);
+
 
 	return true;
 }
@@ -127,9 +146,13 @@ void KdPostProcessShader::Release()
 	KdSafeRelease(m_PS_DoF);
 	KdSafeRelease(m_PS_Bright);
 
+	KdSafeRelease(m_PS_ColorGrade);
+	
+
 	m_cb0_BlurInfo.Release();
 	m_cb0_DoFInfo.Release();
 	m_cb0_BrightInfo.Release();
+	m_cb0_ColorGradeInfo.Release();
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -182,8 +205,10 @@ void KdPostProcessShader::PostEffectProcess()
 	LightBloomProcess();
 	BlurProcess();
 	DepthOfFieldProcess();
+	ColorGradeProcess();
 
-	KdShaderManager::Instance().m_spriteShader.DrawTex(m_depthOfFieldRTPack.m_RTTexture.get(), 0, 0);
+	//KdShaderManager::Instance().m_spriteShader.DrawTex(m_depthOfFieldRTPack.m_RTTexture.get(), 0, 0);
+	KdShaderManager::Instance().m_spriteShader.DrawTex(m_colorGradeRTPack.m_RTTexture.get(), 0, 0);
 }
 
 void KdPostProcessShader::LightBloomProcess()
@@ -251,6 +276,33 @@ void KdPostProcessShader::DepthOfFieldProcess()
 	};
 
 	DrawTexture(srcTexList, 4, m_depthOfFieldRTPack.m_RTTexture, &m_depthOfFieldRTPack.m_viewPort);
+}
+
+void KdPostProcessShader::ColorGradeProcess()
+{
+	ID3D11DeviceContext* DevCon = KdDirect3D::Instance().WorkDevContext();
+	if (DevCon)
+	{
+		// 定数バッファ書き込み
+		m_cb0_ColorGradeInfo.Write();
+		DevCon->PSSetConstantBuffers(0, 1, m_cb0_ColorGradeInfo.GetAddress());
+	}
+
+	// デバイスにシェーダーセット
+	KdShaderManager& shaderMgr = KdShaderManager::Instance();
+	if (shaderMgr.SetVertexShader(m_VS))
+	{
+		DevCon->IASetInputLayout(m_inputLayout);
+	}
+	shaderMgr.SetPixelShader(m_PS_ColorGrade);
+
+	// サンプラーステート設定
+	shaderMgr.ChangeSamplerState(KdSamplerState::Linear_Clamp);
+
+	// DoF結果を入力として、m_colorGradeRTPack に描画
+	DrawTexture(&m_depthOfFieldRTPack.m_RTTexture, 1, m_colorGradeRTPack.m_RTTexture, &m_colorGradeRTPack.m_viewPort);
+
+	shaderMgr.UndoSamplerState();
 }
 
 void KdPostProcessShader::CreateBlurOffsetList(std::vector<Math::Vector3>& dstInfo, const std::shared_ptr<KdTexture>& spSrcTex, int samplingRadius, const Math::Vector2& dir)

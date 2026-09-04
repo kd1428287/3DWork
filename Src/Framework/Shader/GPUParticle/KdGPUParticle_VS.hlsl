@@ -37,8 +37,6 @@ VSOutput main(uint vertID : SV_VertexID, uint instID : SV_InstanceID)
 	float size = (p.Life > 0) ? p.Size : 0;
 
 	// ビュー行列(row_major)の列から、カメラのワールド空間での右方向・上方向を取り出す
-	// ※mul(v, mView)というベクトル×行列の掛け方をしている場合、
-	//   ビュー行列の各「列」がカメラのワールド空間での軸ベクトルになる
 	float3 camRight = float3(g_mView._11, g_mView._21, g_mView._31);
 	float3 camUp    = float3(g_mView._12, g_mView._22, g_mView._32);
 
@@ -50,8 +48,8 @@ VSOutput main(uint vertID : SV_VertexID, uint instID : SV_InstanceID)
 	Out.Pos = mul(Out.Pos, g_mProj);
 
 	Out.UV = kQuadUV[vertID];
-	Out.Color = p.Color;
 	Out.LifeRate = (p.LifeMax > 0) ? saturate(p.Life / p.LifeMax) : 0;
+	Out.Color = lerp(p.ColorStart, p.Color, 1 - Out.LifeRate); 
 
 	return Out;
 }

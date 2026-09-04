@@ -69,7 +69,6 @@ void GameScene::Init()
 	auto* player = playerFactory_->CreatePlayer(*objManager_, pDef);
 
 	cameraFactory_ = std::make_unique<CameraFactory>();
-	//player->GetComponent<CameraTargetComponent>()->GetGeneration();
 	auto* camera = cameraFactory_->CreateCamera(*objManager_, player);
 
 	// system
@@ -84,8 +83,6 @@ void GameScene::Init()
 	effectDispatcher_ = std::make_unique<EffectDispatcher>();
 	effectDispatcher_->Init(*localBus_);
 
-	// 旧PreUpdate/PostUpdateで表現しようとしていた順序を、ここで明示的に登録する
-	// 入力 → コライダー情報の更新 → 当たり判定、の順で毎フレーム実行される
 	systemManager_->SetExecutionOrder(
 		[this](float dt) { inputSystem_->Update(dt); },
 		[this](float dt) { objManager_->PreUpdate(dt); },
@@ -96,4 +93,7 @@ void GameScene::Init()
 		[this](float dt) { objManager_->PostUpdate(dt); },
 		[this](float dt) { objManager_->Flush(); }
 	);
+
+	KdShaderManager::Instance().WorkAmbientController().SetFogEnable(false, true);
+	KdShaderManager::Instance().WorkAmbientController().SetheightFog({0.9f,0.9f,0.9f}, 10.f, -10.f, 100.f);
 }

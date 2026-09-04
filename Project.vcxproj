@@ -326,7 +326,7 @@
     <ClInclude Include="Src\Application\Components\ComponentBase.h" />
     <ClInclude Include="Src\Application\Components\ComponentTypeID.h" />
     <ClInclude Include="Src\Application\Components\Effect\SlowEffectComponent.h" />
-    <ClInclude Include="Src\Application\Components\Effect\TrailPolygonEffectComponent.h" />
+    <ClInclude Include="Src\Application\Components\Effect\TrailPolygonComponent.h" />
     <ClInclude Include="Src\Application\Components\Movement\FacingDirectionComponent.h" />
     <ClInclude Include="Src\Application\Components\Movement\IMovementSource.h" />
     <ClInclude Include="Src\Application\Components\Movement\MovementComponent.h" />
@@ -555,6 +555,12 @@
     <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_Bright.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_ColorGrade.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
     </FxCompile>

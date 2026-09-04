@@ -6,6 +6,7 @@
 
 // ※ EditorViewportの実際の配置フォルダに合わせてパスを調整してください
 #include "Editor/EditorViewport.h"
+#include "Editor/EffectEditor.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // エントリーポイント
@@ -95,6 +96,8 @@ void Application::KdPostDraw()
 
 		ID3D11RenderTargetView* rtvs[] = { KdDirect3D::Instance().WorkBackBuffer()->WorkRTView() };
 		KdDirect3D::Instance().WorkDevContext()->OMSetRenderTargets(1, rtvs, KdDirect3D::Instance().WorkZBuffer()->WorkDSView());
+
+
 	}
 	// エディタ非表示中：ゲーム画面はBeginSceneDraw()で既にバックバッファへ直接描画済みのため、
 	// ここで再クリアするとゲーム画面が消えてしまうので何もしない
@@ -304,7 +307,7 @@ void Application::Execute()
 		std::string str = "3D_Action FPS: " + std::to_string(Application::Instance().GetNowFPS());
 		SetWindowTextA(m_window.GetWndHandle(), str.c_str());
 
-		
+
 
 		// ゲーム終了指定があるときはループ終了
 		if (m_endFlag)
@@ -363,6 +366,9 @@ void Application::Execute()
 			PostDraw();
 
 			DrawSprite();
+
+			// エフェクトプレビュー専用ビューポートへの描画
+			EffectEditor::Instance().RenderPreviewViewport();
 		}
 		KdPostDraw();
 
