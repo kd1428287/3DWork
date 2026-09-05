@@ -1,8 +1,8 @@
 {
 	"visuals": {
-		"modelPath": "Asset/Models/Character/Player/Player.gltf",
-		"animatorFPS": 60,
-		"rootMotionBoneName": "mixamorig:Hips",
+		"modelPath": "Asset/Models/Character/GhostSamurai/GhostSamurai.gltf",
+		"animatorFPS": 30,
+		"rootMotionBoneName": "root",
 		"rootMotionAxis": "Y",
 		"rootMotionAxisSign": -1.0,
 		"rootMotionScale": 0.01
@@ -39,7 +39,7 @@
 		"mixamorig:LeftArm",
 		"mixamorig:LeftShoulder"
 	],
-	"weaponSocketBone": "mixamorig:RightHand",
+	"weaponSocketBone": "katana_r",
 
 	"rightArmIK": {
 		"rootBone": "mixamorig:RightShoulder",

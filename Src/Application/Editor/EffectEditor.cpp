@@ -8,14 +8,8 @@
 
 #include <filesystem>
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// テクスチャアセットの走査ルート(実際のプロジェクト構成に合わせて調整)
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 static const std::string kTextureAssetRoot = "Asset/Textures/Game/Effect/";
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// pos/rotate(degree)/scale から行列を作る(MapObjectと同じ仕組み)
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 DirectX::SimpleMath::Matrix EffectObject::GetMatrix() const
 {
 	float m[16];
@@ -26,10 +20,8 @@ DirectX::SimpleMath::Matrix EffectObject::GetMatrix() const
 	return mat;
 }
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // EffectEditor専用ドックスペースの初期レイアウト
 //	左：Effect Hierarchy / 中央：Effect Inspector・右：Effect Preview / 下：Effect Editor(メニュー) + Effect Assets(タブ)
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 static void SetupEffectDockLayout(ImGuiID dockspaceId, const ImVec2& size)
 {
 	ImGui::DockBuilderRemoveNode(dockspaceId);
@@ -56,12 +48,8 @@ static void SetupEffectDockLayout(ImGuiID dockspaceId, const ImVec2& size)
 	ImGui::DockBuilderFinish(dockspaceId);
 }
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 毎フレーム更新
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectEditor::Update()
 {
-	// ショートカットキー(ImGuizmo::BeginFrame()はMapEditor::Update()側で実行済み)
 	if (!ImGuizmo::IsUsing())
 	{
 		if (ImGui::IsKeyPressed(ImGuiKey_1)) m_operation = ImGuizmo::TRANSLATE;
@@ -73,10 +61,6 @@ void EffectEditor::Update()
 
 	const float deltaTime = Application::Instance().GetDeltaTime();
 
-	// 再生中プレビューのシミュレーションを進める(発生のInterval/Rate管理含む)
-	// ※実際の描画はDrawPreviewParticles()／RenderPreviewViewport()で3D描画パス側から行う。
-	// 鍔迫り合いの火花(WeaponClashParry/WeaponClashBlock)も専用データ・専用ループは持たず、
-	// ここでm_objectsの通常オブジェクトとして一緒に更新される。
 	for (auto& obj : m_objects)
 	{
 		if (obj.playing && !obj.paused)
@@ -85,11 +69,9 @@ void EffectEditor::Update()
 		}
 	}
 
-	//-------------------------------------------------------
 	// エフェクトエディタ専用のコンテナウィンドウ
 	//	メインビューポートの右外側に初期配置することで、
 	//	マルチビューポート機能により起動時から「別ウィンドウ」として分離表示される
-	//-------------------------------------------------------
 	ImGuiViewport* mainViewport = ImGui::GetMainViewport();
 
 	ImGui::SetNextWindowPos(
@@ -101,7 +83,6 @@ void EffectEditor::Update()
 	{
 		ImGuiID effectDockId = ImGui::GetID("EffectDockSpace");
 
-		// このIDのノードがまだ存在しない場合のみ、既定レイアウトを構築する
 		if (ImGui::DockBuilderGetNode(effectDockId) == nullptr)
 		{
 			SetupEffectDockLayout(effectDockId, ImGui::GetContentRegionAvail());
@@ -119,10 +100,7 @@ void EffectEditor::Update()
 	DrawGizmo();
 }
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// プレビュー中のGPUパーティクルを描画する(3D描画パスの半透明タイミングから呼ぶ)
-//	マップ配置分。ゲームカメラのシーン(EditorViewportのオフスクリーン、または本番画面)に合成される
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// プレビュー中のGPUパーティクルを描画する
 void EffectEditor::DrawPreviewParticles()
 {
 	for (auto& obj : m_objects)
@@ -135,15 +113,7 @@ void EffectEditor::DrawPreviewParticles()
 	}
 }
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 選択中の1エフェクトを、専用カメラ・専用オフスクリーンバッファへ描画する
-//	EditorViewport::BeginSceneDraw()と同様に「RT/ビューポート/カメラ定数バッファの退避→
-//	切り替え→復元」を自前で行うため、メインシーンの描画状態(EditorViewport側の描画結果や
-//	DrawPreviewParticles()の結果)には一切影響を与えない。
-//	previewInstance自体はマップ配置プレビューと共有の実体だが、Draw()は現在のパーティクル
-//	バッファをカメラCBの内容に従って描画するだけの読み取り専用処理のため、1フレームに
-//	異なるRT・異なるカメラで複数回呼んでも問題ない(シミュレーションの進行はUpdate()側のみ)
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectEditor::RenderPreviewViewport()
 {
 	// ウィンドウが一度も開かれておらずサイズが確定していない場合は何もしない
@@ -152,12 +122,7 @@ void EffectEditor::RenderPreviewViewport()
 
 	ID3D11DeviceContext* context = KdDirect3D::Instance().WorkDevContext();
 
-	//====================================================
 	// 退避
-	//	カメラCBは構造体を値コピーしておくだけで復元できる。
-	//	RTV/DSV/ビューポートはAPI経由で取得・退避する(OMGetRenderTargetsは参照カウントが
-	//	上がるため、復元後に必ずRelease()すること)
-	//====================================================
 	KdShaderManager::cbCamera savedCamera = KdShaderManager::Instance().GetCameraCB();
 
 	ID3D11RenderTargetView* savedRTV = nullptr;
@@ -168,10 +133,7 @@ void EffectEditor::RenderPreviewViewport()
 	D3D11_VIEWPORT savedVP = {};
 	context->RSGetViewports(&savedVPNum, &savedVP);
 
-	//====================================================
 	// プレビュー用バッファへ切り替え・クリア
-	//	選択なし/未再生の場合でもクリアだけは毎フレーム行い、古い絵が残り続けないようにする
-	//====================================================
 	ID3D11RenderTargetView* rtvs[] = { m_previewViewport.Color->WorkRTView() };
 	context->OMSetRenderTargets(1, rtvs, m_previewViewport.Depth->WorkDSView());
 
@@ -195,8 +157,6 @@ void EffectEditor::RenderPreviewViewport()
 		DirectX::SimpleMath::Matrix proj = m_previewCamera.GetProj(
 			(float)m_previewViewport.Width / (float)m_previewViewport.Height);
 
-		// WriteCBCameraは「View行列」ではなく「カメラのワールド行列」を期待しているため、
-		// 事前に反転してから渡す(内部でもう一度Invert()されてmViewに戻る)
 		KdShaderManager::Instance().WriteCBCamera(view.Invert(), proj);
 
 		if (obj.playing)
@@ -205,10 +165,7 @@ void EffectEditor::RenderPreviewViewport()
 		}
 	}
 
-	//====================================================
 	// 復元
-	//====================================================
-	// 復元も同様に、savedCamera.mView(=View行列)をもう一度反転してから渡す
 	KdShaderManager::Instance().WriteCBCamera(savedCamera.mView.Invert(), savedCamera.mProj);
 
 	context->OMSetRenderTargets(1, &savedRTV, savedDSV);
@@ -218,9 +175,6 @@ void EffectEditor::RenderPreviewViewport()
 	context->RSSetViewports(savedVPNum, &savedVP);
 }
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// メニュー(セーブ/ロード)
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectEditor::DrawMainMenu()
 {
 	ImGui::Begin("Effect Editor");
@@ -244,9 +198,6 @@ void EffectEditor::DrawMainMenu()
 	ImGui::End();
 }
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 階層ウィンドウ
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectEditor::DrawHierarchy()
 {
 	ImGui::Begin("Effect Hierarchy");
@@ -277,9 +228,6 @@ void EffectEditor::DrawHierarchy()
 	ImGui::End();
 }
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// インスペクターウィンドウ
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectEditor::DrawInspector()
 {
 	ImGui::Begin("Effect Inspector");
@@ -373,7 +321,6 @@ void EffectEditor::DrawInspector()
 			ImGui::TextDisabled("ColorStart=発生時、Color=消滅時の色。同じ値ならフェードしない単色になる");
 			ImGui::TextDisabled("方向を使わない単純エフェクトはDir Scaleを0にし、Offsetだけで速度範囲を作る想定");
 
-			// GPUParticleParams::Layersは最低1層を前提にしている(EffectParams.h参照)為、
 			// 最後の1層は削除できないようにする
 			if (params.Layers.size() > 1 && ImGui::Button("- Remove This Layer"))
 			{
@@ -457,9 +404,6 @@ void EffectEditor::DrawInspector()
 	ImGui::End();
 }
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// ギズモ描画・操作
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectEditor::DrawGizmo()
 {
 	if (m_selected < 0 || m_selected >= (int)m_objects.size()) return;
@@ -493,9 +437,6 @@ void EffectEditor::DrawGizmo()
 	}
 }
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// アセット(テクスチャファイル)選択ウィンドウ
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectEditor::DrawTexturePicker()
 {
 	ImGui::Begin("Effect Assets");
@@ -551,12 +492,6 @@ void EffectEditor::DrawTexturePicker()
 	ImGui::End();
 }
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// Effect Preview ウィンドウ：RenderPreviewViewport()が描いた絵をImGui::Imageで表示する。
-//	ウィンドウ内で右ドラッグ(オービット回転)・ホイール(ズーム)によりプレビュー専用カメラを操作できる。
-//	※実際のオフスクリーン描画はRenderPreviewViewport()側(3D描画パス)で行われるため、
-//	  ここではサイズ管理・表示・入力処理のみを行う(EditorViewport::DrawSceneWindow()と同じ役割分担)
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectEditor::DrawPreviewWindow()
 {
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
@@ -575,7 +510,6 @@ void EffectEditor::DrawPreviewWindow()
 		m_previewViewport.ScreenPos = ImGui::GetCursorScreenPos();
 		m_previewViewport.ScreenSize = regionSize;
 
-		// ※ KdTextureがSRVを保持している前提(EditorViewport::DrawSceneWindow()と同じ想定)
 		ImGui::Image((ImTextureID)m_previewViewport.Color->WorkSRView(), regionSize);
 
 		// 右ドラッグ：オービット回転、ホイール：ズーム
@@ -608,10 +542,6 @@ void EffectEditor::DrawPreviewWindow()
 	ImGui::PopStyleVar();
 }
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// EffectEditor::PreviewViewport
-//	EditorViewport::Resize()と全く同じ設定でオフスクリーンバッファを作り直す
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectEditor::PreviewViewport::Resize(int w, int h)
 {
 	if (w <= 0 || h <= 0) return;
@@ -622,7 +552,7 @@ void EffectEditor::PreviewViewport::Resize(int w, int h)
 	Width = w;
 	Height = h;
 
-	// ----- カラーバッファ(ImGui::Imageで表示するためSHADER_RESOURCEも付与) -----
+	// ----- カラーバッファ -----
 	{
 		D3D11_TEXTURE2D_DESC desc = {};
 		desc.Usage = D3D11_USAGE_DEFAULT;
@@ -640,7 +570,7 @@ void EffectEditor::PreviewViewport::Resize(int w, int h)
 		Color->Create(desc);
 	}
 
-	// ----- Zバッファ(EditorViewportと同一設定) -----
+	// ----- Zバッファ -----
 	{
 		D3D11_TEXTURE2D_DESC desc = {};
 		desc.Usage = D3D11_USAGE_DEFAULT;
@@ -659,10 +589,6 @@ void EffectEditor::PreviewViewport::Resize(int w, int h)
 	}
 }
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// EffectEditor::PreviewCamera
-//	target(選択中エフェクトのpos)を注視点とする、距離・ヨー・ピッチだけの簡易オービットカメラ
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 DirectX::SimpleMath::Matrix EffectEditor::PreviewCamera::GetView(const DirectX::SimpleMath::Vector3& target) const
 {
 	using namespace DirectX::SimpleMath;
@@ -683,9 +609,6 @@ DirectX::SimpleMath::Matrix EffectEditor::PreviewCamera::GetProj(float aspect) c
 		DirectX::XMConvertToRadians(45.0f), aspect, 0.05f, 100.0f);
 }
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// テクスチャアセットディレクトリ以下を走査して画像ファイル一覧を更新する
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectEditor::RefreshTextureFileList()
 {
 	m_textureFileList.clear();
@@ -707,15 +630,11 @@ void EffectEditor::RefreshTextureFileList()
 
 		if (std::find(kExtensions.begin(), kExtensions.end(), ext) == kExtensions.end()) continue;
 
-		// KdResourceFactory::GetTexture() へ渡す形式(ルートからの相対パス)で保持する
 		std::string relativePath = fs::relative(entry.path(), root).generic_string();
 		m_textureFileList.push_back(relativePath);
 	}
 }
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// nameに一致するEffectObjectをm_objectsから探す(無ければnullptr)
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 EffectObject* EffectEditor::FindObjectByName(const std::string& name)
 {
 	for (auto& obj : m_objects)
@@ -730,13 +649,6 @@ EffectEditor::EffectEditor()
 	Load(m_filePathBuf);
 }
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// プレビュー再生の開始/停止/一時停止
-//	パーティクルの生成・テクスチャ解決はEffectInstance::Reconfigure()に委譲する
-//	(未初期化の場合はReconfigure内部からInit()が呼ばれる)。
-//	Burstの初回発生・リピート間隔、Continuousの端数管理といった発生タイミングの計算は
-//	EffectInstance::Play()/Update()側に集約されている為、Editor側で個別に管理する必要は無い。
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectEditor::PlayPreview(EffectObject& obj)
 {
 	obj.previewInstance.Reconfigure(obj.params, &m_textureProvider);
@@ -744,8 +656,6 @@ void EffectEditor::PlayPreview(EffectObject& obj)
 	obj.playing = true;
 	obj.paused = false;
 
-	// ※baseDirは今回未対応(デフォルトの{0,0,0})。方向を使う配置エフェクトをEditorで扱う場合は、
-	//   Rotationから方向ベクトルを求めてPlay()/Update()へ渡す形で別途拡張する。
 	obj.previewInstance.Play(obj.pos);
 }
 
@@ -754,9 +664,6 @@ void EffectEditor::StopPreview(EffectObject& obj)
 	obj.playing = false;
 	obj.paused = false;
 
-	// Stop()は新規発生を止めるだけで、既に発生済みのパーティクルは寿命が尽きるまで描画され続ける。
-	// previewInstance(パーティクル・テクスチャ込み)自体はキャッシュとして保持したまま
-	// (Init/読み込みのやり直しコストを避ける為)
 	obj.previewInstance.Stop();
 }
 
@@ -766,16 +673,8 @@ void EffectEditor::SetPreviewPause(EffectObject& obj, bool pause)
 	obj.paused = pause;
 }
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 再生中プレビューの発生・シミュレーションを1フレームぶん進める
-//	発生タイミングの計算自体はEffectInstance::Update()に一任している
-//	(EditorがEmitAccumulator/BurstTimerを個別に持つ必要は無くなった)
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectEditor::UpdatePreview(EffectObject& obj, float deltaTime)
 {
-	// ImGuiでのライブ編集(Gravity/Layers等)を再生中のプレビューへ即時反映させる為、
-	// 毎フレームReconfigureしておく。MaxParticleNum/TexturePathが変化していない限りは
-	// パラメータのコピーのみで済む軽量な処理(EffectInstance::Reconfigure参照)。
 	obj.previewInstance.Reconfigure(obj.params, &m_textureProvider);
 
 	obj.previewInstance.Update(deltaTime, obj.pos);
@@ -808,9 +707,6 @@ void EffectEditor::StopAllPreview()
 	}
 }
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// オブジェクトの追加/削除
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectEditor::AddObject()
 {
 	EffectObject obj;
@@ -828,11 +724,6 @@ void EffectEditor::RemoveSelected()
 	m_selected = -1;
 }
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// セーブ/ロード
-//	実際のファイルI/OとJSONスキーマはEffectDataLoaderに委譲する
-//	(EffectDispatcherが読み込むスキーマと共通化するため)
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectEditor::Save(const std::string& path)
 {
 	EffectDataFile data;
@@ -888,16 +779,13 @@ void EffectEditor::Load(const std::string& path)
 		obj.rotate = def.Rotate;
 		obj.scale = def.Scale;
 		obj.params = def.Params;
-		m_objects.push_back(std::move(obj));	// EffectObjectはEffectInstanceを持つ為コピー不可、moveする
+		m_objects.push_back(std::move(obj));
 	}
 
 	m_selected = -1;
 	KdDebugGUI::Instance().AddLog("EffectEditor: 読み込みました %s\n", path.c_str());
 }
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// マップデータ(JSON)の更新日時をポーリングし、外部から変更されていたら自動で再読み込みする
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectEditor::CheckHotReload()
 {
 	if (!m_autoReload) return;

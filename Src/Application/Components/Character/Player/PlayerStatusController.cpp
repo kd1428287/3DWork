@@ -10,12 +10,12 @@ void PlayerStatusController::HandleMovementInput(const PlayerInputComponent& inp
 	MovementState nextState = input.GetDesiredMovementState();
 
 	// Walk中は、Stand/Walk/Run間の切り替わりだけでなく、現在の向きに対する
-	// 移動方向(前後左右)の変化もアニメーションを再生し直すきっかけにする。
+	// 移動方向(8方向)の変化もアニメーションを再生し直すきっかけにする。
 	// ロックオン中は正面が移動方向に追従しなくなる(UpdateLockOnFacing参照)ため、
-	// MovementState自体はWalkのまま前進⇔後退⇔横歩きが切り替わることがあり、
-	// 従来の「MovementStateが変わった時だけPlay」する仕組みだけでは
+	// MovementState自体はWalkのまま前進⇔後退⇔横歩き⇔斜め歩きが切り替わることが
+	// あり、従来の「MovementStateが変わった時だけPlay」する仕組みだけでは
 	// この切り替わりを拾えない。
-	const EvadeDirection walkDirection = ClassifyEvadeDirection(input.GetMoveDirection());
+	const MovementDirection8 walkDirection = ClassifyMovementDirection8(input.GetMoveDirection());
 	const bool stateChanged = (movementState_ != nextState);
 	const bool walkDirectionChanged = (nextState == MovementState::Walk && walkDirection != lastWalkDirection_);
 

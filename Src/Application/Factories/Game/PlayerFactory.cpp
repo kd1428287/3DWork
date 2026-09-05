@@ -70,8 +70,8 @@ namespace
 
 		player->AddComponent<PlayerLockOnComponent>();
 
-		player->AddComponent<TwoBoneIKComponent>(
-			rightArmIK.rootBone, rightArmIK.midBone, rightArmIK.tipParentBone, rightArmIK.tipBone);
+		//player->AddComponent<TwoBoneIKComponent>(
+			//rightArmIK.rootBone, rightArmIK.midBone, rightArmIK.tipParentBone, rightArmIK.tipBone);
 
 		for (const auto& def : colliderDefs) {
 			CollisionShapeEntry* shape = nullptr;
@@ -163,12 +163,12 @@ GameObject* PlayerFactory::CreateWeapon(ObjectManager& objectManager, GameObject
 	auto* transform = weapon->AddComponent<TransformComponent>();
 
 	auto* socket = weapon->AddComponent<AttachToSocketComponent>(handle);
-	socket->SetLocalRotation(Math::Quaternion::CreateFromYawPitchRoll(
+	/*socket->SetLocalRotation(Math::Quaternion::CreateFromYawPitchRoll(
 		weaponDefinition.socketLocalEulerRotationDeg.x,
 		DirectX::XMConvertToRadians(weaponDefinition.socketLocalEulerRotationDeg.y),
 		weaponDefinition.socketLocalEulerRotationDeg.z));
 
-	socket->SetLocalPositon(weaponDefinition.socketLocalPosition);
+	socket->SetLocalPositon(weaponDefinition.socketLocalPosition);*/
 
 	auto* skeleton = weapon->AddComponent<SkeletonComponent>();
 	skeleton->SetModelData(weaponDefinition.modelPath);

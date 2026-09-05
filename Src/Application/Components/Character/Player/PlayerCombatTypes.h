@@ -2,6 +2,7 @@
 #pragma once
 
 #include <string>
+#include <cmath>
 
 // ============================================================
 // PlayerStatusController / PlayerInputComponent 双方から参照される
@@ -60,10 +61,43 @@ enum class ActionCommand
 	Evade,
 };
 
-// --- 回避方向の分類 -----------------------------------------------
+// --- 水平方向の角度計算(共通ヘルパー) ------------------------------
+// forwardからinputDirへの、水平面(Y成分を無視)上での符号付き角度
+// (-π〜+π、右回りを正)を返す。ClassifyEvadeDirection(4方向)と
+// ClassifyMovementDirection8(8方向)の両方がこの角度をしきい値で
+// 区切っているだけなので、座標系依存の右方向ベクトル計算をここへ
+// 一本化しておく。
+//
+// 【要確認】right = (f.z, 0, -f.x) は、このプロジェクトの座標系
+// (DirectX系、+Y上, +Z前方, +X右 の左手系を想定)でforwardを+90度(右へ)
+// 回した向きになるはず、という前提で書いている。実際に鏡合わせになる場合は
+// 符号を反転すること(TransformComponent::GetForward()の実装/RotationYの
+// 回転方向と突き合わせて確認してください)。この前提が誤っていた場合、
+// 修正箇所がここ1箇所で済むよう、Evade/Walk双方の分類関数はこの関数だけを
+// 経由するようにしている。
+inline float ComputeHorizontalAngleTo(const Math::Vector3& forward, const Math::Vector3& inputDir)
+{
+	Math::Vector3 f = forward;
+	Math::Vector3 d = inputDir;
+	f.y = 0.0f;
+	d.y = 0.0f;
+	if (f.LengthSquared() <= kDirectionEpsilon || d.LengthSquared() <= kDirectionEpsilon) {
+		return 0.0f; // 前方/入力どちらかが実質ゼロベクトルならForward扱い(角度0)にする
+	}
+	f.Normalize();
+	d.Normalize();
+
+	const Math::Vector3 right(f.z, 0.0f, -f.x);
+	return std::atan2(right.Dot(d), f.Dot(d));
+}
+
+// --- 回避方向の分類(4方向) -----------------------------------------
 // 現在の前方(Enter()時点でFacingDirectionComponentの追従が止まった
 // 直後の向き)に対して、入力方向(evadeDirection)がどちら寄りかを
 // 4方向に分類したもの。前後左右で別アニメーションを出し分けるために使う。
+//
+// Evadeは今後もこの4方向のまま(前後左右)とする方針。斜め方向まで含めた
+// 8方向のクリップを持つのはWalk側のみ(MovementDirection8参照)。
 enum class EvadeDirection
 {
 	Forward = 0,
@@ -75,94 +109,101 @@ enum class EvadeDirection
 // forward: キャラクターの現在の前方(正規化済み想定、TransformComponent::GetForward())
 // inputDir: 判定したい入力方向(PlayerInputComponent::PushCommand時点のスナップショット)。
 //           ゼロベクトル(無入力でEvadeキーだけ押した場合)はForward扱いにする。
-//
-// 【要確認】right = (forward.z, 0, -forward.x) は、このプロジェクトの座標系
-// (DirectX系、+Y上, +Z前方, +X右 の左手系を想定)でforwardを+90度(右へ)
-// 回した向きになるはず、という前提で書いている。実際に鏡合わせになる場合は
-// 符号を反転すること(TransformComponent::GetForward()の実装/RotationYの
-// 回転方向と突き合わせて確認してください)。
 inline EvadeDirection ClassifyEvadeDirection(const Math::Vector3& forward, const Math::Vector3& inputDir)
 {
 	if (inputDir.LengthSquared() <= kDirectionEpsilon) {
 		return EvadeDirection::Forward;
 	}
 
-	// 水平面(Y)は無視して比較する。
-	Math::Vector3 f = forward;
-	Math::Vector3 d = inputDir;
-	f.y = 0.0f;
-	d.y = 0.0f;
-	if (f.LengthSquared() <= kDirectionEpsilon || d.LengthSquared() <= kDirectionEpsilon) {
-		return EvadeDirection::Forward;
-	}
-	f.Normalize();
-	d.Normalize();
+	const float angle = ComputeHorizontalAngleTo(forward, inputDir);
+	const float absAngle = std::abs(angle);
 
-	// forwardとの前後判定。cos45°(≒0.7071)を閾値にして前後/左右の4象限に分ける。
-	const float forwardDot = f.Dot(d);
-	if (forwardDot >= 0.70710678f)  return EvadeDirection::Forward;
-	if (forwardDot <= -0.70710678f) return EvadeDirection::Backward;
-
-	const Math::Vector3 right(f.z, 0.0f, -f.x);
-	return (right.Dot(d) >= 0.0f) ? EvadeDirection::Right : EvadeDirection::Left;
+	// forwardとの前後判定。45度(≒0.7854rad)を閾値に前後/左右の4象限に分ける
+	// (以前のcos45°によるdot比較と等価)。
+	constexpr float kQuarter = static_cast<float>(M_PI) / 4.0f;   // 45度
+	constexpr float kThreeQuarter = static_cast<float>(M_PI) * 3.0f / 4.0f; // 135度
+	if (absAngle <= kQuarter)      return EvadeDirection::Forward;
+	if (absAngle >= kThreeQuarter) return EvadeDirection::Backward;
+	return (angle > 0.0f) ? EvadeDirection::Right : EvadeDirection::Left;
 }
 
-// --- 技ごとの時間的定義 --------------------------------------------
-// 技データテーブルの設計(どこで保持し、どう選択するか)は別途詰める。
-// 現状はPlayerStatusController内部でデフォルト値をそのまま使う暫定運用。
+// --- 移動方向の分類(8方向、Walk専用) ---------------------------------
+// EvadeDirectionとは別のenumとして独立させている。Evadeは今後も4方向の
+// ままとする方針が確定しているため、同じ型を使い回すと「この値は
+// 4方向のつもりか8方向のつもりか」が呼び出し側で曖昧になる。
+enum class MovementDirection8
+{
+	Forward = 0,
+	ForwardRight,
+	Right,
+	BackwardRight,
+	Backward,
+	BackwardLeft,
+	Left,
+	ForwardLeft,
+};
+
+// forward/inputDirの意味はClassifyEvadeDirectionと同じ。
+// 45度ごとの8区画に丸める(境界は22.5度刻み)。
+inline MovementDirection8 ClassifyMovementDirection8(const Math::Vector3& forward, const Math::Vector3& inputDir)
+{
+	if (inputDir.LengthSquared() <= kDirectionEpsilon) {
+		return MovementDirection8::Forward;
+	}
+
+	const float angle = ComputeHorizontalAngleTo(forward, inputDir); // -π〜+π
+
+	// 半セクター分(22.5度)オフセットしてから45度(=π/4)刻みで8分割する。
+	// これにより、各セクターの境界がForward等の中心軸から±22.5度の
+	// ところに来る(例: Forwardは[-22.5°, +22.5°)の範囲)。
+	constexpr float kSectorSize = static_cast<float>(M_PI) / 4.0f;
+	int sectorIndex = static_cast<int>(std::floor((angle + kSectorSize * 0.5f) / kSectorSize));
+	sectorIndex = ((sectorIndex % 8) + 8) % 8; // 負値/8以上を0〜7へ正規化
+
+	static constexpr MovementDirection8 kSectorTable[8] = {
+		MovementDirection8::Forward,
+		MovementDirection8::ForwardRight,
+		MovementDirection8::Right,
+		MovementDirection8::BackwardRight,
+		MovementDirection8::Backward,
+		MovementDirection8::BackwardLeft,
+		MovementDirection8::Left,
+		MovementDirection8::ForwardLeft,
+	};
+	return kSectorTable[sectorIndex];
+}
+
+// --- 技の1フェーズ(入り/中/終わり)ごとのアニメーション再生情報 -----------
+// Attackの場合はWindup/Active/Recoveryの3フェーズにそのまま1:1で対応する
+// (StateAttack::Enter()/Update()参照)。フェーズが切り替わるたびに、この
+// 構造体の値をそのままPlayAnimation()へ渡す。
+struct ActionPhaseData
+{
+	float duration = 0.2f;
+	std::string animationName;
+	bool useRootMotion = false;
+	float blendDuration = 0.1f;
+};
 
 struct AttackMoveData
 {
-	float windupDuration = 0.2f;
-	float activeDuration = 0.25f;
-	float recoveryDuration = 0.3f;
+	ActionPhaseData windup;
+	ActionPhaseData active;
+	ActionPhaseData recovery;
 
-	float stepDistance = 0.5f; //	攻撃入力時対象方向か入力方向に移動。対象が見つからない場合の決め打ち移動距離、
-	// および対象がいる場合の「一度の踏み込みで詰めてよい距離」の上限として使う(engageDistance参照)。
-	// Windupが終わった瞬間(AttackActiveへの切り替わり)に開始する
-	// 踏み込み移動の所要時間(StateAttack::Update参照)。
+	float stepDistance = 0.5f;
 	float stepDuration = 0.1f;
-
-	// 対象(ロック対象、または画面中心に最も近い敵)がいる場合、踏み込み後に
-	// 対象との間で保ちたい距離(間合い)。ずっと対象へ前進し続けるのではなく、
-	// 「現在の距離 - engageDistance」だけ(ただしstepDistanceを上限として)
-	// 詰める踏み込み量をStateAttack側で毎回計算するために使う
-	// (PlayerStatusController::RequestStepMoveTowardsTarget参照)。
-	// 技ごとに異なる間合いを持たせたいため(例: リーチの長い技は大きめに)、
-	// AttackMoveData側の値として個別に持つ。対象が見つからない場合は
-	// 従来通りstepDistance/stepDirectionでの決め打ち移動にフォールバックする。
 	float engageDistance = 1.2f;
 
-	// recoveryDuration内で、ここから先は回避によるキャンセルを許可する
-	// 開始タイミング(秒)。recoveryDuration以上にすればキャンセル不可の技になる。
+	// recovery.duration内で、ここから先は回避によるキャンセルを許可する
+	// 開始タイミング(秒)。recovery.duration以上にすればキャンセル不可の技になる。
 	float recoveryEvadeCancelStart = 0.15f;
 
-	// recoveryDuration内で、ここから先は次の攻撃(コンボ)によるキャンセルを
-	// 許可する開始タイミング(秒)。recoveryDuration以上にすればコンボ不可の技になる。
+	// recovery.duration内で、ここから先は次の攻撃(コンボ)によるキャンセルを
+	// 許可する開始タイミング(秒)。recovery.duration以上にすればコンボ不可の技になる。
 	float recoveryAttackCancelStart = 0.2f;
 
 	Math::Vector3 stepDirection = Math::Vector3::Zero;
-
-	// このAttackへ切り替わる際のクロスフェード時間(秒)。
-	// ModelAnimatorComponent::SetBlendDuration()にそのまま渡す。
-	// ModelAnimatorComponent側のデフォルト(0.15秒)は「今のポーズが
-	// 安定している状態からの遷移」を想定した長さだが、コンボの2段目
-	// 以降は「Recovery中の任意のタイミングで割り込まれる」ため、
-	// 同じ長さでブレンドすると出発点が毎回不安定になり、繋がりが
-	// 不自然に見えやすい。攻撃データ側でこの値を個別に持たせることで、
-	// 段ごとに(あるいは今後の技ごとに)繋ぎの長さを調整できるようにする。
-	float blendDuration = 0.1f;
-
-	// trueの場合、この攻撃はTweenMoveComponentによる決め打ち移動
-	// (stepDistance/stepDuration)ではなく、アニメーションクリップに
-	// 焼き込まれたルートモーションで移動する(StateAttack::Update参照)。
-	// この場合stepDistance/stepDirection/stepDurationは無視される。
-	bool useRootMotion = false;
-
-	// 再生するアニメーション名(仮)。コンボの段数ごとに異なる想定のため、
-	// PlayerStatusController::Start()でcomboAttacks_の各要素へ
-	// "Attack1"〜"Attack5"を仮で割り当てる。
-	std::string animationName = "Attack1";
 };
 
 struct EvadeMoveData
@@ -178,10 +219,10 @@ struct EvadeMoveData
 	// 前後左右で別クリップを再生するため、単一のanimationNameから分割。
 	// 全方向とも同じクリップで良ければ4つとも同じ名前を入れればよい
 	// (実アセットが揃うまでの暫定運用としてCreateDebugEvadeData()参照)。
-	std::string animationNameForward = "StandToRoll";
-	std::string animationNameBackward = "StandToRoll";
-	std::string animationNameLeft = "StandToRoll";
-	std::string animationNameRight = "StandToRoll";
+	std::string animationNameForward = "GhostSamurai_APose_Slide_F_Inplace";
+	std::string animationNameBackward = "GhostSamurai_APose_Slide_B_Inplace";
+	std::string animationNameLeft = "GhostSamurai_APose_Slide_L_Inplace";
+	std::string animationNameRight = "GhostSamurai_APose_Slide_R_Inplace";
 
 	const std::string& GetAnimationName(EvadeDirection dir) const
 	{
@@ -195,25 +236,38 @@ struct EvadeMoveData
 	}
 };
 
-// 歩行(Walk)アニメーションの前後左右分岐用データ。EvadeMoveDataの
-// animationNameForward等+GetAnimationName()と同じ考え方だが、Evadeのように
-// 発動秒数やuseRootMotion等の付随データを持たないため、専用の軽量な型として
-// 切り出す(PlayerStatusController::walkAnimSet_参照)。
+// Walk(移動)アニメーションの8方向分岐用データ。以前は前後左右4方向
+// (EvadeDirection)のみだったが、斜め移動時のクリップも持たせたいという
+// 要望に伴い8方向(MovementDirection8)へ拡張した。
+// Evade用ではなくWalk専用の型のため、EvadeMoveDataのような発動秒数や
+// useRootMotion等は持たない(PlayerStatusController::walkAnimSet_参照)。
+//
+// 斜め方向のクリップが未用意の場合のフォールバックとして、既定値は
+// 隣接する縦/横方向のクリップ名を流用している(実アセットが揃うまでの
+// 暫定運用。CreateDebugEvadeData()と同じ考え方)。
 struct DirectionalAnimationSet
 {
-	std::string forward = "ForwardWalk";
-	std::string backward = "BackWalk";
-	std::string left = "LeftWalk";
-	std::string right = "RightWalk";
+	std::string forward = "GhostSamurai_APose_Strafe_Run_F_Loop_Inplace";
+	std::string forwardRight = "GhostSamurai_APose_Strafe_Run_FR_Inplace";
+	std::string right = "GhostSamurai_APose_Strafe_Run_R_Inplace";
+	std::string backwardRight = "GhostSamurai_APose_Strafe_Run_BR_Inplace";
+	std::string backward = "GhostSamurai_APose_Strafe_Run_B_Inplace";
+	std::string backwardLeft = "GhostSamurai_APose_Strafe_Run_BL_Inplace";
+	std::string left = "GhostSamurai_APose_Strafe_Run_L_Inplace";
+	std::string forwardLeft = "GhostSamurai_APose_Strafe_Run_FL_Inplace";
 
-	const std::string& GetAnimationName(EvadeDirection dir) const
+	const std::string& GetAnimationName(MovementDirection8 dir) const
 	{
 		switch (dir) {
-		case EvadeDirection::Backward: return backward;
-		case EvadeDirection::Left:     return left;
-		case EvadeDirection::Right:    return right;
-		case EvadeDirection::Forward:
-		default:                       return forward;
+		case MovementDirection8::ForwardRight:  return forwardRight;
+		case MovementDirection8::Right:         return right;
+		case MovementDirection8::BackwardRight: return backwardRight;
+		case MovementDirection8::Backward:      return backward;
+		case MovementDirection8::BackwardLeft:  return backwardLeft;
+		case MovementDirection8::Left:          return left;
+		case MovementDirection8::ForwardLeft:   return forwardLeft;
+		case MovementDirection8::Forward:
+		default:                                return forward;
 		}
 	}
 };
@@ -224,7 +278,7 @@ struct GuardMoveData
 	// パリィ(弾き)として成立する。この秒数を過ぎたら以降は通常ブロック扱い。
 	float justWindowDuration = 0.15f;
 
-	std::string animationName = "Guard"; // 仮。単発再生+最終フレームでポーズ保持想定
+	std::string animationName = "GhostSamurai_APose2DefenseL_Inplace"; // 仮。単発再生+最終フレームでポーズ保持想定
 };
 
 // コンボ攻撃の最大段数。PlayerStatusController::comboAttacks_の要素数、

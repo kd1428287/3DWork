@@ -8,8 +8,7 @@
 #include "PlayerInputComponent.h"
 #include "PlayerLockOnComponent.h"
 #include "../../Movement/MovementComponent.h" 
-#include "../../Movement/VelocityComponent.h"
-#include "../../Movement/FacingDirectionComponent.h"
+#include "../../Movement/FacingDirectionComponent.h" 
 #include "../../Transform/TransformComponent.h"
 #include "PlayerState.h"
 #include "../StateMachine/StateMachine.h"
@@ -17,13 +16,11 @@
 #include "../../Collision/ColliderComponent.h"
 #include "../../Collision/AttackSourceComponent.h"
 #include "../../Effect/TrailPolygonComponent.h" 
-#include "../Data/PostureComponent.h"
-#include "../Data/HealthComponent.h"
 #include "../../../Core/Handle.h"
-#include "../../../Systems/Collision/CollisionSystem.h"
-#include "../../../Effect/EffectEvents.h"
+#include "../Data/IHitReactionQuery.h"
+#include "../Data/HitReactionComponent.h"
 
-class PlayerStatusController : public ComponentBase
+class PlayerStatusController : public ComponentBase, public IHitReactionQuery
 {
 public:
 	explicit PlayerStatusController(GameObject* owner) : ComponentBase(owner) {}
@@ -33,9 +30,6 @@ public:
 		inputComponent_ = GetOwner()->GetComponent<PlayerInputComponent>();
 		movementComponent_ = GetOwner()->GetComponent<MovementComponent>();
 		modelAnimatorComponent_ = GetOwner()->GetComponent<ModelAnimatorComponent>();
-		postureComponent_ = GetOwner()->GetComponent<PostureComponent>();
-		healthComponent_ = GetOwner()->GetComponent<HealthComponent>();
-		velocityComponent_ = GetOwner()->GetComponent<VelocityComponent>();
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
 		facingDirectionComponent_ = GetOwner()->GetComponent<FacingDirectionComponent>();
 		lockOnComponent_ = GetOwner()->GetComponent<PlayerLockOnComponent>(); // ロックオン対象の選定/保持を担当する兄弟コンポーネント
@@ -53,13 +47,15 @@ public:
 		baseEvadeData_ = CreateDebugEvadeData();
 		baseGuardData_ = CreateDebugGuardData();
 
-		// HurtBoxへのCollisionEnterEventは、シーン共有バスではなく
-		// このGameObject自身のローカルバスにだけ届く(CollisionSystem/
-		// EnemyStatusController::Start()の同種のコメント参照)。
-		EventBus& localBus = GetOwner()->GetLocalEventBus();
-		const SubscriptionId subscriptionId = localBus.Subscribe<CollisionSystem::CollisionEnterEvent>(
-			[this](const CollisionSystem::CollisionEnterEvent& e) { OnCollisionEnter(e); });
-		subscriber_ = ScopedSubscriber(&localBus, subscriptionId);
+		// 被弾時のパリィ/ガード/通常被弾の分岐と、それに伴うダメージ/
+		// ノックバック/エフェクト処理はHitReactionComponentへ切り出した
+		// (HurtBoxへのCollisionEnterEventの購読自体もHitReactionComponent側が
+		// 持つため、ここでは購読処理を書かない)。ここでは「今パリィ猶予中か/
+		// ガード中か/通常被弾でスタンへ入ってほしい」という問い合わせに
+		// 答えられるよう、自分自身をIHitReactionQueryとして登録するだけでよい。
+		if (HitReactionComponent* hitReaction = GetOwner()->GetComponent<HitReactionComponent>()) {
+			hitReaction->SetQuerySource(this);
+		}
 
 		// 初期状態のセット。TransitionTo経由なのでEnterも呼ばれるが、
 		// StateNone::Enter()がRefreshMovementAnimation()を呼ぶため、
@@ -84,7 +80,9 @@ public:
 		return state == CombatState::Evade || state == CombatState::EvadeRecovery;
 	}
 
-	bool IsGuarding() const { return GetCombatState() == CombatState::Guard; }
+	// IHitReactionQuery実装。HitReactionComponentから、被弾時に
+	// 「今ガード中か」を問い合わせるために呼ばれる。
+	bool IsGuarding() const override { return GetCombatState() == CombatState::Guard; }
 
 	bool IsStaggered() const {
 		auto state = GetCombatState();
@@ -93,7 +91,10 @@ public:
 
 	// ジャスト判定もState側に委譲
 	bool IsInJustEvadeWindow() const { return stateMachine_.Current()->IsInJustEvadeWindow(this); }
-	bool IsInParryWindow() const { return stateMachine_.Current()->IsInParryWindow(this); }
+
+	// IHitReactionQuery実装。HitReactionComponentから、被弾時に
+	// 「今パリィ猶予中か」を問い合わせるために呼ばれる。
+	bool IsInParryWindow() const override { return stateMachine_.Current()->IsInParryWindow(this); }
 
 	// --- 戦闘軸: 実行可否 (現在のStateに委譲) --------------------------
 	// Guardもここに揃える(以前はHandleActionInput内でCombatState::Noneを
@@ -110,9 +111,19 @@ public:
 	// 回避方向を、Enter()時点の(=FacingDirectionComponentの追従が止まった直後の)
 	// 現在の前方と比較し、前後左右のどれに該当するかを判定する。
 	// StateEvade::Enter()が再生アニメーションを選ぶために呼ぶ。
+	// Evadeは今後も4方向のまま(EvadeDirection)。斜めを含む8方向はWalk専用
+	// (ClassifyMovementDirection8参照)。
 	EvadeDirection ClassifyEvadeDirection(const Math::Vector3& inputDirection) const {
 		const Math::Vector3 forward = (transform_ != nullptr) ? transform_->GetForward() : Math::Vector3::Zero;
 		return ::ClassifyEvadeDirection(forward, inputDirection);
+	}
+
+	// Walk専用の8方向分類。Evadeとは別のenum(MovementDirection8)を使う
+	// (EvadeDirection/ClassifyEvadeDirection参照。同じ型を使い回すと
+	// 「4方向のつもりか8方向のつもりか」が呼び出し側で曖昧になるため)。
+	MovementDirection8 ClassifyMovementDirection8(const Math::Vector3& inputDirection) const {
+		const Math::Vector3 forward = (transform_ != nullptr) ? transform_->GetForward() : Math::Vector3::Zero;
+		return ::ClassifyMovementDirection8(forward, inputDirection);
 	}
 
 	// 現在のコンボ段数(0始まり、0=1段目)。演出・SE分岐等で参照したい場合用。
@@ -162,6 +173,11 @@ public:
 		stateMachine_.ForceTransitionTo(this, &stateStagger_);
 		OnStateChanged(&stateStagger_);
 	}
+
+	// IHitReactionQuery実装。HitReactionComponentが通常被弾の分岐で
+	// 「スタン相当の反応に入ってほしい」と通知してきた際、そのまま
+	// ApplyStagger()へ委譲するだけの薄いラッパー。
+	void EnterStagger(bool isLarge, float duration) override { ApplyStagger(isLarge, duration); }
 
 	// --- ロックオン ------------------------------------------------------
 	// "lock"入力から呼ばれる。選定/保持自体はPlayerLockOnComponentの責務で、
@@ -236,6 +252,13 @@ public:
 	//  弱参照で保持する。武器が破棄された場合はResolve()がnullptrを返す)。
 	// weaponTrailは省略可能(Handle<TrailPolygonComponent>のデフォルト構築=
 	// 未設定状態)。トレイル無しの武器を今後追加する可能性を考慮している。
+	//
+	// HitReactionComponentが鍔迫り合いエフェクトのために必要とする
+	// weaponColliderは、こことは別経路でHitReactionComponent::
+	// SetWeaponCollider()へ渡す(Factory側で両方に同じHandleを渡す形。
+	// PlayerStatusControllerからHitReactionComponentへ内部で受け渡す形には
+	// していない。攻撃用の武器管理と被弾リアクション用の武器参照は
+	// 別の責務のため)。
 	void SetWeapon(Handle<ColliderComponent> weaponCollider, Handle<AttackSourceComponent> weaponAttackSource,
 		Handle<TrailPolygonComponent> weaponTrail = {}) {
 		weaponCollider_ = weaponCollider;
@@ -288,22 +311,25 @@ public:
 	//
 	// targetDurationSecondsを渡すと、アニメーションクリップの実際の長さに
 	// 関わらず、その秒数でちょうど再生し終わるよう速度を自動調整する
-	// (ModelAnimatorComponent::Play()参照)。攻撃/回避のように、
-	// ゲームプレイ側の秒数(AttackMoveData等)を基準にしたい場合に使う。
+	// (ModelAnimatorComponent::Play()参照)。Attackはフェーズ(入り/中/終わり)
+	// ごとに個別のクリップ・秒数を持つため(ActionPhaseData参照)、
+	// フェーズが切り替わるたびにこのPlayAnimation()を呼び直す形になる
+	// (StateAttack::Enter()/Update()参照)。
 	//
 	// blendDurationSecondsは、この呼び出しで切り替わる際のクロスフェード
 	// 時間。呼ぶたびに必ずModelAnimatorComponent::SetBlendDuration()で
 	// 明示的に設定し直すことで、「前回どこかで設定した値が意図せず
 	// 引き継がれる」ことを防いでいる(省略時はkDefaultAnimationBlendDuration、
-	// コンボ攻撃のようにAttackMoveData側で個別の値を持つ場合はそちらを渡す。
-	// 詳細はStateAttack::Enter()参照)。
+	// コンボ攻撃のように技(フェーズ)側で個別の値を持つ場合はそちらを渡す)。
 	//
-	// useRootMotionは、この技がTweenMoveComponentによる決め打ち移動ではなく
-	// アニメーションクリップのルートモーションで動くかどうか。blendDuration
-	// と同じ理由で、こちらも呼ぶたびに必ずModelAnimatorComponent::
-	// SetRootMotionBoneName()で明示的に有効/無効を設定し直す(前回別の技が
-	// ルートモーションを有効にしていた場合でも、この技がfalseなら確実に
-	// 無効化される)。
+	// useRootMotionは、この技(フェーズ)がTweenMoveComponentによる決め打ち
+	// 移動ではなくアニメーションクリップのルートモーションで動くかどうか。
+	// blendDurationと同じ理由で、こちらも呼ぶたびに必ずModelAnimatorComponent::
+	// SetRootMotionBoneName()で明示的に有効/無効を設定し直す(前回別の技/
+	// フェーズがルートモーションを有効にしていた場合でも、今回falseなら
+	// 確実に無効化される)。実際にModelAnimatorComponentが抽出した移動量を
+	// キャラクターのTransformへ反映する処理は、RootMotionApplierComponent
+	// (同じGameObjectに付く兄弟コンポーネント)側に切り出してある。
 	void PlayAnimation(const std::string& name, bool loop = false, float targetDurationSeconds = -1.0f,
 		bool useRootMotion = false, float blendDurationSeconds = kDefaultAnimationBlendDuration) {
 		if (modelAnimatorComponent_ != nullptr) {
@@ -324,7 +350,7 @@ public:
 		if (inputComponent_ == nullptr) return;
 		movementState_ = inputComponent_->GetDesiredMovementState();
 		ApplyMovementState(movementState_);
-		lastWalkDirection_ = ClassifyEvadeDirection(inputComponent_->GetMoveDirection());
+		lastWalkDirection_ = ClassifyMovementDirection8(inputComponent_->GetMoveDirection());
 		PlayMovementAnimation(movementState_, lastWalkDirection_);
 	}
 
@@ -347,14 +373,11 @@ public:
 		// 戦闘状態の更新は共通StateMachineに丸投げ
 		stateMachine_.Update(this, deltaTime);
 
-		// ModelAnimatorComponentが今フレーム抽出したルートモーション移動量を
-		// キャラクターのTransformへ反映する。stateMachine_.Update()の後に
-		// 置いているのは、この中でPlayAnimation()による技の切り替えが
-		// 起こりうるため、その切り替え後の状態も踏まえてから最後に
-		// 一度だけ消費したいという理由(実際にはConsumeRootMotionDelta()は
-		// このフレーム分の値を返すだけなので、呼ぶ位置自体はUpdate()内なら
-		// さほど厳密ではない)。
-		ApplyRootMotion();
+		// ルートモーションの反映(ModelAnimatorComponentが抽出した移動量を
+		// Transformへ加算する処理)は、同じGameObjectに付くRootMotionApplier
+		// Component側が自分のUpdate()で毎フレーム自律的に行う。PlayerFactory
+		// 側でModelAnimatorComponent/TransformComponentと合わせてこの
+		// コンポーネントを付けておくこと。
 	}
 
 private:
@@ -383,9 +406,9 @@ private:
 			// で移動する技(Attack5/Evade等)は移動方向がアニメーション側の
 			// 都合で毎フレーム変わりうるため、それに合わせて向きまで
 			// 追従させると、その回転が次フレームのルートモーション変換
-			// (ApplyRootMotion側でtransform_->GetRotation()を使っている)
-			// に影響し、向きと移動が互いに干渉して暴れる不具合があった
-			// (実際に発生)。
+			// (RootMotionApplierComponent側でtransform_->GetRotation()を
+			// 使っている)に影響し、向きと移動が互いに干渉して暴れる
+			// 不具合があった(実際に発生)。
 			facingDirectionComponent_->SetUpdateEnabled(nextState == &stateNone_);
 		}
 		if (nextState != &stateAttack_) {
@@ -416,7 +439,8 @@ private:
 
 		// 【要確認】+Z前方・DirectX左手系を想定したyaw角の算出。
 		// TransformComponentの回転表現/SetRotation()の実際のシグネチャに
-		// 合わせて調整すること(ClassifyEvadeDirectionの座標系前提と同じ確認が必要)。
+		// 合わせて調整すること(ClassifyEvadeDirection/ComputeHorizontalAngleTo
+		// の座標系前提と同じ確認が必要)。
 		const float yaw = std::atan2(dir.x, dir.z);
 		transform_->SetRotation(Math::Quaternion::CreateFromAxisAngle(Math::Vector3::Up, yaw));
 	}
@@ -445,43 +469,16 @@ private:
 		}
 	}
 
-	// ModelAnimatorComponent側で抽出されたルートモーション移動量
-	// (ボーンのローカル/モデル空間、まだ回転を反映していない値)を、
-	// キャラクターの現在の向きでワールド空間に変換してTransformへ加算する。
-	//
-	// 【呼び出し順序の前提・未確認】ModelAnimatorComponent::Update()が
-	// このフレーム内で既に実行済みである必要がある。GameObject側の
-	// コンポーネント更新順が、型をまたいでもAddComponentした順序通りに
-	// 保証されるか未確認。保証されないなら、PlayerFactory側で
-	// ModelAnimatorComponentをこのコンポーネントより先にAddComponentする
-	// よう明示的に順序を揃えること(そうしないと、ここで消費する値が
-	// 常に1フレーム遅れる)。
-	void ApplyRootMotion() {
-		if (modelAnimatorComponent_ == nullptr || transform_ == nullptr) return;
-
-		Math::Vector3 localDelta = modelAnimatorComponent_->ConsumeRootMotionDelta();
-		if (localDelta.LengthSquared() <= 0.0f) return;
-
-		// ボーンのローカル(≒モデル)空間の移動量を、キャラクターの現在の
-		// ワールド回転で変換してからワールド移動量として加算する
-		// (Vector3::Transform(vector, quaternion)は回転のみを適用し、
-		//  平行移動は含まないため、そのままデルタの変換に使える。
-		//  TransformComponent::GetForward()と同じ変換方法)。
-		Math::Vector3 worldDelta = Math::Vector3::Transform(localDelta, transform_->GetRotation());
-		transform_->Translate(worldDelta);
-	}
-
 	// Stand/Walk/Runそれぞれのアニメーションをループ再生する。
 	// アイドルを基本状態として扱うため、Standでは明示的にkIdleAnimationを再生する。
 	//
-	// Walkは、Evade同様に「現在の向きに対して移動入力がどちら寄りか」
-	// (walkDirection)によって前後左右でクリップを出し分ける
-	// (walkAnimSet_/DirectionalAnimationSet参照)。ロックオン中は正面が
-	// 移動方向に追従しなくなる(UpdateLockOnFacing参照)ため、この分岐が
-	// 特に意味を持つ(例: 敵を向いたまま横歩き/バックステップ移動する)。
+	// Walkは、現在の向きに対して移動入力がどちら寄りか(walkDirection)に
+	// よって8方向でクリップを出し分ける(walkAnimSet_/DirectionalAnimationSet
+	// 参照)。ロックオン中は正面が移動方向に追従しなくなる(UpdateLockOnFacing
+	// 参照)ため、この分岐が特に意味を持つ(例: 敵を向いたまま斜め歩き移動する)。
 	// Runは現状方向分岐を持たず、既定のkRunAnimationを常に再生する
 	// (要望が出た場合はwalkAnimSet_と同様の仕組みを追加すること)。
-	void PlayMovementAnimation(MovementState state, EvadeDirection walkDirection = EvadeDirection::Forward) {
+	void PlayMovementAnimation(MovementState state, MovementDirection8 walkDirection = MovementDirection8::Forward) {
 		switch (state) {
 		case MovementState::Stand: PlayAnimation(kIdleAnimation, true); break;
 		case MovementState::Walk:  PlayAnimation(walkAnimSet_.GetAnimationName(walkDirection), true); break;
@@ -489,153 +486,10 @@ private:
 		}
 	}
 
-	// --- 被弾時の分岐(パリィ/ガード/通常被弾) ---------------------------
-	// HurtBoxへのCollisionEnterEvent受信時に呼ばれる。
-	// 「攻撃を受けた瞬間、今がジャスト猶予中かガード中か」をStateMachine
-	// (IsInParryWindow/IsGuarding)に問い合わせて分岐する。
-	//
-	// HP(HealthComponent)は未実装のため、通常被弾時のダメージ処理と
-	// ガード時のチップダメージ処理はTODOのまま。
-	void OnCollisionEnter(const CollisionSystem::CollisionEnterEvent& e) {
-		if (e.selfShapeName != "HurtBox") return;
-
-		AttackSourceComponent* attack = e.otherObject->GetComponent<AttackSourceComponent>();
-		if (attack == nullptr) return;
-
-		// 多段ヒット防止(EnemyStatusController::OnCollisionEnterと同じ考え方)。
-		if (attack->alreadyHit.count(GetOwner()) > 0) return;
-		attack->alreadyHit.insert(GetOwner());
-
-		if (IsInParryWindow()) {
-			if (GameObject* attacker = attack->ownerCharacter.Resolve()) {
-				if (PostureComponent* attackerPosture = attacker->GetComponent<PostureComponent>()) {
-					attackerPosture->AddPostureDamage(attack->parryPostureDamage);
-				}
-				attacker->GetLocalEventBus().Publish(AttackSourceComponent::ParriedEvent{});
-			}
-
-			SpawnWeaponClashEffect(e.otherObject, /*isParry=*/true);
-		}
-		else if (IsGuarding()) {
-			// 通常ブロック: 自分の体幹を削り、HPにも軽減済みのチップ
-			// 通常ブロックの火花エフェクト(パリィ成功時より控えめ)
-			SpawnWeaponClashEffect(e.otherObject, /*isParry=*/false);
-			// ダメージを適用する。
-			if (postureComponent_ != nullptr) {
-				postureComponent_->AddPostureDamage(attack->postureDamage);
-				if (postureComponent_->IsBroken()) {
-					// TODO: 崩し状態(専用State)への遷移は別途実装。
-				}
-			}
-			if (healthComponent_ != nullptr) {
-				healthComponent_->TakeDamage(attack->damage * attack->chipDamageRatio);
-			}
-			// ガード時でもノックバックする
-			if (velocityComponent_ != nullptr && transform_ != nullptr) {
-				Math::Vector3 dir = transform_->GetForward();
-				if (GameObject* attacker = attack->ownerCharacter.Resolve()) {
-					if (TransformComponent* attackerTransform = attacker->GetComponent<TransformComponent>()) {
-						dir = transform_->GetPosition() - attackerTransform->GetPosition();
-						dir.y = 0.0f;
-						if (dir.LengthSquared() < 1e-6f) {
-							dir = transform_->GetForward();
-						}
-						else {
-							dir.Normalize();
-						}
-					}
-				}
-				velocityComponent_->AddImpulse(dir * 2.f);
-			}
-		}
-		else {
-			// 通常被弾: ダメージ+体幹ダメージ+ノックバックを付与し、
-			// 体幹が壊れたかどうかで小スタン/大スタンに分岐する。
-			//
-			// ノックバック方向は幾何学的接触法線(hitNormal)ではなく、
-			// 攻撃者→自分への水平方向を使う(Enemy側で発生した「Box形状の
-			// 深い重なりでhitNormalが攻撃と無関係な軸を返し、地面を
-			// すり抜ける」不具合と同じ原因を最初から避けるため。詳細は
-			// EnemyStatusController::OnCollisionEnterの同種のコメント参照)。
-			if (healthComponent_ != nullptr) {
-				healthComponent_->TakeDamage(attack->damage);
-			}
-
-			PublishGenericEffect(*GetOwner()->GetContext()->eventBus, "BloodSplatter", transform_->GetPosition());
-
-			if (velocityComponent_ != nullptr && transform_ != nullptr) {
-				Math::Vector3 dir = transform_->GetForward();
-				if (GameObject* attacker = attack->ownerCharacter.Resolve()) {
-					if (TransformComponent* attackerTransform = attacker->GetComponent<TransformComponent>()) {
-						dir = transform_->GetPosition() - attackerTransform->GetPosition();
-						dir.y = 0.0f;
-						if (dir.LengthSquared() < 1e-6f) {
-							dir = transform_->GetForward();
-						}
-						else {
-							dir.Normalize();
-						}
-					}
-				}
-				velocityComponent_->AddImpulse(dir * attack->knockbackPower);
-			}
-
-			// 通常被弾でも体幹にダメージを蓄積する(ガード時とは異なり全ダメージ分)。
-			// 体幹が壊れた(IsBroken())場合は大スタン(のけぞり)へ、
-			// そうでなければ従来通り小スタン(よろけ、attack->hitStunSeconds)へ。
-			bool postureBroken = false;
-			if (postureComponent_ != nullptr) {
-				postureComponent_->AddPostureDamage(attack->postureDamage);
-				postureBroken = postureComponent_->IsBroken();
-				if (postureBroken) {
-					// 大スタンへ移行するため、次の蓄積に備えて体幹ゲージを空にする。
-					// TODO: PostureComponent側の実際のリセットAPI名に合わせて修正すること
-					// (現状Reset()という名称を仮定している)。
-					postureComponent_->Reset();
-				}
-			}
-
-			ApplyStagger(/*isLarge=*/postureBroken, postureBroken ? kLargeStaggerDuration : attack->hitStunSeconds);
-		}
-	}
-
-	// --- 鍔迫り合いの火花エフェクト送信 -----------------------------------
-	// OnCollisionEnter()のパリィ/ガード分岐から呼ばれる。
-	// attackerWeaponObjは相手側の武器GameObject(AttackSourceComponentの持ち主。
-	// e.otherObjectをそのまま渡す想定)。自分側の武器はweaponCollider_から解決する。
-	// 双方のTransformComponentが取れない場合、またはシーンバスが
-	// 取得できない場合は何もしない(片方の武器が既に破棄済み等の異常系)。
-	void SpawnWeaponClashEffect(GameObject* attackerWeaponObj, bool isParry)
-	{
-		if (attackerWeaponObj == nullptr) return;
-
-		TransformComponent* attackerWeaponTransform = attackerWeaponObj->GetComponent<TransformComponent>();
-		if (attackerWeaponTransform == nullptr) return;
-
-		ColliderComponent* myWeaponCollider = weaponCollider_.Resolve();
-		if (myWeaponCollider == nullptr) return;
-
-		TransformComponent* myWeaponTransform = myWeaponCollider->GetOwner()->GetComponent<TransformComponent>();
-		if (myWeaponTransform == nullptr) return;
-
-		SceneContext* context = GetOwner()->GetContext();
-		if (context == nullptr || context->eventBus == nullptr) return;
-
-		// 衝突位置は正確な接触点ではなく、両武器座標の中間点で近似する
-		const Math::Vector3 clashPos =
-			(attackerWeaponTransform->GetPosition() + myWeaponTransform->GetPosition()) * 0.5f;
-
-		PublishWeaponClashEffect(*context->eventBus, clashPos,
-			myWeaponTransform->GetForward(), attackerWeaponTransform->GetForward(), isParry);
-	}
-
 	// 兄弟コンポーネント
 	PlayerInputComponent* inputComponent_ = nullptr;
 	MovementComponent* movementComponent_ = nullptr;
 	ModelAnimatorComponent* modelAnimatorComponent_ = nullptr;
-	PostureComponent* postureComponent_ = nullptr;
-	HealthComponent* healthComponent_ = nullptr;
-	VelocityComponent* velocityComponent_ = nullptr;
 	TransformComponent* transform_ = nullptr;
 	FacingDirectionComponent* facingDirectionComponent_ = nullptr;
 	PlayerLockOnComponent* lockOnComponent_ = nullptr;
@@ -653,16 +507,13 @@ private:
 	// (weaponCollider_等と同じ考え方)。
 	Handle<GameObject> currentAttackTarget_;
 
-	ScopedSubscriber subscriber_;
-
 	// --- 移動データ ---
 	MovementState movementState_ = MovementState::Stand;
 	float walkSpeed_ = 2.0f;
 	float runSpeed_ = 5.0f;
 
-	// Walk中、現在の向きに対する移動方向(前後左右)によって再生するクリップを
-	// 分岐させるためのデータ(仮の名前。実アセットが揃うまでの暫定値として
-	// 4方向とも"Walk"を入れている。CreateDebugEvadeData()と同じ考え方)。
+	// Walk中、現在の向きに対する移動方向(8方向)によって再生するクリップを
+	// 分岐させるためのデータ(仮の名前。実アセットが揃うまでの暫定値)。
 	DirectionalAnimationSet walkAnimSet_;
 
 	// HandleMovementInput()が「前フレームと比べて方向区分が変わったか」を
@@ -670,15 +521,11 @@ private:
 	// 変わらないまま前進⇔後退⇔横歩きが切り替わるケース
 	// (特にロックオン中)を拾うために必要(kWalkAnimation単一運用だった頃は
 	// 不要だった)。
-	EvadeDirection lastWalkDirection_ = EvadeDirection::Forward;
+	MovementDirection8 lastWalkDirection_ = MovementDirection8::Forward;
 
 	// Stand/Walk/Runのアニメーション名(仮)。
-	static constexpr const char* kIdleAnimation = "Idle";
-	static constexpr const char* kRunAnimation = "Walk"; //"Run";
-
-	// 大スタン(のけぞり)の硬直時間(仮)。小スタンはattack->hitStunSecondsを
-	// そのまま使うが、大スタンは攻撃側のデータに依存させず一律の値にしている。
-	static constexpr float kLargeStaggerDuration = 0.6f;
+	static constexpr const char* kIdleAnimation = "GhostSamurai_APose_Idle";
+	static constexpr const char* kRunAnimation = "GhostSamurai_APose_Strafe_Run_F_Loop_Inplace"; //"Run";
 
 	// PlayAnimation()でblendDurationSecondsを省略した場合に使う既定値。
 	// ModelAnimatorComponent側の初期値(0.15秒)と合わせている。
@@ -687,7 +534,7 @@ private:
 	// PlayAnimation(useRootMotion=true)の際にModelAnimatorComponent::
 	// SetRootMotionBoneName()へ渡すボーン名。PlayerFactory側でモデルに
 	// アタッチしているMixamoリグのHipボーン名と一致している前提。
-	static constexpr const char* kRootMotionBoneName = "mixamorig:Hips";
+	static constexpr const char* kRootMotionBoneName = "root";
 
 	// --- 戦闘データ ---
 	AttackMoveData currentAttack_;
@@ -702,8 +549,6 @@ private:
 	GuardMoveData baseGuardData_;
 
 	// コンボ攻撃: 何段目か(0始まり)と、各段の技データテーブル。
-	// 各要素の具体的な数値(モーション時間・踏み込み距離等)は別途詰める
-	// (現状は全段ともAttackMoveDataのデフォルト値+仮のanimationNameのまま)。
 	int comboIndex_ = 0;
 	ComboAttackTable comboAttacks_;
 
