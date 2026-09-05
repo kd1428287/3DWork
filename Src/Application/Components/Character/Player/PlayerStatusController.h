@@ -21,7 +21,7 @@
 #include "../Data/HealthComponent.h"
 #include "../../../Core/Handle.h"
 #include "../../../Systems/Collision/CollisionSystem.h"
-#include "../../../Engine/EventBus/Event/EffectEvents.h"
+#include "../../../Effect/EffectEvents.h"
 
 class PlayerStatusController : public ComponentBase
 {
@@ -560,6 +560,8 @@ private:
 			if (healthComponent_ != nullptr) {
 				healthComponent_->TakeDamage(attack->damage);
 			}
+
+			PublishGenericEffect(*GetOwner()->GetContext()->eventBus, "BloodSplatter", transform_->GetPosition());
 
 			if (velocityComponent_ != nullptr && transform_ != nullptr) {
 				Math::Vector3 dir = transform_->GetForward();

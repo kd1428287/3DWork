@@ -101,40 +101,18 @@ std::unique_ptr<IBTNode<EnemyAIController>> WarrockBehavior::BuildTree(EnemyAICo
 		kRoarDuration,
 		[this](EnemyAIController*) { roarPending_ = false; }));
 
-	// 攻撃の3フェーズ実行(Windup/Active/Recovery)はBruteBehaviorと
-	// 完全に共通のBTWeightedAttackAction<T>を使う(BTWeightedAttackAction.h
-	// 参照)。「どの技を使うか」はWarrockAIData::attacksの重みで、
-	// 「間合いに入ったら攻撃を試みる」という判断自体はここでWarrock
-	// 固有に定義している。
-	//
-	// 【攻撃インターバル】IsAttackOnCooldown()をIsTargetInAttackRange()と
-	// 併せてConditionでチェックする。直前の攻撃のRecovery完了時に
-	// EnemyAIController::NotifyAttackCompleted()(BTWeightedAttackAction<T>
-	// から呼ばれる)がEnemyAIData::attackIntervalDuration分のクールダウンを
-	// 開始しており、それが解消するまではこのSequence自体がFailureを返す。
-	// Selectorはreactiveなので、その間は自然に下位のchaseSeq/Idleへ
-	// フォールバックし、移動自体は制限されない。
+
 	auto attackSeq = std::make_unique<BTSequence<EnemyAIController>>();
 	attackSeq->AddChild(std::make_unique<BTCondition<EnemyAIController>>(
 		[](EnemyAIController* c) { return c->IsTargetInAttackRange() && !c->IsAttackOnCooldown(); }));
 	attackSeq->AddChild(std::make_unique<BTWeightedAttackAction<EnemyAIController>>());
 
-	// 「追跡」はWarrock固有のWarrockActionChase(距離0まで詰め続ける実装)
-	// ではなく、汎用のEnemyActionMaintainDistance(EnemyActions.h参照)を使う。
-	// EnemyAIData::maintainDistance以下まで近づいたら接近をやめて停止する
-	// ため、プレイヤーに密着し続けず一定の間合いを保つ。攻撃間合い内
-	// (IsTargetInAttackRange())ではreactive SelectorがこのchaseSeqより
-	// 先にattackSeqを評価するため、実際に技を出せる距離まで来れば通常通り
-	// 攻撃が優先される。距離を詰めても攻撃インターバル中(IsAttackOnCooldown())
-	// で攻撃を出せない間は、maintainDistanceの位置で足を止めて待つ形になる。
 	auto chaseSeq = std::make_unique<BTSequence<EnemyAIController>>();
 	chaseSeq->AddChild(std::make_unique<BTCondition<EnemyAIController>>(
 		[](EnemyAIController* c) { return c->HasTarget(); }));
 	chaseSeq->AddChild(std::make_unique<EnemyActionMaintainDistance>());
 
-	// 優先度順(大スタン > パリィリアクション > 被弾リアクション > 咆哮 > 攻撃 > 追跡 > 待機)。
-	// reactive版BTSelectorのため、毎フレーム必ず先頭(大スタン)
-	// から評価し直す。
+	// 優先度順
 	auto selector = std::make_unique<BTSelector<EnemyAIController>>();
 	selector->AddChild(std::move(bigStaggerSeq));
 	selector->AddChild(std::move(parriedSeq));
@@ -149,8 +127,6 @@ std::unique_ptr<IBTNode<EnemyAIController>> WarrockBehavior::BuildTree(EnemyAICo
 
 void WarrockBehavior::OnSpawned(EnemyAIController* /*owner*/)
 {
-	// 登場時の咆哮を1回要求する(第二フェーズ移行時の再利用も想定。
-	// クラス冒頭コメント参照)。
 	roarPending_ = true;
 }
 
@@ -158,17 +134,10 @@ void WarrockBehavior::OnHit(EnemyAIController* owner, const AttackSourceComponen
 {
 	hitReactionPending_ = true;
 
-	// 体幹を削る。AttackSourceComponent::postureDamageのコメント上は
-	// 「ガードされた時」用の値だが、Warrockには現状ガード状態が無く
-	// (常に素で殴られる)、直撃時の体幹削りに使う専用フィールドが他に
-	// 無いため、ひとまずこちらを直撃時にも流用する
-	// (【要確認】ガード専用の値を直撃と共用してよいかは設計次第。
-	//  分けたくなったらAttackSourceComponentへ専用フィールドを追加すること)。
 	if (PostureComponent* posture = owner->GetPostureComponent()) {
 		posture->AddPostureDamage(attack.postureDamage);
 
 		// 体幹が尽きた(=崩し発生)。実際に大スタンとして割り込ませる
-		// 処理はBuildTree()側で実装済み(bigStaggerPending_参照)。
 		if (posture->IsBroken()) {
 			bigStaggerPending_ = true;
 		}
@@ -176,16 +145,6 @@ void WarrockBehavior::OnHit(EnemyAIController* owner, const AttackSourceComponen
 }
 
 // --- 被パリィ処理 ---------------------------------------------------------
-// 自分自身の攻撃がパリィされた時にEnemyAIController::OnParried()経由で
-// 呼ばれる。攻撃自身のparryPostureDamage(パリィされた側の判定コードが
-// AttackSourceComponentから読み取ってイベントに詰めてくれる値。
-// AttackSourceComponent::ParriedEvent冒頭コメント参照)を、攻撃者=
-// 自分自身の体幹へ適用する。IsBroken()ならOnHit()と同じく
-// bigStaggerPending_を立て、パリィをきっかけに体幹が尽きたケースも
-// そのまま大スタンの優先度に合流させる。
-//
-// parriedPending_自体(被パリィ専用の割り込み・アニメーション再生)を
-// BuildTree()側で消費する処理はまだ未実装(次のステップ)。
 void WarrockBehavior::OnParried(EnemyAIController* owner, const AttackSourceComponent::ParriedEvent& event)
 {
 	parriedPending_ = true;
@@ -200,9 +159,6 @@ void WarrockBehavior::OnParried(EnemyAIController* owner, const AttackSourceComp
 
 void WarrockBehavior::OnDied(EnemyAIController* owner)
 {
-	// Bossの死亡演出。Dyingアニメーションを再生し、GetDespawnDelay()で
-	// 消滅までの猶予をこの尺に合わせて延長している(EnemyAIController::
-	// OnDied()参照)。
 	owner->StopMovement();
 	owner->PlayAnimation("Dying", false, kDyingDuration);
 }

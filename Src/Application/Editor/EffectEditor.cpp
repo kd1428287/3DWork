@@ -74,19 +74,15 @@ void EffectEditor::Update()
 	const float deltaTime = Application::Instance().GetDeltaTime();
 
 	// 再生中プレビューのシミュレーションを進める(発生のInterval/Rate管理含む)
-	// ※実際の描画はDrawPreviewParticles()／RenderPreviewViewport()で3D描画パス側から行う
+	// ※実際の描画はDrawPreviewParticles()／RenderPreviewViewport()で3D描画パス側から行う。
+	// 鍔迫り合いの火花(WeaponClashParry/WeaponClashBlock)も専用データ・専用ループは持たず、
+	// ここでm_objectsの通常オブジェクトとして一緒に更新される。
 	for (auto& obj : m_objects)
 	{
 		if (obj.playing && !obj.paused)
 		{
 			UpdatePreview(obj, deltaTime);
 		}
-	}
-
-	// 鍔迫り合いの火花のテストプレビューも同様に更新する(発生自体はTestEmitWeaponClash()から)
-	if (m_weaponClashPreviewParticle)
-	{
-		m_weaponClashPreviewParticle->Update(deltaTime);
 	}
 
 	//-------------------------------------------------------
@@ -121,9 +117,6 @@ void EffectEditor::Update()
 	DrawTexturePicker();
 	DrawPreviewWindow();
 	DrawGizmo();
-
-	// Weapon Clashは配置を持たないグローバル設定のため、専用のフロートウィンドウとして表示する
-	DrawWeaponClashInspector();
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -139,11 +132,6 @@ void EffectEditor::DrawPreviewParticles()
 		{
 			obj.previewInstance.Draw();
 		}
-	}
-
-	if (m_weaponClashPreviewParticle)
-	{
-		m_weaponClashPreviewParticle->Draw(nullptr);
 	}
 }
 
@@ -202,10 +190,14 @@ void EffectEditor::RenderPreviewViewport()
 	{
 		EffectObject& obj = m_objects[m_selected];
 
+		// プレビュー用カメラの適用
 		DirectX::SimpleMath::Matrix view = m_previewCamera.GetView(obj.pos);
 		DirectX::SimpleMath::Matrix proj = m_previewCamera.GetProj(
 			(float)m_previewViewport.Width / (float)m_previewViewport.Height);
-		KdShaderManager::Instance().WriteCBCamera(view, proj);
+
+		// WriteCBCameraは「View行列」ではなく「カメラのワールド行列」を期待しているため、
+		// 事前に反転してから渡す(内部でもう一度Invert()されてmViewに戻る)
+		KdShaderManager::Instance().WriteCBCamera(view.Invert(), proj);
 
 		if (obj.playing)
 		{
@@ -216,7 +208,8 @@ void EffectEditor::RenderPreviewViewport()
 	//====================================================
 	// 復元
 	//====================================================
-	KdShaderManager::Instance().WriteCBCamera(savedCamera.mView, savedCamera.mProj);
+	// 復元も同様に、savedCamera.mView(=View行列)をもう一度反転してから渡す
+	KdShaderManager::Instance().WriteCBCamera(savedCamera.mView.Invert(), savedCamera.mProj);
 
 	context->OMSetRenderTargets(1, &savedRTV, savedDSV);
 	if (savedRTV) { savedRTV->Release(); }
@@ -373,8 +366,11 @@ void EffectEditor::DrawInspector()
 			ImGui::DragFloat3("Offset Max", &shape.OffsetMax.x, 0.05f);
 			ImGui::DragFloatRange2("Size Min/Max", &shape.SizeMin, &shape.SizeMax, 0.01f, 0.001f, 100.0f);
 			ImGui::DragFloatRange2("Life Min/Max(sec)", &shape.LifeMin, &shape.LifeMax, 0.02f, 0.01f, 60.0f);
+			ImGui::ColorEdit4("Color Start Min", &shape.ColorStartMin.x);
+			ImGui::ColorEdit4("Color Start Max", &shape.ColorStartMax.x);
 			ImGui::ColorEdit4("Color Min", &shape.ColorMin.x);
 			ImGui::ColorEdit4("Color Max", &shape.ColorMax.x);
+			ImGui::TextDisabled("ColorStart=発生時、Color=消滅時の色。同じ値ならフェードしない単色になる");
 			ImGui::TextDisabled("方向を使わない単純エフェクトはDir Scaleを0にし、Offsetだけで速度範囲を作る想定");
 
 			// GPUParticleParams::Layersは最低1層を前提にしている(EffectParams.h参照)為、
@@ -688,77 +684,6 @@ DirectX::SimpleMath::Matrix EffectEditor::PreviewCamera::GetProj(float aspect) c
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 鍔迫り合いの火花(WeaponClashEffectEvent)専用インスペクター
-//	配置を持たない単一のグローバル設定のため、Effect Hierarchy/Inspectorとは独立した
-//	フロートウィンドウとして表示する。Main/Emberそれぞれの層をCollapsingHeaderで編集し、
-//	固定方向(+X)でのテスト再生ができる
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void EffectEditor::DrawWeaponClashInspector()
-{
-	ImGui::SetNextWindowSize(ImVec2(420.0f, 560.0f), ImGuiCond_FirstUseEver);
-	ImGui::Begin("Weapon Clash");
-
-	WeaponClashEffectParams& p = m_weaponClash;
-
-	{
-		int capacity = (int)p.MaxParticleNum;
-		if (ImGui::DragInt("Max Particle Num", &capacity, 1.0f, 1, 100000))
-		{
-			p.MaxParticleNum = (UINT)std::max(1, capacity);
-		}
-	}
-
-	auto drawLayer = [](const char* label, DirectionalSparkLayer& layer)
-		{
-			if (!ImGui::CollapsingHeader(label, ImGuiTreeNodeFlags_DefaultOpen)) { return; }
-
-			ImGui::PushID(label);
-
-			DirectionalEmitShape& shape = layer.Shape;
-
-			ImGui::DragFloat("Dir Scale Min", &shape.DirScaleMin, 0.05f);
-			ImGui::DragFloat("Dir Scale Max", &shape.DirScaleMax, 0.05f);
-			ImGui::DragFloat3("Offset Min", &shape.OffsetMin.x, 0.05f);
-			ImGui::DragFloat3("Offset Max", &shape.OffsetMax.x, 0.05f);
-			ImGui::DragFloatRange2("Size Min/Max", &shape.SizeMin, &shape.SizeMax, 0.01f, 0.001f, 100.0f);
-			ImGui::DragFloatRange2("Life Min/Max(sec)", &shape.LifeMin, &shape.LifeMax, 0.02f, 0.01f, 60.0f);
-			ImGui::ColorEdit4("Color Start Min", &shape.ColorStartMin.x);
-			ImGui::ColorEdit4("Color Start Max", &shape.ColorStartMax.x);
-			ImGui::ColorEdit4("Color Min", &shape.ColorMin.x);
-			ImGui::ColorEdit4("Color Max", &shape.ColorMax.x);
-
-			{
-				int countParry = (int)layer.CountParry;
-				if (ImGui::DragInt("Count(Parry)", &countParry, 1.0f, 0, 100000))
-				{
-					layer.CountParry = (UINT)std::max(0, countParry);
-				}
-			}
-			{
-				int countBlock = (int)layer.CountBlock;
-				if (ImGui::DragInt("Count(Block)", &countBlock, 1.0f, 0, 100000))
-				{
-					layer.CountBlock = (UINT)std::max(0, countBlock);
-				}
-			}
-
-			ImGui::PopID();
-		};
-
-	drawLayer("Main (勢いよく飛ぶ火花)", p.Main);
-	drawLayer("Ember (ゆっくり落ちるくすぶり)", p.Ember);
-
-	ImGui::Separator();
-	ImGui::TextDisabled("プレビューは固定方向(+X)で再生します(実際の発生方向は武器の進行方向で決まる)");
-
-	if (ImGui::Button("Test Parry")) { TestEmitWeaponClash(true); }
-	ImGui::SameLine();
-	if (ImGui::Button("Test Block")) { TestEmitWeaponClash(false); }
-
-	ImGui::End();
-}
-
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // テクスチャアセットディレクトリ以下を走査して画像ファイル一覧を更新する
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectEditor::RefreshTextureFileList()
@@ -789,36 +714,15 @@ void EffectEditor::RefreshTextureFileList()
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// m_weaponClash.MaxParticleNumに合わせてm_weaponClashPreviewParticleを(必要なら)作り直す
+// nameに一致するEffectObjectをm_objectsから探す(無ければnullptr)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void EffectEditor::EnsureWeaponClashPreviewCapacity()
+EffectObject* EffectEditor::FindObjectByName(const std::string& name)
 {
-	if (m_weaponClashPreviewParticle && m_weaponClashPreviewCapacity == m_weaponClash.MaxParticleNum) { return; }
-
-	m_weaponClashPreviewParticle = std::make_shared<KdGPUParticle>();
-	m_weaponClashPreviewParticle->Init(m_weaponClash.MaxParticleNum);
-	m_weaponClashPreviewCapacity = m_weaponClash.MaxParticleNum;
-}
-
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 鍔迫り合いの火花を固定方向(+X)、原点でテスト再生する
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void EffectEditor::TestEmitWeaponClash(bool isParry)
-{
-	EnsureWeaponClashPreviewCapacity();
-
-	// プレビュー用の固定条件(実際の発生位置/方向はWeaponClashEffectEvent::Position、
-	// SelfWeaponDir - OtherWeaponDirで決まる)
-	static const DirectX::SimpleMath::Vector3 kPreviewPos = { 0.0f, 0.0f, 0.0f };
-	static const DirectX::SimpleMath::Vector3 kPreviewBaseDir = { 1.0f, 0.0f, 0.0f };
-
-	m_weaponClashPreviewParticle->Emit(
-		m_weaponClash.Main.ToEmitParameter(kPreviewPos, kPreviewBaseDir),
-		m_weaponClash.Main.GetEmitCount(isParry));
-
-	m_weaponClashPreviewParticle->Emit(
-		m_weaponClash.Ember.ToEmitParameter(kPreviewPos, kPreviewBaseDir),
-		m_weaponClash.Ember.GetEmitCount(isParry));
+	for (auto& obj : m_objects)
+	{
+		if (obj.name == name) { return &obj; }
+	}
+	return nullptr;
 }
 
 EffectEditor::EffectEditor()
@@ -945,8 +849,6 @@ void EffectEditor::Save(const std::string& path)
 		data.Effects.push_back(def);
 	}
 
-	data.WeaponClash = m_weaponClash;
-
 	if (!EffectDataLoader::Save(path, data))
 	{
 		KdDebugGUI::Instance().AddLog("EffectEditor: 保存に失敗 %s\n", path.c_str());
@@ -988,8 +890,6 @@ void EffectEditor::Load(const std::string& path)
 		obj.params = def.Params;
 		m_objects.push_back(std::move(obj));	// EffectObjectはEffectInstanceを持つ為コピー不可、moveする
 	}
-
-	m_weaponClash = data.WeaponClash;
 
 	m_selected = -1;
 	KdDebugGUI::Instance().AddLog("EffectEditor: 読み込みました %s\n", path.c_str());

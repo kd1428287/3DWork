@@ -54,22 +54,9 @@ public:
 	void SetModelData(std::string_view fileName) { m_modelWork.SetModelData(KdAssets::Instance().m_modeldatas.GetData(fileName)); }
 	void SetModelData(const std::shared_ptr<KdModelData>& data) { m_modelWork.SetModelData(data); }
 
-	// 【重要】ModelAnimatorComponentは上で前方宣言しているだけなので、
-	// この2つの本体はここに書けない。Start()内のGetComponent<ModelAnimatorComponent>()
-	// (内部でstatic_cast<ModelAnimatorComponent*>する)、およびPreUpdate()内の
-	// animator_->AdvanceFK()呼び出しは、どちらもModelAnimatorComponentの
-	// 完全な型定義を要求する。循環インクルード(ModelAnimatorComponent.hが
-	// このファイルをincludeしている)を避けつつ両方を成立させるため、
-	// 定義本体はModelAnimatorComponent.hの末尾、両クラスの定義が出揃った
-	// 後に置いている。
 	void Start() override;
 	void PreUpdate(float deltaTime) override;
 
-	// IKステージ: gameplayロジックのUpdate()より後に呼ばれる想定
-	// (GameObject::PostUpdate()経由)。IAnimationPostProcessを実装する
-	// 全コンポーネント(IK等)にローカル回転を書き込ませてから、
-	// 1回だけFinalize()で確定させる(個々のSolveIK()側はCalcNodeMatrices()
-	// 相当を呼ばない約束になっている。詳細はIAnimationPostProcess.h参照)。
 	void PostUpdate(float deltaTime) override {
 		for (IAnimationPostProcess* postProcess : GetOwner()->GetTagged<IAnimationPostProcess>()) {
 			postProcess->SolveIK();
@@ -77,11 +64,6 @@ public:
 		Finalize();
 	}
 
-	// CalcNodeMatrices()の呼び出しと、BoneSocketComponent側キャッシュ
-	// 無効化用のバージョン更新をここに集約する。PreUpdate()/PostUpdate()
-	// それぞれの終端から呼ばれるため、1フレームに最大2回呼ばれる。
-	// 実際に書き込みが起きた(NeedCalcNodeMatrices()がtrueの)時だけ
-	// バージョンを進めることで、無駄な再計算誘発を避ける。
 	void Finalize() {
 		if (m_modelWork.NeedCalcNodeMatrices())
 		{

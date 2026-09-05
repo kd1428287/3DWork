@@ -2,19 +2,8 @@
 #include <algorithm>
 #include "../../ComponentBase.h"
 
-// ============================================================
-// PostureComponent
-//
-// HP(体力)とは別に「体幹」を管理する汎用コンポーネント。Player/Enemy
-// 問わず、防御(ガード/パリィ)による削り合いを行うキャラクターに
-// アタッチする想定(隻狼のようなパリィ主体の防御システム向け)。
-//
-// 現状はこのコンポーネント単体のデータ管理までで、実際に
-// 「いつAddPostureDamage()を呼ぶか」「IsBroken()を見て何をするか」は
-// 呼び出し側(PlayerStatusController等)に委ねる。Enemy側は今回
-// アタッチのみ行い、削る/削られるロジックへの接続はまだ行わない
-// (EnemyStatusController側の攻撃AIが仮実装のため、詳細は別途詰める)。
-// ============================================================
+// HP(体力)とは別に「体幹」を管理する汎用コンポーネント
+
 class PostureComponent : public ComponentBase {
 public:
 	explicit PostureComponent(GameObject* owner, float maxPosture = 100.0f)
@@ -22,9 +11,7 @@ public:
 	}
 
 	void Update(float deltaTime) override {
-		// 被弾直後はしばらく回復を止める(本家の「削られた直後は回復が
-		// 遅れる」挙動の簡易版)。regenDelayTimer_が残っている間は
-		// 回復させない。
+		// 被弾直後はしばらく回復を止める
 		if (regenDelayTimer_ > 0.0f) {
 			regenDelayTimer_ = std::max(0.0f, regenDelayTimer_ - deltaTime);
 			return;
@@ -34,8 +21,6 @@ public:
 		current_ = std::max(0.0f, current_ - regenPerSecond_ * deltaTime);
 	}
 
-	// 体幹を削る(ガード時の削り、パリィで相手に与える大ダメージ等、
-	// 呼び出し側が用途に応じて量を決めて渡す)。
 	void AddPostureDamage(float amount) {
 		if (amount <= 0.0f) return;
 		current_ = std::min(max_, current_ + amount);

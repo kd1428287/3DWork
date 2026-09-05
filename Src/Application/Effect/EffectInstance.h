@@ -58,37 +58,37 @@ public:
 
 	// 再生開始
 	//	Burst かつ EmitInterval<=0(単発)の場合：即座に1回Emitして終了(IsPlaying()はfalseのまま、Stop()不要)
-	//	それ以外(Burstリピート／Continuous)の場合：m_isPlaying=trueになり、以後Update()のたびに自動発生する
+	//	それ以外(Burstリピート／Continuous)の場合：isPlaying_=trueになり、以後Update()のたびに自動発生する
 	void Play(const DirectX::SimpleMath::Vector3& worldPos, const DirectX::SimpleMath::Vector3& baseDir = { 0,0,0 });
 
 	// 新規発生を止める(既存パーティクルの寿命消化・描画は継続される)
 	void Stop();
 
-	bool IsPlaying() const { return m_isPlaying; }
+	bool IsPlaying() const { return isPlaying_; }
 
 	void Draw() const;
-	const GPUParticleParams& GetParams() const { return m_params; }
+	const GPUParticleParams& GetParams() const { return params_; }
 
-	bool IsInitialized() const { return m_particle != nullptr; }
+	bool IsInitialized() const { return particle_ != nullptr; }
 
 private:
 
 	void ResolveTexture(ITextureProvider* textureProvider);
 
-	GPUParticleParams				m_params;
-	std::shared_ptr<KdGPUParticle>	m_particle;
-	std::shared_ptr<KdTexture>		m_texture;
+	GPUParticleParams				params_;
+	std::shared_ptr<KdGPUParticle>	particle_;
+	std::shared_ptr<KdTexture>		texture_;
 
-	UINT	m_capacity = 0;
+	UINT	capacity_ = 0;
 
 	//================================================
 	// 再生状態(Continuous／Burstリピート用)
 	//================================================
-	bool	m_isPlaying = false;
+	bool	isPlaying_ = false;
 
-	float	m_burstTimer = 0.0f;			// Burst：次発生までの経過時間
+	float	burstTimer_ = 0.0f;			// Burst：次発生までの経過時間
 
 	// Continuous：Layerごとの発生数の端数を蓄積(deltaTime * Count/秒ぶんを毎フレーム加算)
 	//	1.0を超えた分だけ整数個発生させ、余りは次フレームへ繰り越す
-	std::vector<float>	m_continuousAccum;
+	std::vector<float>	continuousAccum_;
 };

@@ -61,8 +61,8 @@ struct EffectObject
 //	  ここでは呼ばない(1フレームに複数回呼ぶと内部状態がおかしくなるため)
 //
 //	保存/読み込みはEffectDataLoader(EffectDispatcherと共有するJSONスキーマ)経由で行う。
-//	マップ配置エフェクト一覧(m_objects)に加え、鍔迫り合いの火花(m_weaponClash、
-//	配置を持たないグローバル設定)も同じJSONファイルにまとめて保存する。
+//	鍔迫り合いの火花(WeaponClashParry/WeaponClashBlock)も専用データ型は持たず、
+//	m_objects内の通常のEffectObjectとして扱われる(GPUParticleParams::Layers参照)。
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 class EffectEditor
 {
@@ -99,13 +99,16 @@ private:
 	void DrawInspector();
 	void DrawGizmo();
 	void DrawTexturePicker();
-	void DrawWeaponClashInspector();
 
 	// 選択中エフェクトのプレビュー専用ウィンドウ(RenderPreviewViewport()が描いた絵を表示する)
 	void DrawPreviewWindow();
 
 	void AddObject();
 	void RemoveSelected();
+
+	// nameに一致するEffectObjectをm_objectsから探す(無ければnullptr)。
+	// DrawWeaponClashTestPanel()から、"WeaponClashParry"/"WeaponClashBlock"を引く為に使う
+	EffectObject* FindObjectByName(const std::string& name);
 
 	void Save(const std::string& path);
 	void Load(const std::string& path);
@@ -124,23 +127,11 @@ private:
 	// 再生中プレビューの発生・シミュレーションを1フレームぶん進める
 	void UpdatePreview(EffectObject& obj, float deltaTime);
 
-	// m_weaponClash.MaxParticleNumに合わせてm_weaponClashPreviewParticleを(必要なら)作り直す
-	// ※鍔迫り合いの火花はEffectInstanceの対象範囲外(理由はEffectObjectのコメント参照)
-	void EnsureWeaponClashPreviewCapacity();
-
-	// 鍔迫り合いの火花を固定方向(+X)でテスト再生する(Weapon Clashインスペクターのボタンから呼ばれる)
-	void TestEmitWeaponClash(bool isParry);
-
 	std::vector<EffectObject>	m_objects;
 	int							m_selected = -1;
 
 	// テクスチャ取得(EffectInstance用。EffectDispatcherと共通の実装)
 	KdAssetsTextureProvider		m_textureProvider;
-
-	// 鍔迫り合いの火花(配置を持たない単一のグローバル設定)
-	WeaponClashEffectParams			m_weaponClash;
-	std::shared_ptr<KdGPUParticle>	m_weaponClashPreviewParticle;
-	UINT							m_weaponClashPreviewCapacity = 0;
 
 	ImGuizmo::OPERATION			m_operation = ImGuizmo::TRANSLATE;
 	ImGuizmo::MODE				m_mode = ImGuizmo::WORLD;

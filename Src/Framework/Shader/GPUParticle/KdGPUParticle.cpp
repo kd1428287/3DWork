@@ -242,6 +242,7 @@ void KdGPUParticle::Emit(const EmitParameter& param, UINT count)
 	emit.EmitColorMin = param.ColorMin;
 	emit.EmitColorMax = param.ColorMax;
 	emit.MaxParticleNum = m_maxParticleNum;
+	// 毎回変化する乱数シード(パーティクルが毎回同じ並びで発生しないようにする)
 	emit.RandomSeed = static_cast<float>(rand() % 100000);
 
 	m_cb0_Emit.Write();

@@ -4,9 +4,7 @@
 #include "../../Components/Render/SpriteRenderComponent.h"
 #include "../../Components/Transform/TransformComponent.h"
 
-// ※ 実際のパスに合わせて調整してください
-#include "../../Engine/EventBus/Event/Event.h"
-#include "../../Engine/EventBus/Event/SceneEvents.h"
+#include "../SceneEvents.h"
 
 void TitleScene::Init()
 {

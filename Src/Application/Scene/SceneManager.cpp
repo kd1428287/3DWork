@@ -5,19 +5,10 @@
 #include "TitleScene/TitleScene.h"
 #include "GameScene/GameScene.h"
 #include "ResultScene/ResultScene.h"
-
-// ※ 実際のパスに合わせて調整してください
-#include "../Engine/EventBus/Event/Event.h"
-#include "../Engine/EventBus/Event/SceneEvents.h"
+#include "SceneEvents.h"
 
 void SceneManager::Init()
 {
-	// Events::Scene::SceneChangeRequestEvent の購読。
-	// 「敵を倒した」「タイマーが切れた」等、"何が遷移条件か"はここでは
-	// 一切判断せず、受け取ったSceneTypeへSetNextSceneするだけにする。
-	// SceneManagerはアプリ生存期間ずっと生きるシングルトンなので、
-	// 明示的なUnsubscribeがなくても問題ないが、ScopedSubscriberで
-	// 正しく解除できる形にしておく。
 	SubscriptionId id = GLOBALEVENT.Subscribe<Events::Scene::SceneChangeRequestEvent>(
 		[this](const Events::Scene::SceneChangeRequestEvent& e)
 		{

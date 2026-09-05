@@ -1,4 +1,5 @@
-﻿#include "KdAssetsTextureProvider.h"
+﻿#include "../main.h"
+#include "KdAssetsTextureProvider.h"
 
 static const std::string kTextureAssetRoot = "Asset/Textures/Game/Effect/";
 

@@ -9,6 +9,7 @@ class TerrainFactory;
 class EffectDispatcher;
 
 class InputSystem;
+class TimeScaleSystem;
 class ColliderRegistry;
 class CollisionSystem;
 class RaycastSystem;
@@ -34,6 +35,7 @@ private:
 	std::unique_ptr<TerrainFactory> terrainFactory_ = nullptr;
 	std::unique_ptr<EffectDispatcher> effectDispatcher_ = nullptr;
 	std::unique_ptr<InputSystem> inputSystem_ = nullptr;
+	std::unique_ptr<TimeScaleSystem> timeScaleSystem_ = nullptr;
 	std::unique_ptr<ColliderRegistry> colliderRegistry_ = nullptr;
 	std::unique_ptr<CollisionSystem> collisionSystem_ = nullptr;
 };

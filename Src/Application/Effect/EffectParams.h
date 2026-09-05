@@ -26,7 +26,13 @@ enum class KdParticleEmitMode
 // VelocityMin = baseDir * DirScaleMin - OffsetMin
 // VelocityMax = baseDir * DirScaleMax + OffsetMax
 // baseDirが{0,0,0}で呼ばれた場合はOffsetMin〜OffsetMaxの範囲のみになるため、
-// 方向を使わない単純エフェクト(FootDust等)にもそのまま使える
+// 方向を使わない単純エフェクト(FootDust等)にもそのまま使える。
+// 逆にDirScaleを大きくしOffsetを絞れば、鍔迫り合いの火花のような「特定方向へ勢いよく飛ぶ」
+// 表現もこの1つの形状定義だけで表現できる(WeaponClash専用の形状は不要)。
+//
+// Color*は発生時(ColorStart)→消滅時(Color)への線形フェードを表す
+// (KdGPUParticle::EmitParameter側が寿命に応じて補間する前提。ColorStartとColorを同じ値に
+//  しておけば、フェードしない単色エフェクトとしても使える)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 struct DirectionalEmitShape
 {
@@ -63,8 +69,14 @@ struct GPUParticleLayer
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 1エフェクト分のパーティクル発生パラメータ(1層以上のLayersで構成)
-//	※方向を伴わない単純エフェクトはEffectInstance::Play()/Emit()をbaseDir={0,0,0}で
-//	  呼び出せば良い(各LayerのOffset範囲のみの等方分布として振る舞う)
+// ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
+// 方向を伴わない単純エフェクト(HitSpark等)も、鍔迫り合いの火花のような
+// 「発生方向に応じて勢いよく飛ぶ、複数層(Main/Ember等)構成」のエフェクトも、
+// どちらもこの1つの構造体(Layersの組み合わせ)だけで表現する。
+// ・方向を使わない場合：EffectInstance::Emit()/Play()/Update()をbaseDir={0,0,0}で呼べば、
+//   各LayerはOffset範囲のみの等方分布として振る舞う
+// ・方向を使う場合(鍔迫り合いの火花等)：baseDirを都度渡す。呼び出し側(EffectDispatcher等)が
+//   イベントごとに異なる方向を計算して渡す想定
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 struct GPUParticleParams
 {
@@ -83,40 +95,4 @@ struct GPUParticleParams
 
 	// Continuous、またはBurstでEmitInterval>0の場合はtrue(=再生中はStop()が必要になる)
 	bool IsLooping() const;
-};
-
-
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 鍔迫り合いの火花のうち1層分(メイン/エンバー等)
-// ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
-// 形状はDirectionalEmitShapeを共用し、「パリィ/ガードで数が変わる」という
-// WeaponClash特有の文脈だけをここに持たせる(通常のGPUParticleLayerとは
-// Countの意味が異なる=状況依存の2値のため、無理に統合しない)
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-struct DirectionalSparkLayer
-{
-	DirectionalEmitShape	Shape;
-
-	UINT	CountParry = 120;	// パリィ成功時のEmit数
-	UINT	CountBlock = 60;	// 通常ガードブロック時のEmit数
-
-	KdGPUParticle::EmitParameter ToEmitParameter(const DirectX::SimpleMath::Vector3& worldPos, const DirectX::SimpleMath::Vector3& baseDir) const
-	{
-		return Shape.ToEmitParameter(worldPos, baseDir);
-	}
-	UINT GetEmitCount(bool isParry) const { return isParry ? CountParry : CountBlock; }
-};
-
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 鍔迫り合いの火花(WeaponClashEffectEvent)の全パラメータ
-//	メイン(勢いよく飛ぶ火花)とエンバー(ゆっくり落ちるくすぶり)の2層構成。
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-struct WeaponClashEffectParams
-{
-	UINT	MaxParticleNum = 2000;	// KdGPUParticle::Init()に渡す同時最大パーティクル数
-
-	DirectionalSparkLayer	Main;	// 勢いよく飛ぶ火花
-	DirectionalSparkLayer	Ember;	// ゆっくり落ちるくすぶり
-
-	WeaponClashEffectParams();
 };

@@ -594,9 +594,6 @@
     <ClInclude Include="Src\Application\Components\Camera\CameraCollision.h">
       <Filter>Src\Application\Components\Camera</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Engine\EventBus\Event\SceneEvents.h">
-      <Filter>Src\Application\Engine\EventBus\Event</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Components\Animation\RootMotionExtractor.h">
       <Filter>Src\Application\Components\Animation</Filter>
     </ClInclude>
@@ -693,9 +690,6 @@
     <ClInclude Include="Src\Application\DIspatcher\EffectDispatcher.h">
       <Filter>Src\Application\Dispatcher</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Engine\EventBus\Event\EffectEvents.h">
-      <Filter>Src\Application\Engine\EventBus\Event</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Systems\TimeScaleSystem.h">
       <Filter>Src\Application\Systems</Filter>
     </ClInclude>
@@ -716,6 +710,27 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Effect\EffectInstance.h">
       <Filter>Src\Application\Effect</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Systems\TimeScaleEvents.h">
+      <Filter>Src\Application\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Animation\RootMotionApplierComponent.h">
+      <Filter>Src\Application\Components\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\Data\IHitReactionQuery.h">
+      <Filter>Src\Application\Components\Character\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\Data\HitReactionComponent.h">
+      <Filter>Src\Application\Components\Character\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\Data\CharacterEvents.h">
+      <Filter>Src\Application\Components\Character\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Effect\EffectEvents.h">
+      <Filter>Src\Application\Effect</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Scene\SceneEvents.h">
+      <Filter>Src\Application\Scene</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -952,6 +967,9 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Effect\EffectInstance.cpp">
       <Filter>Src\Application\Effect</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\Character\Data\HitReactionComponent.cpp">
+      <Filter>Src\Application\Components\Character\Data</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

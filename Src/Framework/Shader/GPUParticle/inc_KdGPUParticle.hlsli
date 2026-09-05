@@ -8,26 +8,26 @@
 // パーティクル1粒のデータ
 struct Particle
 {
-	float3 Position;
-	float Life;
+	float3 Position; // ワールド座標
+	float Life; // 残り寿命(秒) 0以下で死亡扱い
 
-	float3 Velocity;
-	float Size;
+	float3 Velocity; // 速度
+	float Size; // 表示サイズ(板ポリの一辺の長さ)
 
 	float4 ColorStart; // 発生直後の熱い色
 	float4 Color; // 冷えた後の最終色
 
-	float LifeMax;
+	float LifeMax; // 発生時の寿命(フェードアウト計算に使用)
 	float3 _pad;
 };
 
 // 描画シェーダー(VS→PS)の受け渡し用
 struct VSOutput
 {
-	float4	Pos			: SV_Position;
-	float2	UV			: TEXCOORD0;
-	float4	Color		: TEXCOORD1;
-	float	LifeRate	: TEXCOORD2;	// 0(死亡直前)～1(発生直後)
+	float4 Pos : SV_Position;
+	float2 UV : TEXCOORD0;
+	float4 Color : TEXCOORD1;
+	float LifeRate : TEXCOORD2; // 0(死亡直前)～1(発生直後)
 };
 
 //--------------------------------------------------
@@ -45,13 +45,13 @@ float3 RandRange3(float3 minValue, float3 maxValue, float seed)
 	return lerp(minValue, maxValue, t);
 }
 
-float RandRange(float minValue, float maxValue, float seed)
-{
-	return lerp(minValue, maxValue, Rand(seed));
-}
-
 float4 RandRange4(float4 minValue, float4 maxValue, float seed)
 {
 	float4 t = float4(Rand(seed), Rand(seed + 1.234f), Rand(seed + 2.468f), Rand(seed + 3.702f));
 	return lerp(minValue, maxValue, t);
+}
+
+float RandRange(float minValue, float maxValue, float seed)
+{
+	return lerp(minValue, maxValue, Rand(seed));
 }

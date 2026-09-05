@@ -15,7 +15,14 @@ public:
 	void SetFocusRange(float fore, float back) { m_cb0_DoFInfo.Work().FocusForeRange = fore; m_cb0_DoFInfo.Work().FocusBackRange = back; }
 
 	void SetBrightThreshold(float threshold) { m_cb0_BrightInfo.Work().Threshold = threshold; }
+
 	void SetExposure(float exposure) { m_cb0_ColorGradeInfo.Work().Exposure = exposure; }
+	void SetContrast(float contrast) { m_cb0_ColorGradeInfo.Work().Contrast = contrast; }
+	void SetSaturation(float saturation) { m_cb0_ColorGradeInfo.Work().Saturation = saturation; }
+	// temperature : -1(寒色/青) ～ +1(暖色/オレンジ)
+	void SetTemperature(float temperature) { m_cb0_ColorGradeInfo.Work().Temperature = temperature; }
+	// tint : -1(緑) ～ +1(マゼンタ)
+	void SetTint(float tint) { m_cb0_ColorGradeInfo.Work().Tint = tint; }
 
 	struct Vertex
 	{
@@ -69,7 +76,7 @@ private:
 	struct cbBlur
 	{
 		Math::Vector4 Info[kMaxSampling];
-	
+
 		int SamplingNum = 0;
 		int _blank[3] = { 0, 0 ,0 };
 	};
@@ -97,6 +104,11 @@ private:
 	struct cbColorGradeInfo
 	{
 		float Exposure = 1.0f;
+		float Contrast = 1.0f;
+		float Saturation = 1.0f;
+		float Temperature = 0.0f; // -1(寒色/青) ～ +1(暖色/オレンジ)
+
+		float Tint = 0.0f; // -1(緑) ～ +1(マゼンタ)
 		int   _blank[3] = { 0, 0, 0 };
 	};
 	KdConstantBuffer<cbColorGradeInfo> m_cb0_ColorGradeInfo;

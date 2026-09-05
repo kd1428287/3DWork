@@ -3,10 +3,14 @@
 Texture2D g_inputTex : register(t0);
 SamplerState g_samLinear : register(s0); // 必要に応じてレジスタや定義を確認してください
 
-// 露出などを渡すための定数バッファ
 cbuffer cbColorGrade : register(b0)
 {
 	float g_exposure;
+	float g_contrast;
+	float g_saturation;
+	float g_temperature;
+
+	float g_tint;
 	float3 _blank;
 };
 

@@ -1,6 +1,5 @@
 ﻿#include "EnemyAIController.h"
-#include <cmath>
-#include <cstdlib>
+#include "../../../Systems/TimeScaleEvents.h"
 
 void EnemyAIController::UpdateTargetAcquisition()
 {
@@ -27,9 +26,6 @@ void EnemyAIController::UpdateTargetAcquisition()
 
 TransformComponent* EnemyAIController::FindPlayerTransform() const
 {
-	// PlayerLockOnComponentと同じ方式(ObjectManager経由の線形走査)。
-	// 敵の数・呼び出し頻度(1体あたり毎フレーム1回)のポートフォリオ規模
-	// では許容範囲という判断も同じ。
 	SceneContext* context = GetOwner()->GetContext();
 	if (context == nullptr || context->objectManager == nullptr) return nullptr;
 
@@ -52,8 +48,7 @@ const EnemyAttackDefinition* EnemyAIController::ChooseAttack() const
 	}
 	if (totalWeight <= 0.0f) return nullptr;
 
-	// 【要確認】std::rand()を使った簡易な重み付き抽選。プロジェクト側に
-	// 専用の乱数ユーティリティがあるなら、そちらに差し替えて構わない。
+	// 【要確認】std::rand()を使った簡易な重み付き抽選
 	float roll = (static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX)) * totalWeight;
 	for (const auto& atk : data_.attacks) {
 		if (dist > atk.maxRange) continue;
@@ -74,21 +69,15 @@ void EnemyAIController::FaceHorizontalTarget(const Math::Vector3& targetPosition
 
 	Math::Vector3 dir = targetPosition - transform_->GetPosition();
 	dir.y = 0.0f;
-	if (dir.LengthSquared() < 1e-6f) return; // 真上/真下等、水平差が無い場合は向きを変えない
+	if (dir.LengthSquared() < 1e-6f) return;
 
 	dir.Normalize();
 
-	// 【実機で確認・修正済み】atan2(dir.x, dir.z)のままだと、狙った方向の
-	// ちょうど180度反対を向く症状を確認したため、dirを反転させてから
-	// yawを求めている(BruteAIController時代に確認済み)。
 	const float yaw = std::atan2(-dir.x, -dir.z);
 	transform_->SetRotation(Math::Quaternion::CreateFromAxisAngle(Math::Vector3::Up, yaw));
 }
 
 // --- 被弾処理 -----------------------------------------------------------
-// ダメージ適用と多段ヒット防止だけをここで行い、その先の反応(体幹削り・
-// 被弾リアクション要求等)は敵種ごとに異なるためBehaviorへ委譲する
-// (IEnemyBehavior::OnHit()参照)。
 void EnemyAIController::OnCollisionEnter(const CollisionSystem::CollisionEnterEvent& e)
 {
 	if (isDead_) return;
@@ -97,10 +86,11 @@ void EnemyAIController::OnCollisionEnter(const CollisionSystem::CollisionEnterEv
 	AttackSourceComponent* attack = e.otherObject->GetComponent<AttackSourceComponent>();
 	if (attack == nullptr) return;
 
-	// 多段ヒット防止。同じ攻撃(=HitBoxがenabled=trueになっている間)で
-	// 既にこの相手(自分)へヒット済みなら無視する。
+	// 多段ヒット防止
 	if (attack->alreadyHit.count(GetOwner()) > 0) return;
 	attack->alreadyHit.insert(GetOwner());
+
+	RequestHitStopEvent(*GetOwner()->GetContext()->eventBus, 0.f, 0.1f);
 
 	if (healthComponent_ != nullptr) {
 		healthComponent_->TakeDamage(attack->damage);
@@ -112,11 +102,6 @@ void EnemyAIController::OnCollisionEnter(const CollisionSystem::CollisionEnterEv
 }
 
 // --- 被パリィ処理 ---------------------------------------------------------
-// 自分自身の攻撃がパリィされた時に、ParriedEvent経由で呼ばれる。
-// 「反応するかどうか」「どう反応するか」は完全にBehavior側に委ねるため、
-// ここでは単に転送するだけ(OnCollisionEnter()がダメージ適用まで自分で
-// 行った上でBehaviorへ委譲しているのとは異なり、パリィ自体には
-// EnemyAIController側で共通して行うべき処理が無いため)。
 void EnemyAIController::OnParried(const AttackSourceComponent::ParriedEvent& e)
 {
 	if (behavior_) {
@@ -125,20 +110,12 @@ void EnemyAIController::OnParried(const AttackSourceComponent::ParriedEvent& e)
 }
 
 // --- 死亡処理 -------------------------------------------------------------
-// 移動停止・当たり判定無効化・消滅タイマー開始という全敵種共通の処理を
-// ここで行い、Dyingアニメーション等の演出はBehavior::OnDied()へ委譲する。
-// 消滅までの猶予秒数もBehavior::GetDespawnDelay()から取る(ボスは
-// 死亡演出に合わせて長めの値を返す想定。WarrockBehavior::
-// GetDespawnDelay()参照)。
 void EnemyAIController::OnDied()
 {
 	if (isDead_) return;
 	isDead_ = true;
 	despawnTimer_ = behavior_ ? behavior_->GetDespawnDelay() : 1.5f;
 
-	// 移動・当たり判定を止める。当たり判定を無効化することで、以降
-	// CollisionSystemがこのGameObjectをペア判定の対象から除外し、
-	// OnCollisionEnterが呼ばれなくなる。
 	StopMovement();
 	if (movementComponent_ != nullptr) movementComponent_->SetEnabled(false);
 	if (ColliderComponent* collider = GetOwner()->GetComponent<ColliderComponent>()) {
@@ -165,10 +142,6 @@ void EnemyAIController::RequestDespawn()
 }
 
 // --- ルートモーション -----------------------------------------------------
-// PlayerStatusController::ApplyRootMotion()と同じ考え方。ボーンのローカル
-// (≒モデル)空間の移動量を、キャラクターの現在のワールド回転で変換して
-// からワールド移動量として加算する(Vector3::Transform(vector, quaternion)
-// は回転のみを適用し、平行移動は含まないため、そのままデルタの変換に使える)。
 void EnemyAIController::ApplyRootMotion()
 {
 	if (modelAnimatorComponent_ == nullptr || transform_ == nullptr) return;

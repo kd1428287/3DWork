@@ -3,6 +3,7 @@
 
 // system
 #include "../../Systems/InputSystem.h"
+#include "../../Systems/TimeScaleSystem.h"
 #include "../../Systems/Collision/ColliderRegistry.h"
 #include "../../Systems/Collision/CollisionSystem.h"
 #include "../../DIspatcher/EffectDispatcher.h"
@@ -20,6 +21,11 @@
 
 // component
 #include "../../Components/Camera/CameraTargetComponent.h"
+#include "../../Components/Transform/TransformComponent.h"
+#include "../../Components/Animation/SkeletonComponent.h"
+#include "../../Components/Animation/SkeletonComponent.h"
+#include "../../Components/Animation/ModelAnimatorComponent.h"
+#include "../../Components/Render/ModelRenderComponent.h"
 
 GameScene::GameScene()
 {
@@ -71,6 +77,14 @@ void GameScene::Init()
 	cameraFactory_ = std::make_unique<CameraFactory>();
 	auto* camera = cameraFactory_->CreateCamera(*objManager_, player);
 
+	/*auto* obj = objManager_->Instantiate("samurai");
+	obj->AddComponent<TransformComponent>()->SetPosition({ 0,3.f,0 });
+	auto* skl = obj->AddComponent<SkeletonComponent>();
+	skl->SetModelData(KdAssets::Instance().m_modeldatas.GetData("Asset/Models/Character/GhostSamurai/GhostSamurai.gltf"));
+	auto* anim = obj->AddComponent<ModelAnimatorComponent>();
+	obj->AddComponent<ModelRenderComponent>();
+	anim->Play("GhostSamurai_APose_Idle",true);*/
+
 	// system
 	inputSystem_ = std::make_unique<InputSystem>();
 	inputSystem_->RegisterPlayer(player->GetComponent<PlayerInputComponent>());
@@ -83,8 +97,11 @@ void GameScene::Init()
 	effectDispatcher_ = std::make_unique<EffectDispatcher>();
 	effectDispatcher_->Init(*localBus_);
 
+	timeScaleSystem_ = std::make_unique<TimeScaleSystem>(*localBus_, *objManager_);
+
 	systemManager_->SetExecutionOrder(
 		[this](float dt) { inputSystem_->Update(dt); },
+		[this](float dt) { timeScaleSystem_->Update(dt); },
 		[this](float dt) { objManager_->PreUpdate(dt); },
 		[this](float dt) { objManager_->Update(dt); },
 		[this](float dt) { colliderRegistry_->Refresh(*objManager_); },
@@ -96,4 +113,10 @@ void GameScene::Init()
 
 	KdShaderManager::Instance().WorkAmbientController().SetFogEnable(false, true);
 	KdShaderManager::Instance().WorkAmbientController().SetheightFog({0.9f,0.9f,0.9f}, 10.f, -10.f, 100.f);
+	KdShaderManager::Instance().m_postProcessShader.SetExposure(1.05f);
+	KdShaderManager::Instance().m_postProcessShader.SetContrast(1.25f);       // コントラスト強め
+	KdShaderManager::Instance().m_postProcessShader.SetSaturation(0.80f);     // 彩度低め
+	KdShaderManager::Instance().m_postProcessShader.SetTemperature(-0.15f);   // ★わずかに寒色（青み）を寄せて鉄や血の冷たさを演出
+	KdShaderManager::Instance().m_postProcessShader.SetTint(-0.05f);          // ★ごくわずかに緑に寄せて、古びた日本的・和風の空気感を作る;;;
+	
 }

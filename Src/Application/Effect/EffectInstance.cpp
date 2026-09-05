@@ -6,21 +6,21 @@
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 bool EffectInstance::Init(const GPUParticleParams& params, ITextureProvider* textureProvider)
 {
-	m_params = params;
+	params_ = params;
 
-	m_particle = std::make_shared<KdGPUParticle>();
-	if (!m_particle->Init(m_params.MaxParticleNum))
+	particle_ = std::make_shared<KdGPUParticle>();
+	if (!particle_->Init(params_.MaxParticleNum))
 	{
 		assert(0 && "EffectInstance：KdGPUParticle初期化失敗");
-		m_particle.reset();
-		m_capacity = 0;
+		particle_.reset();
+		capacity_ = 0;
 		return false;
 	}
-	m_capacity = m_params.MaxParticleNum;
+	capacity_ = params_.MaxParticleNum;
 
-	m_isPlaying = false;
-	m_burstTimer = 0.0f;
-	m_continuousAccum.assign(m_params.Layers.size(), 0.0f);
+	isPlaying_ = false;
+	burstTimer_ = 0.0f;
+	continuousAccum_.assign(params_.Layers.size(), 0.0f);
 
 	ResolveTexture(textureProvider);
 
@@ -32,15 +32,15 @@ bool EffectInstance::Init(const GPUParticleParams& params, ITextureProvider* tex
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 bool EffectInstance::Reconfigure(const GPUParticleParams& params, ITextureProvider* textureProvider)
 {
-	const bool capacityChanged = (params.MaxParticleNum != m_capacity);
-	const bool textureChanged = (params.TexturePath != m_params.TexturePath);
+	const bool capacityChanged = (params.MaxParticleNum != capacity_);
+	const bool textureChanged = (params.TexturePath != params_.TexturePath);
 
-	m_params = params;
+	params_ = params;
 
 	// 未初期化、またはMaxParticleNumが変わった場合はKdGPUParticleごと作り直す
-	if (!m_particle || capacityChanged)
+	if (!particle_ || capacityChanged)
 	{
-		return Init(m_params, textureProvider);
+		return Init(params_, textureProvider);
 	}
 
 	// テクスチャパスだけ変わった場合は解決だけやり直す(パーティクルバッファは維持)
@@ -50,7 +50,7 @@ bool EffectInstance::Reconfigure(const GPUParticleParams& params, ITextureProvid
 	}
 
 	// レイヤー数が変わっている可能性があるため、端数蓄積バッファをサイズ合わせ
-	m_continuousAccum.assign(m_params.Layers.size(), 0.0f);
+	continuousAccum_.assign(params_.Layers.size(), 0.0f);
 
 	return true;
 }
@@ -60,43 +60,43 @@ bool EffectInstance::Reconfigure(const GPUParticleParams& params, ITextureProvid
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectInstance::Update(float deltaTime, const DirectX::SimpleMath::Vector3& worldPos, const DirectX::SimpleMath::Vector3& baseDir)
 {
-	if (!m_particle) { return; }
+	if (!particle_) { return; }
 
-	m_particle->Update(deltaTime, m_params.Gravity);
+	particle_->Update(deltaTime, params_.Gravity);
 
-	if (!m_isPlaying) { return; }
+	if (!isPlaying_) { return; }
 
-	if (m_params.EmitMode == KdParticleEmitMode::Continuous)
+	if (params_.EmitMode == KdParticleEmitMode::Continuous)
 	{
 		// レイヤーごとに「Count個/秒」のペースで端数を蓄積し、1個分たまったら発生
-		if (m_continuousAccum.size() != m_params.Layers.size())
+		if (continuousAccum_.size() != params_.Layers.size())
 		{
-			m_continuousAccum.assign(m_params.Layers.size(), 0.0f);
+			continuousAccum_.assign(params_.Layers.size(), 0.0f);
 		}
 
-		for (size_t i = 0; i < m_params.Layers.size(); ++i)
+		for (size_t i = 0; i < params_.Layers.size(); ++i)
 		{
-			const GPUParticleLayer& layer = m_params.Layers[i];
+			const GPUParticleLayer& layer = params_.Layers[i];
 			if (layer.Count <= 0) { continue; }
 
-			m_continuousAccum[i] += (float)layer.Count * deltaTime;
+			continuousAccum_[i] += (float)layer.Count * deltaTime;
 
-			const UINT emitNum = (UINT)m_continuousAccum[i];
+			const UINT emitNum = (UINT)continuousAccum_[i];
 			if (emitNum > 0)
 			{
-				m_continuousAccum[i] -= (float)emitNum;
-				m_particle->Emit(layer.Shape.ToEmitParameter(worldPos, baseDir), emitNum);
+				continuousAccum_[i] -= (float)emitNum;
+				particle_->Emit(layer.Shape.ToEmitParameter(worldPos, baseDir), emitNum);
 			}
 		}
 	}
 	else // Burst：EmitIntervalごとに全Layersをまとめて再発生
 	{
-		if (m_params.EmitInterval <= 0.0f) { return; }	// 単発扱いのためPlay()以降は何もしない
+		if (params_.EmitInterval <= 0.0f) { return; }	// 単発扱いのためPlay()以降は何もしない
 
-		m_burstTimer += deltaTime;
-		if (m_burstTimer >= m_params.EmitInterval)
+		burstTimer_ += deltaTime;
+		if (burstTimer_ >= params_.EmitInterval)
 		{
-			m_burstTimer -= m_params.EmitInterval;
+			burstTimer_ -= params_.EmitInterval;
 			Emit(worldPos, baseDir);
 		}
 	}
@@ -107,13 +107,13 @@ void EffectInstance::Update(float deltaTime, const DirectX::SimpleMath::Vector3&
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectInstance::Emit(const DirectX::SimpleMath::Vector3& worldPos, const DirectX::SimpleMath::Vector3& baseDir)
 {
-	if (!m_particle) { return; }
+	if (!particle_) { return; }
 
-	for (const auto& layer : m_params.Layers)
+	for (const auto& layer : params_.Layers)
 	{
 		if (layer.Count <= 0) { continue; }
 
-		m_particle->Emit(layer.Shape.ToEmitParameter(worldPos, baseDir), (UINT)layer.Count);
+		particle_->Emit(layer.Shape.ToEmitParameter(worldPos, baseDir), (UINT)layer.Count);
 	}
 }
 
@@ -122,21 +122,21 @@ void EffectInstance::Emit(const DirectX::SimpleMath::Vector3& worldPos, const Di
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectInstance::Play(const DirectX::SimpleMath::Vector3& worldPos, const DirectX::SimpleMath::Vector3& baseDir)
 {
-	if (!m_particle) { return; }
+	if (!particle_) { return; }
 
 	// Burstかつ単発(EmitInterval<=0)の場合：即1回発生して終わり。再生状態には入らない
-	if (m_params.EmitMode == KdParticleEmitMode::Burst && m_params.EmitInterval <= 0.0f)
+	if (params_.EmitMode == KdParticleEmitMode::Burst && params_.EmitInterval <= 0.0f)
 	{
 		Emit(worldPos, baseDir);
 		return;
 	}
 
-	m_isPlaying = true;
-	m_burstTimer = 0.0f;
-	m_continuousAccum.assign(m_params.Layers.size(), 0.0f);
+	isPlaying_ = true;
+	burstTimer_ = 0.0f;
+	continuousAccum_.assign(params_.Layers.size(), 0.0f);
 
 	// Burstリピートの場合は再生開始と同時に1回目を発生させておく
-	if (m_params.EmitMode == KdParticleEmitMode::Burst)
+	if (params_.EmitMode == KdParticleEmitMode::Burst)
 	{
 		Emit(worldPos, baseDir);
 	}
@@ -147,7 +147,7 @@ void EffectInstance::Play(const DirectX::SimpleMath::Vector3& worldPos, const Di
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectInstance::Stop()
 {
-	m_isPlaying = false;
+	isPlaying_ = false;
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -157,9 +157,9 @@ void EffectInstance::Stop()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectInstance::Draw() const
 {
-	if (!m_particle) { return; }
+	if (!particle_) { return; }
 
-	m_particle->Draw(m_texture);
+	particle_->Draw(texture_);
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -168,10 +168,10 @@ void EffectInstance::Draw() const
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectInstance::ResolveTexture(ITextureProvider* textureProvider)
 {
-	m_texture.reset();
+	texture_.reset();
 
 	if (!textureProvider) { return; }
-	if (m_params.TexturePath.empty()) { return; }
+	if (params_.TexturePath.empty()) { return; }
 
-	m_texture = textureProvider->GetTexture(m_params.TexturePath);
+	texture_ = textureProvider->GetTexture(params_.TexturePath);
 }

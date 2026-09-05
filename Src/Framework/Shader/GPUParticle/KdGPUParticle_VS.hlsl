@@ -7,10 +7,10 @@ StructuredBuffer<Particle> g_ParticleBuffer : register(t0);
 // 板ポリの四隅のオフセット(中心からの相対位置)
 static const float2 kQuadOffset[4] =
 {
-	float2(-0.5f,  0.5f),
-	float2( 0.5f,  0.5f),
+	float2(-0.5f, 0.5f),
+	float2(0.5f, 0.5f),
 	float2(-0.5f, -0.5f),
-	float2( 0.5f, -0.5f),
+	float2(0.5f, -0.5f),
 };
 
 // 板ポリの四隅のUV座標(kQuadOffsetと対応)
@@ -29,7 +29,7 @@ static const float2 kQuadUV[4] =
 //================================
 VSOutput main(uint vertID : SV_VertexID, uint instID : SV_InstanceID)
 {
-	VSOutput Out = (VSOutput)0;
+	VSOutput Out = (VSOutput) 0;
 
 	Particle p = g_ParticleBuffer[instID];
 
@@ -37,19 +37,23 @@ VSOutput main(uint vertID : SV_VertexID, uint instID : SV_InstanceID)
 	float size = (p.Life > 0) ? p.Size : 0;
 
 	// ビュー行列(row_major)の列から、カメラのワールド空間での右方向・上方向を取り出す
+	// ※mul(v, mView)というベクトル×行列の掛け方をしている場合、
+	//   ビュー行列の各「列」がカメラのワールド空間での軸ベクトルになる
 	float3 camRight = float3(g_mView._11, g_mView._21, g_mView._31);
-	float3 camUp    = float3(g_mView._12, g_mView._22, g_mView._32);
+	float3 camUp = float3(g_mView._12, g_mView._22, g_mView._32);
 
 	float3 wPos = p.Position
 		+ camRight * kQuadOffset[vertID].x * size
-		+ camUp    * kQuadOffset[vertID].y * size;
+		+ camUp * kQuadOffset[vertID].y * size;
 
 	Out.Pos = mul(float4(wPos, 1), g_mView);
 	Out.Pos = mul(Out.Pos, g_mProj);
 
 	Out.UV = kQuadUV[vertID];
 	Out.LifeRate = (p.LifeMax > 0) ? saturate(p.Life / p.LifeMax) : 0;
-	Out.Color = lerp(p.ColorStart, p.Color, 1 - Out.LifeRate); 
+
+	// 発生直後(LifeRate=1)はColorStart、消滅直前(LifeRate=0)はColorへ補間
+	Out.Color = lerp(p.ColorStart, p.Color, 1 - Out.LifeRate);
 
 	return Out;
 }

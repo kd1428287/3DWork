@@ -277,6 +277,7 @@
     <ClInclude Include="Src\Application\Components\Animation\ArmIKComponents.h" />
     <ClInclude Include="Src\Application\Components\Animation\BoneSocketComponent.h" />
     <ClInclude Include="Src\Application\Components\Animation\ModelAnimatorComponent.h" />
+    <ClInclude Include="Src\Application\Components\Animation\RootMotionApplierComponent.h" />
     <ClInclude Include="Src\Application\Components\Animation\RootMotionExtractor.h" />
     <ClInclude Include="Src\Application\Components\Animation\SkeletonComponent.h" />
     <ClInclude Include="Src\Application\Components\Animation\TwoBoneIK.h" />
@@ -293,7 +294,10 @@
     <ClInclude Include="Src\Application\Components\Character\BehaviorTree\BTOneShotAnimationAction.h" />
     <ClInclude Include="Src\Application\Components\Character\BehaviorTree\BTWeightedAttackAction.h" />
     <ClInclude Include="Src\Application\Components\Character\BehaviorTree\IBTNode.h" />
+    <ClInclude Include="Src\Application\Components\Character\Data\CharacterEvents.h" />
     <ClInclude Include="Src\Application\Components\Character\Data\HealthComponent.h" />
+    <ClInclude Include="Src\Application\Components\Character\Data\HitReactionComponent.h" />
+    <ClInclude Include="Src\Application\Components\Character\Data\IHitReactionQuery.h" />
     <ClInclude Include="Src\Application\Components\Character\Data\PostureComponent.h" />
     <ClInclude Include="Src\Application\Components\Character\Enemy\Brute\BruteActions.h" />
     <ClInclude Include="Src\Application\Components\Character\Enemy\Brute\BruteAIData.h" />
@@ -360,14 +364,13 @@
     <ClInclude Include="Src\Application\Editor\ImGuizmo.h" />
     <ClInclude Include="Src\Application\Editor\MapEditor.h" />
     <ClInclude Include="Src\Application\Effect\EffectDataLoader.h" />
+    <ClInclude Include="Src\Application\Effect\EffectEvents.h" />
     <ClInclude Include="Src\Application\Effect\EffectInstance.h" />
     <ClInclude Include="Src\Application\Effect\EffectParams.h" />
     <ClInclude Include="Src\Application\Effect\ITextureProvider.h" />
     <ClInclude Include="Src\Application\Effect\KdAssetsTextureProvider.h" />
     <ClInclude Include="Src\Application\Engine\EventBus\EventBus.h" />
-    <ClInclude Include="Src\Application\Engine\EventBus\Event\EffectEvents.h" />
     <ClInclude Include="Src\Application\Engine\EventBus\Event\Event.h" />
-    <ClInclude Include="Src\Application\Engine\EventBus\Event\SceneEvents.h" />
     <ClInclude Include="Src\Application\Engine\SystemManager\SystemManager.h" />
     <ClInclude Include="Src\Application\Factories\Common\CameraFactory.h" />
     <ClInclude Include="Src\Application\Factories\GameObjectFactory.h" />
@@ -382,6 +385,7 @@
     <ClInclude Include="Src\Application\Scene\BaseScene\BaseScene.h" />
     <ClInclude Include="Src\Application\Scene\GameScene\GameScene.h" />
     <ClInclude Include="Src\Application\Scene\ResultScene\ResultScene.h" />
+    <ClInclude Include="Src\Application\Scene\SceneEvents.h" />
     <ClInclude Include="Src\Application\Scene\SceneManager.h" />
     <ClInclude Include="Src\Application\Scene\SceneType.h" />
     <ClInclude Include="Src\Application\Scene\TitleScene\TitleScene.h" />
@@ -391,6 +395,7 @@
     <ClInclude Include="Src\Application\Systems\Collision\CollisionSystem.h" />
     <ClInclude Include="Src\Application\Systems\Collision\RaycastSystem.h" />
     <ClInclude Include="Src\Application\Systems\InputSystem.h" />
+    <ClInclude Include="Src\Application\Systems\TimeScaleEvents.h" />
     <ClInclude Include="Src\Application\Systems\TimeScaleSystem.h" />
     <ClInclude Include="Src\Framework\Direct3D\KdMaterial.h" />
     <ClInclude Include="Src\Framework\Direct3D\Polygon\KdPolygon.h" />
@@ -442,6 +447,7 @@
     <ClCompile Include="..\Library\imgui\imgui_stdlib.cpp" />
     <ClCompile Include="..\Library\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\Library\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="Src\Application\Components\Character\Data\HitReactionComponent.cpp" />
     <ClCompile Include="Src\Application\Components\Character\Enemy\Brute\BruteActions.cpp" />
     <ClCompile Include="Src\Application\Components\Character\Enemy\Brute\BruteBehavior.cpp" />
     <ClCompile Include="Src\Application\Components\Character\Enemy\EnemyActions.cpp" />
