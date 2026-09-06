@@ -4,9 +4,6 @@
 #include "ITextureProvider.h"
 #include "../../Framework/Shader/GPUParticle/KdGPUParticle.h"
 
-#include <memory>
-#include <vector>
-
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // エフェクト1個分の実行時状態と、更新/発生/描画ロジックを一元管理するクラス
 // ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
