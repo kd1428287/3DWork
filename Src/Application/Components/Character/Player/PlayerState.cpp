@@ -20,16 +20,14 @@ void StateAttack::Enter(PlayerStatusController* controller) {
 	// ここで明示的に向きを合わせておく必要がある。
 	controller->FaceAttackTarget();
 
-	// アニメーションが入り/中/終わりの3クリップに分かれたことに伴い、
-	// PlayAnimation()は技全体で1回ではなく、フェーズが切り替わるたびに
-	// (Enter()でwindup、Update()内でactive/recoveryへの切り替わり時に)
-	// その都度呼び直す。各フェーズの秒数(ActionPhaseData::duration)を
-	// 目標としてアニメーション速度を自動スケーリングする点は変わらない
-	// (詳細はModelAnimatorComponent::Play参照)。
+	// 具体的なコンポーネント操作(Transform/TweenMoveComponent/
+	// ModelAnimatorComponent)はController側に閉じ込め、Stateは
+	// それを直接知らなくてよいようにする。
 	const auto& data = controller->GetCurrentAttackData();
-	controller->PlayAnimation(
-		data.windup.animationName, false, data.windup.duration,
-		data.windup.useRootMotion, data.windup.blendDuration);
+	// 攻撃全体(Windup+Active+Recovery)の秒数を目標としてアニメーション
+	// 速度を自動スケーリングする(詳細はModelAnimatorComponent::Play参照)。
+	const float targetDuration = data.windupDuration + data.activeDuration + data.recoveryDuration;
+	controller->PlayAnimation(data.animationName, false, targetDuration, data.useRootMotion, data.blendDuration); // コンボ段数に応じたアニメーション
 
 	// 踏み込み移動はここ(Windup開始時点)では行わない。Windupが終わった
 	// 瞬間(Update()側、AttackActiveへの切り替わり)に開始する
@@ -44,49 +42,38 @@ void StateAttack::Update(PlayerStatusController* controller, float deltaTime) {
 
 	KdDebugGUI::Instance().AddLog("Attack");
 
-	if (phase_ == CombatState::AttackWindup && elapsed_ >= data.windup.duration) {
+	if (phase_ == CombatState::AttackWindup && elapsed_ >= data.windupDuration) {
 		phase_ = CombatState::AttackActive;
 		elapsed_ = 0.0f;
 
-		// Activeフェーズ専用のクリップに切り替える。
-		controller->PlayAnimation(
-			data.active.animationName, false, data.active.duration,
-			data.active.useRootMotion, data.active.blendDuration);
-
 		// 踏み込み移動はここ(Windupが終わった瞬間)から開始する。
-		// 移動時間はwindup.durationではなく専用のstepDurationを使う
+		// 移動時間はwindupDurationではなく専用のstepDurationを使う
 		// (以前はEnter()側でwindupDuration分だけ振りかぶり中に動かして
 		//  いたが、攻撃が実際に届き始めるタイミングと踏み込みを
 		//  合わせたいという理由でここへ移した)。
-		// activeフェーズがuseRootMotion=trueの技(Attack5等)は、この
-		// 決め打ち移動の代わりにアニメーションのルートモーションで動く
-		// ため呼ばない(PlayerStatusController::ApplyRootMotion参照)。
+		// useRootMotionがtrueの技(Attack5等)は、この決め打ち移動の
+		// 代わりにアニメーションのルートモーションで動くため呼ばない
+		// (PlayerStatusController::ApplyRootMotion参照)。
 		//
 		// 対象へずっと前進し続けるのではなく、engageDistance(技ごとの間合い)
 		// までしか詰めないようにする。対象が見つからない場合は
 		// 従来通りstepDirection/stepDistanceの決め打ち移動にフォールバックする
 		// (PlayerStatusController::RequestStepMoveTowardsTarget参照)。
-		if (!data.active.useRootMotion) {
+		if (!data.useRootMotion) {
 			controller->RequestStepMoveTowardsTarget(data.stepDirection, data.stepDistance, data.engageDistance, data.stepDuration);
 		}
 		controller->SetWeaponHitBoxEnabled(true); // 攻撃判定が実際に発生する一瞬だけ有効化
 		controller->SetWeaponTrailEmitting(true); // 武器の軌跡エフェクトもHitBoxと同じ窓で記録開始
 		KdDebugGUI::Instance().AddLog("\nAttackActive");
 	}
-	else if (phase_ == CombatState::AttackActive && elapsed_ >= data.active.duration) {
+	else if (phase_ == CombatState::AttackActive && elapsed_ >= data.activeDuration) {
 		phase_ = CombatState::AttackRecovery;
 		elapsed_ = 0.0f;
 		controller->SetWeaponHitBoxEnabled(false); // 判定の発生窓を閉じる
 		controller->SetWeaponTrailEmitting(false); // 軌跡エフェクトの記録も停止(既に生成済みの頂点はStopEmit後も自然に流れて消える)
-
-		// Recoveryフェーズ専用のクリップに切り替える。
-		controller->PlayAnimation(
-			data.recovery.animationName, false, data.recovery.duration,
-			data.recovery.useRootMotion, data.recovery.blendDuration);
-
 		KdDebugGUI::Instance().AddLog("\nAttackRecovery");
 	}
-	else if (phase_ == CombatState::AttackRecovery && elapsed_ >= data.recovery.duration) {
+	else if (phase_ == CombatState::AttackRecovery && elapsed_ >= data.recoveryDuration) {
 		// 自律的に終了し、ControllerにNoneへの復帰を要請する
 		controller->ChangeStateToNone();
 	}

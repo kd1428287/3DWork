@@ -8,6 +8,7 @@
 #include "../../Components/Movement/VelocityComponent.h"
 #include "../../Components/Movement/FacingDirectionComponent.h"
 #include "../../Components/Character/Player/PlayerInputComponent.h"
+#include "../../Components/Character/Data/HitReactionComponent.h"
 #include "../../Components/Camera/CameraTargetComponent.h"
 #include "../../Components/Render/ModelRenderComponent.h"
 #include "../../Components/Render/PolygonRenderComponent.h" 
@@ -16,8 +17,10 @@
 #include "../../Components/Animation/SkeletonComponent.h"
 #include "../../Components/Animation/BoneSocketComponent.h"
 #include "../../Components/Animation/TwoBoneIKComponent.h"
+#include "../../Components/Animation/RootMotionApplierComponent.h"
 #include "../../Components/Character/Player/PlayerStatusController.h"
 #include "../../Components/Character/Player/PlayerLockOnComponent.h"
+#include "../../Components/Character/Player/PlayerMovementAnimationComponent.h"
 #include "../../Components/Character/Data/PostureComponent.h"
 #include "../../Components/Character/Data/HealthComponent.h"
 #include "../../Components/Collision/GravityComponent.h"
@@ -46,6 +49,8 @@ namespace
 		animator->SetRootMotionForwardAxis(visuals.rootMotionAxis, visuals.rootMotionAxisSign);
 		animator->SetRootMotionScale(visuals.rootMotionScale);
 
+		player->AddComponent<RootMotionApplierComponent>();
+
 		return skeleton;
 	}
 
@@ -54,7 +59,7 @@ namespace
 		const std::vector<CapsuleColliderDefinition>& colliderDefs, const IKChainDefinition& rightArmIK)
 	{
 		player->AddComponent<GravityComponent>();
-		player->AddComponent<VelocityComponent>();
+		player->AddComponent<VelocityComponent>(0.01f);
 		auto* collider = player->AddComponent<ColliderComponent>();
 		player->AddComponent<GroundSensorComponent>();
 		player->AddComponent<FacingDirectionComponent>();
@@ -69,6 +74,7 @@ namespace
 		//player->AddComponent<PlayerStatusUIComponent>();
 
 		player->AddComponent<PlayerLockOnComponent>();
+		player->AddComponent<HitReactionComponent>();
 
 		//player->AddComponent<TwoBoneIKComponent>(
 			//rightArmIK.rootBone, rightArmIK.midBone, rightArmIK.tipParentBone, rightArmIK.tipBone);
@@ -95,6 +101,7 @@ namespace
 	{
 		auto* input = player->AddComponent<PlayerInputComponent>();
 		auto* move = player->AddComponent<MovementComponent>(walkSpeed);
+		player->AddComponent<PlayerMovementAnimationComponent>();
 		move->SetMovementSource(input);
 	}
 }
@@ -163,12 +170,12 @@ GameObject* PlayerFactory::CreateWeapon(ObjectManager& objectManager, GameObject
 	auto* transform = weapon->AddComponent<TransformComponent>();
 
 	auto* socket = weapon->AddComponent<AttachToSocketComponent>(handle);
-	/*socket->SetLocalRotation(Math::Quaternion::CreateFromYawPitchRoll(
+	socket->SetLocalRotation(Math::Quaternion::CreateFromYawPitchRoll(
 		weaponDefinition.socketLocalEulerRotationDeg.x,
 		DirectX::XMConvertToRadians(weaponDefinition.socketLocalEulerRotationDeg.y),
 		weaponDefinition.socketLocalEulerRotationDeg.z));
 
-	socket->SetLocalPositon(weaponDefinition.socketLocalPosition);*/
+	/*socket->SetLocalPositon(weaponDefinition.socketLocalPosition);*/
 
 	auto* skeleton = weapon->AddComponent<SkeletonComponent>();
 	skeleton->SetModelData(weaponDefinition.modelPath);

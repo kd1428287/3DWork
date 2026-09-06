@@ -7,6 +7,7 @@
 #include "../Effect/KdAssetsTextureProvider.h"
 
 #include <unordered_map>
+#include <algorithm>
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // エフェクト生成ディスパッチャー
@@ -42,13 +43,28 @@
 // (WeaponClashParry/WeaponClashBlockがJSONに定義されていない場合、鍔迫り合いイベントを
 //  受け取っても何も発生しない。コード内蔵のデフォルト値によるフォールバックは持たない点に注意)
 //
+// 【実行中のホットリロードについて】
+//   EffectEditorでSaveした瞬間、実行中の(同じJSONパスを読み込んでいる)EffectDispatcher
+//   全てへ、静的関数NotifyDataSaved()経由で再ロードを促す。EffectEditorはEventBusを
+//   経由せず、生存中のEffectDispatcherインスタンス一覧(s_instances)をパス一致で
+//   直接辿って呼び出す(EffectEditorはシーンに属さない編集用シングルトンで、
+//   どのシーンのEventBusに繋げばよいか分からない為、EventBus越しの通知にはしていない)。
+//   ※現在Attach中のactiveInstances_(継続再生中のインスタンス)はそれぞれ既に
+//     パラメータのコピーを持っている為、再ロードしても見た目は変わらない
+//     (次にAttachし直した時から新しいパラメータになる)。simpleEffects_(単発発生用の
+//     テンプレート)は次のEmit()から即座に新しいパラメータが反映される。
+//
 // 【使い方】
 //   EffectDispatcher dispatcher;
 //   dispatcher.Init(sceneLocalEventBus, "Asset/Data/Game/effectmap.json");
 //   :
-//   // 毎フレーム
-//   dispatcher.Update(deltaTime);
-//   dispatcher.Draw();
+//   dispatcher.Update(deltaTime);            // 毎フレーム1回
+//   :
+//   // 3D描画パス側、DrawLitとDrawBloomの両方から、それぞれ対応するpassで呼ぶ
+//   // (DrawPass::LitのエフェクトはDrawLit側の呼び出しでのみ、Bloomのエフェクトは
+//   //  DrawBloom側の呼び出しでのみ実際に描画される)
+//   dispatcher.Draw(KdParticleDrawPass::Lit);      // DrawLit内から
+//   dispatcher.Draw(KdParticleDrawPass::Bloom);    // DrawBloom内から
 //   :
 //   // 継続再生させたい発生源がある場合(例：松明を生成した時)
 //   PublishEffectAttach(bus, "Torch_003", "TorchFire", torchPos);
@@ -79,8 +95,21 @@ public:
 	// 生きている全エフェクトの更新のみ行う(発生はイベント経由でのみ起こる)
 	void Update(float deltaTime);
 
-	// 保持している全エフェクトの描画
-	void Draw();
+	// 保持している全エフェクトの描画。
+	//	DrawPassFlagsにpassが含まれるEffectInstanceだけが実際に描画される。
+	//	3D描画パス側のDrawLit・DrawBloomそれぞれから、対応するpassで1回ずつ
+	//	毎フレーム呼んでもらう想定(両方のフラグを持つエフェクトは両方から描画される)
+	void Draw(ParticleDrawPass pass);
+
+	// このインスタンスが読み込んでいるJSONパス
+	const std::string& GetEffectDataPath() const { return effectDataPath_; }
+
+	// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+	// pathと同じJSONを読み込んでいる、現在生きている全EffectDispatcherインスタンスへ
+	// 再ロードを促す(EffectEditor::Save()が保存成功時に呼ぶ想定)。
+	// 該当インスタンスが1つも無い場合(実行中でない、または別のパスを見ている場合)は何もしない。
+	// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+	static void NotifyDataSaved(const std::string& path);
 
 private:
 
@@ -99,6 +128,7 @@ private:
 	// effectDataPathをEffectDataLoaderで読み込み、simpleEffects_を構築する
 	// (JSONが無い/読み込み失敗時は空のまま：単純エフェクトも鍔迫り合いの火花も
 	//  1つも発生しなくなる)
+	// ※NotifyDataSaved()からも呼ばれる(実行中の再ロード)
 	bool LoadEffectData(const std::string& effectDataPath);
 
 	// std::string → 実行時インスタンス(単発発生用の使い回しテンプレート)
@@ -126,4 +156,12 @@ private:
 	std::vector<ScopedSubscriber> subscriptions_;
 
 	EventBus* bus_ = nullptr;
+
+	// Init()時に渡されたJSONパス(NotifyDataSaved()での再ロード対象判定、および
+	// GetEffectDataPath()用に保持しておく)
+	std::string effectDataPath_;
+
+	// 生存中の全EffectDispatcherインスタンス(NotifyDataSaved()がここを辿ってpath一致のものへ
+	// 再ロードを促す)。Init()で登録、Release()で解除する
+	static std::vector<EffectDispatcher*> s_instances;
 };

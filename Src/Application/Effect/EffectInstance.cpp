@@ -66,7 +66,7 @@ void EffectInstance::Update(float deltaTime, const DirectX::SimpleMath::Vector3&
 
 	if (!isPlaying_) { return; }
 
-	if (params_.EmitMode == KdParticleEmitMode::Continuous)
+	if (params_.EmitMode == ParticleEmitMode::Continuous)
 	{
 		// レイヤーごとに「Count個/秒」のペースで端数を蓄積し、1個分たまったら発生
 		if (continuousAccum_.size() != params_.Layers.size())
@@ -85,7 +85,7 @@ void EffectInstance::Update(float deltaTime, const DirectX::SimpleMath::Vector3&
 			if (emitNum > 0)
 			{
 				continuousAccum_[i] -= (float)emitNum;
-				particle_->Emit(layer.Shape.ToEmitParameter(worldPos, baseDir), emitNum);
+				particle_->Emit(layer.ToEmitParameter(worldPos, baseDir), emitNum);
 			}
 		}
 	}
@@ -113,7 +113,7 @@ void EffectInstance::Emit(const DirectX::SimpleMath::Vector3& worldPos, const Di
 	{
 		if (layer.Count <= 0) { continue; }
 
-		particle_->Emit(layer.Shape.ToEmitParameter(worldPos, baseDir), (UINT)layer.Count);
+		particle_->Emit(layer.ToEmitParameter(worldPos, baseDir), (UINT)layer.Count);
 	}
 }
 
@@ -125,7 +125,7 @@ void EffectInstance::Play(const DirectX::SimpleMath::Vector3& worldPos, const Di
 	if (!particle_) { return; }
 
 	// Burstかつ単発(EmitInterval<=0)の場合：即1回発生して終わり。再生状態には入らない
-	if (params_.EmitMode == KdParticleEmitMode::Burst && params_.EmitInterval <= 0.0f)
+	if (params_.EmitMode == ParticleEmitMode::Burst && params_.EmitInterval <= 0.0f)
 	{
 		Emit(worldPos, baseDir);
 		return;
@@ -136,7 +136,7 @@ void EffectInstance::Play(const DirectX::SimpleMath::Vector3& worldPos, const Di
 	continuousAccum_.assign(params_.Layers.size(), 0.0f);
 
 	// Burstリピートの場合は再生開始と同時に1回目を発生させておく
-	if (params_.EmitMode == KdParticleEmitMode::Burst)
+	if (params_.EmitMode == ParticleEmitMode::Burst)
 	{
 		Emit(worldPos, baseDir);
 	}
@@ -151,15 +151,24 @@ void EffectInstance::Stop()
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 描画：テクスチャ込み
-//	※BlendModeはKdGPUParticle::Draw()側が対応するまでは常に加算合成で描画される。
-//	  対応が入ったタイミングでここにBlendModeを渡す処理を追加すること。
+// 描画：テクスチャ・BlendMode込み
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectInstance::Draw() const
 {
 	if (!particle_) { return; }
 
-	particle_->Draw(texture_);
+	particle_->Draw(texture_, params_.BlendMode);
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 描画：DrawPassが一致する時だけ描画する
+//	(DrawLit/DrawBloomの両方から毎フレーム呼ばれる想定。一致しない方では何もしない)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void EffectInstance::Draw(ParticleDrawPass pass) const
+{
+	if (!KdHasDrawPassFlag(params_.DrawPassFlags, pass)) { return; }
+
+	Draw();
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////

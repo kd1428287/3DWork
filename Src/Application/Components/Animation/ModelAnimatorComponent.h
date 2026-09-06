@@ -222,12 +222,14 @@ public:
 	// SetForwardAxis/SetRightAxisのコメント参照)。
 	void SetRootMotionForwardAxis(RootMotionAxis axis, float sign = 1.0f) { rootMotion_.SetForwardAxis(axis, sign); }
 	void SetRootMotionRightAxis(RootMotionAxis axis, float sign = 1.0f) { rootMotion_.SetRightAxis(axis, sign); }
+	void SetRootMotionExtractRotation(bool enabled) { rootMotion_.SetExtractRotation(enabled); }
 
 	// このフレームで蓄積されたルートモーションの移動量(ボーンの
 	// ローカル空間、まだワールド回転を反映していない値)を取得し、
 	// 内部を0にリセットする。呼ぶと消費されるので、1フレームにつき
 	// 1回だけ呼ぶこと(二重適用防止)。
 	Math::Vector3 ConsumeRootMotionDelta() { return rootMotion_.ConsumeDelta(); }
+	float ConsumeRootMotionYawDelta() { return rootMotion_.ConsumeYawDelta(); }
 
 private:
 	// 2つのローカル変換行列を、位置・回転・拡縮に分解してから個別に補間する。

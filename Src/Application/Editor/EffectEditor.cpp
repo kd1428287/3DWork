@@ -3,6 +3,7 @@
 #include "EffectEditor.h"
 #include "EditorViewport.h"
 #include "../Effect/EffectDataLoader.h"
+#include "../Effect/EffectDispatcher.h"
 
 #include "imgui_internal.h"
 
@@ -101,14 +102,14 @@ void EffectEditor::Update()
 }
 
 // プレビュー中のGPUパーティクルを描画する
-void EffectEditor::DrawPreviewParticles()
+void EffectEditor::DrawPreviewParticles(ParticleDrawPass pass)
 {
 	for (auto& obj : m_objects)
 	{
 		// previewInstanceが未初期化(一度もPlayしていない)場合はDraw()側で何もしない
 		if (obj.playing)
 		{
-			obj.previewInstance.Draw();
+			obj.previewInstance.Draw(pass);
 		}
 	}
 }
@@ -266,14 +267,14 @@ void EffectEditor::DrawInspector()
 
 	{
 		const char* modeLabels[] = { "Burst", "Continuous" };
-		int modeIdx = (params.EmitMode == KdParticleEmitMode::Continuous) ? 1 : 0;
+		int modeIdx = (params.EmitMode == ParticleEmitMode::Continuous) ? 1 : 0;
 		if (ImGui::Combo("Emit Mode", &modeIdx, modeLabels, IM_ARRAYSIZE(modeLabels)))
 		{
-			params.EmitMode = (modeIdx == 1) ? KdParticleEmitMode::Continuous : KdParticleEmitMode::Burst;
+			params.EmitMode = (modeIdx == 1) ? ParticleEmitMode::Continuous : ParticleEmitMode::Burst;
 		}
 	}
 
-	if (params.EmitMode == KdParticleEmitMode::Burst)
+	if (params.EmitMode == ParticleEmitMode::Burst)
 	{
 		ImGui::DragFloat("Emit Interval(sec)", &params.EmitInterval, 0.05f, 0.0f, 60.0f);
 		ImGui::TextDisabled("Interval<=0 : 再生開始時に1回だけ発生。各LayerのCountは「1回あたりの発生数」");
@@ -321,6 +322,22 @@ void EffectEditor::DrawInspector()
 			ImGui::TextDisabled("ColorStart=発生時、Color=消滅時の色。同じ値ならフェードしない単色になる");
 			ImGui::TextDisabled("方向を使わない単純エフェクトはDir Scaleを0にし、Offsetだけで速度範囲を作る想定");
 
+			ImGui::Separator();
+			{
+				const char* billboardLabels[] = { "Normal", "Stretch" };
+				int billboardIdx = (layer.BillboardMode == KdParticleBillboardMode::Stretch) ? 1 : 0;
+				if (ImGui::Combo("Billboard Mode", &billboardIdx, billboardLabels, IM_ARRAYSIZE(billboardLabels)))
+				{
+					layer.BillboardMode = (billboardIdx == 1) ? KdParticleBillboardMode::Stretch : KdParticleBillboardMode::Normal;
+				}
+
+				if (layer.BillboardMode == KdParticleBillboardMode::Stretch)
+				{
+					ImGui::DragFloat("Stretch Scale", &layer.StretchScale, 0.01f, 0.0f, 10.0f);
+					ImGui::TextDisabled("速度が速いパーティクルほど進行方向へ伸びる(HitSpark/WeaponClash等の速い表現向け)");
+				}
+			}
+
 			// 最後の1層は削除できないようにする
 			if (params.Layers.size() > 1 && ImGui::Button("- Remove This Layer"))
 			{
@@ -348,7 +365,30 @@ void EffectEditor::DrawInspector()
 		{
 			params.BlendMode = (blendIdx == 1) ? KdParticleBlendMode::Alpha : KdParticleBlendMode::Add;
 		}
-		ImGui::TextDisabled("※現状KdGPUParticle::Drawは加算合成固定。実際に切り替えるにはDraw側の対応が必要");
+		ImGui::TextDisabled("Alpha選択時、パーティクル同士の重なり順はソートされない(発生順のまま描画)");
+	}
+
+	{
+		bool drawLit = KdHasDrawPassFlag(params.DrawPassFlags, ParticleDrawPass::Default);
+		bool drawBloom = KdHasDrawPassFlag(params.DrawPassFlags, ParticleDrawPass::Blight);
+
+		ImGui::Text("Draw Pass");
+		bool changed = false;
+		changed |= ImGui::Checkbox("Lit", &drawLit);
+		ImGui::SameLine();
+		changed |= ImGui::Checkbox("Bloom", &drawBloom);
+
+		if (changed)
+		{
+			// 両方外すとどこにも描画されなくなってしまうので、最低Litだけは強制的に残す
+			if (!drawLit && !drawBloom) { drawLit = true; }
+
+			ParticleDrawPass flags = static_cast<ParticleDrawPass>(0);
+			if (drawLit) { flags |= ParticleDrawPass::Default; }
+			if (drawBloom) { flags |= ParticleDrawPass::Blight; }
+			params.DrawPassFlags = flags;
+		}
+		ImGui::TextDisabled("両方チェックすると、通常描画とブルーム(発光)の両方に同時に描画される");
 	}
 
 	ImGui::Separator();
@@ -745,6 +785,10 @@ void EffectEditor::Save(const std::string& path)
 		KdDebugGUI::Instance().AddLog("EffectEditor: 保存に失敗 %s\n", path.c_str());
 		return;
 	}
+
+	// 実行中で、同じJSONを読み込んでいるEffectDispatcherがあれば、その場で再ロードさせて
+	// エディタでの変更を即座にゲーム側(実行中のプレイ)へ反映する
+	EffectDispatcher::NotifyDataSaved(path);
 
 	FILETIME writeTime;
 	if (JsonLoader::GetLastWriteTime(path, writeTime))

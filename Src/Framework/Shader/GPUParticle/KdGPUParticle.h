@@ -19,6 +19,27 @@
 //   particle.Draw(pTexture);           // 描画(3D描画パスの最後、半透明描画のタイミングで)
 //
 //====================================================================
+
+// パーティクルのビルボード方式
+//	既にParticle/EmitParameterまで実際に配線され、頂点シェーダーが読んで使用する
+enum class KdParticleBillboardMode
+{
+	Normal,		// カメラ正面を向く正方形のビルボード(従来通り)
+	Stretch,	// 速度方向へ伸びる板ポリ(火花・斬撃の軌跡等、速く飛ぶ表現向け)
+};
+
+// パーティクルのブレンドモード
+//	KdGPUParticle::Draw()がこの値を見てKdBlendStateを切り替える。
+//	BillboardModeと違い、こちらはパーティクル単位ではなく描画コール単位(Draw()の引数)
+//	で切り替わる値。1つのEffectInstance(1回のDraw()呼び出し)の中で
+//	LayerごとにBlendModeを変える事はできない点に注意(そうしたい場合はLayerごとに
+//	別のEffectInstance/KdGPUParticleへ分ける必要がある)
+enum class KdParticleBlendMode
+{
+	Add,	// 加算合成(発光系の火花・炎向け)
+	Alpha,	// 半透明合成(煙・砂煙等、加算だと不自然になるもの向け)
+};
+
 class KdGPUParticle
 {
 public:
@@ -28,6 +49,8 @@ public:
 
 	// パーティクル1粒のデータ
 	// ※HLSL側(inc_KdGPUParticle.hlsli の Particle構造体)とレイアウトを必ず一致させる事
+	//	 BillboardMode/StretchScaleは、以前は未使用のパディング(_pad[3])だった領域を
+	//	 転用しているので、構造体全体のサイズ・アライメントは変わっていない
 	struct Particle
 	{
 		Math::Vector3	Position;
@@ -40,7 +63,15 @@ public:
 		Math::Vector4	Color = { 0.f,0.f,0.f, 1.0f };						// 冷えた後の最終色
 
 		float			LifeMax = 1.0f;
-		float			_pad[3] = { 0,0,0 };
+
+		// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+		// ストレッチビルボード関連(以前は_pad[3]だった領域)
+		//	HLSL側にC++のenumは無いので、BillboardModeはfloatで持ち、
+		//	0.0=Normal、1.0=Stretchとして扱う(VS側で > 0.5f 判定する)
+		// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+		float			BillboardMode = 0.0f;	// KdParticleBillboardMode::Normal相当
+		float			StretchScale = 0.0f;	// Stretch時のみ使用：速度→伸び量の係数
+		float			_pad = 0.0f;			// 予備(将来の拡張用)
 	};
 
 	// 発生パラメータ
@@ -62,6 +93,11 @@ public:
 
 		Math::Vector4	ColorMin = { 0.f, 0.f, 0.f, 1.0f };
 		Math::Vector4	ColorMax = { 0.f, 0.f, 0.f, 1.0f };
+
+		// ストレッチビルボード関連：ここで指定した値がそのまま発生する全パーティクルの
+		// Particle::BillboardMode / StretchScaleへコピーされる(発生後は不変)
+		KdParticleBillboardMode	BillboardMode = KdParticleBillboardMode::Normal;
+		float					StretchScale = 0.0f;
 	};
 
 	//================================================
@@ -83,9 +119,14 @@ public:
 	// 1フレームぶんのシミュレーション更新(コンピュートシェーダーで実行)
 	void Update(float deltaTime, const Math::Vector3& gravity = { 0.0f, -0.5f, 0.0f });
 
-	// 描画(加算合成のビルボードとして描画)
+	// 描画(ビルボードとして描画)
+	// blendMode：KdParticleBlendMode::Add(加算)/Alpha(半透明)。省略時はAdd(従来通り)
 	// ※事前にKdShaderManager::WriteCBCamera等でカメラ情報の転送が済んでいる事
-	void Draw(const std::shared_ptr<KdTexture>& texture);
+	// ※Alpha指定時、パーティクル同士の重なり順のソートは行っていない(発生順のまま描画する)。
+	//   加算合成は順序が結果に影響しないが、半透明合成は本来手前から奥への描画順が必要な為、
+	//   重なりが多い/透明度が高いケースでは奥のパーティクルが手前を覆ってしまう見え方になる
+	//   点に注意(ソートを入れるには別途CPU/GPUでの並び替えコストが必要になる)
+	void Draw(const std::shared_ptr<KdTexture>& texture, KdParticleBlendMode blendMode = KdParticleBlendMode::Add);
 
 	UINT GetMaxParticleNum() const { return m_maxParticleNum; }
 
@@ -152,6 +193,12 @@ private:
 		float			EmitLifeMax = 0.0f;
 		UINT			MaxParticleNum = 0;
 		float			RandomSeed = 0.0f;
+
+		// ストレッチビルボード関連(追加分)
+		//	EmitBillboardModeは0.0=Normal、1.0=Stretch(Particle::BillboardModeと同じ規約)
+		float			EmitBillboardMode = 0.0f;
+		float			EmitStretchScale = 0.0f;
+		float			_pad[2] = { 0.0f, 0.0f };	// 16バイト境界に揃える為のパディング
 	};
 	KdConstantBuffer<cbEmit> m_cb0_Emit;
 

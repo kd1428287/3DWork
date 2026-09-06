@@ -18,7 +18,11 @@ struct Particle
 	float4 Color; // 冷えた後の最終色
 
 	float LifeMax; // 発生時の寿命(フェードアウト計算に使用)
-	float3 _pad;
+
+	// ストレッチビルボード関連(以前は_pad3だった領域を転用)
+	float BillboardMode; // 0:Normal(カメラ正面) 1:Stretch(速度方向に伸びる)
+	float StretchScale; // Stretch時のみ使用：速度→伸び量の係数
+	float _pad; // 予備(将来の拡張用)
 };
 
 // 描画シェーダー(VS→PS)の受け渡し用

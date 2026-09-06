@@ -6,7 +6,7 @@
 #include "../../Systems/TimeScaleSystem.h"
 #include "../../Systems/Collision/ColliderRegistry.h"
 #include "../../Systems/Collision/CollisionSystem.h"
-#include "../../DIspatcher/EffectDispatcher.h"
+#include "../../Effect/EffectDispatcher.h"
 
 // factory
 #include "../../Factories/Game/PlayerFactory.h"
@@ -42,8 +42,14 @@ void GameScene::OnUpdate(float deltaTime)
 
 void GameScene::OnDrawEffects()
 {
-	effectDispatcher_->Draw();
+	effectDispatcher_->Draw(ParticleDrawPass::Default);
 }
+
+void GameScene::OnDrawBlight()
+{
+	effectDispatcher_->Draw(ParticleDrawPass::Blight);
+}
+
 
 void GameScene::Init()
 {
@@ -115,7 +121,7 @@ void GameScene::Init()
 	KdShaderManager::Instance().WorkAmbientController().SetheightFog({0.9f,0.9f,0.9f}, 10.f, -10.f, 100.f);
 	KdShaderManager::Instance().m_postProcessShader.SetExposure(1.05f);
 	KdShaderManager::Instance().m_postProcessShader.SetContrast(1.25f);       // コントラスト強め
-	KdShaderManager::Instance().m_postProcessShader.SetSaturation(0.80f);     // 彩度低め
+	KdShaderManager::Instance().m_postProcessShader.SetSaturation(0.10f);     // 彩度低め
 	KdShaderManager::Instance().m_postProcessShader.SetTemperature(-0.15f);   // ★わずかに寒色（青み）を寄せて鉄や血の冷たさを演出
 	KdShaderManager::Instance().m_postProcessShader.SetTint(-0.05f);          // ★ごくわずかに緑に寄せて、古びた日本的・和風の空気感を作る;;;
 	

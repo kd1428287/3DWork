@@ -1,17 +1,20 @@
 ﻿#include "HitReactionComponent.h"
 #include "CharacterEvents.h"
 
+void HitReactionComponent::Awake()
+{
+	EventBus& localBus = GetOwner()->GetLocalEventBus();
+	const SubscriptionId subscriptionId = localBus.Subscribe<CollisionSystem::CollisionEnterEvent>(
+		[this](const CollisionSystem::CollisionEnterEvent& e) { OnCollisionEnter(e); });
+	subscriber_ = ScopedSubscriber(&localBus, subscriptionId);
+}
+
 void HitReactionComponent::Start()
 {
 	postureComponent_ = GetOwner()->GetComponent<PostureComponent>();
 	healthComponent_ = GetOwner()->GetComponent<HealthComponent>();
 	velocityComponent_ = GetOwner()->GetComponent<VelocityComponent>();
 	transform_ = GetOwner()->GetComponent<TransformComponent>();
-
-	EventBus& localBus = GetOwner()->GetLocalEventBus();
-	const SubscriptionId subscriptionId = localBus.Subscribe<CollisionSystem::CollisionEnterEvent>(
-		[this](const CollisionSystem::CollisionEnterEvent& e) { OnCollisionEnter(e); });
-	subscriber_ = ScopedSubscriber(&localBus, subscriptionId);
 }
 
 Math::Vector3 HitReactionComponent::ComputeKnockbackDirection(GameObject* attacker) const

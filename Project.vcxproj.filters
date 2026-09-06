@@ -687,9 +687,6 @@
     <ClInclude Include="Src\Application\Factories\Game\PlayerDefinitionLoader.h">
       <Filter>Src\Application\Factories\Game</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\DIspatcher\EffectDispatcher.h">
-      <Filter>Src\Application\Dispatcher</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Systems\TimeScaleSystem.h">
       <Filter>Src\Application\Systems</Filter>
     </ClInclude>
@@ -731,6 +728,12 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Scene\SceneEvents.h">
       <Filter>Src\Application\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Effect\EffectDispatcher.h">
+      <Filter>Src\Application\Effect</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Character\Player\PlayerMovementAnimationComponent.h">
+      <Filter>Src\Application\Components\Character\Player</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -950,9 +953,6 @@
     <ClCompile Include="Src\Application\Factories\Game\PlayerDefinitionLoader.cpp">
       <Filter>Src\Application\Factories\Game</Filter>
     </ClCompile>
-    <ClCompile Include="Src\Application\DIspatcher\EffectDispatcher.cpp">
-      <Filter>Src\Application\Dispatcher</Filter>
-    </ClCompile>
     <ClCompile Include="Src\Framework\Utility\JsonLoader.cpp">
       <Filter>Src\Framework\Utility</Filter>
     </ClCompile>
@@ -970,6 +970,12 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Components\Character\Data\HitReactionComponent.cpp">
       <Filter>Src\Application\Components\Character\Data</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Effect\EffectDispatcher.cpp">
+      <Filter>Src\Application\Effect</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\Character\Player\PlayerMovementAnimationComponent.cpp">
+      <Filter>Src\Application\Components\Character\Player</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -3,16 +3,7 @@
 #include "../Transform/TransformComponent.h"
 #include "VelocityComponent.h"
 
-// ============================================================
 // 開始位置→終了位置へ、指定時間で遷移させるコンポーネント。
-// カードドロー、UI要素の移動、演出的な移動全般に向く。
-// MovementComponentとは違い「一回限りで完了する」ことが前提。
-//
-// VelocityComponent(外力による移動)が同居していて、かつ外力が
-// 働いている間は、Tweenの進行(elapsed_)自体を一時停止する。
-// 位置だけ止めてelapsed_を進め続けると、外力が収まった瞬間に
-// 理想軌道へワープする不自然な挙動になるため。
-// ============================================================
 class TweenMoveComponent : public ComponentBase {
 public:
 	TweenMoveComponent(GameObject* owner, Math::Vector3 from, Math::Vector3 to, float duration)
@@ -30,11 +21,11 @@ public:
 		if (transform_ == nullptr || finished_) return;
 
 		// 外力(ノックバックなど)が働いている間はTweenそのものを一時停止する。
-		if (velocityComponent_ != nullptr && velocityComponent_->IsImpulseActive()) return;
+		//if (velocityComponent_ != nullptr && velocityComponent_->IsImpulseActive()) return;
 
 		elapsed_ += deltaTime;
 		float t = std::min(elapsed_ / duration_, 1.0f);
-		float eased = EaseOutCubic(t);  // カーブは差し替え可能
+		float eased = EaseOutCubic(t);
 
 		Math::Vector3 resultPos;
 		resultPos = Math::Vector3::Lerp(from_, to_, eased);

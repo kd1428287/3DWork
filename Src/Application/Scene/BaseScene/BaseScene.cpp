@@ -58,6 +58,7 @@ void BaseScene::Draw()
 	KdShaderManager::Instance().m_postProcessShader.BeginBright();
 	{
 		objManager_->DrawBright();
+		OnDrawBlight();
 	}
 	KdShaderManager::Instance().m_postProcessShader.EndBright();
 }

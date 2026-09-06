@@ -245,6 +245,11 @@ void KdGPUParticle::Emit(const EmitParameter& param, UINT count)
 	// 毎回変化する乱数シード(パーティクルが毎回同じ並びで発生しないようにする)
 	emit.RandomSeed = static_cast<float>(rand() % 100000);
 
+	// ストレッチビルボード関連：発生する全パーティクルのParticle::BillboardMode/StretchScaleに
+	// そのままコピーされる値(Particle側の規約と合わせ、0.0=Normal、1.0=Stretch)
+	emit.EmitBillboardMode = (param.BillboardMode == KdParticleBillboardMode::Stretch) ? 1.0f : 0.0f;
+	emit.EmitStretchScale = param.StretchScale;
+
 	m_cb0_Emit.Write();
 
 	ID3D11DeviceContext* DevCon = KdDirect3D::Instance().WorkDevContext();
@@ -292,9 +297,9 @@ void KdGPUParticle::Update(float deltaTime, const Math::Vector3& gravity)
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 描画：加算合成のビルボードとしてインスタンシング描画
+// 描画：ビルボードとしてインスタンシング描画
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void KdGPUParticle::Draw(const std::shared_ptr<KdTexture>& texture)
+void KdGPUParticle::Draw(const std::shared_ptr<KdTexture>& texture, KdParticleBlendMode blendMode)
 {
 	if (!m_initialized) { return; }
 
@@ -319,8 +324,9 @@ void KdGPUParticle::Draw(const std::shared_ptr<KdTexture>& texture)
 	// 通常テクスチャ用サンプラーをセット
 	shaderMgr.ChangeSamplerState(KdSamplerState::Linear_Clamp, 0);
 
-	// 加算合成・Z書き込み無効(重なった時に不透明に潰れないように)
-	shaderMgr.ChangeBlendState(KdBlendState::Add);
+	// ブレンドモードの切り替え・Z書き込み無効(重なった時に不透明に潰れないように)
+	const KdBlendState blendState = (blendMode == KdParticleBlendMode::Alpha) ? KdBlendState::Alpha : KdBlendState::Add;
+	shaderMgr.ChangeBlendState(blendState);
 	shaderMgr.ChangeDepthStencilState(KdDepthStencilState::ZWriteDisable);
 
 	DevCon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);

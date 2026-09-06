@@ -27,6 +27,7 @@ private:
 	// (systemManager_->Update()が終わった後に呼ばれる)
 	void OnUpdate(float deltaTime) override;
 	void OnDrawEffects() override;
+	void OnDrawBlight() override;
 	void Init()  override;
 
 	std::unique_ptr<PlayerFactory> playerFactory_ = nullptr;

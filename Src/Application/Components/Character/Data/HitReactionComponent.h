@@ -14,6 +14,7 @@ class HitReactionComponent : public ComponentBase
 public:
 	explicit HitReactionComponent(GameObject* owner) : ComponentBase(owner) {}
 
+	void Awake() override;
 	void Start() override;
 
 	// パリィ/ガード/通常被弾のどれで判定するかを問い合わせる相手を登録する

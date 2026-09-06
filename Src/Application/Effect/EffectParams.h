@@ -3,22 +3,57 @@
 #include "../../Framework/Shader/GPUParticle/KdGPUParticle.h"
 #include <vector>
 #include <string>
-
-// パーティクルのブレンドモード(将来的な描画方式切り替え用)
-enum class KdParticleBlendMode
-{
-	Add,	// 加算合成(現状のKdGPUParticleのデフォルト挙動)
-	Alpha,	// 半透明合成
-};
+#include <type_traits>
 
 // パーティクルの発生方式
 //	※GPUParticleLayer::Countの意味がこのモードによって変わる点に注意
 //	  (Burst：1回の発生イベントで出す個数／Continuous：1秒あたりに発生させる個数)
-enum class KdParticleEmitMode
+enum class ParticleEmitMode
 {
 	Burst,		// 各LayerのCount個を一度に発生。EmitInterval(秒)ごとに繰り返す(0以下なら再生開始時の1回のみ)
 	Continuous,	// 各LayerのCount個/秒のペースで、再生中ずっと発生させ続ける
 };
+
+// パーティクルをどの描画パスから描画するか(ビットフラグ)
+//	3D描画パス側は、従来の「不透明・半透明を描いた後にライティング結果へ合成するDrawLit」に加え、
+//	「ブルーム(発光)ポストシェーダーの入力になるDrawBloom」の2箇所からEffectInstance::Draw()を
+//	呼び出すようになる。EffectInstance/EffectDispatcher/EffectEditorはこの値を見て、
+//	今呼ばれているのが自分の望むパスに含まれるかどうかを判定し、含まれる時だけ実際に描画する
+//	(呼び出し元は毎フレーム両方のパスから1回ずつ呼ぶだけで良く、判定は全てこちら側で行う)。
+//
+//	ビットフラグにしているのは、1つのエフェクトが「通常描画(Lit)もしつつ発光(Bloom)もする」
+//	ように、複数のパスへ同時に描画したいケースがある為。仮に排他的なenumのままだと、
+//	将来パスの種類が増えるたびに組み合わせ用の値(LitAndBloom等)を都度追加する羽目になるが、
+//	ビットフラグならKdHasDrawPassFlag()での判定だけで任意の組み合わせに対応できる
+enum class ParticleDrawPass : uint8_t
+{
+	Default = 1 << 0,	// 通常の合成(従来通りの見え方。DrawLitから描画される)
+	Blight = 1 << 1,	// ブルームポストシェーダーの入力として描画され、発光して見える(DrawBloomから描画される)
+};
+
+inline ParticleDrawPass operator|(ParticleDrawPass a, ParticleDrawPass b)
+{
+	using T = std::underlying_type_t<ParticleDrawPass>;
+	return static_cast<ParticleDrawPass>(static_cast<T>(a) | static_cast<T>(b));
+}
+inline ParticleDrawPass operator&(ParticleDrawPass a, ParticleDrawPass b)
+{
+	using T = std::underlying_type_t<ParticleDrawPass>;
+	return static_cast<ParticleDrawPass>(static_cast<T>(a) & static_cast<T>(b));
+}
+inline ParticleDrawPass& operator|=(ParticleDrawPass& a, ParticleDrawPass b)
+{
+	a = a | b;
+	return a;
+}
+
+// flagsにtestのビットが1つでも立っていればtrue
+//	(testに単一のパス値を渡す使い方を想定。EffectInstance::Draw(pass)の判定に使う)
+inline bool KdHasDrawPassFlag(ParticleDrawPass flags, ParticleDrawPass test)
+{
+	using T = std::underlying_type_t<ParticleDrawPass>;
+	return (static_cast<T>(flags) & static_cast<T>(test)) != 0;
+}
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 発生方向(baseDir)を軸にした「1層分」の速度・サイズ・寿命・色の形状定義
@@ -53,11 +88,15 @@ struct DirectionalEmitShape
 	DirectX::SimpleMath::Vector4	ColorMin = { 0.1f, 0.85f, 0.4f, 1.0f };
 	DirectX::SimpleMath::Vector4	ColorMax = { 0.1f, 0.85f, 0.4f, 1.0f };
 
+	// Shape(速度・サイズ・寿命・色)ぶんだけのEmitParameterを作る。
+	// BillboardMode/StretchScale(Layer単位の値)はここでは設定されないので、
+	// 呼び出し元がGPUParticleLayer::ToEmitParameter()経由で使うか、
+	// 自前で追加設定すること
 	KdGPUParticle::EmitParameter ToEmitParameter(const DirectX::SimpleMath::Vector3& worldPos, const DirectX::SimpleMath::Vector3& baseDir) const;
 };
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 汎用エフェクトの1層分(形状 + そのレイヤーのEmit数)
+// 汎用エフェクトの1層分(形状 + そのレイヤーのEmit数 + ビルボード方式)
 //	Count の意味はGPUParticleParams::EmitModeに従う
 //	(Burst：1回の発生イベントで出す個数／Continuous：1秒あたりに発生させる個数)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -65,6 +104,21 @@ struct GPUParticleLayer
 {
 	DirectionalEmitShape	Shape;
 	int		Count = 30;
+
+	// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+	// ストレッチビルボード関連
+	//	BillboardMode==Stretchの場合、このLayerから発生する全パーティクルが
+	//	速度方向へ伸びる板ポリになる(KdGPUParticle_VS.hlsl側で実際に計算される)。
+	//	StretchScaleは「速度→伸び量」の係数で、値が大きいほどよく伸びる。
+	//	伸び量そのもののクランプ範囲は暴走防止のためVS側の固定値を使う
+	//	(意図的にLayer単位のパラメータにはしていない。EffectInstance.h等のコメント参照)
+	// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+	KdParticleBillboardMode	BillboardMode = KdParticleBillboardMode::Normal;
+	float					StretchScale = 0.15f;
+
+	// Shape由来のEmitParameterに、このLayerのBillboardMode/StretchScaleを合成して返す。
+	// EffectInstance側は基本的にlayer.Shape.ToEmitParameter()ではなくこちらを呼ぶこと
+	KdGPUParticle::EmitParameter ToEmitParameter(const DirectX::SimpleMath::Vector3& worldPos, const DirectX::SimpleMath::Vector3& baseDir) const;
 };
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -82,7 +136,7 @@ struct GPUParticleParams
 {
 	UINT	MaxParticleNum = 500;	// KdGPUParticle::Init()に渡す同時最大パーティクル数
 
-	KdParticleEmitMode	EmitMode = KdParticleEmitMode::Burst;
+	ParticleEmitMode	EmitMode = ParticleEmitMode::Burst;
 	float	EmitInterval = 0.0f;	// Burst：再発生までの間隔(秒)。0以下なら自動リピートしない
 
 	std::vector<GPUParticleLayer>	Layers = { GPUParticleLayer{} };	// 最低1層
@@ -91,7 +145,11 @@ struct GPUParticleParams
 
 	std::string	TexturePath;	// Asset/Textureからの相対パス
 
-	KdParticleBlendMode BlendMode = KdParticleBlendMode::Add;	// TODO: KdGPUParticle::Draw()側の対応待ち
+	KdParticleBlendMode BlendMode = KdParticleBlendMode::Add;	// KdGPUParticle::Draw()へそのまま渡され、実際に切り替わる
+
+	// どの描画パス(DrawLit/DrawBloom)から描画されるか(ビットフラグ、複数同時可)。
+	// デフォルトはLitのみ(従来通りの見え方)
+	ParticleDrawPass DrawPassFlags = ParticleDrawPass::Default;
 
 	// Continuous、またはBurstでEmitInterval>0の場合はtrue(=再生中はStop()が必要になる)
 	bool IsLooping() const;

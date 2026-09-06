@@ -66,7 +66,14 @@ public:
 
 	bool IsPlaying() const { return isPlaying_; }
 
+	// 無条件に描画する(プレビュー単体ビューポート等、DrawPassによる分岐が不要な呼び出し元向け)
 	void Draw() const;
+
+	// params.DrawPassFlagsにpassのビットが含まれる時だけ描画する
+	//	メインシーンのDrawLit/DrawBloomの両方から、それぞれ対応するpassで毎フレーム
+	//	呼んでもらう想定(1つのエフェクトが両方のフラグを持てば、両方から描画される)
+	void Draw(ParticleDrawPass pass) const;
+
 	const GPUParticleParams& GetParams() const { return params_; }
 
 	bool IsInitialized() const { return particle_ != nullptr; }

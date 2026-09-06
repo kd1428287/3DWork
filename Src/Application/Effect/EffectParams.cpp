@@ -19,8 +19,19 @@ KdGPUParticle::EmitParameter DirectionalEmitShape::ToEmitParameter(
 	return p;
 }
 
+KdGPUParticle::EmitParameter GPUParticleLayer::ToEmitParameter(
+	const DirectX::SimpleMath::Vector3& worldPos, const DirectX::SimpleMath::Vector3& baseDir) const
+{
+	// Shape由来(速度・サイズ・寿命・色)のEmitParameterに、
+	// このLayer固有のビルボード設定を合成する
+	KdGPUParticle::EmitParameter p = Shape.ToEmitParameter(worldPos, baseDir);
+	p.BillboardMode = BillboardMode;
+	p.StretchScale = StretchScale;
+	return p;
+}
+
 bool GPUParticleParams::IsLooping() const
 {
-	if (EmitMode == KdParticleEmitMode::Continuous) { return true; }
+	if (EmitMode == ParticleEmitMode::Continuous) { return true; }
 	return EmitInterval > 0.0f;
 }

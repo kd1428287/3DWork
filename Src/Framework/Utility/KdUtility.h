@@ -141,3 +141,48 @@ inline Math::Vector3 ConvertToRadian(const Math::Vector3& _degree)
 	vec3.z = _degree.z * (3.141592f / 180.0f);
 	return vec3;
 }
+
+// --- 水平方向の角度計算(共通ヘルパー) ------------------------------
+
+constexpr float kDirectionEpsilon = 0.0001f;
+
+inline float ComputeHorizontalAngleTo(const Math::Vector3& forward, const Math::Vector3& inputDir)
+{
+	Math::Vector3 f = forward;
+	Math::Vector3 d = inputDir;
+	f.y = 0.0f;
+	d.y = 0.0f;
+	if (f.LengthSquared() <= kDirectionEpsilon || d.LengthSquared() <= kDirectionEpsilon) {
+		return 0.0f;
+	}
+	f.Normalize();
+	d.Normalize();
+
+	const Math::Vector3 right(f.z, 0.0f, -f.x);
+	return std::atan2(right.Dot(d), f.Dot(d));
+}
+
+inline Math::Quaternion MakeYawLookRotation(const Math::Vector3& dir)
+{
+	constexpr float kEpsilon = 1e-5f;
+
+	Math::Vector3 d = dir;
+	d.y = 0.0f;
+	if (d.LengthSquared() <= kDirectionEpsilon) return Math::Quaternion::Identity;
+	d.Normalize();
+
+	const Math::Vector3 from = Math::Vector3::Forward;
+	const float dot = std::clamp(from.Dot(d), -1.0f, 1.0f);
+
+	if (dot > 1.0f - kEpsilon) return Math::Quaternion::Identity;
+
+	if (dot < -1.0f + kEpsilon) {
+		const float kPi = std::acos(-1.0f);
+		return Math::Quaternion::CreateFromAxisAngle(Math::Vector3::Up, kPi);
+	}
+
+	Math::Vector3 axis = from.Cross(d);
+	axis.Normalize();
+	const float angle = std::acos(dot);
+	return Math::Quaternion::CreateFromAxisAngle(axis, angle);
+}

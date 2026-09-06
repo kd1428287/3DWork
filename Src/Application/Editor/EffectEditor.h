@@ -72,8 +72,10 @@ public:
 	void Update();
 
 	// プレビュー中のGPUパーティクルを描画する(マップ配置分。ゲームカメラのシーンに合成される)
-	// ※3D描画パスの最後、半透明描画のタイミングで呼び出す事(KdGPUParticle::Drawと同じ制約)
-	void DrawPreviewParticles();
+	// passと一致するDrawPassのエフェクトだけが実際に描画される(EffectDispatcher::Draw()と同じ規約)
+	// ※3D描画パスの最後、DrawLit・DrawBloomそれぞれから、対応するpassで1回ずつ呼び出す事
+	//   (KdGPUParticle::Drawと同じ制約：半透明描画のタイミングであること)
+	void DrawPreviewParticles(ParticleDrawPass pass);
 
 	// 選択中の1エフェクトだけを、専用カメラでプレビュー専用のオフスクリーンバッファへ描画する
 	// ※3D描画パス側(メインシーンの描画・DrawPreviewParticles()とは別のタイミング)から
