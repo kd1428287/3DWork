@@ -62,6 +62,7 @@ namespace
 		player->AddComponent<VelocityComponent>(0.01f);
 		auto* collider = player->AddComponent<ColliderComponent>();
 		player->AddComponent<GroundSensorComponent>();
+		player->AddComponent<PlayerMovementAnimationComponent>();
 		player->AddComponent<FacingDirectionComponent>();
 
 		// 体幹管理用
@@ -101,7 +102,7 @@ namespace
 	{
 		auto* input = player->AddComponent<PlayerInputComponent>();
 		auto* move = player->AddComponent<MovementComponent>(walkSpeed);
-		player->AddComponent<PlayerMovementAnimationComponent>();
+	
 		move->SetMovementSource(input);
 	}
 }
@@ -202,12 +203,13 @@ GameObject* PlayerFactory::CreateWeapon(ObjectManager& objectManager, GameObject
 	// 付ける必要がある(TrailPolygonEffectComponent.h冒頭コメント参照)。
 	// 発生/停止のタイミングはPlayerStatusController::SetWeaponTrailEmitting()
 	// 経由でStateAttack側から制御する(SetWeaponHitBoxEnabledと同じ窓)。
-	weapon->AddComponent<PolygonRenderComponent>();
-	auto* trail = weapon->AddComponent<TrailPolygonComponent>("Asset/Textures/Game/Effect/Trail.png");
-	trail->StartEmit();
-	trail->SetPattern(KdTrailPolygon::Trail_Pattern::eBillboard);
-	//trail->SetPattern(KdTrailPolygon::Trail_Pattern::eVertices);
-	trail->SetBaseTip(weaponDefinition.hitBox.offset, Math::Vector3(0,0,2.f));
+	// 
+	//weapon->AddComponent<PolygonRenderComponent>();
+	//auto* trail = weapon->AddComponent<TrailPolygonComponent>("Asset/Textures/Game/Effect/Trail.png");
+	//trail->StartEmit();
+	//trail->SetPattern(KdTrailPolygon::Trail_Pattern::eBillboard);
+	////trail->SetPattern(KdTrailPolygon::Trail_Pattern::eVertices);
+	//trail->SetBaseTip(weaponDefinition.hitBox.offset, Math::Vector3(0,0,2.f));
 
 	return weapon;
 }

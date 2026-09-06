@@ -5,7 +5,6 @@
 
 void PlayerStatusController::HandleMovementInput(const PlayerInputComponent& input, float deltaTime)
 {
-	// 攻撃や回避中(None以外)は移動入力を無視する
 	if (GetCombatState() != CombatState::None) return;
 	const MovementState nextState = input.GetDesiredMovementState();
 
@@ -14,14 +13,15 @@ void PlayerStatusController::HandleMovementInput(const PlayerInputComponent& inp
 		ApplyMovementState(movementState_);
 	}
 
-	// 向き制御・アニメーション再生(Start/Loop/End、ロック時8方向、
-	// 非ロック時の入力方向追従、ターン)はすべてPlayerMovementAnimation
-	// Component側に委譲する。
+	if (facingDirectionComponent_ != nullptr) {
+		const bool shouldFaceMovement = !IsLockedOn() || movementState_ == MovementState::Run;
+		facingDirectionComponent_->SetUpdateEnabled(shouldFaceMovement);
+	}
+
 	if (movementAnimationComponent_ != nullptr) {
 		movementAnimationComponent_->Tick(deltaTime, movementState_, input.GetMoveDirection(), IsLockedOn());
 	}
 }
-
 void PlayerStatusController::HandleActionInput(PlayerInputComponent& input)
 {
 	// スタン中(Stagger)は一切の行動入力を受け付けない。

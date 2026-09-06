@@ -256,4 +256,4 @@ struct GuardMoveData
 	std::string animationName = "GhostSamurai_APose2DefenseL_Inplace";
 };
 
-constexpr int kMaxComboHits = 5;
+constexpr int kMaxComboHits = 6;

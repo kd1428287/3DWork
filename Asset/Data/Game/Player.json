@@ -53,8 +53,8 @@
 		"socketLocalPosition": [ 0, 0, 0.0 ],
 		"socketLocalEulerRotationDeg": [ 0.0, 0.0, 0.0 ],
 		"hitBox": {
-			"halfExtents": [ 0.3, 0.3, 2.25 ],
-			"offset": [ 0.0, 0.0, 0.75 ]
+			"halfExtents": [ 0.3, 0.3, 1.0 ],
+			"offset": [ 0.0, 0.0, -0.75 ]
 		}
 	}
 }

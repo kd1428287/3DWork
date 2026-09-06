@@ -9,8 +9,8 @@ ComboAttackTable CreateDebugComboAttackTable()
 
 	// 1段目: 素早い差し込み
 	table[0].windupDuration = 0.15f;
-	table[0].activeDuration = 0.15f;
-	table[0].recoveryDuration = 0.25f;
+	table[0].activeDuration = 0.35f;
+	table[0].recoveryDuration = 0.45f;
 	table[0].stepDistance = 2.0f;
 	table[0].stepDuration = 0.4f;
 	table[0].engageDistance = 1.2f; // 差し込み技なので間合いはやや近め
@@ -55,12 +55,7 @@ ComboAttackTable CreateDebugComboAttackTable()
 	table[3].blendDuration = 0.08f;
 	table[3].animationName = "GhostSamurai_APose_Attack02_4_Inplace";
 
-	// 5段目: フィニッシュ。recoveryAttackCancelStartをrecoveryDurationと
-	// 同じ値にすることで、コメント通り「recoveryDuration以上ならコンボ
-	// 不可の技になる」仕様を使い、5段目からは次のコンボへ継続できない
-	// ようにしている(自然に手数が打ち切られ、Noneへ戻ってcomboIndex_が
-	// 1段目にリセットされる)。ダメージ量等はAttackSourceComponent側の
-	// 管轄のためここでは扱わない。
+	// 5段目
 	table[4].windupDuration = 0.30f;
 	table[4].activeDuration = 0.25f;
 	table[4].recoveryDuration = 0.50f;
@@ -68,12 +63,20 @@ ComboAttackTable CreateDebugComboAttackTable()
 	table[4].stepDuration = 0.6f;
 	table[4].recoveryEvadeCancelStart = 0.30f;
 	table[4].recoveryAttackCancelStart = 0.50f;
-	table[4].blendDuration = 0.1f; // フィニッシュ技。次はNoneへ戻るだけなので通常寄りの値
-	// フィニッシュ技はルートモーション付きのクリップを使う想定。
-	// stepDistance/stepDirection/stepDuration/engageDistanceはuseRootMotion=true
-	// の間無視される(StateAttack::Update参照)。
+	table[4].blendDuration = 0.1f; 
 	table[4].useRootMotion = true;
 	table[4].animationName = "GhostSamurai_APose_Attack02_5_Inplace";
+
+	table[5].windupDuration = 0.30f;
+	table[5].activeDuration = 0.25f;
+	table[5].recoveryDuration = 0.50f;
+	table[5].stepDistance = 1.4f;
+	table[5].stepDuration = 0.6f;
+	table[5].recoveryEvadeCancelStart = 0.30f;
+	table[5].recoveryAttackCancelStart = 0.50f;
+	table[5].blendDuration = 0.1f;
+	table[5].useRootMotion = true;
+	table[5].animationName = "GhostSamurai_APose_Attack02_6_Inplace";
 
 	return table;
 }

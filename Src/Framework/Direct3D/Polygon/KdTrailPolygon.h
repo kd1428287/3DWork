@@ -31,7 +31,7 @@ public:
 	// パターンを設定
 	void SetPattern(Trail_Pattern pattern);
 
-	// 帯状ポリゴンの長さ(保持するポイント数の上限)を設定
+	// 帯状ポリゴンの長さ(保持するポイント数の上限)を設定7
 	void SetLength(UINT length);
 
 private:

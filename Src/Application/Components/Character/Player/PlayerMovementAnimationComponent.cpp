@@ -47,23 +47,14 @@ void PlayerMovementAnimationComponent::Tick(float deltaTime, MovementState state
 	if (hasDir) dir.Normalize();
 
 	if (state == MovementState::Run) {
-		if (stateChanged && wasStand) {
-			// ターン要否の判定(BeginTurnOrStart内のClassifyTurnDirection)は
-			// 「まだ向きを変える前」のtransform_->GetForward()を基準にする
-			// 必要があるため、ここでは先にFaceDirection()を呼ばない
-			// (先に呼ぶと現在の向き=入力方向になってしまい、常にNone判定に
-			//  なってしまう)。ターン不要な場合の向き合わせはBeginTurnOrStart
-			// 内部で行う。
-			BeginTurnOrStart(state, dir, /*allowTurn=*/!isLockedOn && hasDir);
-			return;
-		}
+		//if (stateChanged && wasStand) {
+		//	BeginTurnOrStart(state, dir, /*allowTurn=*/!isLockedOn && hasDir);
+		//	return;
+		//}
 
-		// 走行はロック中でも入力方向へ正対する(要件)。
-		if (hasDir) FaceDirection(dir);
+		if(hasDir)FaceDirection(dir);
 
 		if (stateChanged) {
-			// Walk(ロック8方向 or 非ロック前進)からRunへの切り替え:
-			// Start/Endを経由せず直接Loopへ
 			SwitchLoopRun();
 		}
 		return;
@@ -85,14 +76,12 @@ void PlayerMovementAnimationComponent::Tick(float deltaTime, MovementState state
 		}
 	}
 	else {
-		if (stateChanged && wasStand) {
-			// Runと同じ理由で、ターン判定より先にFaceDirectionを呼ばない
-			BeginTurnOrStart(state, dir, /*allowTurn=*/hasDir);
-			return;
-		}
+		//if (stateChanged && wasStand) {
+		//	BeginTurnOrStart(state, dir, /*allowTurn=*/hasDir);
+		//	return;
+		//}
 
-		// 非ロック中は入力方向へ向き直しながら前進する(常にForward1種)。
-		if (hasDir) FaceDirection(dir);
+		if (hasDir)FaceDirection(dir);
 
 		if (stateChanged || lockChanged) {
 			SwitchLoopWalkForward();

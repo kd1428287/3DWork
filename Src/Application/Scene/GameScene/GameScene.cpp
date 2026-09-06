@@ -68,7 +68,8 @@ void GameScene::Init()
 	def.name = "Warrock";
 	def.type = EnemyType::Warrock;
 	def.modelPath = "Asset/Models/Character/Warrock/Warrock.gltf";
-	def.modelScale = { 2.0f,2.0f,2.0f };
+	def.modelScale = { 1.5f,1.5f,1.5f };
+	def.modelScale = { 1.f,1.f,1.f };
 	def.aiData = CreateDebugWarrockAIData();
 	map.emplace("Warrock", def);
 	enemyFactory_ = std::make_unique<EnemyFactory>(map);
@@ -121,7 +122,7 @@ void GameScene::Init()
 	KdShaderManager::Instance().WorkAmbientController().SetheightFog({0.9f,0.9f,0.9f}, 10.f, -10.f, 100.f);
 	KdShaderManager::Instance().m_postProcessShader.SetExposure(1.05f);
 	KdShaderManager::Instance().m_postProcessShader.SetContrast(1.25f);       // コントラスト強め
-	KdShaderManager::Instance().m_postProcessShader.SetSaturation(0.10f);     // 彩度低め
+	KdShaderManager::Instance().m_postProcessShader.SetSaturation(0.90f);     // 彩度低め
 	KdShaderManager::Instance().m_postProcessShader.SetTemperature(-0.15f);   // ★わずかに寒色（青み）を寄せて鉄や血の冷たさを演出
 	KdShaderManager::Instance().m_postProcessShader.SetTint(-0.05f);          // ★ごくわずかに緑に寄せて、古びた日本的・和風の空気感を作る;;;
 	
