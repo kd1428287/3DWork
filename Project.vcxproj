@@ -370,6 +370,10 @@
     <ClInclude Include="Src\Application\Effect\EffectParams.h" />
     <ClInclude Include="Src\Application\Effect\ITextureProvider.h" />
     <ClInclude Include="Src\Application\Effect\KdAssetsTextureProvider.h" />
+    <ClInclude Include="Src\Application\Effect\SlashTrailDispatcher.h" />
+    <ClInclude Include="Src\Application\Effect\SlashTrailEvents.h" />
+    <ClInclude Include="Src\Application\Effect\SlashTrailInstance.h" />
+    <ClInclude Include="Src\Application\Effect\SlashTrailParams.h" />
     <ClInclude Include="Src\Application\Engine\EventBus\EventBus.h" />
     <ClInclude Include="Src\Application\Engine\EventBus\Event\Event.h" />
     <ClInclude Include="Src\Application\Engine\SystemManager\SystemManager.h" />
@@ -471,6 +475,8 @@
     <ClCompile Include="Src\Application\Effect\EffectInstance.cpp" />
     <ClCompile Include="Src\Application\Effect\EffectParams.cpp" />
     <ClCompile Include="Src\Application\Effect\KdAssetsTextureProvider.cpp" />
+    <ClCompile Include="Src\Application\Effect\SlashTrailDispatcher.cpp" />
+    <ClCompile Include="Src\Application\Effect\SlashTrailInstance.cpp" />
     <ClCompile Include="Src\Application\Factories\Common\CameraFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\Game\EnemyFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\Game\PlayerDefinitionLoader.cpp" />

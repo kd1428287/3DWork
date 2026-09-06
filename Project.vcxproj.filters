@@ -735,6 +735,18 @@
     <ClInclude Include="Src\Application\Components\Character\Player\PlayerMovementAnimationComponent.h">
       <Filter>Src\Application\Components\Character\Player</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Effect\SlashTrailInstance.h">
+      <Filter>Src\Application\Effect</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Effect\SlashTrailParams.h">
+      <Filter>Src\Application\Effect</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Effect\SlashTrailEvents.h">
+      <Filter>Src\Application\Effect</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Effect\SlashTrailDispatcher.h">
+      <Filter>Src\Application\Effect</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -976,6 +988,12 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Components\Character\Player\PlayerMovementAnimationComponent.cpp">
       <Filter>Src\Application\Components\Character\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Effect\SlashTrailInstance.cpp">
+      <Filter>Src\Application\Effect</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Effect\SlashTrailDispatcher.cpp">
+      <Filter>Src\Application\Effect</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
