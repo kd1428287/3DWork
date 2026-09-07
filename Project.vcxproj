@@ -300,7 +300,6 @@
     <ClInclude Include="Src\Application\Components\Character\Data\IHitReactionQuery.h" />
     <ClInclude Include="Src\Application\Components\Character\Data\PostureComponent.h" />
     <ClInclude Include="Src\Application\Components\Character\Enemy\Brute\BruteActions.h" />
-    <ClInclude Include="Src\Application\Components\Character\Enemy\Brute\BruteAIData.h" />
     <ClInclude Include="Src\Application\Components\Character\Enemy\Brute\BruteBehavior.h" />
     <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyActions.h" />
     <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyAIController.h" />
@@ -331,7 +330,7 @@
     <ClInclude Include="Src\Application\Components\ComponentBase.h" />
     <ClInclude Include="Src\Application\Components\ComponentTypeID.h" />
     <ClInclude Include="Src\Application\Components\Effect\SlowEffectComponent.h" />
-    <ClInclude Include="Src\Application\Components\Effect\TrailPolygonComponent.h" />
+    <ClInclude Include="Src\Application\Components\Effect\SlashTrailComponent.h" />
     <ClInclude Include="Src\Application\Components\Movement\FacingDirectionComponent.h" />
     <ClInclude Include="Src\Application\Components\Movement\IMovementSource.h" />
     <ClInclude Include="Src\Application\Components\Movement\MovementComponent.h" />
@@ -424,6 +423,7 @@
     <ClInclude Include="src\Framework\Direct3D\KdTexture.h" />
     <ClInclude Include="Src\Framework\Math\KdUVAnimation.h" />
     <ClInclude Include="Src\Framework\Shader\GPUParticle\KdGPUParticle.h" />
+    <ClInclude Include="Src\Framework\Shader\GPUParticle\SlashTrailRenderer.h" />
     <ClInclude Include="Src\Framework\Shader\KdAmbientController.h" />
     <ClInclude Include="Src\Framework\Shader\KdRenderTargetChange.h" />
     <ClInclude Include="Src\Framework\Shader\StandardShader\KdStandardShader.h" />
@@ -513,6 +513,7 @@
     <ClCompile Include="src\Framework\Direct3D\KdTexture.cpp" />
     <ClCompile Include="Src\Framework\Math\KdUVAnimation.cpp" />
     <ClCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle.cpp" />
+    <ClCompile Include="Src\Framework\Shader\GPUParticle\SlashTrailRenderer.cpp" />
     <ClCompile Include="Src\Framework\Shader\KdAmbientController.cpp" />
     <ClCompile Include="Src\Framework\Shader\KdRenderTargetChange.cpp" />
     <ClCompile Include="Src\Framework\Shader\StandardShader\KdStandardShader.cpp" />
@@ -558,6 +559,9 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle_VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\GPUParticle\SlashTrail_VS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_Blur.hlsl">

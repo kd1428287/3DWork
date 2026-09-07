@@ -1,22 +1,18 @@
 ﻿#pragma once
 
 #include "EffectParams.h"	// KdParticleBlendMode / KdParticleDrawPass / KdHasDrawPassFlag を流用する為
+#include "../../Framework/Shader/GPUParticle/SlashTrailRenderer.h"	// SlashTrailVertex(=Vertex)の実体を流用する為
 #include <string>
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // トレイル(斬撃の軌跡)の描画用1頂点
 // ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
-// GPU側実装時、この配列をそのまま動的頂点バッファへコピーする想定
-// (Position/UV/Colorのみを持つ、ごく単純な頂点レイアウト。
-//  GPUパーティクルのようにSV_VertexIDから組み立てるのではなく、
-//  普通の頂点バッファ+InputLayoutで描画する前提)
+// 実体はKdSlashTrailRenderer::Vertex(低レイヤー側)で定義されている。
+// KdGPUParticle::ParticleがKdGPUParticle.h側で定義されているのと同じ考え方で、
+// GPU資源を扱うクラスに実際の頂点レイアウトの定義を置き、Effect側はそれを
+// そのまま使う(エイリアスを貼るだけ)にしてある
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-struct SlashTrailVertex
-{
-	DirectX::SimpleMath::Vector3	Position;
-	DirectX::SimpleMath::Vector2	UV;
-	DirectX::SimpleMath::Vector4	Color;	// rgb + フェード込みのアルファ
-};
+using SlashTrailVertex = SlashTrailRenderer::Vertex;
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 記録された1サンプル(剣のTip/Base座標のペア)

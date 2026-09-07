@@ -62,7 +62,7 @@ void GameScene::Init()
 	std::unordered_map<std::string, EnemyDefinition> map;
 	EnemyDefinition def;
 	def.name = "Brute";
-	def.aiData = CreateDebugBruteAIData();
+	//def.aiData = CreateDebugBruteAIData();
 	map.emplace("Brute", def);
 	def = {};
 	def.name = "Warrock";

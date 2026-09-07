@@ -156,6 +156,12 @@ struct AttackMoveData
 	float engageDistance = 1.2f;
 	float recoveryEvadeCancelStart = 0.15f;
 	float recoveryAttackCancelStart = 0.2f;
+
+	// Recovery終了(StateNone復帰)後も、この秒数まではcomboIndex_を
+	// 維持し、次の攻撃入力をコンボ継続として扱う。0の場合は従来通り
+	// None復帰と同時にコンボが途切れる。
+	float comboWindowAfterRecovery = 0.0f;
+
 	Math::Vector3 stepDirection = Math::Vector3::Zero;
 	float blendDuration = 0.1f;
 	bool useRootMotion = false;

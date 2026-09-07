@@ -615,7 +615,7 @@
     <ClInclude Include="Src\Application\Components\Tags\IModelRenderSource.h">
       <Filter>Src\Application\Components\Tags</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\Effect\TrailPolygonComponent.h">
+    <ClInclude Include="Src\Application\Components\Effect\SlashTrailComponent.h">
       <Filter>Src\Application\Components\Effect</Filter>
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Character\BehaviorTree\BTComposite.h">
@@ -637,9 +637,6 @@
       <Filter>Src\Application\Components\Character\Enemy</Filter>
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Character\Enemy\Brute\BruteActions.h">
-      <Filter>Src\Application\Components\Character\Enemy\Brute</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\Character\Enemy\Brute\BruteAIData.h">
       <Filter>Src\Application\Components\Character\Enemy\Brute</Filter>
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Character\Enemy\EnemyActions.h">
@@ -746,6 +743,9 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Effect\SlashTrailDispatcher.h">
       <Filter>Src\Application\Effect</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Framework\Shader\GPUParticle\SlashTrailRenderer.h">
+      <Filter>Src\Framework\Shader\GPUParticle</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -995,6 +995,9 @@
     <ClCompile Include="Src\Application\Effect\SlashTrailDispatcher.cpp">
       <Filter>Src\Application\Effect</Filter>
     </ClCompile>
+    <ClCompile Include="Src\Framework\Shader\GPUParticle\SlashTrailRenderer.cpp">
+      <Filter>Src\Framework\Shader\GPUParticle</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Src\Framework\Shader\inc_KdCommon.hlsli">
@@ -1073,6 +1076,9 @@
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_ColorGrade.hlsl">
       <Filter>Src\Framework\Shader\PostProcessShader</Filter>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\GPUParticle\SlashTrail_VS.hlsl">
+      <Filter>Src\Framework\Shader\GPUParticle</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

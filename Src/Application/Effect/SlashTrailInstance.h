@@ -3,6 +3,7 @@
 #include "SlashTrailParams.h"
 #include <deque>
 #include <vector>
+#include <memory>
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // トレイル(斬撃の軌跡)1本ぶんの実行時状態と、記録/更新ロジックを一元管理するクラス
@@ -13,10 +14,10 @@
 // 呼び出し側(ディスパッチャー相当)がInstanceKeyごとに新規生成して使う想定。
 //
 // 【対象範囲】
-//	CPU側のロジック(状態遷移・サンプル記録・間引き・頂点データ構築)のみ。
-//	GPU側(動的頂点バッファの生成・Map/Unmap・シェーダーのセット・実際のDrawCall)は
-//	未実装。Draw()は「描画できる頂点が揃っているか」の判定までを行い、
-//	実際の描画は行わない(呼び出し箇所にTODOコメントで実装内容を明記してある)。
+//	CPU側のロジック(状態遷移・サンプル記録・間引き・頂点データ構築)に加え、
+//	GPU側の描画(KdSlashTrailRenderer経由の動的頂点バッファ描画)まで含む。
+//	ピクセルシェーダーはKdGPUParticle_PS.hlslをそのまま流用しており、
+//	頂点シェーダー(KdSlashTrail_VS.hlsl)のみ新規に用意した。
 //
 // 【状態遷移】
 //   Idle(samples_が空・isRecording_==false)
@@ -54,14 +55,18 @@ public:
 	SlashTrailInstance() {}
 	~SlashTrailInstance() {}
 
-	// コピー禁止(将来GPU側の資源(動的頂点バッファ等)を持つ想定の為、EffectInstanceと同様にしておく)
+	// コピー禁止(GPU描画用リソース(KdSlashTrailRenderer)をshared_ptrで持つ為。
+	// EffectInstanceがKdGPUParticleをshared_ptrで持つのと同じ理由)
 	SlashTrailInstance(const SlashTrailInstance&) = delete;
 	SlashTrailInstance& operator=(const SlashTrailInstance&) = delete;
 
-	// ムーブは許可
+	// ムーブは許可(shared_ptrなので安全にムーブできる。生ポインタを直接持たせていない為、
+	// デフォルトのムーブでも二重解放は起きない)
 	SlashTrailInstance(SlashTrailInstance&&) = default;
 	SlashTrailInstance& operator=(SlashTrailInstance&&) = default;
 
+	// パラメータを保持し、GPU描画用リソース(KdSlashTrailRenderer)を生成する。
+	// 頂点バッファの容量はparams.MaxSamples * 2(三角形ストリップ用)で確保される
 	bool Init(const SlashTrailParams& params);
 
 	// 記録開始(攻撃開始時に呼ぶ)。既存サンプルは破棄してゼロから記録し直す
@@ -84,7 +89,6 @@ public:
 	void Update(float deltaTime);
 
 	// paramsのDrawPassFlagsにpassが含まれる時だけ描画する(EffectInstance::Draw(pass)と同じ規約)
-	//	※GPU側は未実装。現状は「描画できる頂点が揃っているか」の判定のみ行う
 	void Draw(ParticleDrawPass pass) const;
 
 	bool IsRecording() const { return isRecording_; }
@@ -122,4 +126,8 @@ private:
 
 	// Update()のたびに再構築される、Draw用のCPU側頂点配列
 	std::vector<SlashTrailVertex>	vertices_;
+
+	// GPU描画用リソース(頂点バッファ・専用VS・KdGPUParticle_PS流用のPS)。
+	// shared_ptrで持つ理由はコピー禁止/ムーブ許可の説明を参照
+	std::shared_ptr<SlashTrailRenderer>	renderer_;
 };

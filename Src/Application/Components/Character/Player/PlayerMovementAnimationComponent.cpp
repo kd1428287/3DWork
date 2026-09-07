@@ -47,13 +47,6 @@ void PlayerMovementAnimationComponent::Tick(float deltaTime, MovementState state
 	if (hasDir) dir.Normalize();
 
 	if (state == MovementState::Run) {
-		//if (stateChanged && wasStand) {
-		//	BeginTurnOrStart(state, dir, /*allowTurn=*/!isLockedOn && hasDir);
-		//	return;
-		//}
-
-		if(hasDir)FaceDirection(dir);
-
 		if (stateChanged) {
 			SwitchLoopRun();
 		}
@@ -76,13 +69,6 @@ void PlayerMovementAnimationComponent::Tick(float deltaTime, MovementState state
 		}
 	}
 	else {
-		//if (stateChanged && wasStand) {
-		//	BeginTurnOrStart(state, dir, /*allowTurn=*/hasDir);
-		//	return;
-		//}
-
-		if (hasDir)FaceDirection(dir);
-
 		if (stateChanged || lockChanged) {
 			SwitchLoopWalkForward();
 		}

@@ -16,6 +16,7 @@ ComboAttackTable CreateDebugComboAttackTable()
 	table[0].engageDistance = 1.2f; // 差し込み技なので間合いはやや近め
 	table[0].recoveryEvadeCancelStart = 0.10f;
 	table[0].recoveryAttackCancelStart = 0.12f;
+	table[0].comboWindowAfterRecovery = 0.35f; // Recovery終了後もこの秒数はコンボ継続を受け付ける
 	table[0].blendDuration = 0.12f; // Noneからの遷移なので通常よりやや長め
 	table[0].animationName = "GhostSamurai_APose_Attack02_1_ALL_Inplace";
 
@@ -28,6 +29,7 @@ ComboAttackTable CreateDebugComboAttackTable()
 	table[1].engageDistance = 1.2f;
 	table[1].recoveryEvadeCancelStart = 0.15f;
 	table[1].recoveryAttackCancelStart = 0.18f;
+	table[1].comboWindowAfterRecovery = 0.35f;
 	table[1].blendDuration = 0.08f; // 前段からの継続。短めにして繋ぎの唐突さを緩和
 	table[1].animationName = "GhostSamurai_APose_Attack02_2_Inplace";
 
@@ -40,6 +42,7 @@ ComboAttackTable CreateDebugComboAttackTable()
 	table[2].engageDistance = 1.3f;
 	table[2].recoveryEvadeCancelStart = 0.16f;
 	table[2].recoveryAttackCancelStart = 0.20f;
+	table[2].comboWindowAfterRecovery = 0.30f;
 	table[2].blendDuration = 0.08f;
 	table[2].animationName = "GhostSamurai_APose_Attack02_3_Inplace";
 
@@ -52,6 +55,7 @@ ComboAttackTable CreateDebugComboAttackTable()
 	table[3].engageDistance = 1.3f;
 	table[3].recoveryEvadeCancelStart = 0.18f;
 	table[3].recoveryAttackCancelStart = 0.22f;
+	table[3].comboWindowAfterRecovery = 0.25f;
 	table[3].blendDuration = 0.08f;
 	table[3].animationName = "GhostSamurai_APose_Attack02_4_Inplace";
 
@@ -63,7 +67,9 @@ ComboAttackTable CreateDebugComboAttackTable()
 	table[4].stepDuration = 0.6f;
 	table[4].recoveryEvadeCancelStart = 0.30f;
 	table[4].recoveryAttackCancelStart = 0.50f;
-	table[4].blendDuration = 0.1f; 
+	// comboWindowAfterRecoveryはデフォルト(0.0f)のまま。
+	// 5,6段目はコンボの締めの技として、Recovery終了後の継続受付は行わない想定。
+	table[4].blendDuration = 0.1f;
 	table[4].useRootMotion = true;
 	table[4].animationName = "GhostSamurai_APose_Attack02_5_Inplace";
 
@@ -90,10 +96,10 @@ EvadeMoveData CreateDebugEvadeData()
 	data.evadeDistance = 3.0f;
 	data.useRootMotion = true;
 
-	data.animationNameForward	= "GhostSamurai_APose_Slide_F_Inplace";
-	data.animationNameBackward	= "GhostSamurai_APose_Slide_B_Inplace";
-	data.animationNameLeft		= "GhostSamurai_APose_Slide_L_Inplace";
-	data.animationNameRight		= "GhostSamurai_APose_Slide_R_Inplace";
+	data.animationNameForward = "GhostSamurai_APose_Slide_F_Inplace";
+	data.animationNameBackward = "GhostSamurai_APose_Slide_B_Inplace";
+	data.animationNameLeft = "GhostSamurai_APose_Slide_L_Inplace";
+	data.animationNameRight = "GhostSamurai_APose_Slide_R_Inplace";
 
 	return data;
 }

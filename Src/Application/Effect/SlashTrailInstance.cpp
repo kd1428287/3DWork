@@ -4,7 +4,7 @@
 #include <algorithm>
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 初期化：パラメータを保持し、状態を初期化する(GPU側の資源確保は未実装)
+// 初期化：パラメータを保持し、GPU描画用リソース(KdSlashTrailRenderer)を生成する
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 bool SlashTrailInstance::Init(const SlashTrailParams& params)
 {
@@ -15,6 +15,14 @@ bool SlashTrailInstance::Init(const SlashTrailParams& params)
 
 	isRecording_ = false;
 	hasLastRecordedTip_ = false;
+
+	// 頂点バッファはMaxSamples * 2(三角形ストリップ用に2頂点/サンプル)ぶん確保しておく
+	renderer_ = std::make_shared<SlashTrailRenderer>();
+	if (!renderer_->Init(params_.MaxSamples * 2))
+	{
+		renderer_.reset();
+		return false;
+	}
 
 	return true;
 }
@@ -84,26 +92,14 @@ void SlashTrailInstance::Update(float deltaTime)
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 描画：DrawPassFlagsにpassが含まれ、かつ描画できるだけの頂点が揃っている時だけ描画する
-//	※GPU側(動的頂点バッファへのMap/Unmap、シェーダーのセット、DrawCall)は未実装。
-//	  実装する際は、この時点のvertices_(GetVertices())をそのままコピーすれば良い
+// 描画：DrawPassFlagsにpassが含まれる時だけ、KdSlashTrailRendererへ委譲して描画する
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void SlashTrailInstance::Draw(ParticleDrawPass pass) const
 {
 	if (!KdHasDrawPassFlag(params_.DrawPassFlags, pass)) { return; }
+	if (!renderer_) { return; }
 
-	// 三角形ストリップを組むには最低2サンプル(4頂点)必要
-	if (vertices_.size() < 4) { return; }
-
-	// TODO: GPU側実装
-	//  ・動的頂点バッファ(D3D11_USAGE_DYNAMIC + D3D11_CPU_ACCESS_WRITE)をMap(WRITE_DISCARD)し、
-	//    vertices_(GetVertices())をコピーしてUnmap
-	//  ・専用の頂点シェーダー(Position/UV/ColorのInputLayoutを受け取り、
-	//    ワールド×ビュー×プロジェクション変換するだけの単純なもの)をセット
-	//  ・ピクセルシェーダーはKdGPUParticle_PS.hlslの流用を検討(中身次第)
-	//  ・shaderMgr.ChangeBlendState()をparams_.BlendModeに応じて切り替え(KdGPUParticle::Drawと同じ要領)
-	//  ・DevCon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP)
-	//  ・DevCon->Draw((UINT)vertices_.size(), 0)
+	renderer_->Draw(vertices_, params_.BlendMode);
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////

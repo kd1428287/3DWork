@@ -119,10 +119,9 @@ public:
 		if (!CanStartAttack()) return false;
 
 		currentAttack_ = comboAttacks_[comboIndex_];
-		comboIndex_ = (comboIndex_ + 1) % kMaxComboHits; // 5段目の次は1段目へ折り返す
+		comboIndex_ = (comboIndex_ + 1) % kMaxComboHits; // 最終段の次は1段目へ折り返す(kMaxComboHits段)
 
-		stateMachine_.ForceTransitionTo(this, &stateAttack_);
-		OnStateChanged(&stateAttack_);
+		ForceTransitionTo(&stateAttack_);
 		return true;
 	}
 
@@ -142,8 +141,7 @@ public:
 
 	void ApplyStagger(bool isLarge, float duration) {
 		stateStagger_.Setup(isLarge, duration);
-		stateMachine_.ForceTransitionTo(this, &stateStagger_);
-		OnStateChanged(&stateStagger_);
+		ForceTransitionTo(&stateStagger_);
 	}
 
 	void EnterStagger(bool isLarge, float duration) override { ApplyStagger(isLarge, duration); }
@@ -248,39 +246,74 @@ public:
 			HandleActionInput(*inputComponent_);
 		}
 
-		// ロック中は、移動(None状態)中であっても向きをロック対象方向へ固定する。
-		// ただしRun中は要件によりロック有無に関わらず入力方向へ正対するため、
-		// UpdateLockOnFacing側でRunをスキップする。
 		UpdateLockOnFacing();
-
 		UpdateMovementState(deltaTime);
+
+		// Recovery自然終了後のコンボ継続受付ウィンドウを消化する。
+		// (Attack中やウィンドウ非該当の遷移ではOnStateChanged側で既に
+		//  0にしているため、ここでは単純にカウントダウンするだけでよい)
+		if (comboWindowRemaining_ > 0.0f) {
+			comboWindowRemaining_ -= deltaTime;
+			if (comboWindowRemaining_ <= 0.0f) {
+				comboWindowRemaining_ = 0.0f;
+				comboIndex_ = 0;
+			}
+		}
 
 		// 戦闘状態の更新は共通StateMachineに丸投げ
 		stateMachine_.Update(this, deltaTime);
-
-		// ルートモーションの反映は、同じGameObjectに付くRootMotionApplier
-		// Component側が自分のUpdate()で毎フレーム自律的に行う。PlayerFactory
-		// 側でModelAnimatorComponent/TransformComponentと合わせてこの
-		// コンポーネント、およびPlayerMovementAnimationComponentを付けておくこと。
 	}
 
 private:
+	// 通常の(失敗しうる)遷移。prevStateをOnStateChanged側で参照できるよう、
+	// 遷移前にCurrent()を取得してから渡す。
 	void TransitionTo(IPlayerState* nextState) {
+		IPlayerState* prevState = stateMachine_.Current();
 		if (stateMachine_.TransitionTo(this, nextState)) {
-			OnStateChanged(nextState);
+			OnStateChanged(prevState, nextState);
 		}
 	}
 
-	void OnStateChanged(IPlayerState* nextState) {
+	// 強制(必ず成功する)遷移。TryStartAttack/ApplyStaggerのように
+	// CanStartXxx()を独自に判定済みで、StateMachine側の可否判定を
+	// バイパスしたい場合に使う。
+	void ForceTransitionTo(IPlayerState* nextState) {
+		IPlayerState* prevState = stateMachine_.Current();
+		stateMachine_.ForceTransitionTo(this, nextState);
+		OnStateChanged(prevState, nextState);
+	}
+
+	void OnStateChanged(IPlayerState* prevState, IPlayerState* nextState) {
 		if (movementComponent_) {
 			movementComponent_->SetEnabled(nextState == &stateNone_);
 		}
 		if (facingDirectionComponent_) {
 			facingDirectionComponent_->SetUpdateEnabled(nextState == &stateNone_);
 		}
-		if (nextState != &stateAttack_) {
-			comboIndex_ = 0;
+
+		if (nextState == &stateAttack_) {
+			// 新しい攻撃を開始した時点で、Recovery後のコンボ継続受付
+			// ウィンドウはもう不要(comboIndex_自体はTryStartAttack側で
+			// 既に進めている)。
+			comboWindowRemaining_ = 0.0f;
+			return;
 		}
+
+		if (prevState == &stateAttack_ && nextState == &stateNone_) {
+			// AttackのRecoveryが(中断されずに)自然終了してNoneへ戻った
+			// 場合のみ、currentAttack_.comboWindowAfterRecovery秒だけ
+			// comboIndex_を維持し、次の攻撃入力をコンボ継続として扱う。
+			comboWindowRemaining_ = currentAttack_.comboWindowAfterRecovery;
+			if (comboWindowRemaining_ <= 0.0f) {
+				comboIndex_ = 0;
+			}
+			return;
+		}
+
+		// Evade/Guard/Staggerへの割り込みなど、それ以外の遷移では
+		// コンボ継続を認めず即座に打ち切る。
+		comboIndex_ = 0;
+		comboWindowRemaining_ = 0.0f;
 	}
 
 	void HandleMovementInput(const PlayerInputComponent& input, float deltaTime);
@@ -304,24 +337,14 @@ private:
 		transform_->SetRotation(Math::Quaternion::CreateFromAxisAngle(Math::Vector3::Up, yaw));
 	}
 
-	// ロック中、移動(CombatState::None)中でも向きをロック対象へ固定する。
-	// 【変更】非ロック中のWalk/Runの向き制御(入力方向への追従、ターン)は
-	// PlayerMovementAnimationComponent側(FaceDirection/BeginTurnOrStart)へ
-	// 完全に移管したため、FacingDirectionComponentの自動追従はここでは
-	// 常に無効化しておく。有効なままにしていると、PlayerMovementAnimation
-	// Componentが向きを制御する前に(あるいは同じフレーム中に)
-	// FacingDirectionComponent自身が移動方向へtransform_を回転させてしまい、
-	// ClassifyTurnDirectionが「向きを変える前の状態」を参照できず常に
-	// TurnDirection::Noneと判定される不具合の原因になっていた。
-	//
-	// 【要件】走行(Run)はロック有無に関わらず常に入力方向へ正対するため、
-	// ここでは何もしない(PlayerMovementAnimationComponent::Tick側が処理)。
+	// ロック中、移動中でも向きをロック対象へ固定する。
 	void UpdateLockOnFacing() {
 		if (facingDirectionComponent_ == nullptr) return;
 		if (GetCombatState() != CombatState::None) return;
 
-		facingDirectionComponent_->SetUpdateEnabled(false);
+		facingDirectionComponent_->SetUpdateEnabled(true);
 
+		// 走行中は方向ロック解除
 		if (movementState_ == MovementState::Run) return;
 
 		const bool lockedOn = lockOnComponent_ != nullptr && lockOnComponent_->IsLockedOn();
@@ -366,6 +389,11 @@ private:
 	GuardMoveData baseGuardData_;
 
 	int comboIndex_ = 0;
+
+	// Recovery自然終了後、この秒数が残っている間はNone状態でも
+	// comboIndex_を維持する(OnStateChangedで設定、Update()で消化)。
+	float comboWindowRemaining_ = 0.0f;
+
 	ComboAttackTable comboAttacks_;
 
 	// --- Stateインスタンス (メモリ断片化を防ぐため実体をメンバで持つ) ---
