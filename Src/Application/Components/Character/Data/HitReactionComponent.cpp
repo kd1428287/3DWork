@@ -88,7 +88,7 @@ void HitReactionComponent::OnCollisionEnter(const CollisionSystem::CollisionEnte
 		if (transform_ != nullptr) {
 			if (SceneContext* context = GetOwner()->GetContext()) {
 				if (context->eventBus != nullptr) {
-					PublishGenericEffect(*context->eventBus, "BloodSplatter", transform_->GetPosition());
+					SpawnDamageEffect(e.selfObject, e.otherObject);
 				}
 			}
 		}
@@ -139,4 +139,23 @@ void HitReactionComponent::SpawnWeaponClashEffect(GameObject* attackerWeaponObj,
 
 	PublishWeaponClashEffect(*context->eventBus, clashPos,
 		myWeaponTransform->GetForward(), attackerWeaponTransform->GetForward(), isParry);
+}
+
+void HitReactionComponent::SpawnDamageEffect(GameObject* self, GameObject* attackerWeaponObj)
+{
+	if (attackerWeaponObj == nullptr) return;
+
+	TransformComponent* attackerWeaponTransform = attackerWeaponObj->GetComponent<TransformComponent>();
+	if (attackerWeaponTransform == nullptr) return;
+
+	TransformComponent* myTransform = self->GetComponent<TransformComponent>();
+	if (myTransform == nullptr) return;
+
+	SceneContext* context = GetOwner()->GetContext();
+	if (context == nullptr || context->eventBus == nullptr) return;
+
+	const Math::Vector3 clashPos =
+		(attackerWeaponTransform->GetPosition() + myTransform->GetPosition()) * 0.5f;
+
+	PublishGenericEffect(*context->eventBus, "BloodSplatter", clashPos);
 }

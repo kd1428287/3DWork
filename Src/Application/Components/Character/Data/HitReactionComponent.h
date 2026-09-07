@@ -29,6 +29,7 @@ public:
 private:
 	void OnCollisionEnter(const CollisionSystem::CollisionEnterEvent& e);
 	void SpawnWeaponClashEffect(GameObject* attackerWeaponObj, bool isParry);
+	void SpawnDamageEffect(GameObject* self,GameObject* attackerWeaponObj);
 
 	Math::Vector3 ComputeKnockbackDirection(GameObject* attacker) const;
 
@@ -38,7 +39,7 @@ private:
 	HealthComponent* healthComponent_ = nullptr;
 	VelocityComponent* velocityComponent_ = nullptr;
 	TransformComponent* transform_ = nullptr;
-
+	
 	// 鍔迫り合いエフェクト発生元として使う、自分の武器への弱参照。
 	Handle<ColliderComponent> weaponCollider_;
 
