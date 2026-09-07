@@ -62,15 +62,15 @@ void StateAttack::Update(PlayerStatusController* controller, float deltaTime) {
 		if (!data.useRootMotion) {
 			controller->RequestStepMoveTowardsTarget(data.stepDirection, data.stepDistance, data.engageDistance, data.stepDuration);
 		}
-		controller->SetWeaponHitBoxEnabled(true); // 攻撃判定が実際に発生する一瞬だけ有効化
-		controller->SetWeaponTrailEmitting(true); // 武器の軌跡エフェクトもHitBoxと同じ窓で記録開始
+		controller->SetWeaponHitBoxEnabled(data.weaponSlots, true); // 攻撃判定が実際に発生する一瞬だけ有効化
+		controller->SetWeaponTrailEmitting(data.weaponSlots, true); // 武器の軌跡エフェクトもHitBoxと同じ窓で記録開始
 		KdDebugGUI::Instance().AddLog("\nAttackActive");
 	}
 	else if (phase_ == CombatState::AttackActive && elapsed_ >= data.activeDuration) {
 		phase_ = CombatState::AttackRecovery;
 		elapsed_ = 0.0f;
-		controller->SetWeaponHitBoxEnabled(false); // 判定の発生窓を閉じる
-		controller->SetWeaponTrailEmitting(false); // 軌跡エフェクトの記録も停止(既に生成済みの頂点はStopEmit後も自然に流れて消える)
+		controller->SetWeaponHitBoxEnabled(data.weaponSlots, false); // 判定の発生窓を閉じる
+		controller->SetWeaponTrailEmitting(data.weaponSlots, false); // 軌跡エフェクトの記録も停止(既に生成済みの頂点はStopEmit後も自然に流れて消える)
 		KdDebugGUI::Instance().AddLog("\nAttackRecovery");
 	}
 	else if (phase_ == CombatState::AttackRecovery && elapsed_ >= data.recoveryDuration) {
@@ -85,16 +85,18 @@ void StateAttack::Exit(PlayerStatusController* controller) {
 	// Exitで必ず後始末する(Evadeと同じ考え方)。
 	controller->CancelStepMove();
 
+	const auto& data = controller->GetCurrentAttackData();
+
 	// AttackActive中に割り込まれた場合、HitBoxが有効なまま次のStateへ
 	// 遷移してしまうと、以後の状態(Stagger中など)でも攻撃判定が
 	// 生き続けてしまう。通常のUpdate側の遷移(Active→Recovery)で
 	// 既に無効化済みのケースがほとんどだが、その経路を通らない
 	// 中断にも安全に対応できるよう、Exitで無条件に無効化しておく。
-	controller->SetWeaponHitBoxEnabled(false);
+	controller->SetWeaponHitBoxEnabled(data.weaponSlots, false);
 
 	// HitBoxと同じ理由で、AttackActive中に割り込まれた場合でも
 	// トレイルの記録が停止せずに残ってしまわないよう、無条件で止める。
-	controller->SetWeaponTrailEmitting(false);
+	controller->SetWeaponTrailEmitting(data.weaponSlots, false);
 }
 
 bool StateAttack::CanStartEvade(const PlayerStatusController* controller) const {

@@ -3,6 +3,7 @@
 #include <array>
 #include <cmath>
 #include <string>
+#include <vector>
 #include "PlayerCombatTypes.h"
 #include "PlayerCombatDataTable.h"
 #include "PlayerInputComponent.h"
@@ -14,9 +15,7 @@
 #include "PlayerState.h"
 #include "../StateMachine/StateMachine.h"
 #include "../../Animation/ModelAnimatorComponent.h"
-#include "../../Collision/ColliderComponent.h"
-#include "../../Collision/AttackSourceComponent.h"
-#include "../../Effect/TrailPolygonComponent.h" 
+#include "../../Combat/WeaponSetComponent.h"
 #include "../../../Core/Handle.h"
 #include "../Data/IHitReactionQuery.h"
 #include "../Data/HitReactionComponent.h"
@@ -35,6 +34,7 @@ public:
 		facingDirectionComponent_ = GetOwner()->GetComponent<FacingDirectionComponent>();
 		lockOnComponent_ = GetOwner()->GetComponent<PlayerLockOnComponent>(); // ロックオン対象の選定/保持を担当する兄弟コンポーネント
 		movementAnimationComponent_ = GetOwner()->GetComponent<PlayerMovementAnimationComponent>(); // Walk/Runの向き制御・アニメーション再生を担当する兄弟コンポーネント
+		weaponSet_ = GetOwner()->GetComponent<WeaponSetComponent>(); // 武器/攻撃部位の制御を担当する兄弟コンポーネント(Enemyとも共有する汎用実装)
 
 		// コンボ各段のデータ(タイミング・踏み込み量等)をまとめて読み込む。
 		comboAttacks_ = CreateDebugComboAttackTable();
@@ -51,7 +51,15 @@ public:
 		// 答えられるよう、自分自身をIHitReactionQueryとして登録するだけでよい。
 		if (HitReactionComponent* hitReaction = GetOwner()->GetComponent<HitReactionComponent>()) {
 			hitReaction->SetQuerySource(this);
-			hitReaction->SetWeaponCollider(weaponCollider_);
+			// メイン武器のColliderをHitReactionComponentへ渡す。装備(WeaponSetComponent::
+			// RegisterWeapon)がこのStart()より後に行われる構成の場合はまだ未登録で
+			// nullptrになりうる点は旧実装(weaponCollider_直持ち)と同じ制約。
+			if (weaponSet_ != nullptr) {
+				
+				if (WeaponComponent* mainWeapon = weaponSet_->GetWeapon(kMainWeaponSlot)) {
+					hitReaction->SetWeaponCollider(Handle<ColliderComponent>(mainWeapon->GetCollider()));
+				}
+			}
 		}
 
 		// 初期状態のセット。TransitionTo経由なのでEnterも呼ばれるが、
@@ -180,33 +188,28 @@ public:
 	void CancelStepMove();
 
 	// --- 武器の攻撃判定 --------------------------------------------------
-	void SetWeapon(Handle<ColliderComponent> weaponCollider, Handle<AttackSourceComponent> weaponAttackSource,
-		Handle<TrailPolygonComponent> weaponTrail = {}) {
-		weaponCollider_ = weaponCollider;
-		weaponAttackSource_ = weaponAttackSource;
-		weaponTrail_ = weaponTrail;
-	}
-
-	void SetWeaponHitBoxEnabled(bool enabled) {
-		if (ColliderComponent* collider = weaponCollider_.Resolve()) {
-			collider->SetShapeEnabled("HitBox", enabled);
-		}
-
-		if (enabled) {
-			if (AttackSourceComponent* source = weaponAttackSource_.Resolve()) {
-				source->alreadyHit.clear();
-			}
+	// 実体の制御はWeaponSetComponent/WeaponComponent(Enemyとも共有する
+	// 汎用実装)へ委譲する薄いラッパー。Playerは常に単一武器という前提だけを
+	// ここで吸収し、呼び出し側(HandleActionInput/State側)は今まで通り
+	// PlayerStatusController経由で操作できるようにする。
+	void SetWeapon(Handle<WeaponComponent> weapon) {
+		if (weaponSet_ != nullptr) {
+			weaponSet_->RegisterWeapon(kMainWeaponSlot, weapon);
 		}
 	}
 
-	void SetWeaponTrailEmitting(bool emitting) {
-		if (TrailPolygonComponent* trail = weaponTrail_.Resolve()) {
-			if (emitting) {
-				trail->StartEmit();
-			}
-			else {
-				trail->StopEmit();
-			}
+	// slotsはAttackMoveData::weaponSlots(技データ側)から渡される。
+	// Playerの技は基本{"Main"}固定だが、将来二刀流等でスロットが増えても
+	// このシグネチャのまま対応できる。
+	void SetWeaponHitBoxEnabled(const std::vector<std::string>& slots, bool enabled) {
+		if (weaponSet_ != nullptr) {
+			weaponSet_->SetHitBoxEnabled(slots, enabled);
+		}
+	}
+
+	void SetWeaponTrailEmitting(const std::vector<std::string>& slots, bool emitting) {
+		if (weaponSet_ != nullptr) {
+			weaponSet_->SetTrailEmitting(slots, emitting);
 		}
 	}
 
@@ -361,11 +364,7 @@ private:
 	FacingDirectionComponent* facingDirectionComponent_ = nullptr;
 	PlayerLockOnComponent* lockOnComponent_ = nullptr;
 	PlayerMovementAnimationComponent* movementAnimationComponent_ = nullptr;
-
-	// 武器(別GameObject、ソケット経由でアタッチ)への弱参照。
-	Handle<ColliderComponent> weaponCollider_;
-	Handle<AttackSourceComponent> weaponAttackSource_;
-	Handle<TrailPolygonComponent> weaponTrail_;
+	WeaponSetComponent* weaponSet_ = nullptr; // 武器/攻撃部位の集合(Enemyとも共有する汎用コンポーネント)
 
 	Handle<GameObject> currentAttackTarget_;
 
@@ -379,6 +378,10 @@ private:
 
 	// PlayAnimation(useRootMotion=true)の際に使うボーン名。
 	static constexpr const char* kRootMotionBoneName = "root";
+
+	// Playerは常に単一武器のため、WeaponSetComponent上のスロット名を固定する。
+	// (SetWeapon()での登録・HitReactionComponentへの受け渡しの両方で使用)
+	static constexpr const char* kMainWeaponSlot = "Main";
 
 	// --- 戦闘データ ---
 	AttackMoveData currentAttack_;

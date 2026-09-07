@@ -155,6 +155,7 @@ void SlashTrailRenderer::Draw(const std::vector<Vertex>& vertices, KdParticleBle
 
 	// KdGPUParticle_PS.hlslが要求するサンプラースロット(s0)に合わせる
 	shaderMgr.ChangeSamplerState(KdSamplerState::Linear_Clamp, 0);
+	shaderMgr.ChangeRasterizerState(KdRasterizerState::CullNone);
 
 	// ブレンドモードの切り替え・Z書き込み無効(KdGPUParticle::Drawと同じ要領)
 	const KdBlendState blendState = (blendMode == KdParticleBlendMode::Alpha) ? KdBlendState::Alpha : KdBlendState::Add;
@@ -171,6 +172,7 @@ void SlashTrailRenderer::Draw(const std::vector<Vertex>& vertices, KdParticleBle
 	shaderMgr.UndoDepthStencilState();
 	shaderMgr.UndoBlendState();
 	shaderMgr.UndoSamplerState();
+	shaderMgr.UndoRasterizerState();
 
 	// SRVのバインド解除
 	ID3D11ShaderResourceView* nullSRV = nullptr;

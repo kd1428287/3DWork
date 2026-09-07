@@ -2,6 +2,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 #include <cmath>
 
 // ============================================================
@@ -166,6 +167,12 @@ struct AttackMoveData
 	float blendDuration = 0.1f;
 	bool useRootMotion = false;
 	std::string animationName = "Attack1";
+
+	// このAttackのActiveフェーズで有効化するWeaponSetComponent上のスロット名。
+	// Playerは常に単一武器のため既定で{"Main"}(PlayerStatusController::
+	// kMainWeaponSlotと合わせる)。敵側のEnemyAttackDefinition::weaponSlots
+	// と同じ考え方(WeaponSetComponent参照)。
+	std::vector<std::string> weaponSlots = { "Main" };
 };
 
 struct EvadeMoveData

@@ -196,6 +196,9 @@
     <Filter Include="Src\Application\Effect">
       <UniqueIdentifier>{e955f44d-5d16-4418-b326-cbd4ca208c0c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\Components\Combat">
+      <UniqueIdentifier>{16c2989e-7148-44d6-ad0b-361599c42ed3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -746,6 +749,12 @@
     </ClInclude>
     <ClInclude Include="Src\Framework\Shader\GPUParticle\SlashTrailRenderer.h">
       <Filter>Src\Framework\Shader\GPUParticle</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Combat\WeaponSetComponent.h">
+      <Filter>Src\Application\Components\Combat</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Combat\WeaponComponent.h">
+      <Filter>Src\Application\Components\Combat</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

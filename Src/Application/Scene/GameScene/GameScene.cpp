@@ -7,6 +7,7 @@
 #include "../../Systems/Collision/ColliderRegistry.h"
 #include "../../Systems/Collision/CollisionSystem.h"
 #include "../../Effect/EffectDispatcher.h"
+#include "../../Effect/SlashTrailDispatcher.h"
 
 // factory
 #include "../../Factories/Game/PlayerFactory.h"
@@ -43,11 +44,13 @@ void GameScene::OnUpdate(float deltaTime)
 void GameScene::OnDrawEffects()
 {
 	effectDispatcher_->Draw(ParticleDrawPass::Default);
+	slashTrailDispatcher_->Draw(ParticleDrawPass::Default);
 }
 
 void GameScene::OnDrawBlight()
 {
 	effectDispatcher_->Draw(ParticleDrawPass::Blight);
+	slashTrailDispatcher_->Draw(ParticleDrawPass::Blight);
 }
 
 
@@ -58,6 +61,11 @@ void GameScene::Init()
 	// factory
 	terrainFactory_ = std::make_unique<TerrainFactory>();
 	auto* terrain = terrainFactory_->CreateTerrain(*objManager_,0);
+
+	slashTrailDispatcher_ = std::make_unique<SlashTrailDispatcher>();
+	slashTrailDispatcher_->Init(*localBus_);
+	SlashTrailParams params;
+	slashTrailDispatcher_->RegisterDefinition("Sword", params);
 
 	std::unordered_map<std::string, EnemyDefinition> map;
 	EnemyDefinition def;
@@ -104,6 +112,8 @@ void GameScene::Init()
 	effectDispatcher_ = std::make_unique<EffectDispatcher>();
 	effectDispatcher_->Init(*localBus_);
 
+	
+
 	timeScaleSystem_ = std::make_unique<TimeScaleSystem>(*localBus_, *objManager_);
 
 	systemManager_->SetExecutionOrder(
@@ -114,6 +124,7 @@ void GameScene::Init()
 		[this](float dt) { colliderRegistry_->Refresh(*objManager_); },
 		[this](float dt) { collisionSystem_->Update(*colliderRegistry_); },
 		[this](float dt) { effectDispatcher_->Update(dt); },
+		[this](float dt) { slashTrailDispatcher_->Update(dt); },
 		[this](float dt) { objManager_->PostUpdate(dt); },
 		[this](float dt) { objManager_->Flush(); }
 	);

@@ -327,6 +327,8 @@
     <ClInclude Include="Src\Application\Components\Collision\ModelCollisionMeshBuilder.h" />
     <ClInclude Include="Src\Application\Components\Collision\TriangleMeshData.h" />
     <ClInclude Include="Src\Application\Components\Collision\WireFrameComponent.h" />
+    <ClInclude Include="Src\Application\Components\Combat\WeaponComponent.h" />
+    <ClInclude Include="Src\Application\Components\Combat\WeaponSetComponent.h" />
     <ClInclude Include="Src\Application\Components\ComponentBase.h" />
     <ClInclude Include="Src\Application\Components\ComponentTypeID.h" />
     <ClInclude Include="Src\Application\Components\Effect\SlowEffectComponent.h" />

@@ -128,6 +128,14 @@ void SlashTrailInstance::TrimOverflowSamples()
 // samples_から、Draw用の頂点配列(vertices_)を作り直す
 //	各サンプルをTip/Baseの2頂点に変換し、三角形ストリップ用に交互に並べる
 //	(頂点順：s0.Tip, s0.Base, s1.Tip, s1.Base, ... となるようpush_backしていく)
+//
+//	【カメラ正対補正】
+//	Tip-Base(剣の実座標)をそのまま幅として使うと、カメラから見て剣がエッジオン
+//	(視線方向と平行)に近づくほど画面上の幅がほぼ0になり、帯が消えたように見えてしまう。
+//	これを防ぐため、カメラ視線に対して垂直な「カメラ正対ベクトル(camRight)」を用意し、
+//	エッジオンの度合い(alignment)が高いほど、実座標由来の幅ベクトルからそちらへ
+//	ブレンドして最低限の見た目の幅を確保する。
+//	alignment==0(通常通り横から見えている状態)では元の計算と完全に一致する
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void SlashTrailInstance::RebuildVertices()
 {
@@ -143,6 +151,11 @@ void SlashTrailInstance::RebuildVertices()
 	// FadeLengthが0以下(設定ミス)の場合に0除算にならないようにする
 	const float fadeLengthSafe = (params_.FadeLength > 0.0f) ? params_.FadeLength : 0.0001f;
 
+	// カメラ座標を取得(エッジオン補正用。頂点構築自体がCPU側で行われる設計の為、
+	// ここで直接カメラ定数バッファを参照する。GPU(VS)側へ元データを渡して計算させる方式は
+	// 頂点レイアウト・VSInputの変更が必要になる為採用しない)
+	const Vector3 camPos = KdShaderManager::Instance().GetCameraCB().CamPos;
+
 	for (const auto& sample : samples_)
 	{
 		// 1(記録直後)～0(消える直前)。UV.x・アルファ・幅のテーパー全てこれを元に計算する
@@ -154,8 +167,44 @@ void SlashTrailInstance::RebuildVertices()
 		const float taper = 1.0f - (1.0f - fadeRate) * params_.TipWidthTaper;
 
 		const Vector3 center = (sample.Tip + sample.Base) * 0.5f;
-		const Vector3 tipAdj = Vector3::Lerp(center, sample.Tip, taper);
-		const Vector3 baseAdj = Vector3::Lerp(center, sample.Base, taper);
+
+		// ----- カメラ正対補正 -----
+		Vector3 widthVec = sample.Tip - sample.Base;
+		const float widthLen = widthVec.Length();
+
+		Vector3 correctedWidthVec = widthVec;
+		if (widthLen > 1e-5f)
+		{
+			Vector3 viewDir = camPos - center;
+			const float viewDirLenSq = viewDir.LengthSquared();
+			if (viewDirLenSq > 1e-6f)
+			{
+				viewDir /= sqrtf(viewDirLenSq);
+
+				// カメラ正対ベクトル：視線方向とワールドUpに直交する「カメラの右方向」
+				Vector3 camRight = viewDir.Cross(Vector3::Up);
+				if (camRight.LengthSquared() < 1e-6f)
+				{
+					// カメラがほぼ真上/真下を向いている場合の保険
+					camRight = viewDir.Cross(Vector3::Right);
+				}
+				camRight.Normalize();
+
+				// widthVecの向きにcamRightの符号を合わせる(逆だと帯がねじれて見える為)
+				if (widthVec.Dot(camRight) < 0.0f) { camRight = -camRight; }
+
+				// widthVecのうち視線方向に平行な成分の割合(0=真横に見える～1=真正面でエッジオン)
+				const float alignment = fabsf(widthVec.Dot(viewDir)) / widthLen;
+
+				// エッジオンに近いほど、実座標由来の幅ベクトルから
+				// カメラ正対ベクトル(元の長さを維持)へブレンドする
+				correctedWidthVec = Vector3::Lerp(widthVec, camRight * widthLen, alignment);
+			}
+		}
+
+		const Vector3 halfWidth = correctedWidthVec * 0.5f;
+		const Vector3 tipAdj = Vector3::Lerp(center, center + halfWidth, taper);
+		const Vector3 baseAdj = Vector3::Lerp(center, center - halfWidth, taper);
 
 		SlashTrailVertex vTip;
 		vTip.Position = tipAdj;

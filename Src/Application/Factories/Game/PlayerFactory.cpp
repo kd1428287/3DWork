@@ -12,7 +12,7 @@
 #include "../../Components/Camera/CameraTargetComponent.h"
 #include "../../Components/Render/ModelRenderComponent.h"
 #include "../../Components/Render/PolygonRenderComponent.h" 
-#include "../../Components/Effect/TrailPolygonComponent.h"
+#include "../../Components/Effect/SlashTrailComponent.h"
 #include "../../Components/Animation/ModelAnimatorComponent.h"
 #include "../../Components/Animation/SkeletonComponent.h"
 #include "../../Components/Animation/BoneSocketComponent.h"
@@ -29,7 +29,8 @@
 #include "../../Components/Collision/WireFrameComponent.h"
 #include "../../Components/Sensors/GroundSensorComponent.h"
 #include "../../Components/UI/Player/PlayerStatusUIComponent.h"
-#include "../../Components/Effect/TrailPolygonComponent.h"
+#include "../../Components/Combat/WeaponSetComponent.h"
+#include "../../Components/Combat/WeaponComponent.h"
 
 namespace
 {
@@ -76,6 +77,7 @@ namespace
 
 		player->AddComponent<PlayerLockOnComponent>();
 		player->AddComponent<HitReactionComponent>();
+		player->AddComponent<WeaponSetComponent>();
 
 		//player->AddComponent<TwoBoneIKComponent>(
 			//rightArmIK.rootBone, rightArmIK.midBone, rightArmIK.tipParentBone, rightArmIK.tipBone);
@@ -143,12 +145,9 @@ GameObject* PlayerFactory::CreatePlayer(ObjectManager& objectManager, const Play
 	// --- 武器の生成とStatusControllerへの登録 ----------------------------
 	GameObject* weapon = CreateWeapon(objectManager, player, weaponAttachPoint, definition.weapon, definition.rightArmIK);
 
-	// 武器のColliderComponent/AttackSourceComponentへの参照をStatusControllerに登録する。
 	if (weapon != nullptr) {
 		player->GetComponent<PlayerStatusController>()->SetWeapon(
-			Handle<ColliderComponent>(weapon->GetComponent<ColliderComponent>()),
-			Handle<AttackSourceComponent>(weapon->GetComponent<AttackSourceComponent>()),
-			Handle<TrailPolygonComponent>(weapon->GetComponent<TrailPolygonComponent>()));
+			Handle<WeaponComponent>(weapon->GetComponent<WeaponComponent>()));
 	}
 
 	return player;
@@ -197,19 +196,13 @@ GameObject* PlayerFactory::CreateWeapon(ObjectManager& objectManager, GameObject
 	weapon->AddComponent<TwoBoneIKComponent>(
 		ikChain.rootBone, ikChain.midBone, ikChain.tipParentBone, ikChain.tipBone);
 
-	// 攻撃の軌跡エフェクト。TrailPolygonComponentはデータ管理のみを担当し、
-	// 実際の描画はPolygonRenderComponent(IPolygonRenderSourceを同じ
-	// GameObject上から自動的に見つけて描画する側)が行うため、両方をセットで
-	// 付ける必要がある(TrailPolygonEffectComponent.h冒頭コメント参照)。
-	// 発生/停止のタイミングはPlayerStatusController::SetWeaponTrailEmitting()
-	// 経由でStateAttack側から制御する(SetWeaponHitBoxEnabledと同じ窓)。
-	// 
-	//weapon->AddComponent<PolygonRenderComponent>();
-	//auto* trail = weapon->AddComponent<TrailPolygonComponent>("Asset/Textures/Game/Effect/Trail.png");
-	//trail->StartEmit();
-	//trail->SetPattern(KdTrailPolygon::Trail_Pattern::eBillboard);
-	////trail->SetPattern(KdTrailPolygon::Trail_Pattern::eVertices);
-	//trail->SetBaseTip(weaponDefinition.hitBox.offset, Math::Vector3(0,0,2.f));
+	auto* trail = weapon->AddComponent<SlashTrailComponent>("Sword");
+	trail->SetBaseTip(Math::Vector3{ 0,0,-0.75 }, Math::Vector3{ 0,0,-2.25 });
+	trail->SetBaseTip(Math::Vector3{ 0,0,-0.5 }, Math::Vector3{ 0,0,-1.5f });
+	trail->SetKey("Sword_Player");
+	trail->StartEmit();
+
+	weapon->AddComponent<WeaponComponent>();
 
 	return weapon;
 }

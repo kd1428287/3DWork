@@ -22,8 +22,8 @@ ComboAttackTable CreateDebugComboAttackTable()
 
 	// 2段目
 	table[1].windupDuration = 0.18f;
-	table[1].activeDuration = 0.18f;
-	table[1].recoveryDuration = 0.30f;
+	table[1].activeDuration = 0.35f;
+	table[1].recoveryDuration = 0.45f;
 	table[1].stepDistance = 1.6f;
 	table[1].stepDuration = 0.4f;
 	table[1].engageDistance = 1.2f;
