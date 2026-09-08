@@ -287,12 +287,6 @@ void EffectEditor::DrawInspector()
 	ImGui::DragFloat3("Gravity", &params.Gravity.x, 0.05f);
 
 	ImGui::Separator();
-	ImGui::Text("Layers (%d)", (int)params.Layers.size());
-
-	if (ImGui::Button("+ Add Layer"))
-	{
-		params.Layers.push_back(GPUParticleLayer{});
-	}
 
 	for (int i = 0; i < (int)params.Layers.size(); i++)
 	{
@@ -354,6 +348,13 @@ void EffectEditor::DrawInspector()
 		}
 	}
 
+	ImGui::Text("Layers (%d)", (int)params.Layers.size());
+
+	if (ImGui::Button("+ Add Layer"))
+	{
+		params.Layers.push_back(GPUParticleLayer{});
+	}
+
 	ImGui::Separator();
 	ImGui::Text("Material (WIP)");
 	ImGui::Text("Texture : %s", params.TexturePath.empty() ? "(None)" : params.TexturePath.c_str());
@@ -369,23 +370,23 @@ void EffectEditor::DrawInspector()
 	}
 
 	{
-		bool drawLit = KdHasDrawPassFlag(params.DrawPassFlags, ParticleDrawPass::Default);
-		bool drawBloom = KdHasDrawPassFlag(params.DrawPassFlags, ParticleDrawPass::Blight);
+		bool drawDefault = KdHasDrawPassFlag(params.DrawPassFlags, ParticleDrawPass::Default);
+		bool drawBlight = KdHasDrawPassFlag(params.DrawPassFlags, ParticleDrawPass::Blight);
 
 		ImGui::Text("Draw Pass");
 		bool changed = false;
-		changed |= ImGui::Checkbox("Lit", &drawLit);
+		changed |= ImGui::Checkbox("Default", &drawDefault);
 		ImGui::SameLine();
-		changed |= ImGui::Checkbox("Bloom", &drawBloom);
+		changed |= ImGui::Checkbox("Blight", &drawBlight);
 
 		if (changed)
 		{
-			// 両方外すとどこにも描画されなくなってしまうので、最低Litだけは強制的に残す
-			if (!drawLit && !drawBloom) { drawLit = true; }
+			// 両方外すとどこにも描画されなくなってしまうので、最低Defaultだけは強制的に残す
+			if (!drawDefault && !drawBlight) { drawDefault = true; }
 
 			ParticleDrawPass flags = static_cast<ParticleDrawPass>(0);
-			if (drawLit) { flags |= ParticleDrawPass::Default; }
-			if (drawBloom) { flags |= ParticleDrawPass::Blight; }
+			if (drawDefault) { flags |= ParticleDrawPass::Default; }
+			if (drawBlight) { flags |= ParticleDrawPass::Blight; }
 			params.DrawPassFlags = flags;
 		}
 		ImGui::TextDisabled("両方チェックすると、通常描画とブルーム(発光)の両方に同時に描画される");

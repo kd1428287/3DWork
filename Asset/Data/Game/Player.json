@@ -1,7 +1,7 @@
 {
 	"visuals": {
 		"modelPath": "Asset/Models/Character/GhostSamurai/GhostSamurai.gltf",
-		"animatorFPS": 30,
+		"animatorFPS": 15,
 		"rootMotionBoneName": "root",
 		"rootMotionAxis": "Y",
 		"rootMotionAxisSign": -1.0,

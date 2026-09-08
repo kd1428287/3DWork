@@ -59,6 +59,10 @@ void HitReactionComponent::OnCollisionEnter(const CollisionSystem::CollisionEnte
 			attacker->GetLocalEventBus().Publish(AttackSourceComponent::ParriedEvent{});
 		}
 		SpawnWeaponClashEffect(e.otherObject, /*isParry=*/true);
+
+		// 自分自身(パリィした側)にも成立を通知し、専用の成功モーションを
+		// 再生してもらう(State側の演出。StateGuard::NotifyParrySuccess参照)。
+		query_->NotifyParrySuccess();
 	}
 	else if (query_->IsGuarding()) {
 		// 通常ブロック: 自分の体幹を削り、HPにも軽減済みのチップダメージを与える。
@@ -77,6 +81,11 @@ void HitReactionComponent::OnCollisionEnter(const CollisionSystem::CollisionEnte
 		if (velocityComponent_ != nullptr) {
 			velocityComponent_->AddImpulse(ComputeKnockbackDirection(attacker) * kGuardKnockbackPower);
 		}
+
+		// ブロックの都度、ヒットリアクションのアニメーションを再生してもらう
+		// (パリィ成功ほど特別な演出ではないため、ガード解除や反撃キャンセルの
+		//  可否には影響させない。StateGuard::NotifyGuardHit参照)。
+		query_->NotifyGuardHit();
 	}
 	else {
 		// 通常被弾: ダメージ+体幹ダメージ+ノックバックを付与し、

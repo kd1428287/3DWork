@@ -200,7 +200,6 @@ GameObject* PlayerFactory::CreateWeapon(ObjectManager& objectManager, GameObject
 	trail->SetBaseTip(Math::Vector3{ 0,0,-0.75 }, Math::Vector3{ 0,0,-2.25 });
 	trail->SetBaseTip(Math::Vector3{ 0,0,-0.5 }, Math::Vector3{ 0,0,-1.5f });
 	trail->SetKey("Sword_Player");
-	trail->StartEmit();
 
 	weapon->AddComponent<WeaponComponent>();
 

@@ -62,7 +62,7 @@
           }
         ],
         "maxParticleNum": 300,
-        "texture": "effect.png"
+        "texture": "dot.png"
       },
       "pos": [
         0.0,
@@ -142,7 +142,7 @@
           }
         ],
         "maxParticleNum": 150,
-        "texture": "effect.png"
+        "texture": "dot.png"
       },
       "pos": [
         0.0,
@@ -167,7 +167,7 @@
         "drawPass": [
           "Default"
         ],
-        "emitInterval": 0.0,
+        "emitInterval": 0.10000000149011612,
         "emitMode": "Burst",
         "gravity": [
           0.0,
@@ -267,11 +267,11 @@
           }
         ],
         "maxParticleNum": 200,
-        "texture": "effect2.png"
+        "texture": "circle.png"
       },
       "pos": [
         0.0,
-        0.0,
+        5.0,
         0.0
       ],
       "rotate": [
@@ -280,9 +280,9 @@
         0.0
       ],
       "scale": [
-        1.0,
-        1.0,
-        1.0
+        5.0,
+        5.0,
+        5.0
       ]
     },
     {
@@ -438,7 +438,7 @@
           }
         ],
         "maxParticleNum": 800,
-        "texture": "effect2.png"
+        "texture": "circle.png"
       },
       "pos": [
         0.0,
@@ -609,7 +609,7 @@
           }
         ],
         "maxParticleNum": 800,
-        "texture": "effect2.png"
+        "texture": "circle.png"
       },
       "pos": [
         0.0,

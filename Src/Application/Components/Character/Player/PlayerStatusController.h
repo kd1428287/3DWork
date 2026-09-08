@@ -15,6 +15,7 @@
 #include "PlayerState.h"
 #include "../StateMachine/StateMachine.h"
 #include "../../Animation/ModelAnimatorComponent.h"
+#include "../../Collision/ColliderComponent.h"
 #include "../../Combat/WeaponSetComponent.h"
 #include "../../../Core/Handle.h"
 #include "../Data/IHitReactionQuery.h"
@@ -51,13 +52,17 @@ public:
 		// 答えられるよう、自分自身をIHitReactionQueryとして登録するだけでよい。
 		if (HitReactionComponent* hitReaction = GetOwner()->GetComponent<HitReactionComponent>()) {
 			hitReaction->SetQuerySource(this);
-			// メイン武器のColliderをHitReactionComponentへ渡す。装備(WeaponSetComponent::
-			// RegisterWeapon)がこのStart()より後に行われる構成の場合はまだ未登録で
-			// nullptrになりうる点は旧実装(weaponCollider_直持ち)と同じ制約。
+			// メイン武器のColliderをHitReactionComponentへ渡す。Handleは
+			// WeaponComponent側に用意させず、受け渡し時にこちらで組み立てる
+			// (WeaponComponentはHandleを一切扱わない設計。WeaponComponent.h参照)。
+			// 装備(WeaponSetComponent::RegisterWeapon)がこのStart()より後に
+			// 行われる構成の場合はまだ未登録でnullptrになりうる点は
+			// 旧実装(weaponCollider_直持ち)と同じ制約。
 			if (weaponSet_ != nullptr) {
-				
 				if (WeaponComponent* mainWeapon = weaponSet_->GetWeapon(kMainWeaponSlot)) {
-					hitReaction->SetWeaponCollider(Handle<ColliderComponent>(mainWeapon->GetCollider()));
+					if (ColliderComponent* mainWeaponCollider = mainWeapon->GetCollider()) {
+						hitReaction->SetWeaponCollider(Handle<ColliderComponent>(mainWeaponCollider));
+					}
 				}
 			}
 		}
@@ -103,6 +108,9 @@ public:
 	bool CanStartAttack() const { return stateMachine_.Current()->CanStartAttack(this); }
 	bool CanStartEvade() const { return stateMachine_.Current()->CanStartEvade(this); }
 	bool CanStartGuard() const { return stateMachine_.Current()->CanStartGuard(this); }
+
+	// ガードキーを離した際に即座に解除してよいか(パリィ成功演出中はfalse)。
+	bool CanReleaseGuard() const { return stateMachine_.Current()->CanReleaseGuard(this); }
 
 	// --- データ取得 (Stateが判定に使うため) ----------------------------
 	const AttackMoveData& GetCurrentAttackData() const { return currentAttack_; }
@@ -154,6 +162,23 @@ public:
 
 	void EnterStagger(bool isLarge, float duration) override { ApplyStagger(isLarge, duration); }
 
+	// IHitReactionQuery実装。HitReactionComponentから、自分自身がパリィに
+	// 成功した際に呼ばれる。パリィはGuard中にしか成立し得ないため、
+	// Guard中でなければ何もしない(念のためのガード)。
+	void NotifyParrySuccess() override {
+		if (GetCombatState() == CombatState::Guard) {
+			stateGuard_.NotifyParrySuccess(this);
+		}
+	}
+
+	// IHitReactionQuery実装。HitReactionComponentから、自分自身が通常
+	// ブロックで被弾した際に呼ばれる。
+	void NotifyGuardHit() override {
+		if (GetCombatState() == CombatState::Guard) {
+			stateGuard_.NotifyGuardHit(this);
+		}
+	}
+
 	// --- ロックオン ------------------------------------------------------
 	void TryLockOn() {
 		if (lockOnComponent_ != nullptr) lockOnComponent_->TryLockOn();
@@ -193,8 +218,14 @@ public:
 	// ここで吸収し、呼び出し側(HandleActionInput/State側)は今まで通り
 	// PlayerStatusController経由で操作できるようにする。
 	void SetWeapon(Handle<WeaponComponent> weapon) {
-		if (weaponSet_ != nullptr) {
-			weaponSet_->RegisterWeapon(kMainWeaponSlot, weapon);
+		// 【重要】PlayerFactory等は、まだStart()が呼ばれていない構築中の
+		// タイミング(AddComponent<PlayerStatusController>()した直後)で
+		// このSetWeapon()を呼ぶ。weaponSet_はStart()内で初めて解決される
+		// キャッシュのため、ここで参照するとまだnullptrで登録が握りつぶされる。
+		// WeaponSetComponent自体は既にAddComponent済み(AttachPhysics相当)の
+		// はずなので、ここだけは都度GetComponent()で解決する。
+		if (WeaponSetComponent* weaponSet = GetOwner()->GetComponent<WeaponSetComponent>()) {
+			weaponSet->RegisterWeapon(kMainWeaponSlot, weapon);
 		}
 	}
 

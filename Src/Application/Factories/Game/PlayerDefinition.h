@@ -87,7 +87,7 @@ struct PlayerDefinition
 	PlayerCombatStatsDefinition combatStats;
 	std::vector<CapsuleColliderDefinition> colliders;
 
-	float walkSpeed = 2.0f;
+	float walkSpeed = 4.0f;
 
 	// ソケットだけ生成しておくボーン（将来の装備拡張・ボーン構成確認用）
 	std::vector<std::string> auxiliarySocketBones;

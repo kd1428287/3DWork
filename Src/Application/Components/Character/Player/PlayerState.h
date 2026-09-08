@@ -25,6 +25,11 @@ public:
 	virtual bool CanStartEvade(const PlayerStatusController* controller) const { return false; }
 	virtual bool CanStartGuard(const PlayerStatusController* controller) const { return false; }
 
+	// ガードキーを離した際に即座に解除してよいか(デフォルトは常に許可)。
+	// StateGuardがパリィ成功演出中だけfalseを返し、演出を強制的に
+	// 見せ切る(HandleActionInput参照)。
+	virtual bool CanReleaseGuard(const PlayerStatusController* controller) const { return true; }
+
 	// ジャスト判定の問い合わせ（該当するStateのみがオーバーライドしてtrueを返す）
 	virtual bool IsInvincible(const PlayerStatusController* controller) const { return false; }
 	virtual bool IsInJustEvadeWindow(const PlayerStatusController* controller) const { return false; }
@@ -96,18 +101,31 @@ public:
 
 	bool IsInParryWindow(const PlayerStatusController* controller) const override;
 
-	//bool CanStartAttack(const PlayerStatusController* controller) const override { return true; }
+	// パリィ成功演出中はガードキーを離しても解除させない(強制的に見せ切る)。
+	bool CanReleaseGuard(const PlayerStatusController* controller) const override;
+
+	// パリィ成功演出中だけ、反撃キャンセルとして次の攻撃を許可する。
+	bool CanStartAttack(const PlayerStatusController* controller) const override;
+
 	//bool CanStartEvade(const PlayerStatusController* controller) const override { return true; }
 
+	// HitReactionComponent(IHitReactionQuery経由、PlayerStatusController::
+	// NotifyParrySuccess/NotifyGuardHit)から呼ばれる通知。
+	void NotifyParrySuccess(PlayerStatusController* controller);
+	void NotifyGuardHit(PlayerStatusController* controller);
+
 private:
-	// パリィ判定はGuard内部のサブフェーズとして扱う。将来「パリィ成立時だけ
-	// 専用モーション/専用硬直を挟みたい」といった要件が来た場合は、
-	// GetGuardPhase()を分岐の起点にし、CombatStateやControllerには
-	// 手を入れずGuard内部だけで完結させる。
-	enum class GuardPhase { JustWindow, NormalBlock };
+	// パリィ判定はGuard内部のサブフェーズとして扱う。
+	// ParrySuccessは時間経過ではなくNotifyParrySuccess()による外部通知で
+	// 開始し、parrySuccessDuration秒経過で自動的にNormalBlockへ戻る
+	// (GetGuardPhase()参照。CombatStateやControllerには手を入れず
+	//  Guard内部だけで完結させる、という元々の方針を踏襲)。
+	enum class GuardPhase { JustWindow, NormalBlock, ParrySuccess };
 	GuardPhase GetGuardPhase(const PlayerStatusController* controller) const;
 
 	float elapsed_ = 0.0f;
+	bool parrySucceeded_ = false;
+	float parrySuccessElapsed_ = 0.0f;
 };
 
 

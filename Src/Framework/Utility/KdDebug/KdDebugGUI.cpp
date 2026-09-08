@@ -118,18 +118,15 @@ void KdDebugGUI::GuiProcess()
 		ImGui::DockSpaceOverViewport(dockspaceId, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
 		// ログウィンドウ
-		m_uqLog->Draw("Log Window");
+		//m_uqLog->Draw("Log Window");
 
 		// ゲーム画面を表示するSceneウィンドウ(中身はオフスクリーンに描画されたゲーム画面)
 		EditorViewport::Instance().DrawSceneWindow();
 
-		// マップエディタ(Hierarchy / Inspector / Assets / ギズモ)
-		MapEditor::Instance().Update();
+		// マップエディタ
+		//MapEditor::Instance().Update();
 
-		// エフェクト配置エディタ(Effect Hierarchy / Effect Inspector / Effect Assets / ギズモ)
-		//	※ImGuizmo::BeginFrame()はMapEditor::Update()内で既に呼ばれているため、
-		//	  EffectEditor::Update()内では呼ばない
-		
+		// エフェクト配置エディタ
 		EffectEditor::Instance().Update();
 	}
 

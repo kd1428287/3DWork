@@ -267,6 +267,17 @@ struct GuardMoveData
 {
 	float justWindowDuration = 0.15f;
 	std::string animationName = "GhostSamurai_APose2DefenseL_Inplace";
+	float guardTransitionDuration = 0.4f;
+
+	// パリィ成立時に再生する専用モーションと、その再生を強制する秒数
+	// (この間はガードキーを離しても解除されない。StateGuard参照)。
+	std::string parrySuccessAnimationName = "GhostSamurai_DefenseL_Parry01_Inplace";
+	float parrySuccessDuration = 0.8f;
+
+	// 通常ブロックで被弾する都度再生するヒットリアクションモーション。
+	// パリィ成功と異なり、ガード解除や反撃キャンセルの可否には影響しない。
+	std::string guardHitAnimationName = "GhostSamurai_DefenseL_Hit01_Inplace";
+	float guardHitDuration = 0.9f;
 };
 
 constexpr int kMaxComboHits = 6;

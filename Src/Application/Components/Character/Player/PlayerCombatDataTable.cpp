@@ -10,7 +10,7 @@ ComboAttackTable CreateDebugComboAttackTable()
 	// 1段目: 素早い差し込み
 	table[0].windupDuration = 0.15f;
 	table[0].activeDuration = 0.35f;
-	table[0].recoveryDuration = 0.45f;
+	table[0].recoveryDuration = 0.52f;
 	table[0].stepDistance = 2.0f;
 	table[0].stepDuration = 0.4f;
 	table[0].engageDistance = 1.2f; // 差し込み技なので間合いはやや近め
@@ -23,7 +23,7 @@ ComboAttackTable CreateDebugComboAttackTable()
 	// 2段目
 	table[1].windupDuration = 0.18f;
 	table[1].activeDuration = 0.35f;
-	table[1].recoveryDuration = 0.45f;
+	table[1].recoveryDuration = 0.52f;
 	table[1].stepDistance = 1.6f;
 	table[1].stepDuration = 0.4f;
 	table[1].engageDistance = 1.2f;
@@ -34,9 +34,9 @@ ComboAttackTable CreateDebugComboAttackTable()
 	table[1].animationName = "GhostSamurai_APose_Attack02_2_Inplace";
 
 	// 3段目
-	table[2].windupDuration = 0.20f;
-	table[2].activeDuration = 0.20f;
-	table[2].recoveryDuration = 0.32f;
+	table[2].windupDuration = 0.15f;
+	table[2].activeDuration = 0.35f;
+	table[2].recoveryDuration = 0.52f;
 	table[2].stepDistance = 1.6f;
 	table[2].stepDuration = 0.4f;
 	table[2].engageDistance = 1.3f;
@@ -47,9 +47,9 @@ ComboAttackTable CreateDebugComboAttackTable()
 	table[2].animationName = "GhostSamurai_APose_Attack02_3_Inplace";
 
 	// 4段目
-	table[3].windupDuration = 0.22f;
-	table[3].activeDuration = 0.22f;
-	table[3].recoveryDuration = 0.35f;
+	table[3].windupDuration = 0.15f;
+	table[3].activeDuration = 0.35f;
+	table[3].recoveryDuration = 0.52f;
 	table[3].stepDistance = 1.7f;
 	table[3].stepDuration = 0.4f;
 	table[3].engageDistance = 1.3f;
@@ -60,28 +60,27 @@ ComboAttackTable CreateDebugComboAttackTable()
 	table[3].animationName = "GhostSamurai_APose_Attack02_4_Inplace";
 
 	// 5段目
-	table[4].windupDuration = 0.30f;
-	table[4].activeDuration = 0.25f;
-	table[4].recoveryDuration = 0.50f;
-	table[4].stepDistance = 1.4f;
+	table[4].windupDuration = 0.15f;
+	table[4].activeDuration = 0.35f;
+	table[4].recoveryDuration = 0.55f;
+	table[4].stepDistance = 2.4f;
 	table[4].stepDuration = 0.6f;
 	table[4].recoveryEvadeCancelStart = 0.30f;
-	table[4].recoveryAttackCancelStart = 0.50f;
-	// comboWindowAfterRecoveryはデフォルト(0.0f)のまま。
-	// 5,6段目はコンボの締めの技として、Recovery終了後の継続受付は行わない想定。
+	table[4].recoveryAttackCancelStart = 0.10f;
+	table[4].comboWindowAfterRecovery = 0.10f;
 	table[4].blendDuration = 0.1f;
-	table[4].useRootMotion = true;
+	table[4].useRootMotion = false;
 	table[4].animationName = "GhostSamurai_APose_Attack02_5_Inplace";
 
-	table[5].windupDuration = 0.30f;
-	table[5].activeDuration = 0.25f;
-	table[5].recoveryDuration = 0.50f;
+	table[5].windupDuration = 0.10f;
+	table[5].activeDuration = 0.35f;
+	table[5].recoveryDuration = 0.55f;
 	table[5].stepDistance = 1.4f;
 	table[5].stepDuration = 0.6f;
 	table[5].recoveryEvadeCancelStart = 0.30f;
 	table[5].recoveryAttackCancelStart = 0.50f;
 	table[5].blendDuration = 0.1f;
-	table[5].useRootMotion = true;
+	table[5].useRootMotion = false;
 	table[5].animationName = "GhostSamurai_APose_Attack02_6_Inplace";
 
 	return table;

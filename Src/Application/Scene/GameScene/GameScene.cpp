@@ -24,7 +24,6 @@
 #include "../../Components/Camera/CameraTargetComponent.h"
 #include "../../Components/Transform/TransformComponent.h"
 #include "../../Components/Animation/SkeletonComponent.h"
-#include "../../Components/Animation/SkeletonComponent.h"
 #include "../../Components/Animation/ModelAnimatorComponent.h"
 #include "../../Components/Render/ModelRenderComponent.h"
 
@@ -92,14 +91,6 @@ void GameScene::Init()
 	cameraFactory_ = std::make_unique<CameraFactory>();
 	auto* camera = cameraFactory_->CreateCamera(*objManager_, player);
 
-	/*auto* obj = objManager_->Instantiate("samurai");
-	obj->AddComponent<TransformComponent>()->SetPosition({ 0,3.f,0 });
-	auto* skl = obj->AddComponent<SkeletonComponent>();
-	skl->SetModelData(KdAssets::Instance().m_modeldatas.GetData("Asset/Models/Character/GhostSamurai/GhostSamurai.gltf"));
-	auto* anim = obj->AddComponent<ModelAnimatorComponent>();
-	obj->AddComponent<ModelRenderComponent>();
-	anim->Play("GhostSamurai_APose_Idle",true);*/
-
 	// system
 	inputSystem_ = std::make_unique<InputSystem>();
 	inputSystem_->RegisterPlayer(player->GetComponent<PlayerInputComponent>());
@@ -111,8 +102,6 @@ void GameScene::Init()
 
 	effectDispatcher_ = std::make_unique<EffectDispatcher>();
 	effectDispatcher_->Init(*localBus_);
-
-	
 
 	timeScaleSystem_ = std::make_unique<TimeScaleSystem>(*localBus_, *objManager_);
 
@@ -129,12 +118,17 @@ void GameScene::Init()
 		[this](float dt) { objManager_->Flush(); }
 	);
 
+	KdShaderManager::Instance().WorkAmbientController().SetDirLightShadowArea(Math::Vector2(100.f, 100.f), 100);
+	KdShaderManager::Instance().WorkAmbientController().AddPointLight(Math::Vector3(1.0f, 1.0f, 1.0f), 10.0f, Math::Vector3(0, 0, 0), false);
+	//KdShaderManager::Instance().WorkAmbientController().SetDirLight(Math::Vector3(-1, -3, -1), Math::Vector3(0.1f, 0.15f, 0.25f));
 	KdShaderManager::Instance().WorkAmbientController().SetFogEnable(false, true);
 	KdShaderManager::Instance().WorkAmbientController().SetheightFog({0.9f,0.9f,0.9f}, 10.f, -10.f, 100.f);
+	KdShaderManager::Instance().WorkAmbientController().SetAmbientLight(Math::Vector4(1.0f,1.0f,1.0f, 0.25f));
 	KdShaderManager::Instance().m_postProcessShader.SetExposure(1.05f);
-	KdShaderManager::Instance().m_postProcessShader.SetContrast(1.45f);       // コントラスト強め
+	//KdShaderManager::Instance().m_postProcessShader.SetExposure(0.55);
+	KdShaderManager::Instance().m_postProcessShader.SetContrast(1.25f);       // コントラスト強め
 	KdShaderManager::Instance().m_postProcessShader.SetSaturation(0.85f);     // 彩度低め
-	KdShaderManager::Instance().m_postProcessShader.SetTemperature(-0.15f);   // ★わずかに寒色（青み）を寄せて鉄や血の冷たさを演出
-	KdShaderManager::Instance().m_postProcessShader.SetTint(-0.05f);          // ★ごくわずかに緑に寄せて、古びた日本的・和風の空気感を作る;;;
+	KdShaderManager::Instance().m_postProcessShader.SetTemperature(-0.3f);   // ★わずかに寒色（青み）を寄せて鉄や血の冷たさを演出
+	KdShaderManager::Instance().m_postProcessShader.SetTint(-0.15f);          // ★ごくわずかに緑に寄せて、古びた日本的・和風の空気感を作る
 	
 }

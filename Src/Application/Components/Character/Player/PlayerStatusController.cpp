@@ -39,8 +39,8 @@ void PlayerStatusController::HandleActionInput(PlayerInputComponent& input)
 	if (input.IsGuardHeld()) {
 		TryStartGuard();
 	}
-	else if (GetCombatState() == CombatState::Guard) {
-		ChangeStateToNone(); // ガードキーを離したら即解除
+	else if (GetCombatState() == CombatState::Guard && CanReleaseGuard()) {
+		ChangeStateToNone(); // ガードキーを離したら解除(パリィ成功演出中はCanReleaseGuard()がfalseになり保留される)
 	}
 
 	if (input.HasCommand(ActionCommand::Evade) && CanStartEvade()) {
@@ -112,7 +112,7 @@ void PlayerStatusController::RequestStepMoveTowardsTarget(const Math::Vector3& f
 
 	Math::Vector3 toTarget = targetTransform->GetPosition() - transform->GetPosition();
 	toTarget.y = 0.0f;
-	const float distanceToTarget = toTarget.Length();
+	const float distanceToTarget = toTarget.Length() - 1;// 敵の大きさが読めるようになったら入れ替え
 
 	const float closingDistance = std::min(stepDistance, std::max(0.0f, distanceToTarget - engageDistance));
 
