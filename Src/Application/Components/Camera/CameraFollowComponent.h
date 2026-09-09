@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include <cmath>
-#include "../Tags/ICameraTarget.h"
+#include "ICameraTarget.h"
 #include "../Transform/TransformComponent.h"
 #include "../Camera/CameraTargetComponent.h"
 #include "../../Core/Handle.h"

@@ -2,6 +2,8 @@
 #include "TerrainFactory.h"
 
 #include "../../Components/Render/ModelRenderComponent.h"
+#include "../../Components/Render/ForceMaxDepthComponent.h"
+#include "../../Components/Render/SkyDomeEdgeFadeComponent.h"
 #include "../../Components/Animation/SkeletonComponent.h"
 #include "../../Components/Collision/ColliderComponent.h"
 #include "../../Components/Movement/FollowCameraComponent.h"
@@ -28,9 +30,11 @@ GameObject* TerrainFactory::CreateSkydome(ObjectManager& objectManager, int owne
 	model->SetModelData("Asset/Models/SkySphere/skySphere.gltf");
 	auto* renderer = skydome->AddComponent<ModelRenderComponent>();
 	renderer->SetLayer(RenderLayer::DrawUnLit);
-	renderer->SetForceMaxDepth(true);
 	transform->SetPosition({ 0.f,0.f,0.f });
-	skydome->AddComponent<FollowCameraComponent>();
+	auto* follow = skydome->AddComponent<FollowCameraComponent>();
+	follow->SetOffset(Math::Vector3{0,-2.5f,0});
+	skydome->AddComponent<ForceMaxDepthComponent>();
+	skydome->AddComponent<SkyDomeEdgeFadeComponent>();
 
 	return skydome;
 }

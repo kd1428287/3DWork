@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "../Tags/IPolygonRenderSource.h"
+#include "IPolygonRenderSource.h"
 
 // ============================================================
 // KdPolygon系の描画のみを担当する汎用レンダラー。

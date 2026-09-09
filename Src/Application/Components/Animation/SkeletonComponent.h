@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "../../Core/Handle.h"
-#include "../Tags/IModelRenderSource.h"
-#include "../Tags/IAnimationPostProcess.h"
+#include "../Render/IModelRenderSource.h"
+#include "IAnimationPostProcess.h"
 
 // ポインタで持つだけなのでヘッダの取り込みは不要。ModelAnimatorComponent.h
 // 側がSkeletonComponent.hをincludeしているため、ここでincludeすると

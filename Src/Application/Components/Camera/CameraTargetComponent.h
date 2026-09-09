@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "../Tags/ICameraTarget.h"
+#include "ICameraTarget.h"
 #include "../Transform/TransformComponent.h"
 
 // ============================================================

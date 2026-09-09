@@ -17,13 +17,15 @@ public:
 
 		if (followPosEnable_)
 		{
-			transform_->SetPosition(camera->GetPosition());
+			transform_->SetPosition(camera->GetPosition() + offset_);
 		}
 		if (followRotEnable_)
 		{
 			//transform_->SetRotation(camera->G)
 		}
 	}
+
+	void SetOffset(const Math::Vector3& offset) { offset_ = offset; }
 
 	void SetFollowEnable(bool pos,bool rot)
 	{
@@ -34,6 +36,8 @@ public:
 private:
 	bool followPosEnable_ = true;
 	bool followRotEnable_ = false;
+
+	Math::Vector3 offset_ = {};
 
 	TransformComponent* transform_ = nullptr;
 };

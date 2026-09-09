@@ -276,6 +276,7 @@
     <ClInclude Include="..\Library\tinygltf\tiny_gltf.h" />
     <ClInclude Include="Src\Application\Components\Animation\ArmIKComponents.h" />
     <ClInclude Include="Src\Application\Components\Animation\BoneSocketComponent.h" />
+    <ClInclude Include="Src\Application\Components\Animation\IAnimationPostProcess.h" />
     <ClInclude Include="Src\Application\Components\Animation\ModelAnimatorComponent.h" />
     <ClInclude Include="Src\Application\Components\Animation\RootMotionApplierComponent.h" />
     <ClInclude Include="Src\Application\Components\Animation\RootMotionExtractor.h" />
@@ -290,6 +291,7 @@
     <ClInclude Include="Src\Application\Components\Camera\CameraShakeComponent.h" />
     <ClInclude Include="Src\Application\Components\Camera\CameraViewComponent.h" />
     <ClInclude Include="Src\Application\Components\Camera\CameraTargetComponent.h" />
+    <ClInclude Include="Src\Application\Components\Camera\ICameraTarget.h" />
     <ClInclude Include="Src\Application\Components\Character\BehaviorTree\BTComposite.h" />
     <ClInclude Include="Src\Application\Components\Character\BehaviorTree\BTCondition.h" />
     <ClInclude Include="Src\Application\Components\Character\BehaviorTree\BTNodeStatus.h" />
@@ -326,6 +328,7 @@
     <ClInclude Include="Src\Application\Components\Collision\ColliderComponent.h" />
     <ClInclude Include="Src\Application\Components\Collision\ColliderLayerMatrix.h" />
     <ClInclude Include="Src\Application\Components\Collision\GravityComponent.h" />
+    <ClInclude Include="Src\Application\Components\Collision\ICollidable.h" />
     <ClInclude Include="Src\Application\Components\Collision\ModelCollisionMeshBuilder.h" />
     <ClInclude Include="Src\Application\Components\Collision\TriangleMeshData.h" />
     <ClInclude Include="Src\Application\Components\Collision\WireFrameComponent.h" />
@@ -341,19 +344,18 @@
     <ClInclude Include="Src\Application\Components\Movement\MovementComponent.h" />
     <ClInclude Include="Src\Application\Components\Movement\TweenMoveComponent.h" />
     <ClInclude Include="Src\Application\Components\Movement\VelocityComponent.h" />
+    <ClInclude Include="Src\Application\Components\Render\ForceMaxDepthComponent.h" />
     <ClInclude Include="Src\Application\Components\Render\GaugeBarRenderer.h" />
+    <ClInclude Include="Src\Application\Components\Render\IModelRenderSource.h" />
+    <ClInclude Include="Src\Application\Components\Render\IPolygonRenderSource.h" />
+    <ClInclude Include="Src\Application\Components\Render\IRenderable.h" />
+    <ClInclude Include="Src\Application\Components\Render\IRenderStateModifier.h" />
     <ClInclude Include="Src\Application\Components\Render\MeshRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Render\ModelRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Render\PolygonRenderComponent.h" />
+    <ClInclude Include="Src\Application\Components\Render\SkyDomeEdgeFadeComponent.h" />
     <ClInclude Include="Src\Application\Components\Render\SpriteRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Sensors\GroundSensorComponent.h" />
-    <ClInclude Include="Src\Application\Components\Tags\IAnimationPostProcess.h" />
-    <ClInclude Include="Src\Application\Components\Tags\ICameraTarget.h" />
-    <ClInclude Include="Src\Application\Components\Tags\ICollidable.h" />
-    <ClInclude Include="Src\Application\Components\Tags\IModelRenderSource.h" />
-    <ClInclude Include="Src\Application\Components\Tags\IPolygonRenderSource.h" />
-    <ClInclude Include="Src\Application\Components\Tags\IRenderable.h" />
-    <ClInclude Include="Src\Application\Components\Tags\TagInterfaces.h" />
     <ClInclude Include="Src\Application\Components\Transform\AttachToSocketComponent.h" />
     <ClInclude Include="Src\Application\Components\Transform\SocketComponent.h" />
     <ClInclude Include="Src\Application\Components\Transform\TransformComponent.h" />
@@ -363,6 +365,7 @@
     <ClInclude Include="Src\Application\Core\Handle.h" />
     <ClInclude Include="Src\Application\Core\ObjectManager.h" />
     <ClInclude Include="Src\Application\Core\SceneContext.h" />
+    <ClInclude Include="Src\Application\Core\TagInterfaces.h" />
     <ClInclude Include="Src\Application\Editor\EditorViewport.h" />
     <ClInclude Include="Src\Application\Editor\EffectEditor.h" />
     <ClInclude Include="Src\Application\Editor\ImGuizmo.h" />
@@ -471,6 +474,9 @@
     <ClCompile Include="Src\Application\Components\Character\Player\PlayerState.cpp" />
     <ClCompile Include="Src\Application\Components\Character\Player\PlayerStatusController.cpp" />
     <ClCompile Include="Src\Application\Components\Collision\WireFrameComponent.cpp" />
+    <ClCompile Include="Src\Application\Components\Render\ForceMaxDepthComponent.cpp" />
+    <ClCompile Include="Src\Application\Components\Render\ModelRenderComponent.cpp" />
+    <ClCompile Include="Src\Application\Components\Render\SkyDomeEdgeFadeComponent.cpp" />
     <ClCompile Include="Src\Application\Components\UI\Enemy\EnemyHPBarComponent.cpp" />
     <ClCompile Include="Src\Application\Components\UI\Player\PlayerStatusUIComponent.cpp" />
     <ClCompile Include="Src\Application\Editor\EditorViewport.cpp" />

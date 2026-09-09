@@ -529,6 +529,7 @@ bool KdStandardShader::Init()
 	m_cb1_Mesh.Create();
 	m_cb2_Material.Create();
 	m_cb3_Bone.Create();
+	m_cb4_SkyDome.Create();
 
 	std::shared_ptr<KdTexture> ds = std::make_shared<KdTexture>();
 	ds->CreateDepthStencil(1024, 1024);

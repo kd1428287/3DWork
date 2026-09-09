@@ -103,9 +103,6 @@
     <Filter Include="Src\Application\Systems">
       <UniqueIdentifier>{8ca1c632-ec5e-46f8-b11c-c36c3953e4f1}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Src\Application\Components\Tags">
-      <UniqueIdentifier>{20eb6742-9f10-4111-ab19-58f8907e74a8}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Src\Application\Components\Render">
       <UniqueIdentifier>{601302c8-803c-45ff-9e86-b4ad29bea01a}</UniqueIdentifier>
     </Filter>
@@ -396,20 +393,11 @@
     <ClInclude Include="Src\Application\Engine\EventBus\Event\Event.h">
       <Filter>Src\Application\Engine\EventBus\Event</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\Tags\TagInterfaces.h">
-      <Filter>Src\Application\Components\Tags</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\Tags\IRenderable.h">
-      <Filter>Src\Application\Components\Tags</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Components\Render\MeshRenderComponent.h">
       <Filter>Src\Application\Components\Render</Filter>
     </ClInclude>
     <ClInclude Include="Src\Application\Factories\GameObjectFactory.h">
       <Filter>Src\Application\Factories</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\Tags\ICollidable.h">
-      <Filter>Src\Application\Components\Tags</Filter>
     </ClInclude>
     <ClInclude Include="Src\Application\Core\SceneContext.h">
       <Filter>Src\Application\Core</Filter>
@@ -422,9 +410,6 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Camera\CameraViewComponent.h">
       <Filter>Src\Application\Components\Camera</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\Tags\ICameraTarget.h">
-      <Filter>Src\Application\Components\Tags</Filter>
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Camera\CameraFollowComponent.h">
       <Filter>Src\Application\Components\Camera</Filter>
@@ -612,12 +597,6 @@
     <ClInclude Include="Src\Application\Components\Render\PolygonRenderComponent.h">
       <Filter>Src\Application\Components\Render</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\Tags\IPolygonRenderSource.h">
-      <Filter>Src\Application\Components\Tags</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\Tags\IModelRenderSource.h">
-      <Filter>Src\Application\Components\Tags</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Components\Effect\SlashTrailComponent.h">
       <Filter>Src\Application\Components\Effect</Filter>
     </ClInclude>
@@ -674,9 +653,6 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Animation\ArmIKComponents.h">
       <Filter>Src\Application\Components\Animation</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\Tags\IAnimationPostProcess.h">
-      <Filter>Src\Application\Components\Tags</Filter>
     </ClInclude>
     <ClInclude Include="Src\Framework\Shader\GPUParticle\KdGPUParticle.h">
       <Filter>Src\Framework\Shader\GPUParticle</Filter>
@@ -770,6 +746,36 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Animation\staticModelComponent.h">
       <Filter>Src\Application\Components\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Render\ForceMaxDepthComponent.h">
+      <Filter>Src\Application\Components\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Render\SkyDomeEdgeFadeComponent.h">
+      <Filter>Src\Application\Components\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Render\IModelRenderSource.h">
+      <Filter>Src\Application\Components\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Render\IRenderStateModifier.h">
+      <Filter>Src\Application\Components\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Core\TagInterfaces.h">
+      <Filter>Src\Application\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Render\IPolygonRenderSource.h">
+      <Filter>Src\Application\Components\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Animation\IAnimationPostProcess.h">
+      <Filter>Src\Application\Components\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Collision\ICollidable.h">
+      <Filter>Src\Application\Components\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Camera\ICameraTarget.h">
+      <Filter>Src\Application\Components\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Render\IRenderable.h">
+      <Filter>Src\Application\Components\Render</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1024,6 +1030,15 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Editor\ShaderTuningEditor.cpp">
       <Filter>Src\Application\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\Render\ForceMaxDepthComponent.cpp">
+      <Filter>Src\Application\Components\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\Render\SkyDomeEdgeFadeComponent.cpp">
+      <Filter>Src\Application\Components\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\Render\ModelRenderComponent.cpp">
+      <Filter>Src\Application\Components\Render</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

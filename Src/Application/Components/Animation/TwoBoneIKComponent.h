@@ -2,7 +2,7 @@
 #include "TwoBoneIK.h"
 #include "../Animation/SkeletonComponent.h"
 #include "../Transform/TransformComponent.h"
-#include "../Tags/IAnimationPostProcess.h"
+#include "IAnimationPostProcess.h"
 
 // ============================================================
 // TwoBoneIKComponent

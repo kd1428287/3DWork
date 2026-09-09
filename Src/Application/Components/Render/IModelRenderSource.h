@@ -1,4 +1,3 @@
-﻿#pragma once
 #pragma once
 
 // ============================================================
@@ -21,6 +20,9 @@
 // 1つのインターフェースへまとめると片方が使わない引数を抱える
 // 不自然な共通化になってしまうため。
 // ============================================================
+
+class KdModelWork;
+
 class IModelRenderSource {
 public:
 	virtual ~IModelRenderSource() = default;

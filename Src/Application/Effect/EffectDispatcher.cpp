@@ -1,5 +1,5 @@
 ﻿#include "EffectDispatcher.h"
-#include "../Components/Tags/IRenderable.h"
+#include "../Components/Render/IRenderable.h"
 
 // 生存中の全EffectDispatcherインスタンス(NotifyDataSaved()用)
 std::vector<EffectDispatcher*> EffectDispatcher::s_instances;

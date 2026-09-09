@@ -2,7 +2,7 @@
 
 #include "SceneContext.h"
 #include "../Components/ComponentTypeID.h"
-#include "../Components/Tags/TagInterfaces.h"
+#include "TagInterfaces.h"
 
 // ============================================================
 // GameObject: コンポーネントの入れ物。
