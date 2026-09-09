@@ -1,9 +1,5 @@
-﻿// PlayerCombatTypes.h
+﻿
 #pragma once
-
-#include <string>
-#include <vector>
-#include <cmath>
 
 // ============================================================
 // PlayerStatusController / PlayerInputComponent 双方から参照される
@@ -265,9 +261,21 @@ struct TurnAnimationSet
 
 struct GuardMoveData
 {
-	float justWindowDuration = 0.15f;
+	float justWindowDuration = 0.55f;
+
+	// ガードへ入る際に一度だけ再生する構え動作。この秒数(startDuration)が
+	// 経過したらloopAnimationNameへ切り替える(StateGuard参照)。
 	std::string animationName = "GhostSamurai_APose2DefenseL_Inplace";
-	float guardTransitionDuration = 0.4f;
+	float startDuration = 0.2f;
+
+	// ガード継続姿勢。以前は構え動作(animationName)の単発再生を最終フレームで
+	// 止めることで継続姿勢を表現していたが、その方式だと別の単発アニメーション
+	// (ガードヒット等)を一度挟んだ後、同じ構え動作を再度指定しても
+	// 「既に同じアニメーションが設定済み」と判定され再生されなくなる問題が
+	// あった。そのため継続姿勢は専用のLoopアニメーションとして持たせ、
+	// 構え動作終了後・各種リアクション終了後は常にこちらへ明示的に
+	// 再生し直す。
+	std::string loopAnimationName = "GhostSamurai_APose2DefenseL_Loop_Inplace";
 
 	// パリィ成立時に再生する専用モーションと、その再生を強制する秒数
 	// (この間はガードキーを離しても解除されない。StateGuard参照)。

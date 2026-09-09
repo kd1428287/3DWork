@@ -1,5 +1,10 @@
 ﻿#pragma once
 
+struct cbBlar;
+struct cbDepthOfField;
+struct cbBrightFilter;
+struct cbColorGradeInfo;
+
 class KdPostProcessShader
 {
 public:
@@ -42,6 +47,10 @@ public:
 	void PostEffectProcess();
 
 	void GenerateBlurTexture(std::shared_ptr<KdTexture>& spSrcTex, std::shared_ptr<KdTexture>& spDstTex, D3D11_VIEWPORT& VP, int blurRadius);
+
+	/*cbDepthOfField& GetDoFCB() { return m_cb0_DoFInfo.Work(); }
+	cbBrightFilter& GetBrightCB();
+	cbColorGradeInfo& GetColorGradeCB();*/
 
 private:
 

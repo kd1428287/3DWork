@@ -102,10 +102,21 @@ EvadeMoveData CreateDebugEvadeData()
 
 	return data;
 }
+
 GuardMoveData CreateDebugGuardData()
 {
 	GuardMoveData data{};
 	data.justWindowDuration = 0.15f;
+
 	data.animationName = "GhostSamurai_APose2DefenseL_Inplace";
+	data.startDuration = 0.1f;
+	data.loopAnimationName = "GhostSamurai_DefenseL_Loop_Inplace";
+
+	data.parrySuccessAnimationName = "GhostSamurai_DefenseL_Parry01_Inplace";
+	data.parrySuccessDuration = 0.8f;
+
+	data.guardHitAnimationName = "GhostSamurai_DefenseL_Hit01_Inplace";
+	data.guardHitDuration = 0.9f;
+
 	return data;
 }

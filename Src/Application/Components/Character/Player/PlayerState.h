@@ -123,9 +123,23 @@ private:
 	enum class GuardPhase { JustWindow, NormalBlock, ParrySuccess };
 	GuardPhase GetGuardPhase(const PlayerStatusController* controller) const;
 
+	// パリィ成功/ガードヒットの単発リアクション再生が終わった後、
+	// 継続姿勢のLoopアニメーションへ明示的に再生し直すためのヘルパー。
+	void ResumeLoopAnimation(PlayerStatusController* controller);
+
 	float elapsed_ = 0.0f;
+
+	// 構え動作(animationName)の単発再生が終わり、継続姿勢のLoop
+	// アニメーションへ切り替え済みかどうか。
+	bool hasEnteredLoop_ = false;
+
 	bool parrySucceeded_ = false;
 	float parrySuccessElapsed_ = 0.0f;
+
+	// パリィ成功と異なりゲームプレイ上の制約(CanReleaseGuard/CanStartAttack)
+	// には影響させない、ガードヒットのアニメーション再生専用のフラグ。
+	bool isReactingToGuardHit_ = false;
+	float guardHitElapsed_ = 0.0f;
 };
 
 

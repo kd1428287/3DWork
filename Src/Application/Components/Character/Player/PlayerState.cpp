@@ -29,29 +29,52 @@ void StateAttack::Enter(PlayerStatusController* controller) {
 	const float targetDuration = data.windupDuration + data.activeDuration + data.recoveryDuration;
 	controller->PlayAnimation(data.animationName, false, targetDuration, data.useRootMotion, data.blendDuration); // コンボ段数に応じたアニメーション
 
-	if (!data.useRootMotion) {
-		controller->RequestStepMoveTowardsTarget(data.stepDirection, data.stepDistance, data.engageDistance, data.stepDuration);
-	}
+	// 踏み込み移動はここ(Windup開始時点)では行わない。Windupが終わった
+	// 瞬間(Update()側、AttackActiveへの切り替わり)に開始する
+	// (振りかぶり中に前進してしまうと予備動作の説得力が薄れるため)。
+
+	KdDebugGUI::Instance().AddLog("AttackWindup"); // 必要なら
 }
 
 void StateAttack::Update(PlayerStatusController* controller, float deltaTime) {
 	elapsed_ += deltaTime;
 	const auto& data = controller->GetCurrentAttackData();
 
+	KdDebugGUI::Instance().AddLog("Attack");
+
 	if (phase_ == CombatState::AttackWindup && elapsed_ >= data.windupDuration) {
 		phase_ = CombatState::AttackActive;
 		elapsed_ = 0.0f;
-	
+
+		// 踏み込み移動はここ(Windupが終わった瞬間)から開始する。
+		// 移動時間はwindupDurationではなく専用のstepDurationを使う
+		// (以前はEnter()側でwindupDuration分だけ振りかぶり中に動かして
+		//  いたが、攻撃が実際に届き始めるタイミングと踏み込みを
+		//  合わせたいという理由でここへ移した)。
+		// useRootMotionがtrueの技(Attack5等)は、この決め打ち移動の
+		// 代わりにアニメーションのルートモーションで動くため呼ばない
+		// (PlayerStatusController::ApplyRootMotion参照)。
+		//
+		// 対象へずっと前進し続けるのではなく、engageDistance(技ごとの間合い)
+		// までしか詰めないようにする。対象が見つからない場合は
+		// 従来通りstepDirection/stepDistanceの決め打ち移動にフォールバックする
+		// (PlayerStatusController::RequestStepMoveTowardsTarget参照)。
+		if (!data.useRootMotion) {
+			controller->RequestStepMoveTowardsTarget(data.stepDirection, data.stepDistance, data.engageDistance, data.stepDuration);
+		}
 		controller->SetWeaponHitBoxEnabled(data.weaponSlots, true); // 攻撃判定が実際に発生する一瞬だけ有効化
 		controller->SetWeaponTrailEmitting(data.weaponSlots, true); // 武器の軌跡エフェクトもHitBoxと同じ窓で記録開始
+		KdDebugGUI::Instance().AddLog("\nAttackActive");
 	}
 	else if (phase_ == CombatState::AttackActive && elapsed_ >= data.activeDuration) {
 		phase_ = CombatState::AttackRecovery;
 		elapsed_ = 0.0f;
 		controller->SetWeaponHitBoxEnabled(data.weaponSlots, false); // 判定の発生窓を閉じる
 		controller->SetWeaponTrailEmitting(data.weaponSlots, false); // 軌跡エフェクトの記録も停止(既に生成済みの頂点はStopEmit後も自然に流れて消える)
+		KdDebugGUI::Instance().AddLog("\nAttackRecovery");
 	}
 	else if (phase_ == CombatState::AttackRecovery && elapsed_ >= data.recoveryDuration) {
+		// 自律的に終了し、ControllerにNoneへの復帰を要請する
 		controller->ChangeStateToNone();
 	}
 }
@@ -105,6 +128,7 @@ bool StateAttack::CanStartGuard(const PlayerStatusController* controller) const 
 void StateEvade::Enter(PlayerStatusController* controller) {
 	phase_ = CombatState::Evade;
 	elapsed_ = 0.0f;
+	KdDebugGUI::Instance().AddLog("Evade");
 
 	// 回避中の移動は入力ではなく、決め打ちの軌道(RequestStepMove)、
 	// または(useRootMotionがtrueの場合)アニメーションのルートモーションに
@@ -138,6 +162,7 @@ void StateEvade::Exit(PlayerStatusController* controller) {
 void StateEvade::Update(PlayerStatusController* controller, float deltaTime) {
 	elapsed_ += deltaTime;
 	const auto& data = controller->GetCurrentEvadeData();
+	KdDebugGUI::Instance().AddLog("Evade");
 	if (phase_ == CombatState::Evade && elapsed_ >= data.activeDuration) {
 		phase_ = CombatState::EvadeRecovery;
 		elapsed_ = 0.0f;
@@ -145,6 +170,7 @@ void StateEvade::Update(PlayerStatusController* controller, float deltaTime) {
 	}
 	else if (phase_ == CombatState::EvadeRecovery && elapsed_ >= data.recoveryDuration) {
 		controller->ChangeStateToNone();
+		KdDebugGUI::Instance().AddLog("\nEvadeRecovery");
 	}
 }
 
@@ -164,17 +190,30 @@ bool StateEvade::IsInvincible(const PlayerStatusController* controller) const {
 // --- Guard State ---
 void StateGuard::Enter(PlayerStatusController* controller) {
 	elapsed_ = 0.0f;
+	hasEnteredLoop_ = false;
 	parrySucceeded_ = false;
 	parrySuccessElapsed_ = 0.0f;
+	isReactingToGuardHit_ = false;
+	guardHitElapsed_ = 0.0f;
+	KdDebugGUI::Instance().AddLog("Guard");
 
-	// 単発再生(loop=false)にすることで「構えに入る動作を1回再生し、
-	// 最終フレームでポーズを保持する」形にする。
-	controller->PlayAnimation(controller->GetCurrentGuardData().animationName, false, controller->GetCurrentGuardData().guardTransitionDuration);
+	// 構え動作を単発再生する。以前はこれを最終フレームで止めることで
+	// 継続姿勢を表現していたが、ガードヒット等の別アニメーションを一度
+	// 挟むと「既に同じアニメーションが設定済み」と判定され再生されなく
+	// なる問題があったため、継続姿勢は専用のLoopアニメーションに変更した
+	// (startDuration経過後、Update()側でloopAnimationNameへ切り替える)。
+	controller->PlayAnimation(controller->GetCurrentGuardData().animationName, false, controller->GetCurrentGuardData().startDuration);
 }
 
 void StateGuard::Update(PlayerStatusController* controller, float deltaTime) {
 	elapsed_ += deltaTime;
 	// Guardは継続状態なので、時間経過による自動終了はない
+
+	// 構え動作(単発)が終わったら、継続姿勢のLoopへ切り替える。
+	if (!hasEnteredLoop_ && elapsed_ >= controller->GetCurrentGuardData().startDuration) {
+		hasEnteredLoop_ = true;
+		controller->PlayAnimation(controller->GetCurrentGuardData().loopAnimationName, true);
+	}
 
 	if (parrySucceeded_) {
 		parrySuccessElapsed_ += deltaTime;
@@ -182,6 +221,14 @@ void StateGuard::Update(PlayerStatusController* controller, float deltaTime) {
 			// 演出終了。NormalBlockへ復帰する(ガードキーが既に離されていれば
 			// 次フレームのCanReleaseGuard()判定でHandleActionInput側が解除する)。
 			parrySucceeded_ = false;
+			ResumeLoopAnimation(controller);
+		}
+	}
+	else if (isReactingToGuardHit_) {
+		guardHitElapsed_ += deltaTime;
+		if (guardHitElapsed_ >= controller->GetCurrentGuardData().guardHitDuration) {
+			isReactingToGuardHit_ = false;
+			ResumeLoopAnimation(controller);
 		}
 	}
 }
@@ -192,7 +239,7 @@ bool StateGuard::IsInParryWindow(const PlayerStatusController* controller) const
 
 bool StateGuard::CanReleaseGuard(const PlayerStatusController* controller) const {
 	// パリィ成功演出中は強制的に見せ切る(ガードキーを離しても解除しない)。
-	return !parrySucceeded_;
+	return true;
 }
 
 bool StateGuard::CanStartAttack(const PlayerStatusController* controller) const {
@@ -204,13 +251,40 @@ void StateGuard::NotifyParrySuccess(PlayerStatusController* controller) {
 	if (parrySucceeded_) return; // 同一パリィ猶予内での多重成立を防止
 	parrySucceeded_ = true;
 	parrySuccessElapsed_ = 0.0f;
+	isReactingToGuardHit_ = false; // ガードヒット演出より優先して上書きする
+
+	// Start(構え動作)がまだ終わっていないタイミングでパリィが成立しても、
+	// Update()側のStart→Loop自動切り替えがこの直後に発火して再生したばかりの
+	// パリィ成功アニメーションを上書きしてしまわないよう、ここで先に
+	// 切り替え済み扱いにしておく(以後、構え動作へ戻る必要はもう無いため
+	// 意味的にも正しい)。
+	hasEnteredLoop_ = true;
+
 	controller->PlayAnimation(controller->GetCurrentGuardData().parrySuccessAnimationName, false, controller->GetCurrentGuardData().parrySuccessDuration);
 }
 
 void StateGuard::NotifyGuardHit(PlayerStatusController* controller) {
-	// パリィ成功と異なり内部フェーズは変えず、都度ヒットリアクションだけ
-	// 再生する(ガード解除可否・反撃キャンセル可否には影響させない)。
+	// パリィ成功演出中はそちらを優先し、上書きしない。
+	if (parrySucceeded_) return;
+
+	// 単発リアクションを都度再生し直す(前回と同じ名前でもStart/Loopの
+	// 切り替えを挟んでいるため、Play()側が「既に同じアニメーション」と
+	// 誤認して再生を無視することはない)。
+	isReactingToGuardHit_ = true;
+	guardHitElapsed_ = 0.0f;
+
+	// NotifyParrySuccess()と同じ理由で、Start→Loop自動切り替えによる
+	// 上書きを防ぐため先に切り替え済み扱いにしておく。
+	hasEnteredLoop_ = true;
+
 	controller->PlayAnimation(controller->GetCurrentGuardData().guardHitAnimationName, false, controller->GetCurrentGuardData().guardHitDuration);
+}
+
+void StateGuard::ResumeLoopAnimation(PlayerStatusController* controller) {
+	// リアクション再生中にまだ構え動作(Start)の途中だった場合でも、
+	// Startへ戻す意味は無いためLoopへ確定させる。
+	hasEnteredLoop_ = true;
+	controller->PlayAnimation(controller->GetCurrentGuardData().loopAnimationName, true);
 }
 
 StateGuard::GuardPhase StateGuard::GetGuardPhase(const PlayerStatusController* controller) const {
@@ -220,14 +294,16 @@ StateGuard::GuardPhase StateGuard::GetGuardPhase(const PlayerStatusController* c
 		: GuardPhase::NormalBlock;
 }
 
+
 // --- Stagger State ---
 void StateStagger::Enter(PlayerStatusController* controller) {
 	elapsed_ = 0.0f;
+	KdDebugGUI::Instance().AddLog("Stagger");
 
 	// アニメーション未実装のためコメントアウト。
 	// AttackMoveData/GuardMoveDataのような専用データ構造をStaggerは
 	// 持たないため、isLarge_で仮のアニメーション名を直接出し分ける想定だった。
-	controller->PlayAnimation(isLarge_ ? "GhostSamurai_APose_Large_Hit_Inplace" : "GhostSamurai_APose_Hit_B_Inplace");
+	controller->PlayAnimation(isLarge_ ? "GhostSamurai_APose_Hit_B_Inplace" : "GhostSamurai_APose_Hit_B_Inplace");
 }
 
 void StateStagger::Update(PlayerStatusController* controller, float deltaTime) {
