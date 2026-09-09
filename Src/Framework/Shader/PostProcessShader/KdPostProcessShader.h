@@ -1,10 +1,5 @@
 ﻿#pragma once
 
-struct cbBlar;
-struct cbDepthOfField;
-struct cbBrightFilter;
-struct cbColorGradeInfo;
-
 class KdPostProcessShader
 {
 public:
@@ -47,10 +42,6 @@ public:
 	void PostEffectProcess();
 
 	void GenerateBlurTexture(std::shared_ptr<KdTexture>& spSrcTex, std::shared_ptr<KdTexture>& spDstTex, D3D11_VIEWPORT& VP, int blurRadius);
-
-	/*cbDepthOfField& GetDoFCB() { return m_cb0_DoFInfo.Work(); }
-	cbBrightFilter& GetBrightCB();
-	cbColorGradeInfo& GetColorGradeCB();*/
 
 private:
 
@@ -122,6 +113,16 @@ private:
 	};
 	KdConstantBuffer<cbColorGradeInfo> m_cb0_ColorGradeInfo;
 
+public:
+	//================================================
+	// 現在値の取得(GUI表示用)
+	//	※ ShaderTuningEditor から現在値をミラー無しで直接参照するために追加
+	//================================================
+	const cbDepthOfField& GetDoFCB()        const { return m_cb0_DoFInfo.Get(); }
+	const cbBrightFilter& GetBrightCB()     const { return m_cb0_BrightInfo.Get(); }
+	const cbColorGradeInfo& GetColorGradeCB() const { return m_cb0_ColorGradeInfo.Get(); }
+
+private:
 	KdRenderTargetPack m_colorGradeRTPack; // 最終カラーグレーディング用RT
 
 	KdRenderTargetPack	m_postEffectRTPack;

@@ -47,7 +47,7 @@ class ModelAnimatorComponent;
 // (IKが1つも付いていないオブジェクトのPostUpdate()側など)は実質的に
 // コストゼロになる。
 // ============================================================
-class SkeletonComponent : public ComponentBase, IModelRenderSource {
+class SkeletonComponent : public ComponentBase, public IModelRenderSource {
 public:
 	explicit SkeletonComponent(GameObject* owner) : ComponentBase(owner) {}
 
@@ -97,9 +97,10 @@ public:
 	uint32_t GetBoneVersion() const { return m_boneVersion; }
 
 	KdModelWork& WorkModel() { return m_modelWork; }
-	const KdModelWork& GetModel() const { return m_modelWork; }
 
 	KdModelWork* GetModel() override { return &m_modelWork; }
+	// 必要なら: モデル未ロード時はfalseを返すよう調整
+	bool IsModelDrawable() const override { return true; }
 
 private:
 	KdModelWork m_modelWork;

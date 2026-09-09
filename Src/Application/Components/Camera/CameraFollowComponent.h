@@ -49,6 +49,17 @@
 //   動いても位置と向きが常に対象との関係で決まるため、ズレが蓄積しない。
 //   向き自体はUpdateLockedPositionで決まった位置からTryLookAtLockedTarget()
 //   で改めて対象へ向ける。
+//
+// --- 実行タイミング ---------------------------------------------------
+// Update(移動・入力解決)が全て終わった後に追従先を読みたいため、
+// PostUpdateのタイミングで計算する必要がある。ただし、このクラス自身は
+// ComponentBase::PostUpdateをoverrideしていない。CameraCollisionComponent
+// (Followが決めた理想位置を壁際で補正する)より必ず先に実行される必要が
+// あり、兄弟コンポーネント間の実行順序はObjectManagerの自動巡回だけでは
+// 保証できないため、Resolve()という普通のメソッドとして公開し、
+// CameraComponent::PostUpdate()から明示的な順序で呼ばれる想定にしている
+// (詳細はCameraComponent.h冒頭コメント参照)。単体でGameObjectに
+// 付けただけでは呼ばれない点に注意。
 // ============================================================
 class CameraFollowComponent : public ComponentBase {
 public:
@@ -91,9 +102,9 @@ public:
 		lockOnPositionPitch_ = positionPitch;
 	}
 
-	// Update(移動・入力解決)が全て終わった後に追従先を読みたいため、
-	// PostUpdateで計算する。
-	void PostUpdate(float deltaTime) override {
+	// CameraComponent::PostUpdate()から呼ばれる想定。クラス冒頭の
+	// 「実行タイミング」コメント参照。単体では自動的に呼ばれない。
+	void Resolve(float deltaTime) {
 		if (transform_ == nullptr) return;
 
 		// 毎フレームResolve()で有効性を確認する。対象がすでに破棄されて
@@ -225,7 +236,7 @@ private:
 	}
 
 	TransformComponent* transform_ = nullptr;
-	CameraOrbitComponent* orbit_ = nullptr;        // 同一GameObjectの兄弟コンポーネントなので生ポインタGのまま
+	CameraOrbitComponent* orbit_ = nullptr;        // 同一GameObjectの兄弟コンポーネントなので生ポインタのまま
 	Handle<CameraTargetComponent> target_;         // 別GameObjectの参照なのでHandle化
 	Math::Vector3 localOffset_{ 0.0f, 0.0f, -10.0f };
 	bool followRotation_ = true;

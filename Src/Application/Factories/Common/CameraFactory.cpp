@@ -4,7 +4,8 @@
 #include "../../Components/Camera/CameraViewComponent.h"
 #include "../../Components/Camera/CameraOrbitComponent.h"
 #include "../../Components/Camera/CameraTargetComponent.h"
-#include "../../Components/Camera/CameraCollision.h"
+#include "../../Components/Camera/CameraCollisionComponent.h"
+#include "../../Components/Camera/CameraShakeComponent.h"
 
 
 GameObject* CameraFactory::CreateCamera(ObjectManager& objectManager, GameObject* target, int ownerCameraId)
@@ -26,6 +27,8 @@ GameObject* CameraFactory::CreateCamera(ObjectManager& objectManager, CameraTarg
 	collision->SetPivotTarget(Handle<CameraTargetComponent>(target));
 	collision->SetSweepRadius(0.5f);
 	objectManager.SetActiveCamera(cameraC);
+	auto* shake = camera->AddComponent<CameraShakeComponent>();
+	shake->SetRotationAmplitude({ 0.1f,0.1f,0.15f });
 
 	return camera;
 }

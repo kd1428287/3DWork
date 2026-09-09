@@ -11,6 +11,7 @@ class SlashTrailDispatcher;
 
 class InputSystem;
 class TimeScaleSystem;
+class CameraSystem;
 class ColliderRegistry;
 class CollisionSystem;
 class RaycastSystem;
@@ -39,6 +40,7 @@ private:
 	std::unique_ptr<SlashTrailDispatcher> slashTrailDispatcher_ = nullptr;
 	std::unique_ptr<InputSystem> inputSystem_ = nullptr;
 	std::unique_ptr<TimeScaleSystem> timeScaleSystem_ = nullptr;
+	std::unique_ptr<CameraSystem> cameraSystem_ = nullptr;
 	std::unique_ptr<ColliderRegistry> colliderRegistry_ = nullptr;
 	std::unique_ptr<CollisionSystem> collisionSystem_ = nullptr;
 };

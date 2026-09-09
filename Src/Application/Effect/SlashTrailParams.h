@@ -56,5 +56,5 @@ struct SlashTrailParams
 	// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 	std::string				TexturePath;
 	KdParticleBlendMode		BlendMode = KdParticleBlendMode::Add;
-	ParticleDrawPass		DrawPassFlags = ParticleDrawPass::Default;
+	ParticleDrawPass		DrawPassFlags = ParticleDrawPass::Default;// | ParticleDrawPass::Blight;
 };

@@ -4,6 +4,7 @@
 #include "../../../Application/Editor/EditorViewport.h"
 #include "../../../Application/Editor/MapEditor.h"
 #include "../../../Application/Editor/EffectEditor.h"
+#include "../../../Application/Editor/ShaderTuningEditor.h"
 
 // DockBuilder系APIを使うために必要(公式にも初期配置構築の定番として使われる内部ヘッダ)
 #include "imgui_internal.h"
@@ -128,6 +129,8 @@ void KdDebugGUI::GuiProcess()
 
 		// エフェクト配置エディタ
 		EffectEditor::Instance().Update();
+
+		ShaderTuningEditor::Instance().Update(); // ← MapEditor::Instance().Update(); の直後などに追加
 	}
 
 	//===========================================================

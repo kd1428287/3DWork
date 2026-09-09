@@ -594,7 +594,7 @@
     <ClInclude Include="Src\Application\Components\Character\Player\PlayerCombatDataTable.h">
       <Filter>Src\Application\Components\Character\Player</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\Camera\CameraCollision.h">
+    <ClInclude Include="Src\Application\Components\Camera\CameraCollisionComponent.h">
       <Filter>Src\Application\Components\Camera</Filter>
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Animation\RootMotionExtractor.h">
@@ -755,6 +755,21 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Combat\WeaponComponent.h">
       <Filter>Src\Application\Components\Combat</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Editor\ShaderTuningEditor.h">
+      <Filter>Src\Application\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Camera\CameraShakeComponent.h">
+      <Filter>Src\Application\Components\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Systems\CameraEvents.h">
+      <Filter>Src\Application\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Movement\FollowCameraComponent.h">
+      <Filter>Src\Application\Components\Movement</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Animation\staticModelComponent.h">
+      <Filter>Src\Application\Components\Animation</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1007,6 +1022,9 @@
     <ClCompile Include="Src\Framework\Shader\GPUParticle\SlashTrailRenderer.cpp">
       <Filter>Src\Framework\Shader\GPUParticle</Filter>
     </ClCompile>
+    <ClCompile Include="Src\Application\Editor\ShaderTuningEditor.cpp">
+      <Filter>Src\Application\Editor</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Src\Framework\Shader\inc_KdCommon.hlsli">
@@ -1029,6 +1047,9 @@
     </None>
     <None Include="Src\Framework\Shader\GPUParticle\inc_KdGPUParticle.hlsli">
       <Filter>Src\Framework\Shader\GPUParticle</Filter>
+    </None>
+    <None Include="Src\Framework\Shader\StandardShader\inc_KdSkyDomeShader.hlsli">
+      <Filter>Src\Framework\Shader\StandardShader</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

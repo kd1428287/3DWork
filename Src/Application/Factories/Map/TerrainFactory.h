@@ -13,6 +13,7 @@ public:
 
 	// 従来の固定マップ生成用（不要であれば削除可）
 	GameObject* CreateTerrain(ObjectManager& objectManager, int ownerTerrainId = 0);
+	GameObject* CreateSkydome(ObjectManager& objectManager, int ownerTerrainId = 0);
 
 	/**
 	 * @brief 渡されたエンティティデータに基づいてオブジェクトを生成・配置する

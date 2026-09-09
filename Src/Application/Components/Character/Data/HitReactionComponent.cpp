@@ -119,6 +119,7 @@ void HitReactionComponent::OnCollisionEnter(const CollisionSystem::CollisionEnte
 		}
 
 		RequestHitStopEvent(*GetOwner()->GetContext()->eventBus, 0.f, 0.1f);
+		RequestCameraShake(*GetOwner()->GetContext()->eventBus, 0.75f);
 
 		query_->EnterStagger(postureBroken, postureBroken ? largeStaggerDuration_ : attack->hitStunSeconds);
 	}

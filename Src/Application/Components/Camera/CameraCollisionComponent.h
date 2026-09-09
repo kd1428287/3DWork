@@ -14,6 +14,25 @@
 //     (fail-openする)。未解決。
 //   - 除外できる自己ヒット対象はpivotTargetの持ち主1体のみ。
 //     プレイヤーに追従する別GameObjectの装備等は除外されない。
+//   - sweepRadius_はSphere/Capsule/Boxにしか効かず、地形(Mesh/Polygon)
+//     には効かない(RaycastSystem::SphereCastClosestのコメント参照)。
+//     つまり地形カテゴリに対しては実質半径0のレイキャストと同じで、
+//     地形の角のすり抜けは今のところ防げていない。未解決。
+//
+// --- 実行タイミング ---------------------------------------------------
+// CameraFollowComponent(理想位置を決める)が確定させたtransform_の
+// 座標を読み取って補正するため、必ずFollowより後に実行される必要が
+// ある。兄弟コンポーネント間の実行順序はObjectManagerの自動巡回だけ
+// では保証できないため、このクラスもComponentBase::PostUpdateを
+// overrideしていない。Resolve()という普通のメソッドとして公開し、
+// CameraComponent::PostUpdate()から明示的な順序(Follow→Collision→
+// Shake)で呼ばれる想定にしている(詳細はCameraComponent.h冒頭コメント
+// 参照)。単体でGameObjectに付けただけでは呼ばれない点に注意。
+//
+// また、currentDistance_という平滑化状態をフレームをまたいで保持して
+// いるため、Shake(加算オフセット)より必ず先に実行する必要がある。
+// Shakeの揺れがこの補間ロジックに紛れ込むと、シェイクを「本物のカメラ
+// 移動」として誤検出し、意図しない引っかかりが発生する。
 // ============================================================
 class CameraCollisionComponent : public ComponentBase {
 public:
@@ -41,7 +60,10 @@ public:
 	// 障害物が無くなった後、desiredへ戻る速度(m/s)。
 	void SetPullOutSpeed(float speed) { pullOutSpeed_ = speed; }
 
-	void PostUpdate(float deltaTime) override {
+	// CameraComponent::PostUpdate()から、CameraFollowComponent::Resolve()の
+	// 直後に呼ばれる想定。クラス冒頭の「実行タイミング」コメント参照。
+	// 単体では自動的に呼ばれない。
+	void Resolve(float deltaTime) {
 		if (transform_ == nullptr) return;
 
 		CameraTargetComponent* pivotTarget = pivotTarget_.Resolve();

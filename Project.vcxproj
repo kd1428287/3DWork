@@ -280,12 +280,14 @@
     <ClInclude Include="Src\Application\Components\Animation\RootMotionApplierComponent.h" />
     <ClInclude Include="Src\Application\Components\Animation\RootMotionExtractor.h" />
     <ClInclude Include="Src\Application\Components\Animation\SkeletonComponent.h" />
+    <ClInclude Include="Src\Application\Components\Animation\staticModelComponent.h" />
     <ClInclude Include="Src\Application\Components\Animation\TwoBoneIK.h" />
     <ClInclude Include="Src\Application\Components\Animation\TwoBoneIKComponent.h" />
-    <ClInclude Include="Src\Application\Components\Camera\CameraCollision.h" />
+    <ClInclude Include="Src\Application\Components\Camera\CameraCollisionComponent.h" />
     <ClInclude Include="Src\Application\Components\Camera\CameraComponent.h" />
     <ClInclude Include="Src\Application\Components\Camera\CameraFollowComponent.h" />
     <ClInclude Include="Src\Application\Components\Camera\CameraOrbitComponent.h" />
+    <ClInclude Include="Src\Application\Components\Camera\CameraShakeComponent.h" />
     <ClInclude Include="Src\Application\Components\Camera\CameraViewComponent.h" />
     <ClInclude Include="Src\Application\Components\Camera\CameraTargetComponent.h" />
     <ClInclude Include="Src\Application\Components\Character\BehaviorTree\BTComposite.h" />
@@ -334,6 +336,7 @@
     <ClInclude Include="Src\Application\Components\Effect\SlowEffectComponent.h" />
     <ClInclude Include="Src\Application\Components\Effect\SlashTrailComponent.h" />
     <ClInclude Include="Src\Application\Components\Movement\FacingDirectionComponent.h" />
+    <ClInclude Include="Src\Application\Components\Movement\FollowCameraComponent.h" />
     <ClInclude Include="Src\Application\Components\Movement\IMovementSource.h" />
     <ClInclude Include="Src\Application\Components\Movement\MovementComponent.h" />
     <ClInclude Include="Src\Application\Components\Movement\TweenMoveComponent.h" />
@@ -364,6 +367,7 @@
     <ClInclude Include="Src\Application\Editor\EffectEditor.h" />
     <ClInclude Include="Src\Application\Editor\ImGuizmo.h" />
     <ClInclude Include="Src\Application\Editor\MapEditor.h" />
+    <ClInclude Include="Src\Application\Editor\ShaderTuningEditor.h" />
     <ClInclude Include="Src\Application\Effect\EffectDataLoader.h" />
     <ClInclude Include="Src\Application\Effect\EffectDispatcher.h" />
     <ClInclude Include="Src\Application\Effect\EffectEvents.h" />
@@ -395,6 +399,7 @@
     <ClInclude Include="Src\Application\Scene\SceneManager.h" />
     <ClInclude Include="Src\Application\Scene\SceneType.h" />
     <ClInclude Include="Src\Application\Scene\TitleScene\TitleScene.h" />
+    <ClInclude Include="Src\Application\Systems\CameraEvents.h" />
     <ClInclude Include="Src\Application\Systems\CameraSystem.h" />
     <ClInclude Include="Src\Application\Systems\Collision\ColliderRegistry.h" />
     <ClInclude Include="Src\Application\Systems\Collision\CollisionMath.h" />
@@ -472,6 +477,7 @@
     <ClCompile Include="Src\Application\Editor\EffectEditor.cpp" />
     <ClCompile Include="Src\Application\Editor\ImGuizmo.cpp" />
     <ClCompile Include="Src\Application\Editor\MapEditor.cpp" />
+    <ClCompile Include="Src\Application\Editor\ShaderTuningEditor.cpp" />
     <ClCompile Include="Src\Application\Effect\EffectDataLoader.cpp" />
     <ClCompile Include="Src\Application\Effect\EffectDispatcher.cpp" />
     <ClCompile Include="Src\Application\Effect\EffectInstance.cpp" />
@@ -545,6 +551,7 @@
     <None Include="Src\Framework\Shader\inc_KdCommon.hlsli" />
     <None Include="Src\Framework\Shader\PostProcessShader\inc_KdPostProcessShader.hlsli" />
     <None Include="Src\Framework\Shader\SpriteShader\inc_KdSpriteShader.hlsli" />
+    <None Include="Src\Framework\Shader\StandardShader\inc_KdSkyDomeShader.hlsli" />
     <None Include="Src\Framework\Shader\StandardShader\inc_KdStandardShader.hlsli" />
   </ItemGroup>
   <ItemGroup>

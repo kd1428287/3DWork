@@ -4,6 +4,7 @@
 #include "../../Components/Render/ModelRenderComponent.h"
 #include "../../Components/Animation/SkeletonComponent.h"
 #include "../../Components/Collision/ColliderComponent.h"
+#include "../../Components/Movement/FollowCameraComponent.h"
 
 GameObject * TerrainFactory::CreateTerrain(ObjectManager & objectManager, int ownerTerrainId)
 {
@@ -17,6 +18,21 @@ GameObject * TerrainFactory::CreateTerrain(ObjectManager & objectManager, int ow
 	collider->AddBox("body", Math::Vector3(100.f, 1.f, 100.f), Math::Vector3(0.f, -2.f, 0.f), ColliderCategory::Ground);
 
 	return ground;
+}
+
+GameObject* TerrainFactory::CreateSkydome(ObjectManager& objectManager, int ownerTerrainId)
+{
+	auto* skydome = objectManager.Instantiate("skydome");
+	auto* transform = skydome->AddComponent<TransformComponent>();
+	auto* model = skydome->AddComponent<SkeletonComponent>();
+	model->SetModelData("Asset/Models/SkySphere/skySphere.gltf");
+	auto* renderer = skydome->AddComponent<ModelRenderComponent>();
+	renderer->SetLayer(RenderLayer::DrawUnLit);
+	renderer->SetForceMaxDepth(true);
+	transform->SetPosition({ 0.f,0.f,0.f });
+	skydome->AddComponent<FollowCameraComponent>();
+
+	return skydome;
 }
 
 GameObject* TerrainFactory::CreateFromData(ObjectManager& objectManager, const EntityData& data)

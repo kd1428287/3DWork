@@ -4,6 +4,7 @@
 // system
 #include "../../Systems/InputSystem.h"
 #include "../../Systems/TimeScaleSystem.h"
+#include "../../Systems/CameraSystem.h"
 #include "../../Systems/Collision/ColliderRegistry.h"
 #include "../../Systems/Collision/CollisionSystem.h"
 #include "../../Effect/EffectDispatcher.h"
@@ -59,7 +60,8 @@ void GameScene::Init()
 
 	// factory
 	terrainFactory_ = std::make_unique<TerrainFactory>();
-	auto* terrain = terrainFactory_->CreateTerrain(*objManager_,0);
+	auto* terrain = terrainFactory_->CreateTerrain(*objManager_, 0);
+	auto* skydome = terrainFactory_->CreateSkydome(*objManager_, 0);
 
 	slashTrailDispatcher_ = std::make_unique<SlashTrailDispatcher>();
 	slashTrailDispatcher_->Init(*localBus_);
@@ -80,8 +82,13 @@ void GameScene::Init()
 	def.aiData = CreateDebugWarrockAIData();
 	map.emplace("Warrock", def);
 	enemyFactory_ = std::make_unique<EnemyFactory>(map);
-	//enemyFactory_->CreateEnemy(*objManager_, "Brute", Math::Vector3(0, 0, 5));
-	enemyFactory_->CreateEnemy(*objManager_, "Warrock", Math::Vector3(10, 0, 5));
+
+	//for (int i = 0; i < 100; i++)
+	//{
+	//	enemyFactory_->CreateEnemy(*objManager_, "Warrock", Math::Vector3(10, 0, i * 0.01f));
+	//}
+
+	enemyFactory_->CreateEnemy(*objManager_, "Warrock", Math::Vector3(10, 0, 5.f));
 
 	playerFactory_ = std::make_unique<PlayerFactory>();
 	PlayerDefinition pDef;
@@ -90,6 +97,8 @@ void GameScene::Init()
 
 	cameraFactory_ = std::make_unique<CameraFactory>();
 	auto* camera = cameraFactory_->CreateCamera(*objManager_, player);
+
+	cameraSystem_ = std::make_unique<CameraSystem>(*objManager_);
 
 	// system
 	inputSystem_ = std::make_unique<InputSystem>();

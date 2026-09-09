@@ -131,6 +131,9 @@ public:
 		return result;
 	}
 
+	EventBus* GetSceneEventBus() { return context_.eventBus; }
+	CameraComponent* GetActiveCamera() { return context_.activeCamera; }
+
 	void SetTimeScale(float timeScale, uint8_t targetMask)
 	{
 		for (auto& obj : objects_) {

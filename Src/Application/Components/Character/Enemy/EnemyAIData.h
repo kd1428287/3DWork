@@ -61,7 +61,7 @@ struct EnemyAIData
 	float idleDuration = 1.5f;
 
 	// この距離以内にターゲットが入ったら追跡を開始する。
-	float detectionRange = 6.0f;
+	float detectionRange = 30.0f;
 
 	// 追跡中、この距離より離れたら追跡を打ち切ってパトロールへ戻る。
 	// detectionRangeより大きい値にしてヒステリシスを持たせることで、

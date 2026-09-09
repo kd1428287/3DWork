@@ -26,11 +26,16 @@ public:
 		// スキンメッシュオブジェクトかどうか(スキンメッシュ対応)
 		int				IsSkinMeshObj = 0;
 
+		int				ForceMaxDepth = 0;
+
 		// ディゾルブ関連
 		float			DissolveThreshold = 0.0f;	// 0 ～ 1
 		float			DissolveEdgeRange = 0.03f;	// 0 ～ 1
+		float			_blankBeforeDissolve[2] = { 0.0f, 0.0f };	// HLSL側でg_dissolveEmissiveが16byte境界に押し出される分のパディング
 
 		Math::Vector3	DissolveEmissive = { 0.0f, 1.0f, 1.0f };
+
+		float			_blankEnd = 0.0f;		// 64byte境界に揃える末尾パディング
 	};
 
 	// 定数バッファ(メッシュ単位更新)
@@ -55,6 +60,15 @@ public:
 	struct cbBone {
 		Math::Matrix mBones[300];
 	};
+
+	struct cbSkyDome
+	{
+		float EdgeFadeBottomY = 0.0f;
+		float EdgeFadeTopY = 0.0f;
+		float _blank[2] = { 0.0f, 0.0f };
+	};
+
+
 
 	//================================================
 	// 設定・取得
@@ -81,6 +95,12 @@ public:
 	{
 		m_cb0_Obj.Work().FogEnable = enable;
 
+		m_dirtyCBObj = true;
+	}
+
+	void SetForceMaxDepth(bool enable)
+	{
+		m_cb0_Obj.Work().ForceMaxDepth = enable;
 		m_dirtyCBObj = true;
 	}
 
@@ -126,6 +146,14 @@ public:
 		if (!m_dissolveTex) { return; }
 
 		SetDissolveTexture(*m_dissolveTex);
+	}
+
+	void SetSkyDomeEdgeFade(float bottomY, float topY)
+	{
+		auto& sd = m_cb4_SkyDome.Work();
+		sd.EdgeFadeBottomY = bottomY;
+		sd.EdgeFadeTopY = topY;
+		m_cb4_SkyDome.Write();
 	}
 
 	//================================================
@@ -247,6 +275,7 @@ private:
 	KdConstantBuffer<cbMesh>		m_cb1_Mesh;				// メッシュ毎に更新
 	KdConstantBuffer<cbMaterial>	m_cb2_Material;			// マテリアル毎に更新
 	KdConstantBuffer<cbBone>		m_cb3_Bone;				// ボーン事に更新(スキンメッシュ対応「)
+	KdConstantBuffer<cbSkyDome>		m_cb4_SkyDome;			// スカイドーム用
 
 	KdRenderTargetPack	m_depthMapFromLightRTPack;
 	KdRenderTargetChanger m_depthMapFromLightRTChanger;

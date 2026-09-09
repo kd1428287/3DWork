@@ -7,6 +7,7 @@ cbuffer cbObject : register(b0)
 	int g_FogEnable;	// フォグ有効
 	int g_OnlyEmissie;	// エミッシブの描画だけにするかどうか
 	int g_IsSkinMeshObj;// スキンメッシュオブジェクトかどうか(スキンメッシュ対応)
+	bool g_ForceMaxDepth;
 	
 	float g_dissolveValue;		// ディゾルブの閾値
 	float g_dissolveEdgeRange;	// ディゾルブの境界線の太さ
