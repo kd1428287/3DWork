@@ -62,6 +62,13 @@ public:
 	//	(KdDebugGUI::GuiProcess() 内のUpdate()から呼んではいけない)
 	void DrawPlacedObjects();
 
+	// 編集中マップ全体を、専用カメラ・専用のオフスクリーンバッファへ描画する
+	//	EffectEditorのRenderPreviewViewport()と同じパターン。
+	//	3D描画パス側(メインシーンの描画・DrawPlacedObjects()とは別のタイミング)から
+	//	フレームに1回呼ぶこと。呼び出し前後でRT/ビューポート/カメラ定数バッファを
+	//	退避・復元するため、メインシーン(EditorViewport)の描画状態には一切影響しない
+	void RenderPreviewViewport();
+
 private:
 
 	void DrawMainMenu();
@@ -69,6 +76,12 @@ private:
 	void DrawInspector();
 	void DrawGizmo();
 	void DrawAssetPicker();
+
+	// 選択中オブジェクトを注視点とするプレビュー専用ウィンドウ(RenderPreviewViewport()が描いた絵を表示する)
+	void DrawPreviewWindow();
+
+	// 配置済みオブジェクトを描画する実処理(DrawPlacedObjects()・RenderPreviewViewport()の共通部分)
+	void DrawObjects();
 
 	void AddObject();
 	void RemoveSelected();
@@ -98,13 +111,14 @@ private:
 	bool	m_useSnap = false;
 	float	m_snapValue[3] = { 1.0f, 1.0f, 1.0f };
 
-	char	m_filePathBuf[260] = "Asset/Data/map.json";
+	char	m_filePathBuf[260] = "Asset/Data/Map/MapData.json";
 
 	// アセット一覧(登録済みモデルファイルパス)
 	std::vector<std::string>	m_modelFileList;
 	bool						m_assetListLoaded = false;
 	int							m_selectedAsset = -1;						// 一覧内での選択(削除用)
-	char						m_registryPathBuf[260] = "Asset/Data/ModelAssets.json";	// 登録一覧の保存先
+	char						m_registryPathBuf[260] = "Asset/Data/Map/ModelAssets.json";	// 登録一覧の保存先
+	static constexpr const char* kAssetsFilePath = "Asset/Models/";
 
 	// ホットリロード関連
 	bool		m_autoReload = true;	// trueなら外部変更を自動検知
@@ -112,10 +126,47 @@ private:
 	FILETIME	m_lastWriteTime = {};		// 最後に確認したファイル更新日時
 
 	//=====================================================
+	// Map Preview 専用ビューポート
+	//	EditorViewport(ゲーム画面をオフスクリーン→ImGui::Imageで表示するクラス)や
+	//	EffectEditor::PreviewViewportと全く同じパターンを踏襲した、マップ全体プレビュー用の
+	//	ミニビューポート。ゲームのメインシーン・ゲームカメラとは完全に独立している。
+	//=====================================================
+	struct PreviewViewport
+	{
+		std::shared_ptr<KdTexture>	Color;	// オフスクリーンのカラーバッファ
+		std::shared_ptr<KdTexture>	Depth;	// オフスクリーンのZバッファ
+
+		int		Width = 0;
+		int		Height = 0;
+
+		ImVec2	ScreenPos = { 0,0 };	// ウィンドウ内、画像の左上スクリーン座標
+		ImVec2	ScreenSize = { 0,0 };	// ウィンドウ内、画像の表示サイズ
+
+		// ウィンドウの表示サイズに合わせてオフスクリーンバッファを作り直す(サイズ据え置きなら何もしない)
+		void Resize(int w, int h);
+	};
+
+	// プレビュー専用の簡易オービットカメラ。
+	// 選択中オブジェクトがあればその pos を、無ければ配置済みオブジェクト全体の重心
+	// (オブジェクトが無ければ原点)を注視点とする
+	struct PreviewCamera
+	{
+		float Distance = 5.0f;
+		float Yaw = 0.0f;
+		float Pitch = 0.3f;
+
+		DirectX::SimpleMath::Matrix GetView(const DirectX::SimpleMath::Vector3& target) const;
+		DirectX::SimpleMath::Matrix GetProj(float aspect) const;
+	};
+
+	PreviewViewport	m_previewViewport;
+	PreviewCamera	m_previewCamera;
+
+	//=====================================================
 	// シングルトンパターン
 	//=====================================================
 private:
-	MapEditor() {}
+	MapEditor();
 	~MapEditor() {}
 
 public:

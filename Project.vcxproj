@@ -408,6 +408,7 @@
     <ClInclude Include="Src\Application\Systems\Collision\CollisionMath.h" />
     <ClInclude Include="Src\Application\Systems\Collision\CollisionSystem.h" />
     <ClInclude Include="Src\Application\Systems\Collision\RaycastSystem.h" />
+    <ClInclude Include="Src\Application\Systems\ComboSystem.h" />
     <ClInclude Include="Src\Application\Systems\InputSystem.h" />
     <ClInclude Include="Src\Application\Systems\TimeScaleEvents.h" />
     <ClInclude Include="Src\Application\Systems\TimeScaleSystem.h" />
@@ -433,9 +434,10 @@
     <ClInclude Include="src\Framework\Direct3D\KdTexture.h" />
     <ClInclude Include="Src\Framework\Math\KdUVAnimation.h" />
     <ClInclude Include="Src\Framework\Shader\GPUParticle\KdGPUParticle.h" />
-    <ClInclude Include="Src\Framework\Shader\GPUParticle\SlashTrailRenderer.h" />
     <ClInclude Include="Src\Framework\Shader\KdAmbientController.h" />
     <ClInclude Include="Src\Framework\Shader\KdRenderTargetChange.h" />
+    <ClInclude Include="Src\Framework\Shader\SlashTrailShader\SlashTrailShader.h" />
+    <ClInclude Include="Src\Framework\Shader\SlashTrailShader\SlashTrailRenderer.h" />
     <ClInclude Include="Src\Framework\Shader\StandardShader\KdStandardShader.h" />
     <ClInclude Include="Src\Framework\Utility\KdDataStorage.h" />
     <ClInclude Include="Src\Framework\Utility\KdCSVData.h" />
@@ -527,9 +529,10 @@
     <ClCompile Include="src\Framework\Direct3D\KdTexture.cpp" />
     <ClCompile Include="Src\Framework\Math\KdUVAnimation.cpp" />
     <ClCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle.cpp" />
-    <ClCompile Include="Src\Framework\Shader\GPUParticle\SlashTrailRenderer.cpp" />
     <ClCompile Include="Src\Framework\Shader\KdAmbientController.cpp" />
     <ClCompile Include="Src\Framework\Shader\KdRenderTargetChange.cpp" />
+    <ClCompile Include="Src\Framework\Shader\SlashTrailShader\SlashTrailShader.cpp" />
+    <ClCompile Include="Src\Framework\Shader\SlashTrailShader\SlashTrailRenderer.cpp" />
     <ClCompile Include="Src\Framework\Shader\StandardShader\KdStandardShader.cpp" />
     <ClCompile Include="Src\Framework\Utility\JsonLoader.cpp" />
     <ClCompile Include="Src\Framework\Utility\KdCSVData.cpp" />
@@ -576,9 +579,6 @@
     <FxCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle_VS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
     </FxCompile>
-    <FxCompile Include="Src\Framework\Shader\GPUParticle\SlashTrail_VS.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
-    </FxCompile>
     <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_Blur.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
@@ -608,6 +608,9 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\SlashTrailShader\SlashTrail_VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\SpriteShader\KdSpriteShader_PS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>

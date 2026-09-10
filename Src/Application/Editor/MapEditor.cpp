@@ -3,7 +3,8 @@
 #include "MapEditor.h"
 #include "EditorViewport.h"
 
-#include <fstream>
+#include "imgui_internal.h"
+
 #include <filesystem>
 #include <commdlg.h>	
 #pragma comment(lib, "comdlg32.lib")
@@ -25,6 +26,37 @@ DirectX::SimpleMath::Matrix MapObject::GetMatrix() const
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// MapEditor専用ドックスペースの初期レイアウト
+//	左：Hierarchy / 中央：Inspector・右：Map Preview / 下：Map Editor(メニュー) + Assets(タブ)
+//	EffectEditorのSetupEffectDockLayout()と同じ配分・同じ考え方
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+static void SetupMapDockLayout(ImGuiID dockspaceId, const ImVec2& size)
+{
+	ImGui::DockBuilderRemoveNode(dockspaceId);
+	ImGui::DockBuilderAddNode(dockspaceId, ImGuiDockNodeFlags_DockSpace);
+	ImGui::DockBuilderSetNodeSize(dockspaceId, size);
+
+	ImGuiID center = dockspaceId;
+
+	// 左：Hierarchy(幅30%)
+	ImGuiID left = ImGui::DockBuilderSplitNode(center, ImGuiDir_Left, 0.30f, nullptr, &center);
+
+	// 下：Map Editor(メニュー) + Assets(タブ)、高さ35%
+	ImGuiID bottom = ImGui::DockBuilderSplitNode(center, ImGuiDir_Down, 0.35f, nullptr, &center);
+
+	// 残った中央を Inspector(左) / Map Preview(右) に分割
+	ImGuiID preview = ImGui::DockBuilderSplitNode(center, ImGuiDir_Right, 0.45f, nullptr, &center);
+
+	ImGui::DockBuilderDockWindow("Hierarchy", left);
+	ImGui::DockBuilderDockWindow("Inspector", center);	// 残った中央上
+	ImGui::DockBuilderDockWindow("Map Preview", preview);
+	ImGui::DockBuilderDockWindow("Assets", bottom);
+	ImGui::DockBuilderDockWindow("Map Editor", bottom);	// Assetsとタブ化
+
+	ImGui::DockBuilderFinish(dockspaceId);
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 毎フレーム更新
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void MapEditor::Update()
@@ -42,10 +74,35 @@ void MapEditor::Update()
 	// マップデータの外部変更検知(ホットリロード)
 	CheckHotReload();
 
+	// マップエディタ専用のコンテナウィンドウ
+	//	メインビューポートの右外側に初期配置することで、
+	//	マルチビューポート機能により起動時から「別ウィンドウ」として分離表示される
+	//	(EffectEditorの"Effect Editor Window"と同じ考え方)
+	ImGuiViewport* mainViewport = ImGui::GetMainViewport();
+
+	ImGui::SetNextWindowPos(
+		ImVec2(mainViewport->Pos.x + mainViewport->Size.x + 20.0f, mainViewport->Pos.y),
+		ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowSize(ImVec2(900.0f, 700.0f), ImGuiCond_FirstUseEver);
+
+	ImGui::Begin("Map Editor Window");
+	{
+		ImGuiID mapDockId = ImGui::GetID("MapDockSpace");
+
+		if (ImGui::DockBuilderGetNode(mapDockId) == nullptr)
+		{
+			SetupMapDockLayout(mapDockId, ImGui::GetContentRegionAvail());
+		}
+
+		ImGui::DockSpace(mapDockId, ImVec2(0, 0));
+	}
+	ImGui::End();
+
 	DrawMainMenu();
 	DrawHierarchy();
 	DrawInspector();
 	DrawAssetPicker();
+	DrawPreviewWindow();
 	DrawGizmo();
 }
 
@@ -240,7 +297,7 @@ void MapEditor::DrawAssetPicker()
 			// オブジェクトが選択中なら、クリックしたアセットをそのまま割り当てる
 			if (m_selected >= 0 && m_selected < (int)m_objects.size())
 			{
-				m_objects[m_selected].SetModel(path);
+				m_objects[m_selected].SetModel(kAssetsFilePath + path);
 			}
 		}
 	}
@@ -267,21 +324,23 @@ void MapEditor::LoadModelRegistry(const std::string& path)
 {
 	m_modelFileList.clear();
 
-	std::ifstream ifs(path);
-	if (!ifs) return;	// 未作成(初回起動)ならリストが空のまま始まる
+	nlohmann::json j;
+	if (!JsonLoader::Load(path, j))
+	{
+		// 未作成(初回起動)/壊れたJSON、いずれもリストが空のまま始まる
+		return;
+	}
 
 	try
 	{
-		nlohmann::json j;
-		ifs >> j;
-
 		for (auto& e : j)
 		{
 			m_modelFileList.push_back(e.get<std::string>());
 		}
 	}
-	catch (...)
+	catch (const nlohmann::json::exception&)
 	{
+		m_modelFileList.clear();
 		KdDebugGUI::Instance().AddLog("MapEditor: アセット一覧の読み込みに失敗 %s\n", path.c_str());
 	}
 }
@@ -290,14 +349,10 @@ void MapEditor::SaveModelRegistry(const std::string& path)
 {
 	nlohmann::json j = m_modelFileList;
 
-	std::ofstream ofs(path);
-	if (!ofs)
+	if (!JsonLoader::Save(path, j))
 	{
 		KdDebugGUI::Instance().AddLog("MapEditor: アセット一覧の保存に失敗 %s\n", path.c_str());
-		return;
 	}
-
-	ofs << j.dump(2);
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -306,6 +361,10 @@ void MapEditor::SaveModelRegistry(const std::string& path)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void MapEditor::AddModelViaFileDialog()
 {
+	namespace fs = std::filesystem;
+
+	fs::path savedCurrentDir = fs::current_path();
+
 	char fileBuf[MAX_PATH] = {};
 
 	OPENFILENAMEA ofn = {};
@@ -314,20 +373,22 @@ void MapEditor::AddModelViaFileDialog()
 	ofn.lpstrFilter = "Model Files (*.gltf;*.glb)\0*.gltf;*.glb\0All Files (*.*)\0*.*\0";
 	ofn.lpstrFile = fileBuf;
 	ofn.nMaxFile = sizeof(fileBuf);
-	ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
+	ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
 
-	if (!GetOpenFileNameA(&ofn))
+	bool result = GetOpenFileNameA(&ofn);
+
+	fs::current_path(savedCurrentDir);
+
+	if (!result)
 	{
 		return;	// キャンセルされた
 	}
-
-	namespace fs = std::filesystem;
 
 	std::string relativePath;
 	try
 	{
 		fs::path full = fs::absolute(fileBuf);
-		fs::path base = fs::absolute(".");
+		fs::path base = fs::absolute(kAssetsFilePath);
 		relativePath = fs::relative(full, base).generic_string();
 	}
 	catch (...)
@@ -356,10 +417,11 @@ void MapEditor::RemoveRegisteredModel(int index)
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 配置済みオブジェクトの実描画
-//	SceneManager::Draw() など、3D描画パスから呼び出すこと
+// 配置済みオブジェクトの実描画(共通部分)
+//	現在のKdShaderManagerのカメラCBに対して描画するだけの処理。
+//	どのカメラ(ゲームカメラ/プレビュー専用カメラ)が設定されているかは呼び出し側の責任とする
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void MapEditor::DrawPlacedObjects()
+void MapEditor::DrawObjects()
 {
 	for (auto& obj : m_objects)
 	{
@@ -374,6 +436,217 @@ void MapEditor::DrawPlacedObjects()
 
 		KdShaderManager::Instance().m_StandardShader.DrawModel(obj.modelWork, obj.GetMatrix());
 	}
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 配置済みオブジェクトの実描画
+//	SceneManager::Draw() など、3D描画パスから呼び出すこと
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void MapEditor::DrawPlacedObjects()
+{
+	DrawObjects();
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// マップ全体を、専用カメラ・専用オフスクリーンバッファへ描画する
+//	EffectEditor::RenderPreviewViewport()と同じ構成：
+//	現在のRT/ビューポート/カメラCBを退避し、プレビュー用に差し替えて描画した後、元に戻す
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void MapEditor::RenderPreviewViewport()
+{
+	// ウィンドウが一度も開かれておらずサイズが確定していない場合は何もしない
+	if (!m_previewViewport.Color || !m_previewViewport.Depth) return;
+	if (m_previewViewport.Width <= 0 || m_previewViewport.Height <= 0) return;
+
+	ID3D11DeviceContext* context = KdDirect3D::Instance().WorkDevContext();
+
+	// 退避
+	KdShaderManager::cbCamera savedCamera = KdShaderManager::Instance().GetCameraCB();
+
+	ID3D11RenderTargetView* savedRTV = nullptr;
+	ID3D11DepthStencilView* savedDSV = nullptr;
+	context->OMGetRenderTargets(1, &savedRTV, &savedDSV);
+
+	UINT savedVPNum = 1;
+	D3D11_VIEWPORT savedVP = {};
+	context->RSGetViewports(&savedVPNum, &savedVP);
+
+	// プレビュー用バッファへ切り替え・クリア
+	ID3D11RenderTargetView* rtvs[] = { m_previewViewport.Color->WorkRTView() };
+	context->OMSetRenderTargets(1, rtvs, m_previewViewport.Depth->WorkDSView());
+
+	static const float clearColor[4] = { 0.1f, 0.1f, 0.12f, 1.0f };
+	context->ClearRenderTargetView(m_previewViewport.Color->WorkRTView(), clearColor);
+	context->ClearDepthStencilView(m_previewViewport.Depth->WorkDSView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+
+	D3D11_VIEWPORT vp = {};
+	vp.Width = (float)m_previewViewport.Width;
+	vp.Height = (float)m_previewViewport.Height;
+	vp.MinDepth = 0.0f;
+	vp.MaxDepth = 1.0f;
+	context->RSSetViewports(1, &vp);
+
+	// プレビュー用カメラの注視点：選択中オブジェクトがあればその位置。
+	// 未選択時は原点固定ではなく、配置済みオブジェクト全体の重心を注視点にする
+	// (原点固定のままだと、マップが原点から離れた場所に作られている場合に
+	//  何も選択していない状態でプレビューを開くと画角内に何も入らず「何も映らない」ように見える)
+	DirectX::SimpleMath::Vector3 target = { 0,0,0 };
+	if (m_selected >= 0 && m_selected < (int)m_objects.size())
+	{
+		target = m_objects[m_selected].pos;
+	}
+	else if (!m_objects.empty())
+	{
+		DirectX::SimpleMath::Vector3 sum = { 0,0,0 };
+		for (auto& obj : m_objects) { sum += obj.pos; }
+		target = sum / (float)m_objects.size();
+	}
+
+	DirectX::SimpleMath::Matrix view = m_previewCamera.GetView(target);
+	DirectX::SimpleMath::Matrix proj = m_previewCamera.GetProj(
+		(float)m_previewViewport.Width / (float)m_previewViewport.Height);
+
+	KdShaderManager::Instance().WriteCBCamera(view.Invert(), proj);
+
+	// マップ全体(配置済みオブジェクトすべて)を描画する
+	//	KdStandardShader::DrawModel()自体はVS/PS/InputLayout/サンプラーステートをセットしない
+	//	(それらはBeginLit()側の責務)。DrawPlacedObjects()はSceneManager::Draw()内の
+	//	BeginLit()〜EndLit()ブラケットの中で呼ばれる想定だが、こちらはメインシーンの描画とは
+	//	別タイミングで独立して呼ばれるパスなので、自前でBeginLit()/EndLit()を呼んで
+	//	パイプライン状態を保証する
+	KdShaderManager::Instance().m_StandardShader.BeginLit();
+	DrawObjects();
+	KdShaderManager::Instance().m_StandardShader.EndLit();
+
+	// 復元
+	KdShaderManager::Instance().WriteCBCamera(savedCamera.mView.Invert(), savedCamera.mProj);
+
+	context->OMSetRenderTargets(1, &savedRTV, savedDSV);
+	if (savedRTV) { savedRTV->Release(); }
+	if (savedDSV) { savedDSV->Release(); }
+
+	context->RSSetViewports(savedVPNum, &savedVP);
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// マップ全体プレビューウィンドウ(RenderPreviewViewport()が描いた絵を表示する)
+//	右ドラッグでオービット回転、ホイールでズーム(EffectEditor::DrawPreviewWindow()と同じ操作感)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void MapEditor::DrawPreviewWindow()
+{
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+	ImGui::Begin("Map Preview");
+
+	ImVec2 regionSize = ImGui::GetContentRegionAvail();
+
+	// ウィンドウサイズが変わったらオフスクリーンバッファを作り直す
+	if (regionSize.x >= 1.0f && regionSize.y >= 1.0f)
+	{
+		m_previewViewport.Resize((int)regionSize.x, (int)regionSize.y);
+	}
+
+	if (m_previewViewport.Color)
+	{
+		m_previewViewport.ScreenPos = ImGui::GetCursorScreenPos();
+		m_previewViewport.ScreenSize = regionSize;
+
+		ImGui::Image((ImTextureID)m_previewViewport.Color->WorkSRView(), regionSize);
+
+		// 右ドラッグ：オービット回転、ホイール：ズーム
+		if (ImGui::IsItemHovered())
+		{
+			ImGuiIO& io = ImGui::GetIO();
+
+			if (ImGui::IsMouseDragging(ImGuiMouseButton_Right))
+			{
+				m_previewCamera.Yaw -= io.MouseDelta.x * 0.01f;
+				m_previewCamera.Pitch += io.MouseDelta.y * 0.01f;
+				m_previewCamera.Pitch = std::clamp(m_previewCamera.Pitch, -1.5f, 1.5f);
+			}
+
+			if (io.MouseWheel != 0.0f)
+			{
+				m_previewCamera.Distance -= io.MouseWheel * 0.5f;
+				m_previewCamera.Distance = std::clamp(m_previewCamera.Distance, 0.2f, 200.0f);
+			}
+		}
+	}
+
+	if (m_objects.empty())
+	{
+		ImGui::SetCursorPos(ImVec2(10, 10));
+		ImGui::TextDisabled("配置されたオブジェクトがありません");
+	}
+
+	ImGui::End();
+	ImGui::PopStyleVar();
+}
+
+void MapEditor::PreviewViewport::Resize(int w, int h)
+{
+	if (w <= 0 || h <= 0) return;
+
+	// サイズが変わっていなければ作り直さない
+	if (w == Width && h == Height && Color && Depth) return;
+
+	Width = w;
+	Height = h;
+
+	// ----- カラーバッファ -----
+	{
+		D3D11_TEXTURE2D_DESC desc = {};
+		desc.Usage = D3D11_USAGE_DEFAULT;
+		desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+		desc.Width = (UINT)w;
+		desc.Height = (UINT)h;
+		desc.CPUAccessFlags = 0;
+		desc.MipLevels = 1;
+		desc.ArraySize = 1;
+		desc.SampleDesc.Count = 1;
+		desc.SampleDesc.Quality = 0;
+
+		Color = std::make_shared<KdTexture>();
+		Color->Create(desc);
+	}
+
+	// ----- Zバッファ -----
+	{
+		D3D11_TEXTURE2D_DESC desc = {};
+		desc.Usage = D3D11_USAGE_DEFAULT;
+		desc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+		desc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
+		desc.Width = (UINT)w;
+		desc.Height = (UINT)h;
+		desc.CPUAccessFlags = 0;
+		desc.MipLevels = 1;
+		desc.ArraySize = 1;
+		desc.SampleDesc.Count = 1;
+		desc.SampleDesc.Quality = 0;
+
+		Depth = std::make_shared<KdTexture>();
+		Depth->Create(desc);
+	}
+}
+
+DirectX::SimpleMath::Matrix MapEditor::PreviewCamera::GetView(const DirectX::SimpleMath::Vector3& target) const
+{
+	using namespace DirectX::SimpleMath;
+
+	float cosPitch = cosf(Pitch);
+	Vector3 offset(
+		Distance * cosPitch * sinf(Yaw),
+		Distance * sinf(Pitch),
+		Distance * cosPitch * cosf(Yaw));
+
+	Vector3 eye = target + offset;
+	return Matrix::CreateLookAt(eye, target, Vector3::Up);
+}
+
+DirectX::SimpleMath::Matrix MapEditor::PreviewCamera::GetProj(float aspect) const
+{
+	return DirectX::SimpleMath::Matrix::CreatePerspectiveFieldOfView(
+		DirectX::XMConvertToRadians(45.0f), aspect, 0.05f, 500.0f);
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -413,22 +686,18 @@ void MapEditor::Save(const std::string& path)
 			});
 	}
 
-	std::ofstream ofs(path);
-	if (!ofs)
+	if (!JsonLoader::Save(path, j))
 	{
 		KdDebugGUI::Instance().AddLog("MapEditor: 保存に失敗 %s\n", path.c_str());
 		return;
 	}
 
-	ofs << j.dump(2);
-	ofs.close();
-
 	// 自分で保存した直後のタイムスタンプを覚えておき、
 	// 直後のCheckHotReload()で「外部変更」と誤検知して再ロードしないようにする
-	WIN32_FILE_ATTRIBUTE_DATA data;
-	if (GetFileAttributesExA(path.c_str(), GetFileExInfoStandard, &data))
+	FILETIME writeTime;
+	if (JsonLoader::GetLastWriteTime(path, writeTime))
 	{
-		m_lastWriteTime = data.ftLastWriteTime;
+		m_lastWriteTime = writeTime;
 	}
 
 	KdDebugGUI::Instance().AddLog("MapEditor: 保存しました %s\n", path.c_str());
@@ -448,8 +717,8 @@ void MapEditor::CheckHotReload()
 	if (m_reloadCheckTimer < 0.5f) return;
 	m_reloadCheckTimer = 0.0f;
 
-	WIN32_FILE_ATTRIBUTE_DATA data;
-	if (!GetFileAttributesExA(m_filePathBuf, GetFileExInfoStandard, &data))
+	FILETIME writeTime;
+	if (!JsonLoader::GetLastWriteTime(m_filePathBuf, writeTime))
 	{
 		// ファイルが存在しない等 → 何もしない
 		return;
@@ -458,17 +727,17 @@ void MapEditor::CheckHotReload()
 	// 初回チェック時は基準時刻を記録するだけ(起動直後の誤リロード防止)
 	if (m_lastWriteTime.dwLowDateTime == 0 && m_lastWriteTime.dwHighDateTime == 0)
 	{
-		m_lastWriteTime = data.ftLastWriteTime;
+		m_lastWriteTime = writeTime;
 		return;
 	}
 
-	if (CompareFileTime(&data.ftLastWriteTime, &m_lastWriteTime) == 0)
+	if (CompareFileTime(&writeTime, &m_lastWriteTime) == 0)
 	{
 		// 更新なし
 		return;
 	}
 
-	m_lastWriteTime = data.ftLastWriteTime;
+	m_lastWriteTime = writeTime;
 
 	// 選択状態はできる範囲で維持する
 	int keepSelected = m_selected;
@@ -485,36 +754,55 @@ void MapEditor::CheckHotReload()
 
 void MapEditor::Load(const std::string& path)
 {
-	std::ifstream ifs(path);
-	if (!ifs)
+	nlohmann::json j;
+	if (!JsonLoader::Load(path, j))
 	{
+		// ファイルが無い/JSONとして壊れている、いずれもここで弾かれる(例外は投げない)
 		KdDebugGUI::Instance().AddLog("MapEditor: 読み込み失敗 %s\n", path.c_str());
 		return;
 	}
 
-	nlohmann::json j;
-	ifs >> j;
+	std::vector<MapObject> loaded;
 
-	m_objects.clear();
-
-	for (auto& e : j)
+	try
 	{
-		MapObject obj;
-		obj.name = e.at("name").get<std::string>();
-		obj.pos = { e.at("pos")[0],    e.at("pos")[1],    e.at("pos")[2] };
-		obj.rotate = { e.at("rotate")[0], e.at("rotate")[1], e.at("rotate")[2] };
-		obj.scale = { e.at("scale")[0],  e.at("scale")[1],  e.at("scale")[2] };
-
-		// "model"キーは旧バージョンのJSONには存在しないため value() でデフォルト値対応
-		std::string modelPath = e.value("model", std::string());
-		if (!modelPath.empty())
+		for (auto& e : j)
 		{
-			obj.SetModel(modelPath);	// ここで実際のモデル読み込みが走る
-		}
+			MapObject obj;
+			obj.name = e.at("name").get<std::string>();
+			obj.pos = { e.at("pos")[0],    e.at("pos")[1],    e.at("pos")[2] };
+			obj.rotate = { e.at("rotate")[0], e.at("rotate")[1], e.at("rotate")[2] };
+			obj.scale = { e.at("scale")[0],  e.at("scale")[1],  e.at("scale")[2] };
 
-		m_objects.push_back(obj);
+			// "model"キーは旧バージョンのJSONには存在しないため value() でデフォルト値対応
+			std::string modelPath = e.value("model", std::string());
+			if (!modelPath.empty())
+			{
+				obj.SetModel(modelPath);	// ここで実際のモデル読み込みが走る
+			}
+
+			loaded.push_back(std::move(obj));
+		}
+	}
+	catch (const nlohmann::json::exception&)
+	{
+		// 想定外のスキーマ(キー欠落・型不一致等)。
+		// ここで例外を握りつぶし、現在の m_objects には触れずに読み込み失敗として扱う
+		KdDebugGUI::Instance().AddLog("MapEditor: 読み込み失敗(不正なデータ形式) %s\n", path.c_str());
+		return;
 	}
 
+	m_objects = std::move(loaded);
 	m_selected = -1;
 	KdDebugGUI::Instance().AddLog("MapEditor: 読み込みました %s\n", path.c_str());
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// コンストラクタ：起動時に既存のマップデータ(m_filePathBuf)を自動ロードする
+// (EffectEditorと同じ挙動。未作成ならJsonLoader::Load側で失敗し、空のまま始まる)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+MapEditor::MapEditor()
+{
+	Load(m_filePathBuf);
+	LoadModelRegistry(m_registryPathBuf);
 }

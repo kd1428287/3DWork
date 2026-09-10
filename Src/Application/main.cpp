@@ -7,6 +7,7 @@
 // ※ EditorViewportの実際の配置フォルダに合わせてパスを調整してください
 #include "Editor/EditorViewport.h"
 #include "Editor/EffectEditor.h"
+#include "Editor/MapEditor.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // エントリーポイント
@@ -302,7 +303,7 @@ void Application::Execute()
 	{
 		// 処理開始時間Get
 		m_fpsController.UpdateStartTime();
-		KdDebugGUI::Instance().ClearLog();
+		//KdDebugGUI::Instance().ClearLog();
 
 		std::string str = "3D_Action FPS: " + std::to_string(Application::Instance().GetNowFPS());
 		SetWindowTextA(m_window.GetWndHandle(), str.c_str());
@@ -369,6 +370,7 @@ void Application::Execute()
 
 			// エフェクトプレビュー専用ビューポートへの描画
 			EffectEditor::Instance().RenderPreviewViewport();
+			// マッププレビュー
 		}
 		KdPostDraw();
 

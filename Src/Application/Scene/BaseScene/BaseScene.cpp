@@ -1,5 +1,6 @@
 ﻿#include "BaseScene.h"
 #include "../../main.h"
+#include "../../Editor/MapEditor.h"
 
 BaseScene::BaseScene() = default;
 BaseScene::~BaseScene() = default;
@@ -41,6 +42,9 @@ void BaseScene::Draw()
 	KdShaderManager::Instance().m_StandardShader.BeginLit();
 	{
 		objManager_->DrawLit();
+
+		MapEditor::Instance().RenderPreviewViewport();
+
 	}
 	KdShaderManager::Instance().m_StandardShader.EndLit();
 

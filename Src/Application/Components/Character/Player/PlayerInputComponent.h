@@ -39,6 +39,7 @@ public:
 	// --- 外部（InputSystemなど）から毎フレーム入力を注入する関数 ---
 
 	void SetMoveDirection(Math::Vector3 direction) {
+		direction.Normalize();
 		moveDirection_ = direction;
 	}
 

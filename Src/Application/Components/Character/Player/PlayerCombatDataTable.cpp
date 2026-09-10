@@ -41,7 +41,7 @@ ComboAttackTable CreateDebugComboAttackTable()
 	table[2].stepDuration = 0.4f;
 	table[2].engageDistance = 1.3f;
 	table[2].recoveryEvadeCancelStart = 0.16f;
-	table[2].recoveryAttackCancelStart = 0.20f;
+	table[2].recoveryAttackCancelStart = 0.10f;
 	table[2].comboWindowAfterRecovery = 0.30f;
 	table[2].blendDuration = 0.08f;
 	table[2].animationName = "GhostSamurai_APose_Attack02_3_Inplace";
@@ -66,7 +66,7 @@ ComboAttackTable CreateDebugComboAttackTable()
 	table[4].stepDistance = 2.4f;
 	table[4].stepDuration = 0.6f;
 	table[4].recoveryEvadeCancelStart = 0.30f;
-	table[4].recoveryAttackCancelStart = 0.10f;
+	table[4].recoveryAttackCancelStart = 0.010f;
 	table[4].comboWindowAfterRecovery = 0.10f;
 	table[4].blendDuration = 0.1f;
 	table[4].useRootMotion = false;

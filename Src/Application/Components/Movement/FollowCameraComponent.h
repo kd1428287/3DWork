@@ -1,7 +1,9 @@
 ﻿#pragma once
 #include"../Camera/CameraComponent.h"
+#include "../Render/IRenderable.h"
 
-class FollowCameraComponent : public ComponentBase
+// PreDraw()を使うためIRenderable継承
+class FollowCameraComponent : public ComponentBase, public IRenderable
 {
 public:
 	explicit FollowCameraComponent(GameObject* owner) :ComponentBase(owner) {};
@@ -11,7 +13,7 @@ public:
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
 	}
 
-	void Update(float deltaTime) override
+	void PreDraw() override
 	{
 		CameraComponent* camera = GetOwner()->GetContext()->activeCamera;
 

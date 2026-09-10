@@ -127,6 +127,8 @@ void GameScene::Init()
 		[this](float dt) { objManager_->Flush(); }
 	);
 
+	KdShaderManager::Instance().m_postProcessShader.SetFarClippingDistance(50.f);
+	KdShaderManager::Instance().m_postProcessShader.SetFocusRange(0, 50.0f);
 	KdShaderManager::Instance().WorkAmbientController().SetDirLightShadowArea(Math::Vector2(100.f, 100.f), 100);
 	KdShaderManager::Instance().WorkAmbientController().AddPointLight(Math::Vector3(1.0f, 1.0f, 1.0f), 10.0f, Math::Vector3(0, 0, 0), false);
 	//KdShaderManager::Instance().WorkAmbientController().SetDirLight(Math::Vector3(-1, -3, -1), Math::Vector3(0.1f, 0.15f, 0.25f));

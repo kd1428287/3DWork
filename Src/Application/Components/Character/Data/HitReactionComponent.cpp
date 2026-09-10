@@ -60,8 +60,7 @@ void HitReactionComponent::OnCollisionEnter(const CollisionSystem::CollisionEnte
 		}
 		SpawnWeaponClashEffect(e.otherObject, /*isParry=*/true);
 
-		// 自分自身(パリィした側)にも成立を通知し、専用の成功モーションを
-		// 再生してもらう(State側の演出。StateGuard::NotifyParrySuccess参照)。
+		// 自分自身(パリィした側)にも成立を通知
 		query_->NotifyParrySuccess();
 	}
 	else if (query_->IsGuarding()) {
@@ -82,9 +81,6 @@ void HitReactionComponent::OnCollisionEnter(const CollisionSystem::CollisionEnte
 			velocityComponent_->AddImpulse(ComputeKnockbackDirection(attacker) * kGuardKnockbackPower);
 		}
 
-		// ブロックの都度、ヒットリアクションのアニメーションを再生してもらう
-		// (パリィ成功ほど特別な演出ではないため、ガード解除や反撃キャンセルの
-		//  可否には影響させない。StateGuard::NotifyGuardHit参照)。
 		query_->NotifyGuardHit();
 	}
 	else {
@@ -112,8 +108,6 @@ void HitReactionComponent::OnCollisionEnter(const CollisionSystem::CollisionEnte
 			postureComponent_->AddPostureDamage(attack->postureDamage);
 			postureBroken = postureComponent_->IsBroken();
 			if (postureBroken) {
-				// TODO: PostureComponent側の実際のリセットAPI名に合わせて修正すること
-				// (現状Reset()という名称を仮定している)。
 				postureComponent_->Reset();
 			}
 		}
@@ -125,11 +119,6 @@ void HitReactionComponent::OnCollisionEnter(const CollisionSystem::CollisionEnte
 	}
 }
 
-// 衝突位置は正確な接触点ではなく、両武器座標の中間点で近似する。
-// attackerWeaponObjは相手側の武器GameObject(AttackSourceComponentの持ち主。
-// e.otherObjectをそのまま渡す想定)。自分側の武器はweaponCollider_から
-// 解決する。双方のTransformComponentが取れない場合、またはシーンバスが
-// 取得できない場合は何もしない(片方の武器が既に破棄済み等の異常系)。
 void HitReactionComponent::SpawnWeaponClashEffect(GameObject* attackerWeaponObj, bool isParry)
 {
 	if (attackerWeaponObj == nullptr) return;

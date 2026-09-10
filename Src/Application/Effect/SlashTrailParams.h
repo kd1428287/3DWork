@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "EffectParams.h"	// KdParticleBlendMode / KdParticleDrawPass / KdHasDrawPassFlag を流用する為
-#include "../../Framework/Shader/GPUParticle/SlashTrailRenderer.h"	// SlashTrailVertex(=Vertex)の実体を流用する為
+#include "../../Framework/Shader/SlashTrailShader/SlashTrailRenderer.h"	// SlashTrailVertex(=Vertex)の実体を流用する為
 #include <string>
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////

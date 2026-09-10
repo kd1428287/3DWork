@@ -40,11 +40,8 @@ private:
 	VelocityComponent* velocityComponent_ = nullptr;
 	TransformComponent* transform_ = nullptr;
 	
-	// 鍔迫り合いエフェクト発生元として使う、自分の武器への弱参照。
 	Handle<ColliderComponent> weaponCollider_;
 
-	// ガード時被弾のノックバック強度(元のPlayerStatusControllerの
-	// 決め打ち値2.0fをそのまま踏襲)。
 	static constexpr float kGuardKnockbackPower = 2.0f;
 
 	float largeStaggerDuration_ = 0.6f;

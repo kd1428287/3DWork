@@ -196,6 +196,9 @@
     <Filter Include="Src\Application\Components\Combat">
       <UniqueIdentifier>{16c2989e-7148-44d6-ad0b-361599c42ed3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Framework\Shader\SlashTrailShader">
+      <UniqueIdentifier>{2c3f8073-e61d-4a25-a36e-760d8d9d2c55}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -723,9 +726,6 @@
     <ClInclude Include="Src\Application\Effect\SlashTrailDispatcher.h">
       <Filter>Src\Application\Effect</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Framework\Shader\GPUParticle\SlashTrailRenderer.h">
-      <Filter>Src\Framework\Shader\GPUParticle</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Components\Combat\WeaponSetComponent.h">
       <Filter>Src\Application\Components\Combat</Filter>
     </ClInclude>
@@ -776,6 +776,15 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Render\IRenderable.h">
       <Filter>Src\Application\Components\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Systems\ComboSystem.h">
+      <Filter>Src\Application\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Framework\Shader\SlashTrailShader\SlashTrailRenderer.h">
+      <Filter>Src\Framework\Shader\SlashTrailShader</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Framework\Shader\SlashTrailShader\SlashTrailShader.h">
+      <Filter>Src\Framework\Shader\SlashTrailShader</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1025,9 +1034,6 @@
     <ClCompile Include="Src\Application\Effect\SlashTrailDispatcher.cpp">
       <Filter>Src\Application\Effect</Filter>
     </ClCompile>
-    <ClCompile Include="Src\Framework\Shader\GPUParticle\SlashTrailRenderer.cpp">
-      <Filter>Src\Framework\Shader\GPUParticle</Filter>
-    </ClCompile>
     <ClCompile Include="Src\Application\Editor\ShaderTuningEditor.cpp">
       <Filter>Src\Application\Editor</Filter>
     </ClCompile>
@@ -1039,6 +1045,12 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Components\Render\ModelRenderComponent.cpp">
       <Filter>Src\Application\Components\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Framework\Shader\SlashTrailShader\SlashTrailRenderer.cpp">
+      <Filter>Src\Framework\Shader\SlashTrailShader</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Framework\Shader\SlashTrailShader\SlashTrailShader.cpp">
+      <Filter>Src\Framework\Shader\SlashTrailShader</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1122,8 +1134,8 @@
     <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_ColorGrade.hlsl">
       <Filter>Src\Framework\Shader\PostProcessShader</Filter>
     </FxCompile>
-    <FxCompile Include="Src\Framework\Shader\GPUParticle\SlashTrail_VS.hlsl">
-      <Filter>Src\Framework\Shader\GPUParticle</Filter>
+    <FxCompile Include="Src\Framework\Shader\SlashTrailShader\SlashTrail_VS.hlsl">
+      <Filter>Src\Framework\Shader\SlashTrailShader</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

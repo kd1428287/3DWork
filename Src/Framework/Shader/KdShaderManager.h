@@ -3,6 +3,7 @@
 #include "StandardShader/KdStandardShader.h"
 #include "PostProcessShader/KdPostProcessShader.h"
 #include "SpriteShader/KdSpriteShader.h"
+#include "SlashTrailShader/SlashTrailShader.h"// トレイル(斬撃の軌跡)描画用シェーダー
 
 // 点光源データ
 struct PointLight
@@ -139,6 +140,7 @@ public:
 	KdStandardShader		m_StandardShader;		// 標準描画シェーダ
 	KdPostProcessShader		m_postProcessShader;	// ポストプロセスシェーダ
 	KdSpriteShader			m_spriteShader;			// 2Dテクスチャ描画シェーダ
+	SlashTrailShader		m_slashTrailShader;		// トレイル(斬撃の軌跡)描画用シェーダー(全SlashTrailInstance/Rendererで共有)
 
 	//==========================
 	//
@@ -237,7 +239,7 @@ private:
 	// パイプラインステート
 	//
 	//==========================
-	 
+
 	//深度ステンシル（奥行情報の使い方・手前にあるものを無視して描画したりできる
 	ID3D11DepthStencilState* m_depthStencilStates[(int)KdDepthStencilState::Max] = {};
 	std::stack<ID3D11DepthStencilState*> m_ds_Undo;

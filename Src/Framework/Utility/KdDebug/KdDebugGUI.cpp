@@ -102,10 +102,14 @@ void KdDebugGUI::GuiProcess()
 	// 以下にImGui描画処理を記述
 	//===========================================================
 
+	// ログウィンドウ
+	m_uqLog->Draw("Log Window");
+
 	// エディタ表示中のみ、ドッキングUI一式(Hierarchy/Inspector/Assets/Scene/Log)を描画する
 	// "Pause"入力でON/OFF切替(main.cpp の Execute() 内を参照)
 	if (EditorViewport::Instance().IsEnabled())
 	{
+
 		// 画面全体を覆うドックスペースの土台
 		ImGuiID dockspaceId = ImGui::GetID("MainDockSpace");
 
@@ -118,19 +122,19 @@ void KdDebugGUI::GuiProcess()
 
 		ImGui::DockSpaceOverViewport(dockspaceId, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
-		// ログウィンドウ
-		//m_uqLog->Draw("Log Window");
-
 		// ゲーム画面を表示するSceneウィンドウ(中身はオフスクリーンに描画されたゲーム画面)
 		EditorViewport::Instance().DrawSceneWindow();
 
 		// マップエディタ
-		//MapEditor::Instance().Update();
+		MapEditor::Instance().Update();
 
-		// エフェクト配置エディタ
+		// シェーダーエディタ
+		ShaderTuningEditor::Instance().Update();
+
+		// エフェクトエディタ
 		EffectEditor::Instance().Update();
 
-		ShaderTuningEditor::Instance().Update(); // ← MapEditor::Instance().Update(); の直後などに追加
+		
 	}
 
 	//===========================================================

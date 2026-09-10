@@ -1,9 +1,12 @@
 ﻿#include "Framework/KdFramework.h"
 
 #include "SlashTrailRenderer.h"
+#include "SlashTrailShader.h"	// 共有VS/PS/InputLayout。KdShaderManagerが1個だけ保持する
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 初期化：頂点バッファ・シェーダーの生成
+// 初期化：動的頂点バッファの生成のみ行う
+//	※シェーダー(VS/PS/InputLayout)はSlashTrailShader側へ移設した為、
+//	  ここでは生成しない(KdShaderManager初期化時に別途1回だけ済んでいる想定)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 bool SlashTrailRenderer::Init(UINT maxVertexCount)
 {
@@ -12,7 +15,6 @@ bool SlashTrailRenderer::Init(UINT maxVertexCount)
 	m_maxVertexCount = maxVertexCount;
 
 	if (!CreateVertexBuffer(maxVertexCount)) { return false; }
-	if (!CreateShaders()) { return false; }
 
 	m_initialized = true;
 
@@ -42,69 +44,11 @@ bool SlashTrailRenderer::CreateVertexBuffer(UINT maxVertexCount)
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// シェーダーの生成
-//	・頂点シェーダーは新規(SlashTrail_VS.hlsl)：CPU側で計算済みの頂点をView×Projで
-//	  変換するだけの単純なもの
-//	・ピクセルシェーダーはKdGPUParticle_PS.hlslをそのまま流用する(同じ.shaderIncを
-//	  インクルードするだけで済む。テクスチャ×頂点カラー、アルファにLifeRateを掛けるだけの
-//	  UnlitなPSが、トレイルの要件と完全に一致する為、新規に書く必要が無かった)
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-bool SlashTrailRenderer::CreateShaders()
-{
-	ID3D11Device* Dev = KdDirect3D::Instance().WorkDev();
-
-	// 頂点シェーダー(新規)
-	{
-#include "SlashTrail_VS.shaderInc"
-
-		if (FAILED(Dev->CreateVertexShader(compiledBuffer, sizeof(compiledBuffer), nullptr, &m_VS)))
-		{
-			assert(0 && "SlashTrailRenderer：頂点シェーダー作成失敗");
-			return false;
-		}
-
-		// 1頂点の詳細な情報(Vertex構造体と一致させる事)
-		std::vector<D3D11_INPUT_ELEMENT_DESC> layout =
-		{
-			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 0,  D3D11_INPUT_PER_VERTEX_DATA, 0 },
-			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,       0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-			{ "COLOR",    0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 20, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		};
-
-		if (FAILED(Dev->CreateInputLayout(
-			&layout[0], (UINT)layout.size(),
-			compiledBuffer, sizeof(compiledBuffer),
-			&m_inputLayout)))
-		{
-			assert(0 && "SlashTrailRenderer：CreateInputLayout失敗");
-			return false;
-		}
-	}
-
-	// ピクセルシェーダー：KdGPUParticle_PS.hlslをそのまま流用
-	//	※実際の配置パスに合わせてinclude行を調整すること
-	//	  (KdGPUParticleと同じフォルダに置く前提で相対パス無し表記にしている)
-	{
-#include "KdGPUParticle_PS.shaderInc"
-
-		if (FAILED(Dev->CreatePixelShader(compiledBuffer, sizeof(compiledBuffer), nullptr, &m_PS)))
-		{
-			assert(0 && "SlashTrailRenderer：ピクセルシェーダー作成失敗(KdGPUParticle_PS流用)");
-			return false;
-		}
-	}
-
-	return true;
-}
-
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 解放
+//	※シェーダー資源はここでは持っていない(SlashTrailShader側で管理)ので触らない
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void SlashTrailRenderer::Release()
 {
-	KdSafeRelease(m_VS);
-	KdSafeRelease(m_PS);
-	KdSafeRelease(m_inputLayout);
 	KdSafeRelease(m_vertexBuffer);
 
 	m_initialized = false;
@@ -120,6 +64,12 @@ void SlashTrailRenderer::Draw(const std::vector<Vertex>& vertices, KdParticleBle
 
 	// 三角形ストリップを組むには最低2サンプル(4頂点)必要
 	if (vertices.size() < 4) { return; }
+
+	KdShaderManager& shaderMgr = KdShaderManager::Instance();
+	SlashTrailShader& trailShader = shaderMgr.m_slashTrailShader;
+
+	// 共有シェーダーが未初期化(KdShaderManager側の初期化漏れ)なら描画しない安全弁
+	if (!trailShader.IsInitialized()) { return; }
 
 	// 確保済みバッファ容量を超える分は安全のため切り捨てる
 	// (呼び出し元でMaxSamplesを守っていれば通常発生しない想定の安全弁)
@@ -142,11 +92,7 @@ void SlashTrailRenderer::Draw(const std::vector<Vertex>& vertices, KdParticleBle
 	//------------------------------------------
 	// 描画
 	//------------------------------------------
-	KdShaderManager& shaderMgr = KdShaderManager::Instance();
-
-	shaderMgr.SetVertexShader(m_VS);
-	DevCon->IASetInputLayout(m_inputLayout);
-	shaderMgr.SetPixelShader(m_PS);
+	trailShader.Begin();	// VS/PS/InputLayoutのバインド(全インスタンス共有)
 
 	// TODO: SlashTrailParams::TexturePathからの解決が未実装の為、暫定で白テクスチャを割り当てる
 	//	(ITextureProviderと同じ仕組みをSlashTrailInstance/Dispatcher側に用意すれば差し替えられる)
@@ -177,4 +123,6 @@ void SlashTrailRenderer::Draw(const std::vector<Vertex>& vertices, KdParticleBle
 	// SRVのバインド解除
 	ID3D11ShaderResourceView* nullSRV = nullptr;
 	DevCon->PSSetShaderResources(1, 1, &nullSRV);
+
+	trailShader.End();
 }

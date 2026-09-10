@@ -26,15 +26,16 @@ GameObject* TerrainFactory::CreateSkydome(ObjectManager& objectManager, int owne
 {
 	auto* skydome = objectManager.Instantiate("skydome");
 	auto* transform = skydome->AddComponent<TransformComponent>();
+	transform->SetScale({ 10.0f,10.0f,10.0f });
 	auto* model = skydome->AddComponent<SkeletonComponent>();
-	model->SetModelData("Asset/Models/SkySphere/skySphere.gltf");
+	model->SetModelData("Asset/Models/SkySphere/SkyDome.gltf");
 	auto* renderer = skydome->AddComponent<ModelRenderComponent>();
 	renderer->SetLayer(RenderLayer::DrawUnLit);
 	transform->SetPosition({ 0.f,0.f,0.f });
 	auto* follow = skydome->AddComponent<FollowCameraComponent>();
-	follow->SetOffset(Math::Vector3{0,-2.5f,0});
+	follow->SetOffset(Math::Vector3{0,-25.f,0});
 	skydome->AddComponent<ForceMaxDepthComponent>();
-	skydome->AddComponent<SkyDomeEdgeFadeComponent>();
+	skydome->AddComponent<SkyDomeEdgeFadeComponent>()->SetFadeRange(-0.2f, 0.f);
 
 	return skydome;
 }

@@ -1,0 +1,21 @@
+[
+  {
+    "model": "Asset/Models/Terrains/CherryBlossum/Cherry_Blossom_Tree_a.gltf",
+    "name": "Object0",
+    "pos": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "rotate": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "scale": [
+      1.0,
+      1.0,
+      1.0
+    ]
+  }
+]
