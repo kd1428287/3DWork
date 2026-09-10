@@ -83,6 +83,10 @@ private:
 	// 配置済みオブジェクトを描画する実処理(DrawPlacedObjects()・RenderPreviewViewport()の共通部分)
 	void DrawObjects();
 
+	// プレビュー用カメラの注視点(選択中オブジェクトがあればその位置、無ければ配置済み全体の重心)
+	//	RenderPreviewViewport()・DrawGizmo()の両方で同じ注視点を使うための共通処理
+	DirectX::SimpleMath::Vector3 GetPreviewTarget() const;
+
 	void AddObject();
 	void RemoveSelected();
 
@@ -161,6 +165,12 @@ private:
 
 	PreviewViewport	m_previewViewport;
 	PreviewCamera	m_previewCamera;
+
+	// プレビューカメラの注視点キャッシュ。ギズモ操作中(ImGuizmo::IsUsing()中)は
+	// 選択オブジェクトの座標そのものを注視点にせず、操作開始時点の値のまま固定する。
+	// (毎フレーム選択オブジェクトの座標を注視点にすると、Translate操作でオブジェクトを
+	//  動かした分だけカメラも一緒に追従してしまい、画面上では全く動いて見えなくなる為)
+	mutable DirectX::SimpleMath::Vector3	m_previewTargetCache = { 0,0,0 };
 
 	//=====================================================
 	// シングルトンパターン

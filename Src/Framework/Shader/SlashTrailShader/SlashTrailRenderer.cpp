@@ -99,6 +99,12 @@ void SlashTrailRenderer::Draw(const std::vector<Vertex>& vertices, KdParticleBle
 	ID3D11ShaderResourceView* whiteSRV = KdDirect3D::Instance().GetWhiteTex()->WorkSRView();
 	DevCon->PSSetShaderResources(1, 1, &whiteSRV);
 
+	std::shared_ptr<KdTexture> texture = KdAssets::Instance().m_textures.GetData("Asset/Textures/Game/Effect/Trail3.png");
+	if (texture)
+	{
+		DevCon->PSSetShaderResources(1, 1, texture->WorkSRViewAddress());
+	}
+
 	// KdGPUParticle_PS.hlslが要求するサンプラースロット(s0)に合わせる
 	shaderMgr.ChangeSamplerState(KdSamplerState::Linear_Clamp, 0);
 	shaderMgr.ChangeRasterizerState(KdRasterizerState::CullNone);

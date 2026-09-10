@@ -17,5 +17,24 @@
       1.0,
       1.0
     ]
+  },
+  {
+    "model": "Asset/Models/Terrains/Ground/Terrain.gltf",
+    "name": "Object1",
+    "pos": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "rotate": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "scale": [
+      1.0,
+      1.0,
+      1.0
+    ]
   }
 ]

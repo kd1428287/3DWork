@@ -103,7 +103,6 @@ void MapEditor::Update()
 	DrawInspector();
 	DrawAssetPicker();
 	DrawPreviewWindow();
-	DrawGizmo();
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -222,18 +221,27 @@ void MapEditor::DrawInspector()
 void MapEditor::DrawGizmo()
 {
 	if (m_selected < 0 || m_selected >= (int)m_objects.size()) return;
+	if (m_previewViewport.Width <= 0 || m_previewViewport.Height <= 0) return;
 
 	ImGuizmo::SetOrthographic(false);
+
+	// この関数はDrawPreviewWindow()の中、「Map Preview」ウィンドウがまだアクティブな
+	// (Begin〜Endの)間に呼ばれる想定。引数無しのSetDrawlist()はその時点で
+	// ImGuiが認識している現在のウィンドウのdrawlistを拾うので、これで自動的に
+	// 「Map Preview」ウィンドウ上に(=Sceneウィンドウではなくプレビュー画面上に)描画される
 	ImGuizmo::SetDrawlist();
 
-	// 画面全体ではなく、Sceneウィンドウ内の画像表示範囲を基準にする
-	const ImVec2& rectPos = EditorViewport::Instance().GetScreenPos();
-	const ImVec2& rectSize = EditorViewport::Instance().GetScreenSize();
+	// Sceneウィンドウ全体ではなく、Map Previewウィンドウ内の画像表示範囲を基準にする
+	const ImVec2& rectPos = m_previewViewport.ScreenPos;
+	const ImVec2& rectSize = m_previewViewport.ScreenSize;
 	ImGuizmo::SetRect(rectPos.x, rectPos.y, rectSize.x, rectSize.y);
 
-	const auto& cameraCB = KdShaderManager::Instance().GetCameraCB();
-	const DirectX::SimpleMath::Matrix& view = cameraCB.mView;
-	const DirectX::SimpleMath::Matrix& proj = cameraCB.mProj;
+	// カメラもゲームカメラ(KdShaderManagerのカメラCB)ではなく、
+	// RenderPreviewViewport()で実際にプレビュー画面を描いた時と同じ
+	// プレビュー専用カメラ(m_previewCamera)の行列を使う
+	DirectX::SimpleMath::Matrix view = m_previewCamera.GetView(GetPreviewTarget());
+	DirectX::SimpleMath::Matrix proj = m_previewCamera.GetProj(
+		(float)m_previewViewport.Width / (float)m_previewViewport.Height);
 
 	MapObject& obj = m_objects[m_selected];
 
@@ -439,6 +447,37 @@ void MapEditor::DrawObjects()
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// プレビュー用カメラの注視点：選択中オブジェクトがあればその位置。
+// 未選択時は原点固定ではなく、配置済みオブジェクト全体の重心を注視点にする
+// (原点固定のままだと、マップが原点から離れた場所に作られている場合に
+//  何も選択していない状態でプレビューを開くと画角内に何も入らず「何も映らない」ように見える)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+DirectX::SimpleMath::Vector3 MapEditor::GetPreviewTarget() const
+{
+	// ギズモ操作中は注視点を固定する(操作開始時点にキャッシュした値をそのまま返す)
+	if (ImGuizmo::IsUsing())
+	{
+		return m_previewTargetCache;
+	}
+
+	DirectX::SimpleMath::Vector3 target = { 0,0,0 };
+
+	if (m_selected >= 0 && m_selected < (int)m_objects.size())
+	{
+		target = m_objects[m_selected].pos;
+	}
+	else if (!m_objects.empty())
+	{
+		DirectX::SimpleMath::Vector3 sum = { 0,0,0 };
+		for (auto& obj : m_objects) { sum += obj.pos; }
+		target = sum / (float)m_objects.size();
+	}
+
+	m_previewTargetCache = target;
+	return target;
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 配置済みオブジェクトの実描画
 //	SceneManager::Draw() など、3D描画パスから呼び出すこと
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -486,21 +525,8 @@ void MapEditor::RenderPreviewViewport()
 	vp.MaxDepth = 1.0f;
 	context->RSSetViewports(1, &vp);
 
-	// プレビュー用カメラの注視点：選択中オブジェクトがあればその位置。
-	// 未選択時は原点固定ではなく、配置済みオブジェクト全体の重心を注視点にする
-	// (原点固定のままだと、マップが原点から離れた場所に作られている場合に
-	//  何も選択していない状態でプレビューを開くと画角内に何も入らず「何も映らない」ように見える)
-	DirectX::SimpleMath::Vector3 target = { 0,0,0 };
-	if (m_selected >= 0 && m_selected < (int)m_objects.size())
-	{
-		target = m_objects[m_selected].pos;
-	}
-	else if (!m_objects.empty())
-	{
-		DirectX::SimpleMath::Vector3 sum = { 0,0,0 };
-		for (auto& obj : m_objects) { sum += obj.pos; }
-		target = sum / (float)m_objects.size();
-	}
+	// プレビュー用カメラの注視点(選択中オブジェクト、または配置済み全体の重心)
+	DirectX::SimpleMath::Vector3 target = GetPreviewTarget();
 
 	DirectX::SimpleMath::Matrix view = m_previewCamera.GetView(target);
 	DirectX::SimpleMath::Matrix proj = m_previewCamera.GetProj(
@@ -535,7 +561,13 @@ void MapEditor::RenderPreviewViewport()
 void MapEditor::DrawPreviewWindow()
 {
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-	ImGui::Begin("Map Preview");
+
+	// ImGuiはデフォルトで「タイトルバー以外の空き領域をドラッグしてもウィンドウが動く」ため、
+	// ImGui::Image()自体はクリックを捕捉しない(ボタンではない)ので、
+	// 何もしないとギズモ操作や右ドラッグオービットより先にウィンドウ移動が発生してしまう。
+	// このウィンドウ内ではドラッグ操作をギズモ/カメラ操作専用にしたいので、NoMoveを付ける
+	// (タブ部分からのドッキング操作には影響しない)
+	ImGui::Begin("Map Preview", nullptr, ImGuiWindowFlags_NoMove);
 
 	ImVec2 regionSize = ImGui::GetContentRegionAvail();
 
@@ -570,6 +602,11 @@ void MapEditor::DrawPreviewWindow()
 				m_previewCamera.Distance = std::clamp(m_previewCamera.Distance, 0.2f, 200.0f);
 			}
 		}
+
+		// ギズモは「Map Preview」ウィンドウがまだアクティブな(Begin〜Endの)間に呼ぶことで、
+		// ImGuizmo::SetDrawlist()が自動的にこのウィンドウのdrawlistを拾ってくれる
+		// (Sceneウィンドウではなくプレビュー画面上で操作できるようにするため)
+		DrawGizmo();
 	}
 
 	if (m_objects.empty())

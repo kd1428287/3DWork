@@ -55,6 +55,6 @@ struct SlashTrailParams
 	//	そのまま使い回し、質感の管理方法を統一している
 	// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 	std::string				TexturePath;
-	KdParticleBlendMode		BlendMode = KdParticleBlendMode::Add;
+	KdParticleBlendMode		BlendMode = KdParticleBlendMode::Alpha;
 	ParticleDrawPass		DrawPassFlags = ParticleDrawPass::Default;// | ParticleDrawPass::Blight;
 };
