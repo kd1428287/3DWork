@@ -350,7 +350,6 @@
     <ClInclude Include="Src\Application\Components\Render\IPolygonRenderSource.h" />
     <ClInclude Include="Src\Application\Components\Render\IRenderable.h" />
     <ClInclude Include="Src\Application\Components\Render\IRenderStateModifier.h" />
-    <ClInclude Include="Src\Application\Components\Render\MeshRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Render\ModelRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Render\PolygonRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Render\SkyDomeEdgeFadeComponent.h" />
@@ -391,6 +390,7 @@
     <ClInclude Include="Src\Application\Factories\Game\PlayerDefinition.h" />
     <ClInclude Include="Src\Application\Factories\Game\PlayerDefinitionLoader.h" />
     <ClInclude Include="Src\Application\Factories\Game\PlayerFactory.h" />
+    <ClInclude Include="Src\Application\Factories\Map\ComponentTypes.h" />
     <ClInclude Include="Src\Application\Factories\Map\MapData.h" />
     <ClInclude Include="Src\Application\Factories\Map\MapLoader.h" />
     <ClInclude Include="Src\Application\Factories\Map\TerrainFactory.h" />
@@ -497,6 +497,7 @@
     <ClCompile Include="Src\Application\Factories\Game\EnemyFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\Game\PlayerDefinitionLoader.cpp" />
     <ClCompile Include="Src\Application\Factories\Game\PlayerFactory.cpp" />
+    <ClCompile Include="Src\Application\Factories\Map\ComponentRegistrations.cpp" />
     <ClCompile Include="Src\Application\Factories\Map\MapLoader.cpp" />
     <ClCompile Include="Src\Application\Factories\Map\TerrainFactory.cpp" />
     <ClCompile Include="Src\Application\main.cpp" />

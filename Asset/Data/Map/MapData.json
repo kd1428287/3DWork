@@ -1,7 +1,70 @@
 [
   {
-    "model": "Asset/Models/Terrains/CherryBlossum/Cherry_Blossom_Tree_a.gltf",
+    "components": [
+      {
+        "params": {
+          "model": "Asset/Models/Terrains/CherryBlossum/Cherry_Blossom_Tree_a.gltf"
+        },
+        "type": "ModelRender"
+      },
+      {
+        "params": {
+          "offset": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "size": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "type": "Collider"
+      }
+    ],
     "name": "Object0",
+    "pos": [
+      7.899265289306641,
+      0.0,
+      0.0
+    ],
+    "rotate": [
+      0.0,
+      -0.0,
+      0.0
+    ],
+    "scale": [
+      10.0,
+      10.0,
+      10.0
+    ]
+  },
+  {
+    "components": [
+      {
+        "params": {
+          "model": "Asset/Models/Terrains/Ground/Terrain.gltf"
+        },
+        "type": "ModelRender"
+      },
+      {
+        "params": {
+          "offset": [
+            0.0,
+            -2.0,
+            0.0
+          ],
+          "size": [
+            100.0,
+            1.0,
+            100.0
+          ]
+        },
+        "type": "Collider"
+      }
+    ],
+    "name": "Ground",
     "pos": [
       0.0,
       0.0,
@@ -19,16 +82,23 @@
     ]
   },
   {
-    "model": "Asset/Models/Terrains/Ground/Terrain.gltf",
-    "name": "Object1",
+    "components": [
+      {
+        "params": {
+          "model": "Asset/Models/Terrains/Sakura/sakura_big.gltf"
+        },
+        "type": "ModelRender"
+      }
+    ],
+    "name": "Sakura",
     "pos": [
-      0.0,
+      -15.650147438049316,
       0.0,
       0.0
     ],
     "rotate": [
       0.0,
-      0.0,
+      -0.0,
       0.0
     ],
     "scale": [

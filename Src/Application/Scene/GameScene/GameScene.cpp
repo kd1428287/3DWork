@@ -13,6 +13,7 @@
 // factory
 #include "../../Factories/Game/PlayerFactory.h"
 #include "../../Factories/Game/PlayerDefinitionLoader.h"
+#include "../../Factories/Map/MapLoader.h"
 #include "../../Factories/Map/TerrainFactory.h"
 #include "../../Factories/Game/EnemyFactory.h"
 #include "../../Components/Character/Enemy/EnemyDefinition.h"
@@ -60,8 +61,11 @@ void GameScene::Init()
 
 	// factory
 	terrainFactory_ = std::make_unique<TerrainFactory>();
-	auto* terrain = terrainFactory_->CreateTerrain(*objManager_, 0);
+	//auto* terrain = terrainFactory_->CreateTerrain(*objManager_, 0);
 	auto* skydome = terrainFactory_->CreateSkydome(*objManager_, 0);
+	auto loader = std::make_unique<MapLoader>();
+
+	loader->LoadMapFromJson("Asset/Data/Map/MapData.json", *objManager_, *terrainFactory_);
 
 	slashTrailDispatcher_ = std::make_unique<SlashTrailDispatcher>();
 	slashTrailDispatcher_->Init(*localBus_);

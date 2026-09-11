@@ -1,0 +1,305 @@
+{
+ "asset": {
+  "version": "2.0",
+  "generator": "tree splitter"
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "nodes": [
+    0
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "mesh": 0,
+   "name": "sakura_big"
+  }
+ ],
+ "meshes": [
+  {
+   "name": "sakura_big",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TANGENT": 2,
+      "TEXCOORD_0": 3,
+      "TEXCOORD_1": 4
+     },
+     "indices": 5,
+     "material": 0
+    },
+    {
+     "attributes": {
+      "POSITION": 6,
+      "NORMAL": 7,
+      "TANGENT": 8,
+      "TEXCOORD_0": 9,
+      "TEXCOORD_1": 10
+     },
+     "indices": 11,
+     "material": 1
+    }
+   ]
+  }
+ ],
+ "materials": [
+  {
+   "name": "PINK",
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 0
+    },
+    "metallicFactor": 0,
+    "metallicRoughnessTexture": {
+     "index": 1
+    }
+   },
+   "occlusionTexture": {
+    "index": 1
+   },
+   "doubleSided": true
+  },
+  {
+   "name": "TRUNK",
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 2
+    },
+    "metallicFactor": 0,
+    "metallicRoughnessTexture": {
+     "index": 3
+    }
+   },
+   "normalTexture": {
+    "index": 4
+   },
+   "occlusionTexture": {
+    "index": 3
+   },
+   "doubleSided": true
+  }
+ ],
+ "textures": [
+  {
+   "sampler": 0,
+   "source": 0
+  },
+  {
+   "sampler": 0,
+   "source": 1
+  },
+  {
+   "sampler": 0,
+   "source": 2
+  },
+  {
+   "sampler": 0,
+   "source": 3
+  },
+  {
+   "sampler": 0,
+   "source": 4
+  }
+ ],
+ "images": [
+  {
+   "uri": "tree_pack_v1_texture_2.png"
+  },
+  {
+   "uri": "tree_pack_v1_texture_3.png"
+  },
+  {
+   "uri": "tree_pack_v1_texture_4.png"
+  },
+  {
+   "uri": "tree_pack_v1_texture_5.png"
+  },
+  {
+   "uri": "tree_pack_v1_texture_6.png"
+  }
+ ],
+ "samplers": [
+  {
+   "minFilter": 9987,
+   "magFilter": 9729
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 115350,
+   "type": "VEC3",
+   "min": [
+    -10.231922149658203,
+    3.482083559036255,
+    -10.362129211425781
+   ],
+   "max": [
+    10.703140258789062,
+    16.223957061767578,
+    9.675201416015625
+   ]
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 115350,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 115350,
+   "type": "VEC4"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5126,
+   "count": 115350,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 4,
+   "componentType": 5126,
+   "count": 115350,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 5,
+   "componentType": 5125,
+   "count": 368673,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 6,
+   "componentType": 5126,
+   "count": 2453,
+   "type": "VEC3",
+   "min": [
+    -5.290704727172852,
+    0.0,
+    -6.294598579406738
+   ],
+   "max": [
+    6.62269401550293,
+    12.746746063232422,
+    7.486630439758301
+   ]
+  },
+  {
+   "bufferView": 7,
+   "componentType": 5126,
+   "count": 2453,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 8,
+   "componentType": 5126,
+   "count": 2453,
+   "type": "VEC4"
+  },
+  {
+   "bufferView": 9,
+   "componentType": 5126,
+   "count": 2453,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 10,
+   "componentType": 5126,
+   "count": 2453,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 11,
+   "componentType": 5125,
+   "count": 9678,
+   "type": "SCALAR"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteOffset": 0,
+   "byteLength": 1384200,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 1384200,
+   "byteLength": 1384200,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 2768400,
+   "byteLength": 1845600,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 4614000,
+   "byteLength": 922800,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 5536800,
+   "byteLength": 922800,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 6459600,
+   "byteLength": 1474692,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 7934292,
+   "byteLength": 29436,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 7963728,
+   "byteLength": 29436,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 7993164,
+   "byteLength": 39248,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 8032412,
+   "byteLength": 19624,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 8052036,
+   "byteLength": 19624,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 8071660,
+   "byteLength": 38712,
+   "target": 34963
+  }
+ ],
+ "buffers": [
+  {
+   "uri": "sakura_big.bin",
+   "byteLength": 8110372
+  }
+ ]
+}

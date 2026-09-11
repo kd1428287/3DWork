@@ -43,7 +43,7 @@ void BaseScene::Draw()
 	{
 		objManager_->DrawLit();
 
-		MapEditor::Instance().RenderPreviewViewport();
+		
 
 	}
 	KdShaderManager::Instance().m_StandardShader.EndLit();
@@ -87,6 +87,7 @@ void BaseScene::DrawDebug()
 	KdShaderManager::Instance().m_StandardShader.BeginUnLit();
 	{
 		objManager_->DrawDebug();
+		MapEditor::Instance().RenderPreviewViewport();
 	}
 	KdShaderManager::Instance().m_StandardShader.EndUnLit();
 }

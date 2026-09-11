@@ -3,10 +3,12 @@
 // ※ ImGui / DirectXTK(SimpleMath) は既存のPCH等で読み込まれている前提です。
 //    ImGuizmo は本ファイルでのみ使うため明示的にインクルードします。
 #include "ImGuizmo.h"
+#include "../Factories/Map/ComponentTypes.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// マップに配置する1オブジェクト分のデータ(仮実装：Transformのみ)
-// 実際のプロジェクトでは KdGameObject 等の実体への参照/IDに差し替える想定
+// マップに配置する1オブジェクト分のデータ
+//	Transform + 任意個数のコンポーネント構成を持つ。実際のGameObjectへの実体化は
+//	TerrainFactory側がComponentRegistry経由で行う(このファイルは実コンポーネントの詳細を知らない)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 struct MapObject
 {
@@ -16,22 +18,42 @@ struct MapObject
 	DirectX::SimpleMath::Vector3	rotate = { 0,0,0 };	// 度数法(degree) X,Y,Z
 	DirectX::SimpleMath::Vector3	scale = { 1,1,1 };
 
-	std::string	modelPath;		// 読み込んだモデルのファイルパス(JSON保存/表示用)
-	KdModelWork	modelWork;		// 実際に描画・当たり判定に使うモデルの実体
+	std::vector<ComponentEntry>	components;	// JSON保存されるコンポーネント構成
+
+	KdModelWork	modelWork;		// プレビュー表示専用。componentsの"ModelRender"から同期する
 
 	// pos/rotate/scale から4x4行列を生成
 	DirectX::SimpleMath::Matrix GetMatrix() const;
 
-	// モデルファイルを読み込んで modelWork にセットする
-	//	KdAssets::Instance().m_modeldatas (KdDataStorage) を直接経由することで、
-	//	読込失敗時にクラッシュせずログを出して抜けられるようにしている
-	void SetModel(const std::string& path)
+	// 指定した種類のコンポーネントを持っているか
+	bool HasComponent(const std::string& type) const
 	{
-		modelPath = path;
-		if (path.empty()) return;
+		for (auto& c : components) { if (c.type == type) return true; }
+		return false;
+	}
+
+	// components内の"ModelRender"コンポーネントのmodelパラメータを見て、
+	// プレビュー用のmodelWorkを読み込み直す。
+	// コンポーネントの追加/削除/パラメータ編集のたびに呼び出すこと
+	void SyncPreviewModel()
+	{
+		std::string path;
+		for (auto& c : components)
+		{
+			if (c.type == "ModelRender")
+			{
+				path = c.params.value("model", std::string());
+				break;
+			}
+		}
+
+		if (path.empty())
+		{
+			modelWork = KdModelWork();	// 未割り当てに戻す
+			return;
+		}
 
 		std::shared_ptr<KdModelData> data = KdAssets::Instance().m_modeldatas.GetData(path);
-
 		if (!data)
 		{
 			KdDebugGUI::Instance().AddLog("MapEditor: モデル読み込み失敗 %s\n", path.c_str());
@@ -77,6 +99,13 @@ private:
 	void DrawGizmo();
 	void DrawAssetPicker();
 
+	// Inspector内、選択中オブジェクトのコンポーネント一覧(追加/削除/パラメータ編集)
+	void DrawComponentList(MapObject& obj);
+
+	// ComponentTypeInfo::schemaに従ってparamsのフィールドを自動描画する(v1の汎用UI)。
+	// 戻り値は「このフレームで何か編集されたか」
+	bool DrawComponentParamsGeneric(nlohmann::json& params, const ComponentTypeInfo& info);
+
 	// 選択中オブジェクトを注視点とするプレビュー専用ウィンドウ(RenderPreviewViewport()が描いた絵を表示する)
 	void DrawPreviewWindow();
 
@@ -89,6 +118,33 @@ private:
 
 	void AddObject();
 	void RemoveSelected();
+
+	//=====================================================
+	// Undo / Redo
+	//	スナップショット方式(m_objects全体のコピーを積む)。
+	//	オブジェクト数が数百程度までの想定なら十分軽量なので、
+	//	差分ベースのコマンドパターンにはせずシンプルに実装している
+	//=====================================================
+	struct UndoState
+	{
+		std::vector<MapObject>	objects;
+		int						selected = -1;
+	};
+
+	static constexpr size_t kMaxUndoDepth = 50;
+
+	std::vector<UndoState>	m_undoStack;
+	std::vector<UndoState>	m_redoStack;
+
+	// ドラッグ系操作(ギズモ・Inspectorのスライダー)が「今まさに操作中」かどうかの前フレーム値。
+	// 操作開始の一瞬だけPushUndo()するために使う(毎フレーム積むと1ドラッグで大量の履歴になる為)
+	bool	m_gizmoWasUsing = false;
+
+	// 現在の状態をUndoスタックへ退避する(Redoスタックはクリアされる)。
+	// 「変更を加える直前」に呼ぶこと
+	void PushUndo();
+	void Undo();
+	void Redo();
 
 	void Save(const std::string& path);
 	void Load(const std::string& path);

@@ -1,5 +1,7 @@
-﻿#pragma once
-#include "TerrainFactory.h"
+﻿#include "TerrainFactory.h"
+#include "ComponentTypes.h"
+
+#include <iostream>
 
 #include "../../Components/Render/ModelRenderComponent.h"
 #include "../../Components/Render/ForceMaxDepthComponent.h"
@@ -8,7 +10,14 @@
 #include "../../Components/Collision/ColliderComponent.h"
 #include "../../Components/Movement/FollowCameraComponent.h"
 
-GameObject * TerrainFactory::CreateTerrain(ObjectManager & objectManager, int ownerTerrainId)
+TerrainFactory::TerrainFactory()
+{
+	// MapEditorを経由せずゲームを直接起動した場合でもComponentRegistryが
+	// 空にならないよう、ここでも登録を試みる(2重登録は内部でガードされる)
+	RegisterMapComponentTypes();
+}
+
+GameObject* TerrainFactory::CreateTerrain(ObjectManager& objectManager, int ownerTerrainId)
 {
 	auto* ground = objectManager.Instantiate("ground");
 	auto* transform = ground->AddComponent<TransformComponent>();
@@ -33,36 +42,46 @@ GameObject* TerrainFactory::CreateSkydome(ObjectManager& objectManager, int owne
 	renderer->SetLayer(RenderLayer::DrawUnLit);
 	transform->SetPosition({ 0.f,0.f,0.f });
 	auto* follow = skydome->AddComponent<FollowCameraComponent>();
-	follow->SetOffset(Math::Vector3{0,-25.f,0});
+	follow->SetOffset(Math::Vector3{ 0,-25.f,0 });
 	skydome->AddComponent<ForceMaxDepthComponent>();
 	skydome->AddComponent<SkyDomeEdgeFadeComponent>()->SetFadeRange(-0.2f, 0.f);
 
 	return skydome;
 }
 
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// MapEditorが保存したエンティティ1件からGameObjectを組み立てる。
+//	コンポーネントの種類ごとの分岐は一切持たず、ComponentRegistryに登録された
+//	create関数を呼ぶだけ。新しいコンポーネント種類を追加してもこの関数は無改修でよい
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 GameObject* TerrainFactory::CreateFromData(ObjectManager& objectManager, const EntityData& data)
 {
-	auto* obj = objectManager.Instantiate(data.id);
+	auto* obj = objectManager.Instantiate(data.name);
 	auto* transform = obj->AddComponent<TransformComponent>();
-	auto* model = obj->AddComponent<SkeletonComponent>();
-	auto* render = obj->AddComponent<ModelRenderComponent>();
-	auto* collider = obj->AddComponent<ColliderComponent>();
 
 	transform->SetPosition(data.transform.position);
 	transform->SetScale(data.transform.scale);
-	// ※必要に応じてオイラー角からクォータニオンへの変換を行う
-	// transform->SetRotationEuler(data.transform.rotation);
 
-	// アセットの割り当て
-	if (data.assetId == "model_plane") {
-		model->SetModelData("Asset/Models/Terrains/Ground/Terrain.gltf");
-		if (data.colliderType == "Box") {
-			collider->AddBox("body", Math::Vector3(50.f, 1.f, 50.f), Math::Vector3(0.f, -0.5f, 0.f), ColliderCategory::Ground);
+	// オイラー角(度)→クォータニオン変換
+	// ※ TransformComponentの回転セッターの実際のシグネチャが不明なため、
+	//   一旦Quaternion版を想定して実装しています。実際のヘッダに合わせて調整してください
+	Math::Quaternion rot = Math::Quaternion::CreateFromYawPitchRoll(
+		DirectX::XMConvertToRadians(data.transform.rotation.y),
+		DirectX::XMConvertToRadians(data.transform.rotation.x),
+		DirectX::XMConvertToRadians(data.transform.rotation.z));
+	transform->SetRotation(rot);
+
+	for (const auto& entry : data.components)
+	{
+		const ComponentTypeInfo* info = ComponentRegistry::Instance().Find(entry.type);
+		if (!info)
+		{
+			std::cerr << "[TerrainFactory] Unknown component type: " << entry.type
+				<< " (entity: " << data.name << ")" << std::endl;
+			continue;
 		}
-	}
-	else if (data.assetId == "model_tree_pine") {
-		model->SetModelData("Asset/Models/Props/Tree/Tree_Pine.gltf");
-		// Cylinder未実装の場合はBox等で代用
+
+		info->create(*obj, entry.params);
 	}
 
 	return obj;

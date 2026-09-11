@@ -396,9 +396,6 @@
     <ClInclude Include="Src\Application\Engine\EventBus\Event\Event.h">
       <Filter>Src\Application\Engine\EventBus\Event</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\Render\MeshRenderComponent.h">
-      <Filter>Src\Application\Components\Render</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Factories\GameObjectFactory.h">
       <Filter>Src\Application\Factories</Filter>
     </ClInclude>
@@ -786,6 +783,9 @@
     <ClInclude Include="Src\Framework\Shader\SlashTrailShader\SlashTrailShader.h">
       <Filter>Src\Framework\Shader\SlashTrailShader</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Factories\Map\ComponentTypes.h">
+      <Filter>Src\Application\Factories\Map</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -1051,6 +1051,9 @@
     </ClCompile>
     <ClCompile Include="Src\Framework\Shader\SlashTrailShader\SlashTrailShader.cpp">
       <Filter>Src\Framework\Shader\SlashTrailShader</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Factories\Map\ComponentRegistrations.cpp">
+      <Filter>Src\Application\Factories\Map</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

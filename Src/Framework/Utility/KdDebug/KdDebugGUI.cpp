@@ -103,7 +103,7 @@ void KdDebugGUI::GuiProcess()
 	//===========================================================
 
 	// ログウィンドウ
-	m_uqLog->Draw("Log Window");
+	//m_uqLog->Draw("Log Window");
 
 	// エディタ表示中のみ、ドッキングUI一式(Hierarchy/Inspector/Assets/Scene/Log)を描画する
 	// "Pause"入力でON/OFF切替(main.cpp の Execute() 内を参照)

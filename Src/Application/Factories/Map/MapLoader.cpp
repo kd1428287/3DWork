@@ -8,53 +8,100 @@
 
 using json = nlohmann::json;
 
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// JSON側の1エンティティ分を EntityData に変換する
+//	フィールド欠落・型不一致はここで個別に検知し、そのエンティティだけスキップする
+//	(1個の不正データのせいでマップ全体のロードが失敗することを避ける為)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+static bool ParseEntity(const json& e, EntityData& out)
+{
+	try
+	{
+		// MapEditor(MapObject)の保存キーと1:1対応
+		out.name = e.value("name", std::string("Object"));
+
+		if (e.contains("pos"))
+		{
+			out.transform.position = { e["pos"][0], e["pos"][1], e["pos"][2] };
+		}
+		if (e.contains("rotate"))
+		{
+			out.transform.rotation = { e["rotate"][0], e["rotate"][1], e["rotate"][2] };
+		}
+		if (e.contains("scale"))
+		{
+			out.transform.scale = { e["scale"][0], e["scale"][1], e["scale"][2] };
+		}
+
+		out.components.clear();
+
+		if (e.contains("components") && e["components"].is_array())
+		{
+			for (const auto& c : e["components"])
+			{
+				ComponentEntry entry;
+				entry.type = c.value("type", std::string());
+				if (entry.type.empty()) continue;	// typeの無いエントリは無視
+
+				entry.params = c.value("params", nlohmann::json::object());
+				out.components.push_back(std::move(entry));
+			}
+		}
+	}
+	catch (const json::exception& ex)
+	{
+		std::cerr << "[MapLoader Error] Failed to parse entity: " << ex.what() << std::endl;
+		return false;
+	}
+
+	return true;
+}
+
 bool MapLoader::LoadMapFromJson(const std::string& jsonFilePath, ObjectManager& objectManager, TerrainFactory& terrainFactory)
 {
 	std::ifstream file(jsonFilePath);
-	if (!file.is_open()) {
+	if (!file.is_open())
+	{
 		std::cerr << "[MapLoader Error] Failed to open map JSON: " << jsonFilePath << std::endl;
 		return false;
 	}
 
 	json mapJson;
-	try {
+	try
+	{
 		file >> mapJson;
 	}
-	catch (const json::parse_error& e) {
+	catch (const json::parse_error& e)
+	{
 		std::cerr << "[MapLoader Error] JSON parse error: " << e.what() << std::endl;
 		return false;
 	}
 
-	// エンティティ配列のパースと生成
-	if (mapJson.contains("entities") && mapJson["entities"].is_array()) {
-		for (const auto& entityJson : mapJson["entities"]) {
-			EntityData data;
-			data.id = entityJson.value("id", "unknown");
-			data.type = entityJson.value("type", "");
-			data.assetId = entityJson.value("asset_id", "");
-
-			if (entityJson.contains("transform")) {
-				const auto& tf = entityJson["transform"];
-				if (tf.contains("position")) {
-					data.transform.position = { tf["position"][0], tf["position"][1], tf["position"][2] };
-				}
-				if (tf.contains("rotation")) {
-					data.transform.rotation = { tf["rotation"][0], tf["rotation"][1], tf["rotation"][2] };
-				}
-				if (tf.contains("scale")) {
-					data.transform.scale = { tf["scale"][0], tf["scale"][1], tf["scale"][2] };
-				}
-			}
-
-			if (entityJson.contains("properties")) {
-				data.colliderType = entityJson["properties"].value("collider_type", "Box");
-			}
-
-			// 解析したデータをFactoryに投げて生成させる
-			terrainFactory.CreateFromData(objectManager, data);
-		}
+	if (!mapJson.is_array())
+	{
+		std::cerr << "[MapLoader Error] Map JSON root is not an array: " << jsonFilePath << std::endl;
+		return false;
 	}
 
-	std::cout << "[MapLoader] Map loaded successfully: " << jsonFilePath << std::endl;
+	int successCount = 0;
+	int skipCount = 0;
+
+	for (const auto& entityJson : mapJson)
+	{
+		EntityData data;
+		if (!ParseEntity(entityJson, data))
+		{
+			++skipCount;
+			continue;
+		}
+
+		// 解析したデータをFactoryに投げて生成させる
+		terrainFactory.CreateFromData(objectManager, data);
+		++successCount;
+	}
+
+	std::cout << "[MapLoader] Map loaded: " << jsonFilePath
+		<< " (entities: " << successCount << ", skipped: " << skipCount << ")" << std::endl;
+
 	return true;
 }

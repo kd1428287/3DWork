@@ -19,6 +19,13 @@
 //	ピクセルシェーダーはKdGPUParticle_PS.hlslをそのまま流用しており、
 //	頂点シェーダー(KdSlashTrail_VS.hlsl)のみ新規に用意した。
 //
+// 【墨レイヤー / 芯(コア)レイヤーについて】
+//	同じsamples_履歴から、墨の帯(vertices_)と、細く明るい加算合成の芯(coreVertices_)の
+//	2種類の頂点配列を毎フレーム構築する。GPUリソースはrenderer_(動的頂点バッファ1個)を
+//	使い回し、Draw()内で「墨レイヤー描画→芯レイヤー描画」の順にDraw呼び出しを2回行う
+//	(Map(WRITE_DISCARD)→memcpy→Unmap→Drawが呼び出しごとに完結するため、
+//	 同一バッファを連続で使い回しても問題ない)
+//
 // 【状態遷移】
 //   Idle(samples_が空・isRecording_==false)
 //     ↓ BeginRecording()
@@ -55,18 +62,15 @@ public:
 	SlashTrailInstance() {}
 	~SlashTrailInstance() {}
 
-	// コピー禁止(GPU描画用リソース(KdSlashTrailRenderer)をshared_ptrで持つ為。
-	// EffectInstanceがKdGPUParticleをshared_ptrで持つのと同じ理由)
 	SlashTrailInstance(const SlashTrailInstance&) = delete;
 	SlashTrailInstance& operator=(const SlashTrailInstance&) = delete;
 
-	// ムーブは許可(shared_ptrなので安全にムーブできる。生ポインタを直接持たせていない為、
-	// デフォルトのムーブでも二重解放は起きない)
 	SlashTrailInstance(SlashTrailInstance&&) = default;
 	SlashTrailInstance& operator=(SlashTrailInstance&&) = default;
 
 	// パラメータを保持し、GPU描画用リソース(KdSlashTrailRenderer)を生成する。
-	// 頂点バッファの容量はparams.MaxSamples * 2(三角形ストリップ用)で確保される
+	// 頂点バッファの容量はparams.MaxSamples * 2(三角形ストリップ用)で確保される。
+	// 墨レイヤー・芯レイヤーは同じバッファを使い回すため、容量はレイヤー間で共用でよい
 	bool Init(const SlashTrailParams& params);
 
 	// 記録開始(攻撃開始時に呼ぶ)。既存サンプルは破棄してゼロから記録し直す
@@ -75,43 +79,42 @@ public:
 	// 記録中、毎フレーム剣のTip/Base座標を渡す。
 	//	記録中(isRecording_==true)でない場合は無視される。
 	//	前回記録したTipからMinSampleDistance以上動いていない場合は、
-	//	今回は新規サンプルを追加しない(間引き)
+	//	今回は新規サンプルを追加しない(間引き)。
+	//	新規サンプル記録時、直前サンプルからの経過時間(sinceLastSampleTime_)と
+	//	移動距離からSlashTrailSample::Speedを算出する(速度ベースの太さ変調に使用)
 	void UpdateTipBase(const DirectX::SimpleMath::Vector3& tip, const DirectX::SimpleMath::Vector3& base);
 
 	// 記録終了(攻撃終了時に呼ぶ)。isRecording_をfalseにするだけで、
-	//	既存サンプルには触らない(＝新規サンプルが増えなくなるだけで、
-	//	既存分はUpdate()のたびにAgeが進み、自然にフェードアウトしていく)
+	//	既存サンプルには触らない
 	void EndRecording();
 
-	// 毎フレーム呼ぶ：Age更新→期限切れサンプルの間引き→Draw用頂点配列の再構築、の順で行う
-	//	※新規サンプルが増えたかどうかに関わらず、Ageが進んだ分だけ色・幅が変化する為、
-	//	  頂点の再構築は毎フレーム必要になる点に注意
+	// 毎フレーム呼ぶ：sinceLastSampleTime_加算→Age更新→期限切れサンプルの間引き→
+	//	Draw用頂点配列(墨レイヤー・芯レイヤー両方)の再構築、の順で行う
 	void Update(float deltaTime);
 
-	// paramsのDrawPassFlagsにpassが含まれる時だけ描画する(EffectInstance::Draw(pass)と同じ規約)
+	// paramsのDrawPassFlags/CoreDrawPassFlagsにpassが含まれる時だけ、
+	//	それぞれのレイヤーを描画する(EffectInstance::Draw(pass)と同じ規約)
 	void Draw(ParticleDrawPass pass) const;
 
 	bool IsRecording() const { return isRecording_; }
 
-	// 記録が終わっており(EndRecording済み)、かつ既存サンプルも全てフェードアウトし切った状態か。
-	//	呼び出し側(ディスパッチャー相当)はこれがtrueになったタイミングで初めてインスタンスを破棄する事
 	bool IsFinished() const { return !isRecording_ && samples_.empty(); }
 
 	const SlashTrailParams& GetParams() const { return params_; }
 
-	// Draw用に構築済みのCPU側頂点配列(GPU側実装時、ここをそのまま動的頂点バッファへ
-	// Map/Unmapでコピーする想定。三角形ストリップ用に2頂点×サンプル数ぶん並んでいる)
+	// Draw用に構築済みのCPU側頂点配列(墨レイヤー)
 	const std::vector<SlashTrailVertex>& GetVertices() const { return vertices_; }
+
+	// Draw用に構築済みのCPU側頂点配列(芯レイヤー)
+	const std::vector<SlashTrailVertex>& GetCoreVertices() const { return coreVertices_; }
 
 private:
 
-	// 先頭(最古)から見て、Age > FadeLengthになったサンプルを間引く
 	void TrimExpiredSamples();
 
-	// MaxSamplesを超えた分を、先頭(最古)から強制的に間引く(安全弁)
 	void TrimOverflowSamples();
 
-	// samples_から、Draw用の頂点配列(vertices_)を作り直す
+	// samples_から、Draw用の頂点配列(墨レイヤー:vertices_、芯レイヤー:coreVertices_)を作り直す
 	void RebuildVertices();
 
 	SlashTrailParams	params_;
@@ -120,14 +123,19 @@ private:
 
 	bool	isRecording_ = false;
 
-	// UpdateTipBase()での距離判定用。まだ1件も記録していない間はhasLastRecordedTip_==false
 	bool							hasLastRecordedTip_ = false;
 	DirectX::SimpleMath::Vector3	lastRecordedTip_ = { 0.0f, 0.0f, 0.0f };
 
-	// Update()のたびに再構築される、Draw用のCPU側頂点配列
+	// 直前にサンプルを記録してからの経過時間(秒)。速度算出に使用
+	float	sinceLastSampleTime_ = 0.0f;
+
+	// Update()のたびに再構築される、Draw用のCPU側頂点配列(墨の帯)
 	std::vector<SlashTrailVertex>	vertices_;
 
+	// Update()のたびに再構築される、Draw用のCPU側頂点配列(白熱した芯。加算合成)
+	std::vector<SlashTrailVertex>	coreVertices_;
+
 	// GPU描画用リソース(頂点バッファ・専用VS・KdGPUParticle_PS流用のPS)。
-	// shared_ptrで持つ理由はコピー禁止/ムーブ許可の説明を参照
+	// 墨レイヤー・芯レイヤーの両方でこの1個を使い回す(Draw()を2回呼ぶだけで済むため)
 	std::shared_ptr<SlashTrailRenderer>	renderer_;
 };

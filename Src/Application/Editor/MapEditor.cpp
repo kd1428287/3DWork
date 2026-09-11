@@ -59,6 +59,58 @@ static void SetupMapDockLayout(ImGuiID dockspaceId, const ImVec2& size)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 毎フレーム更新
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// Undo / Redo
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void MapEditor::PushUndo()
+{
+	UndoState state;
+	state.objects = m_objects;	// MapObjectはKdModelWork(shared_ptr経由)を持つのでコピーは軽量
+	state.selected = m_selected;
+
+	m_undoStack.push_back(std::move(state));
+	if (m_undoStack.size() > kMaxUndoDepth)
+	{
+		// 古いものから捨てる(先頭要素の削除はO(n)だが、深さ上限が小さいので許容)
+		m_undoStack.erase(m_undoStack.begin());
+	}
+
+	// 新しい変更を積んだ時点で、それより新しかったRedo履歴は無効になる
+	m_redoStack.clear();
+}
+
+void MapEditor::Undo()
+{
+	if (m_undoStack.empty()) return;
+
+	UndoState redoState;
+	redoState.objects = m_objects;
+	redoState.selected = m_selected;
+	m_redoStack.push_back(std::move(redoState));
+
+	UndoState prev = std::move(m_undoStack.back());
+	m_undoStack.pop_back();
+
+	m_objects = std::move(prev.objects);
+	m_selected = prev.selected;
+}
+
+void MapEditor::Redo()
+{
+	if (m_redoStack.empty()) return;
+
+	UndoState undoState;
+	undoState.objects = m_objects;
+	undoState.selected = m_selected;
+	m_undoStack.push_back(std::move(undoState));
+
+	UndoState next = std::move(m_redoStack.back());
+	m_redoStack.pop_back();
+
+	m_objects = std::move(next.objects);
+	m_selected = next.selected;
+}
+
 void MapEditor::Update()
 {
 	ImGuizmo::BeginFrame();
@@ -69,6 +121,22 @@ void MapEditor::Update()
 		if (ImGui::IsKeyPressed(ImGuiKey_1)) m_operation = ImGuizmo::TRANSLATE;
 		if (ImGui::IsKeyPressed(ImGuiKey_2)) m_operation = ImGuizmo::ROTATE;
 		if (ImGui::IsKeyPressed(ImGuiKey_3)) m_operation = ImGuizmo::SCALE;
+	}
+
+	// Undo/Redo(テキスト入力中にCtrl+Zを奪うとInputTextの単体Undoと衝突するので、
+	// WantTextInput中(=どこかのテキストボックスにフォーカスがある間)は受け付けない)
+	if (!ImGui::GetIO().WantTextInput)
+	{
+		bool ctrl = ImGui::GetIO().KeyCtrl;
+		if (ctrl && ImGui::IsKeyPressed(ImGuiKey_Z, false))
+		{
+			if (ImGui::GetIO().KeyShift) { Redo(); }
+			else { Undo(); }
+		}
+		if (ctrl && ImGui::IsKeyPressed(ImGuiKey_Y, false))
+		{
+			Redo();
+		}
 	}
 
 	// マップデータの外部変更検知(ホットリロード)
@@ -120,6 +188,18 @@ void MapEditor::DrawMainMenu()
 	ImGui::SameLine();
 	ImGui::Checkbox("Auto Reload", &m_autoReload);
 
+	ImGui::Separator();
+
+	ImGui::BeginDisabled(m_undoStack.empty());
+	if (ImGui::Button("Undo (Ctrl+Z)")) { Undo(); }
+	ImGui::EndDisabled();
+
+	ImGui::SameLine();
+
+	ImGui::BeginDisabled(m_redoStack.empty());
+	if (ImGui::Button("Redo (Ctrl+Y)")) { Redo(); }
+	ImGui::EndDisabled();
+
 	ImGui::Text("Objects : %d", (int)m_objects.size());
 
 	ImGui::End();
@@ -159,7 +239,151 @@ void MapEditor::DrawHierarchy()
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// インスペクターウィンドウ(選択中オブジェクトのTransform + ギズモ操作モード)
+// コンポーネント1個ぶんのパラメータを、ComponentTypeInfo::schemaに従って自動描画する(v1の汎用UI)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+bool MapEditor::DrawComponentParamsGeneric(nlohmann::json& params, const ComponentTypeInfo& info)
+{
+	bool edited = false;
+
+	for (auto& field : info.schema)
+	{
+		ImGui::PushID(field.key.c_str());
+
+		switch (field.type)
+		{
+		case ParamType::Float:
+		{
+			float v = params.value(field.key, 0.0f);
+			ImGui::DragFloat(field.label.c_str(), &v, 0.1f);
+			if (ImGui::IsItemActivated()) { PushUndo(); }
+			if (ImGui::IsItemEdited()) { params[field.key] = v; edited = true; }
+			break;
+		}
+		case ParamType::Vector3:
+		{
+			auto arr = params.value(field.key, std::vector<float>{0.0f, 0.0f, 0.0f});
+			while (arr.size() < 3) { arr.push_back(0.0f); }
+			float v[3] = { arr[0], arr[1], arr[2] };
+			ImGui::DragFloat3(field.label.c_str(), v, 0.1f);
+			if (ImGui::IsItemActivated()) { PushUndo(); }
+			if (ImGui::IsItemEdited()) { params[field.key] = { v[0], v[1], v[2] }; edited = true; }
+			break;
+		}
+		case ParamType::String:
+		{
+			std::string s = params.value(field.key, std::string());
+			char buf[256];
+			strcpy_s(buf, s.c_str());
+			ImGui::InputText(field.label.c_str(), buf, sizeof(buf));
+			if (ImGui::IsItemActivated()) { PushUndo(); }
+			if (ImGui::IsItemEdited()) { params[field.key] = std::string(buf); edited = true; }
+			break;
+		}
+		case ParamType::Bool:
+		{
+			bool b = params.value(field.key, false);
+			ImGui::Checkbox(field.label.c_str(), &b);
+			if (ImGui::IsItemActivated()) { PushUndo(); }
+			if (ImGui::IsItemEdited()) { params[field.key] = b; edited = true; }
+			break;
+		}
+		}
+
+		ImGui::PopID();
+	}
+
+	return edited;
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// Inspector内、選択中オブジェクトのコンポーネント一覧。
+//	追加はComponentRegistryに登録されている種類から選ぶだけ(TerrainFactory側の対応も
+//	ComponentRegistrations.cppに1箇所追加するだけで済む設計)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void MapEditor::DrawComponentList(MapObject& obj)
+{
+	ImGui::Text("Components");
+
+	int removeIndex = -1;
+
+	for (int i = 0; i < (int)obj.components.size(); i++)
+	{
+		ComponentEntry& entry = obj.components[i];
+		ImGui::PushID(i);
+
+		bool open = ImGui::CollapsingHeader(entry.type.c_str(), ImGuiTreeNodeFlags_DefaultOpen);
+
+		ImGui::SameLine(ImGui::GetWindowWidth() - 70.0f);
+		if (ImGui::SmallButton("Remove")) { removeIndex = i; }
+
+		if (open)
+		{
+			ImGui::Indent();
+
+			const ComponentTypeInfo* info = ComponentRegistry::Instance().Find(entry.type);
+			if (info)
+			{
+				bool edited = DrawComponentParamsGeneric(entry.params, *info);
+
+				// ModelRenderのmodelパラメータが変わったら、プレビュー用モデルも読み直す
+				if (edited && entry.type == "ModelRender")
+				{
+					obj.SyncPreviewModel();
+				}
+			}
+			else
+			{
+				// 保存後にレジストリ側から削除された種類が残っている場合等
+				ImGui::TextDisabled("未登録のコンポーネント種類です: %s", entry.type.c_str());
+			}
+
+			ImGui::Unindent();
+		}
+
+		ImGui::PopID();
+	}
+
+	if (removeIndex >= 0)
+	{
+		PushUndo();
+		bool wasModelRender = (obj.components[removeIndex].type == "ModelRender");
+		obj.components.erase(obj.components.begin() + removeIndex);
+		if (wasModelRender) { obj.SyncPreviewModel(); }
+	}
+
+	if (ImGui::Button("+ Add Component"))
+	{
+		ImGui::OpenPopup("AddComponentPopup");
+	}
+
+	if (ImGui::BeginPopup("AddComponentPopup"))
+	{
+		for (auto& kv : ComponentRegistry::Instance().All())
+		{
+			const std::string& typeName = kv.first;
+			const ComponentTypeInfo& info = kv.second;
+
+			// v1は同種コンポーネントの重複追加は禁止(シンプルに保つ)
+			if (obj.HasComponent(typeName)) continue;
+
+			if (ImGui::Selectable(typeName.c_str()))
+			{
+				PushUndo();
+
+				ComponentEntry entry;
+				entry.type = typeName;
+				entry.params = info.defaultParams;
+				obj.components.push_back(std::move(entry));
+
+				if (typeName == "ModelRender") { obj.SyncPreviewModel(); }
+			}
+		}
+		ImGui::EndPopup();
+	}
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// インスペクターウィンドウ(選択中オブジェクトのTransform + コンポーネント + ギズモ操作モード)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void MapEditor::DrawInspector()
 {
@@ -176,14 +400,28 @@ void MapEditor::DrawInspector()
 
 	char nameBuf[128];
 	strcpy_s(nameBuf, obj.name.c_str());
-	if (ImGui::InputText("Name", nameBuf, sizeof(nameBuf)))
+	ImGui::InputText("Name", nameBuf, sizeof(nameBuf));
+	if (ImGui::IsItemActivated())
+	{
+		// テキストボックスにフォーカスが入った瞬間(編集前)の状態を退避
+		PushUndo();
+	}
+	if (ImGui::IsItemEdited())
 	{
 		obj.name = nameBuf;
 	}
 
 	ImGui::DragFloat3("Position", &obj.pos.x, 0.1f);
+	if (ImGui::IsItemActivated()) { PushUndo(); }
+
 	ImGui::DragFloat3("Rotation", &obj.rotate.x, 1.0f);
+	if (ImGui::IsItemActivated()) { PushUndo(); }
+
 	ImGui::DragFloat3("Scale", &obj.scale.x, 0.1f, 0.01f, 100.0f);
+	if (ImGui::IsItemActivated()) { PushUndo(); }
+
+	ImGui::Separator();
+	DrawComponentList(obj);
 
 	ImGui::Separator();
 	ImGui::Text("Gizmo Operation");
@@ -220,8 +458,8 @@ void MapEditor::DrawInspector()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void MapEditor::DrawGizmo()
 {
-	if (m_selected < 0 || m_selected >= (int)m_objects.size()) return;
-	if (m_previewViewport.Width <= 0 || m_previewViewport.Height <= 0) return;
+	if (m_selected < 0 || m_selected >= (int)m_objects.size()) { m_gizmoWasUsing = false; return; }
+	if (m_previewViewport.Width <= 0 || m_previewViewport.Height <= 0) { m_gizmoWasUsing = false; return; }
 
 	ImGuizmo::SetOrthographic(false);
 
@@ -255,10 +493,22 @@ void MapEditor::DrawGizmo()
 		nullptr,
 		m_useSnap ? m_snapValue : nullptr);
 
-	if (ImGuizmo::IsUsing())
+	bool isUsing = ImGuizmo::IsUsing();
+
+	// ドラッグ「開始」の瞬間(前フレームは操作していなかった)だけUndoを1回積む。
+	// この時点ではobj.pos/rotate/scaleはまだ書き換えていないので、
+	// ここが正しく「操作前」のスナップショットになる
+	if (isUsing && !m_gizmoWasUsing)
+	{
+		PushUndo();
+	}
+
+	if (isUsing)
 	{
 		ImGuizmo::DecomposeMatrixToComponents(matrix, &obj.pos.x, &obj.rotate.x, &obj.scale.x);
 	}
+
+	m_gizmoWasUsing = isUsing;
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -305,7 +555,33 @@ void MapEditor::DrawAssetPicker()
 			// オブジェクトが選択中なら、クリックしたアセットをそのまま割り当てる
 			if (m_selected >= 0 && m_selected < (int)m_objects.size())
 			{
-				m_objects[m_selected].SetModel(kAssetsFilePath + path);
+				PushUndo();
+
+				MapObject& target = m_objects[m_selected];
+				std::string fullPath = kAssetsFilePath + path;
+
+				// 既にModelRenderが付いていればそのmodelパラメータを書き換え、
+				// 無ければデフォルト値で新規追加する
+				ComponentEntry* modelRender = nullptr;
+				for (auto& c : target.components)
+				{
+					if (c.type == "ModelRender") { modelRender = &c; break; }
+				}
+
+				if (!modelRender)
+				{
+					ComponentEntry entry;
+					entry.type = "ModelRender";
+					if (auto* info = ComponentRegistry::Instance().Find("ModelRender"))
+					{
+						entry.params = info->defaultParams;
+					}
+					target.components.push_back(std::move(entry));
+					modelRender = &target.components.back();
+				}
+
+				modelRender->params["model"] = fullPath;
+				target.SyncPreviewModel();
 			}
 		}
 	}
@@ -320,7 +596,13 @@ void MapEditor::DrawAssetPicker()
 	}
 
 	MapObject& obj = m_objects[m_selected];
-	ImGui::Text("Current : %s", obj.modelPath.empty() ? "(None)" : obj.modelPath.c_str());
+
+	std::string currentModel;
+	for (auto& c : obj.components)
+	{
+		if (c.type == "ModelRender") { currentModel = c.params.value("model", std::string()); break; }
+	}
+	ImGui::Text("Current : %s", currentModel.empty() ? "(None)" : currentModel.c_str());
 
 	ImGui::End();
 }
@@ -497,33 +779,33 @@ void MapEditor::RenderPreviewViewport()
 	if (!m_previewViewport.Color || !m_previewViewport.Depth) return;
 	if (m_previewViewport.Width <= 0 || m_previewViewport.Height <= 0) return;
 
-	ID3D11DeviceContext* context = KdDirect3D::Instance().WorkDevContext();
+	ID3D11DeviceContext* DevCon = KdDirect3D::Instance().WorkDevContext();
 
 	// 退避
 	KdShaderManager::cbCamera savedCamera = KdShaderManager::Instance().GetCameraCB();
 
 	ID3D11RenderTargetView* savedRTV = nullptr;
 	ID3D11DepthStencilView* savedDSV = nullptr;
-	context->OMGetRenderTargets(1, &savedRTV, &savedDSV);
+	DevCon->OMGetRenderTargets(1, &savedRTV, &savedDSV);
 
 	UINT savedVPNum = 1;
 	D3D11_VIEWPORT savedVP = {};
-	context->RSGetViewports(&savedVPNum, &savedVP);
+	DevCon->RSGetViewports(&savedVPNum, &savedVP);
 
 	// プレビュー用バッファへ切り替え・クリア
 	ID3D11RenderTargetView* rtvs[] = { m_previewViewport.Color->WorkRTView() };
-	context->OMSetRenderTargets(1, rtvs, m_previewViewport.Depth->WorkDSView());
+	DevCon->OMSetRenderTargets(1, rtvs, m_previewViewport.Depth->WorkDSView());
 
 	static const float clearColor[4] = { 0.1f, 0.1f, 0.12f, 1.0f };
-	context->ClearRenderTargetView(m_previewViewport.Color->WorkRTView(), clearColor);
-	context->ClearDepthStencilView(m_previewViewport.Depth->WorkDSView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+	DevCon->ClearRenderTargetView(m_previewViewport.Color->WorkRTView(), clearColor);
+	DevCon->ClearDepthStencilView(m_previewViewport.Depth->WorkDSView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
 	D3D11_VIEWPORT vp = {};
 	vp.Width = (float)m_previewViewport.Width;
 	vp.Height = (float)m_previewViewport.Height;
 	vp.MinDepth = 0.0f;
 	vp.MaxDepth = 1.0f;
-	context->RSSetViewports(1, &vp);
+	DevCon->RSSetViewports(1, &vp);
 
 	// プレビュー用カメラの注視点(選択中オブジェクト、または配置済み全体の重心)
 	DirectX::SimpleMath::Vector3 target = GetPreviewTarget();
@@ -533,6 +815,7 @@ void MapEditor::RenderPreviewViewport()
 		(float)m_previewViewport.Width / (float)m_previewViewport.Height);
 
 	KdShaderManager::Instance().WriteCBCamera(view.Invert(), proj);
+	KdShaderManager::Instance().ChangeRasterizerState(KdRasterizerState::CullNone);
 
 	// マップ全体(配置済みオブジェクトすべて)を描画する
 	//	KdStandardShader::DrawModel()自体はVS/PS/InputLayout/サンプラーステートをセットしない
@@ -545,13 +828,14 @@ void MapEditor::RenderPreviewViewport()
 	KdShaderManager::Instance().m_StandardShader.EndLit();
 
 	// 復元
+	KdShaderManager::Instance().UndoRasterizerState();
 	KdShaderManager::Instance().WriteCBCamera(savedCamera.mView.Invert(), savedCamera.mProj);
 
-	context->OMSetRenderTargets(1, &savedRTV, savedDSV);
+	DevCon->OMSetRenderTargets(1, &savedRTV, savedDSV);
 	if (savedRTV) { savedRTV->Release(); }
 	if (savedDSV) { savedDSV->Release(); }
 
-	context->RSSetViewports(savedVPNum, &savedVP);
+	DevCon->RSSetViewports(savedVPNum, &savedVP);
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -691,6 +975,8 @@ DirectX::SimpleMath::Matrix MapEditor::PreviewCamera::GetProj(float aspect) cons
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void MapEditor::AddObject()
 {
+	PushUndo();
+
 	MapObject obj;
 	obj.name = "Object" + std::to_string(m_objects.size());
 	m_objects.push_back(obj);
@@ -700,6 +986,8 @@ void MapEditor::AddObject()
 void MapEditor::RemoveSelected()
 {
 	if (m_selected < 0 || m_selected >= (int)m_objects.size()) return;
+
+	PushUndo();
 
 	m_objects.erase(m_objects.begin() + m_selected);
 	m_selected = -1;
@@ -714,12 +1002,21 @@ void MapEditor::Save(const std::string& path)
 
 	for (auto& obj : m_objects)
 	{
+		nlohmann::json componentsJson = nlohmann::json::array();
+		for (auto& c : obj.components)
+		{
+			componentsJson.push_back({
+				{ "type",   c.type },
+				{ "params", c.params }
+				});
+		}
+
 		j.push_back({
-			{ "name",   obj.name },
-			{ "pos",    { obj.pos.x, obj.pos.y, obj.pos.z } },
-			{ "rotate", { obj.rotate.x, obj.rotate.y, obj.rotate.z } },
-			{ "scale",  { obj.scale.x, obj.scale.y, obj.scale.z } },
-			{ "model",  obj.modelPath }
+			{ "name",       obj.name },
+			{ "pos",        { obj.pos.x, obj.pos.y, obj.pos.z } },
+			{ "rotate",     { obj.rotate.x, obj.rotate.y, obj.rotate.z } },
+			{ "scale",      { obj.scale.x, obj.scale.y, obj.scale.z } },
+			{ "components", componentsJson }
 			});
 	}
 
@@ -811,12 +1108,32 @@ void MapEditor::Load(const std::string& path)
 			obj.rotate = { e.at("rotate")[0], e.at("rotate")[1], e.at("rotate")[2] };
 			obj.scale = { e.at("scale")[0],  e.at("scale")[1],  e.at("scale")[2] };
 
-			// "model"キーは旧バージョンのJSONには存在しないため value() でデフォルト値対応
-			std::string modelPath = e.value("model", std::string());
-			if (!modelPath.empty())
+			if (e.contains("components") && e["components"].is_array())
 			{
-				obj.SetModel(modelPath);	// ここで実際のモデル読み込みが走る
+				// 現行フォーマット：componentsの配列
+				for (auto& c : e["components"])
+				{
+					ComponentEntry entry;
+					entry.type = c.at("type").get<std::string>();
+					entry.params = c.value("params", nlohmann::json::object());
+					obj.components.push_back(std::move(entry));
+				}
 			}
+			else if (e.contains("model"))
+			{
+				// 旧フォーマット(components導入前)の"model"キーとの後方互換：
+				// ModelRenderコンポーネント1つに変換して読み込む
+				std::string modelPath = e.value("model", std::string());
+				if (!modelPath.empty())
+				{
+					ComponentEntry entry;
+					entry.type = "ModelRender";
+					entry.params = { { "model", modelPath } };
+					obj.components.push_back(std::move(entry));
+				}
+			}
+
+			obj.SyncPreviewModel();	// ここで実際のモデル読み込みが走る
 
 			loaded.push_back(std::move(obj));
 		}
@@ -831,6 +1148,10 @@ void MapEditor::Load(const std::string& path)
 
 	m_objects = std::move(loaded);
 	m_selected = -1;
+
+	// 別のマップに切り替わった以上、それまでのUndo/Redo履歴は意味を持たないので破棄する
+	m_undoStack.clear();
+	m_redoStack.clear();
 	KdDebugGUI::Instance().AddLog("MapEditor: 読み込みました %s\n", path.c_str());
 }
 
@@ -840,6 +1161,10 @@ void MapEditor::Load(const std::string& path)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 MapEditor::MapEditor()
 {
+	// Add Componentの選択肢・保存済みマップのコンポーネント実体化に必要なため、
+	// マップを読み込む前に必ず登録しておく(2重登録は内部でガード済み)
+	RegisterMapComponentTypes();
+
 	Load(m_filePathBuf);
 	LoadModelRegistry(m_registryPathBuf);
 }
