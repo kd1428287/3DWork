@@ -167,11 +167,11 @@ bool Application::Init(int w, int h)
 	//		bFullScreen = true;
 	//	}
 
-		//===================================================================
-		// Direct3D初期化
-		//===================================================================
+	//===================================================================
+	// Direct3D初期化
+	//===================================================================
 
-		// デバイスのデバッグモードを有効にする
+	// デバイスのデバッグモードを有効にする
 	bool deviceDebugMode = false;
 #ifdef _DEBUG
 	deviceDebugMode = true;
@@ -266,16 +266,10 @@ bool Application::Init(int w, int h)
 	// 3. マネージャーにデバイスを登録
 	// ※内部で unique_ptr に変換されて管理されます
 	KdInputManager::Instance().AddDevice("Keyboard", keyboardDevice);
-	//KdInputManager::Instance().AddDevice("Mouse", mouseDevice);
 
 	return true;
 }
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// Updateスレッド エントリ関数
-// 「Update」の手番が回ってきたら1フレーム分の更新処理を行い、
-// 終わったら手番を「Render」に渡してまた自分の番を待つ、を繰り返す
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // アプリケーション実行
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -364,13 +358,17 @@ void Application::Execute()
 
 			Draw();
 
+			// エフェクトプレビュー専用ビューポートへの描画
+			EffectEditor::Instance().RenderPreviewViewport();
+			// マッププレビュー
+			MapEditor::Instance().RenderPreviewViewport();
+
+
 			PostDraw();
 
 			DrawSprite();
 
-			// エフェクトプレビュー専用ビューポートへの描画
-			EffectEditor::Instance().RenderPreviewViewport();
-			// マッププレビュー
+			
 		}
 		KdPostDraw();
 

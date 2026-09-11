@@ -3,50 +3,9 @@
 #include "../Render/IModelRenderSource.h"
 #include "IAnimationPostProcess.h"
 
-// ポインタで持つだけなのでヘッダの取り込みは不要。ModelAnimatorComponent.h
-// 側がSkeletonComponent.hをincludeしているため、ここでincludeすると
-// 循環インクルードになる。
 class ModelAnimatorComponent;
 
-// ============================================================
-// SkeletonComponent: 骨格アニメーション(FK)を担当する。
-// KdModelWorkを保持し、毎フレームボーンのローカル空間行列を計算する。
-//
-// 注意: KdModelWorkのm_worldTransformは「モデルローカル空間」
-// (ルートノード基準)であり、GameObjectのワールド座標ではない。
-// ワールド座標が欲しい場合はTryGetBoneWorldMatrix()を使い、
-// 所有者のTransformComponentと合成する。
-//
-// 既にメッシュ描画用に別のKdModelWorkを持つコンポーネントがある場合は
-// 二重計算・アニメのズレを避けるため、そちらではなくこの
-// SkeletonComponentが持つKdModelWorkを描画側からも参照すること。
-//
-// --- FK/IKのオーケストレーターとしての役割について ---------------------
-// このコンポーネントは自分自身のFK計算だけでなく、同じGameObject上の
-// アニメーション関連コンポーネント(ModelAnimatorComponent、および
-// IAnimationPostProcessを実装するIK群)を明示的に呼び出す司令塔を兼ねる。
-// GameObject::PreUpdate()/PostUpdate()という既存の2フェーズに乗せる
-// (グローバルなレジストリやECS的な一括処理は導入しない。単一の
-// GameObject内で完結する処理のため、既存のcomponentOrder_駆動で十分)。
-//
-//   PreUpdate(dt):  ModelAnimatorComponent::AdvanceFK(dt) → Finalize()
-//   (通常の)Update(dt): gameplayロジック(この時点でルートモーション量は
-//                        今フレーム分が確定済み。1フレーム遅延なし)
-//   PostUpdate(dt): 全IAnimationPostProcess::SolveIK() → Finalize()
-//                   (SetTarget()がgameplayロジックの結果に依存する
-//                    照準・接地IK等を、同フレームの目標で解ける)
-//
-// IK側は具体的な型(TwoBoneIKComponentのどのサブクラスか)を一切知らず、
-// GetTagged<IAnimationPostProcess>()で拾う。左腕/右腕のように同種を
-// 複数同時に使う場合は、GameObjectが型ごとに1インスタンスまでという
-// 制約(GameObject.h参照)があるため、TwoBoneIKComponentをサブクラス化
-// して型を分けること(例: LeftArmIKComponent : public TwoBoneIKComponent)。
-//
-// Finalize()は上記2箇所それぞれの終端で呼ばれる。NeedCalcNodeMatrices()
-// による内部ダーティ判定があるため、書き込みが発生しなかった側の呼び出し
-// (IKが1つも付いていないオブジェクトのPostUpdate()側など)は実質的に
-// コストゼロになる。
-// ============================================================
+// モデルを保持し、アニメーターのオーケストレーターとして振舞う
 class SkeletonComponent : public ComponentBase, public IModelRenderSource {
 public:
 	explicit SkeletonComponent(GameObject* owner) : ComponentBase(owner) {}

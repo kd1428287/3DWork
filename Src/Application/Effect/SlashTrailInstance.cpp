@@ -2,6 +2,7 @@
 #include "SlashTrailInstance.h"
 
 #include <algorithm>
+#include <vector>
 
 namespace
 {
@@ -150,37 +151,65 @@ void SlashTrailInstance::TrimOverflowSamples()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // samples_から、墨レイヤー(vertices_)と芯レイヤー(coreVertices_)の頂点配列を作り直す
 //
-//	【時間経過による滲み(bleedScale)】
-//	Age=0で BleedStartScale、Age=BleedPeakTimeで BleedPeakScale まで滑らかに太くなり、
-//	そこからFadeLengthに向けて1.0(通常幅)へ滑らかに戻る「山型」のカーブ。
-//	taper(消え際にTip-Base中心へ萎む処理)とは別軸の乗算のため、
-//	「記録直後は細い→一瞬で滲んで太くなる→通常の萎みで消えていく」という
-//	時間変化を、taperの収束処理を壊さずに重ねられる
+//	【UV.xの決め方(距離ベースのタイリング)】
+//	従来はUV.x = fadeRate(Age/FadeLengthの正規化値)を使い、トレイル全体の長さに
+//	関わらず常に0～1へ引き伸ばしていた。これだと非等幅なテクスチャ(墨の一筆)を
+//	使った時、トレイルの物理的な長さが振りの速さで変わるたびにテクスチャの
+//	太さパターンまで伸び縮みして見えてしまう(「電動ノコギリ」現象)。
+//
+//	対策として、samples_を最新(back)から最古(front)へ向かって走査し、
+//	「現在の切っ先(最新サンプルのTip)からの累積距離」を各サンプルごとに求め、
+//	UV.x = fmod(累積距離 / UVTileLength, 1.0) とする。これによりテクスチャの
+//	1パターンが常に一定の物理距離に対応するようになり、トレイルが伸び縮みしても
+//	パターンの繰り返し回数が増減するだけで、個々のパターンの太さ自体は変化しない。
+//	最新サンプルを基準点(距離0)に固定しているため、フレームが進んで新しい
+//	サンプルが追加されても、既存部分の距離基準がずれてパターンが滑って見える
+//	(いわゆる「泳ぐ」)現象も起きない
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void SlashTrailInstance::RebuildVertices()
 {
 	vertices_.clear();
 	coreVertices_.clear();
 
-	if (samples_.size() < 2) { return; }
+	const size_t sampleCount = samples_.size();
+	if (sampleCount < 2) { return; }
 
-	vertices_.reserve(samples_.size() * 2);
-	coreVertices_.reserve(samples_.size() * 2);
+	vertices_.reserve(sampleCount * 2);
+	coreVertices_.reserve(sampleCount * 2);
 
 	using namespace DirectX::SimpleMath;
 
 	const float fadeLengthSafe = (params_.FadeLength > 0.0f) ? params_.FadeLength : 0.0001f;
 	const float speedRefSafe = (params_.SpeedWidthReference > 0.0f) ? params_.SpeedWidthReference : 0.0001f;
+	const float tileLengthSafe = (params_.UVTileLength > 0.0f) ? params_.UVTileLength : 0.0001f;
 
-	// BleedPeakTimeをFadeLength比(tPeak)に変換。0～1の範囲に収め、
-	// 両端(0または1)だと後述の区間割り算が0除算になる為、わずかに余裕を持たせてクランプする
 	const float tPeak = std::clamp(params_.BleedPeakTime / fadeLengthSafe, 0.01f, 0.99f);
+
+	// ----- 距離ベースUV用:最新(back)からの累積距離を先に計算しておく -----
+	//	cumDist[i] = samples_[i]からsamples_[末尾](最新の切っ先)までの経路長
+	std::vector<float> cumDist(sampleCount, 0.0f);
+	for (size_t idx = sampleCount - 1; idx-- > 0; )
+	{
+		// idxはsampleCount-2から0まで降順で回る(idx-- > 0の性質を利用)
+		const float segment = (samples_[idx + 1].Tip - samples_[idx].Tip).Length();
+		cumDist[idx] = cumDist[idx + 1] + segment;
+	}
 
 	const Vector3 camPos = KdShaderManager::Instance().GetCameraCB().CamPos;
 
-	for (const auto& sample : samples_)
+	for (size_t idx = 0; idx < sampleCount; ++idx)
 	{
+		const SlashTrailSample& sample = samples_[idx];
+
 		const float fadeRate = std::clamp(1.0f - sample.Age / fadeLengthSafe, 0.0f, 1.0f);
+
+		// ----- UV.xの決定(距離ベース or 従来の時間ベース) -----
+		float u = fadeRate;
+		if (params_.UseDistanceBasedUV)
+		{
+			u = fmodf(cumDist[idx] / tileLengthSafe, 1.0f);
+			if (u < 0.0f) { u += 1.0f; }	// fmodfは負値を返す事があるための保険
+		}
 
 		const Vector3 color = Vector3::Lerp(params_.ColdColor, params_.HotColor, fadeRate);
 
@@ -190,19 +219,16 @@ void SlashTrailInstance::RebuildVertices()
 			sample.Speed / speedRefSafe,
 			params_.MinSpeedWidthScale, params_.MaxSpeedWidthScale);
 
-		// ----- 時間経過による滲み(山型カーブ) -----
 		float bleedScale = 1.0f;
 		if (params_.BleedEnabled)
 		{
 			const float t = std::clamp(sample.Age / fadeLengthSafe, 0.0f, 1.0f);
 			if (t < tPeak)
 			{
-				// 立ち上がり:BleedStartScale → BleedPeakScale
 				bleedScale = std::lerp(params_.BleedStartScale, params_.BleedPeakScale, Smoothstep01(t / tPeak));
 			}
 			else
 			{
-				// 減衰:BleedPeakScale → 1.0(以降の収束はtaperに委ねる)
 				const float decayT = (t - tPeak) / (1.0f - tPeak);
 				bleedScale = std::lerp(params_.BleedPeakScale, 1.0f, Smoothstep01(decayT));
 			}
@@ -238,25 +264,22 @@ void SlashTrailInstance::RebuildVertices()
 			}
 		}
 
-		// 速度変調(力強さ)と滲み(時間経過)を両方乗算する
 		correctedWidthVec *= speedScale * bleedScale;
 
 		const Vector3 halfWidth = correctedWidthVec * 0.5f;
 		const Vector3 tipAdj = Vector3::Lerp(center, center + halfWidth, taper);
 		const Vector3 baseAdj = Vector3::Lerp(center, center - halfWidth, taper);
 
-		const float alpha = std::max(fadeRate, 0.15f);
-
 		SlashTrailVertex vTip;
 		vTip.Position = tipAdj;
-		vTip.UV = { fadeRate, 0.0f };
-		vTip.Color = { color.x, color.y, color.z, alpha };
+		vTip.UV = { u, 0.0f };
+		vTip.Color = { color.x, color.y, color.z, fadeRate };
 		vertices_.push_back(vTip);
 
 		SlashTrailVertex vBase;
 		vBase.Position = baseAdj;
-		vBase.UV = { fadeRate, 1.0f };
-		vBase.Color = { color.x, color.y, color.z, alpha };
+		vBase.UV = { u, 1.0f };
+		vBase.Color = { color.x, color.y, color.z, fadeRate };
 		vertices_.push_back(vBase);
 
 		if (params_.CoreEnabled)
@@ -267,13 +290,13 @@ void SlashTrailInstance::RebuildVertices()
 
 			SlashTrailVertex vTipCore;
 			vTipCore.Position = tipCore;
-			vTipCore.UV = { fadeRate, 0.0f };
+			vTipCore.UV = { u, 0.0f };
 			vTipCore.Color = { params_.CoreColor.x, params_.CoreColor.y, params_.CoreColor.z, fadeRate };
 			coreVertices_.push_back(vTipCore);
 
 			SlashTrailVertex vBaseCore;
 			vBaseCore.Position = baseCore;
-			vBaseCore.UV = { fadeRate, 1.0f };
+			vBaseCore.UV = { u, 1.0f };
 			vBaseCore.Color = { params_.CoreColor.x, params_.CoreColor.y, params_.CoreColor.z, fadeRate };
 			coreVertices_.push_back(vBaseCore);
 		}
