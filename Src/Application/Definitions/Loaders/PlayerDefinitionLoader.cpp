@@ -3,8 +3,7 @@
 #include <unordered_map>
 #include <nlohmann/json.hpp>
 
-// 実際のプロジェクト構成に合わせてパスを調整してください（JsonLoader.hの置き場所次第）
-#include "../../Utility/Json/JsonLoader.h"
+#include "JsonLoader.h"
 
 namespace
 {

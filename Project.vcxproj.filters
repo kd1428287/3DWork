@@ -852,6 +852,9 @@
     <ClInclude Include="Src\Application\Definitions\Character\Enemy\Warrock\WarrockAIData.h">
       <Filter>Src\Application\Definitions\Character\Enemy\Warrock</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Factories\GamePlay\Character\CharacterFactoryUtil.h">
+      <Filter>Src\Application\Factories\GamePlay\Character</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -1117,6 +1120,9 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Effect\Particle\EffectInstance.cpp">
       <Filter>Src\Application\Effect\Particle</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Factories\GamePlay\Character\CharacterFactoryUtil.cpp">
+      <Filter>Src\Application\Factories\GamePlay\Character</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

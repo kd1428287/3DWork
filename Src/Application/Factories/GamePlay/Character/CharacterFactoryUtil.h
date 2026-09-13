@@ -1,6 +1,4 @@
-#pragma once
-
-#include <string>
+﻿#pragma once
 
 // Handle<T>の宣言場所に合わせてinclude/前方宣言を調整してください
 template <typename T> class Handle;

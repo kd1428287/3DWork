@@ -398,6 +398,7 @@
     <ClInclude Include="Src\Application\Entity\TagInterfaces.h" />
     <ClInclude Include="Src\Application\Factories\Common\CameraFactory.h" />
     <ClInclude Include="Src\Application\Factories\GameObjectFactory.h" />
+    <ClInclude Include="Src\Application\Factories\GamePlay\Character\CharacterFactoryUtil.h" />
     <ClInclude Include="Src\Application\Factories\GamePlay\Character\EnemyFactory.h" />
     <ClInclude Include="Src\Application\Factories\GamePlay\Character\PlayerFactory.h" />
     <ClInclude Include="Src\Application\Factories\GamePlay\Map\TerrainFactory.h" />
@@ -500,6 +501,7 @@
     <ClCompile Include="Src\Application\Effect\SlashTrail\SlashTrailDispatcher.cpp" />
     <ClCompile Include="Src\Application\Effect\SlashTrail\SlashTrailInstance.cpp" />
     <ClCompile Include="Src\Application\Factories\Common\CameraFactory.cpp" />
+    <ClCompile Include="Src\Application\Factories\GamePlay\Character\CharacterFactoryUtil.cpp" />
     <ClCompile Include="Src\Application\Factories\GamePlay\Character\EnemyFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\GamePlay\Character\PlayerFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\GamePlay\Map\TerrainFactory.cpp" />
