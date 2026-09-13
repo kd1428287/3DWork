@@ -1,13 +1,10 @@
 ﻿#include "main.h"
 
-#include "Scene/SceneManager.h"
+#include "Core/Scene/SceneManager.h"
 
-#include "../Framework/Font/KdFont.h"
-
-// ※ EditorViewportの実際の配置フォルダに合わせてパスを調整してください
-#include "Editor/EditorViewport.h"
-#include "Editor/EffectEditor.h"
-#include "Editor/MapEditor.h"
+#include "Editor/Common/EditorViewport.h"
+#include "Editor/Tools/EffectEditor.h"
+#include "Editor/Tools/MapEditor.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // エントリーポイント

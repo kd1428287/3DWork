@@ -1,0 +1,238 @@
+﻿#pragma once
+#include "SkeletonComponent.h"
+#include "RootMotionExtractor.h"
+
+// モデルのボーンアニメーション再生
+class ModelAnimatorComponent : public ComponentBase
+{
+public:
+	explicit ModelAnimatorComponent(GameObject* owner) : ComponentBase(owner) {}
+
+	void Awake() override
+	{
+		// ファクトリー内でPlayするため(Start()を待たずこの時点で
+		// skeleton_を解決しておく。Start()は初回PreUpdate()まで
+		// 呼ばれないため、AddComponent()直後にPlay()したい呼び出し元に
+		// 間に合わない)。
+		skeleton_ = GetOwner()->GetComponent<SkeletonComponent>();
+	}
+
+	void Start() override
+	{
+		skeleton_ = GetOwner()->GetComponent<SkeletonComponent>();
+	}
+
+	// アニメーション名を指定して再生開始
+	// ・animName				… アニメーション名
+	// ・loop					… ループ再生するか
+	// ・targetDurationSeconds	… 指定した場合、クリップの実際の長さ(m_maxLength)に
+	//   関わらず、ちょうどこの秒数で再生し終わるよう再生速度を自動スケーリングする
+	void Play(std::string_view animName, bool loop = true, float targetDurationSeconds = -1.0f)
+	{
+		if (!skeleton_) { return; }
+
+		auto animData = skeleton_->WorkModel().GetAnimation(animName);
+		if (!animData) {
+			assert(0 && "ModelAnimatorComponent ファイルが存在しません。ファイルパスを確認してください");
+			return;
+		}
+
+		// 既に同じアニメーションを再生中なら再生しない
+		if (spNowPlaying_ == animData) { return; }
+
+		// 遷移前のポーズをスナップショットしておく
+		if (spNowPlaying_ != nullptr) {
+			const auto& nodes = skeleton_->WorkModel().WorkNodes();
+			blendFromLocalTransforms_.resize(nodes.size());
+			for (size_t i = 0; i < nodes.size(); ++i) {
+				blendFromLocalTransforms_[i] = nodes[i].m_localTransform;
+			}
+			blendElapsed_ = 0.0f;
+		}
+		else {
+			blendElapsed_ = blendDuration_; // ブレンド不要
+		}
+
+		spNowPlaying_ = animData;
+		animator_.SetAnimation(animData, loop);
+
+		// ルートモーション抽出中に別アニメーションへ切り替わった場合、
+		// 旧アニメーションの最終位置と新アニメーションの先頭位置の差分を
+		// 1フレームの移動量として誤って計上しないよう、基準位置を
+		// 次のAdvanceFK()の冒頭で取り直す
+		rootMotion_.NotifyAnimationChanged();
+
+		if (targetDurationSeconds > 0.0f && animData->m_maxLength > 0.0f) {
+			targetSpeedOverride_ = animData->m_maxLength / targetDurationSeconds;
+		}
+		else {
+			targetSpeedOverride_ = -1.0f; // 通常のfps基準に戻す
+		}
+	}
+
+	// 再生速度をfps換算で指定して毎フレーム進行させる
+	// ・fps		… 1秒間に進めるアニメーションのフレーム数
+	//   ※ KdGLTFLoader側でアニメーションキーの時間を「秒」で読み込んでいるか
+	//     「フレーム数」で読み込んでいるかによって、ここで渡すべき値の意味が
+	//     変わる。もし秒単位ならfps引数には単純にdeltaTimeを渡すこと。
+	//
+	// 【駆動方式について】ComponentBase::Update()はオーバーライドしない
+	// (既定の何もしない実装のまま)。代わりにSkeletonComponent::PreUpdate()
+	// から明示的に呼ばれる(SkeletonComponentがFK/IKオーケストレーターを
+	// 兼ねるため。詳細はSkeletonComponent.h冒頭参照)。gameplayロジックの
+	// Update()より前に完了させることで、ConsumeRootMotionDelta()が
+	// 同フレーム内でキャラクター側に使ってもらえるようにする狙いがある
+	// (1フレーム遅延の根絶)。
+	// このメソッド自体はSkeletonComponent::Finalize()(CalcNodeMatrices())
+	// を呼ばない。ローカル変換の書き込みまでがここの責務で、確定は
+	// 呼び出し元(SkeletonComponent::PreUpdate())に委ねる。
+	void AdvanceFK(float deltaTime)
+	{
+		if (!skeleton_) { return; }
+
+		// ルートモーション: ボーン解決・基準位置の管理はRootMotionExtractor
+		// に委譲している。AdvanceTime()の前後を挟む形でしか計算できない
+		// ため、この2行はここに残す必要がある(詳細はRootMotionExtractor.h参照)。
+		rootMotion_.PrepareFrame(skeleton_->WorkModel());
+
+		// targetSpeedOverride_が設定されていれば(Play()にtargetDurationSeconds
+		// を渡した場合)、SetFPS()の値ではなくこちらを優先して速度を決める。
+		const float speed = (targetSpeedOverride_ > 0.0f) ? targetSpeedOverride_ : m_fps;
+		const float timeBeforeAdvance = animator_.GetTime();
+		animator_.AdvanceTime(skeleton_->WorkModel().WorkNodes(), deltaTime * speed);
+		rootMotion_.FinalizeFrame(timeBeforeAdvance, animator_.GetTime());
+
+		// クロスフェード: 遷移直後のblendDuration_秒間、直前のポーズと
+		// 新しいアニメーションの今のポーズを補間してWorkNodes()を上書きする。
+		if (blendElapsed_ < blendDuration_) {
+			blendElapsed_ += deltaTime;
+			const float t = std::min(1.0f, blendElapsed_ / blendDuration_);
+
+			auto& nodes = skeleton_->WorkModel().WorkNodes();
+			const size_t count = std::min(nodes.size(), blendFromLocalTransforms_.size());
+			for (size_t i = 0; i < count; ++i) {
+				nodes[i].m_localTransform = BlendMatrix(blendFromLocalTransforms_[i], nodes[i].m_localTransform, t);
+			}
+		}
+	}
+
+	// 再生速度の基準fpsを設定(デフォルト60fps)
+	void SetFPS(float fps) { m_fps = fps; }
+
+	// クロスフェードの時間(秒)を設定する。技の種類によって
+	// 「素早く切り替えたい/じっくり繋ぎたい」が変わる場合はここを調整する。
+	void SetBlendDuration(float seconds) { blendDuration_ = seconds; }
+
+	// 現在のアニメーションが最後まで再生し終わったか(ループ再生時は常にfalse)
+	bool IsAnimationEnd() const { return animator_.IsAnimationEnd(); }
+
+	// --- ルートモーション ---------------------------------------------
+	// Inplaceではない(位置移動が焼き込まれた)アニメーションを使いたい場合、
+	// 抽出元にするボーン名(通常はHip/Root)を指定する。空文字を渡すと無効化。
+	void SetRootMotionBoneName(std::string_view name) { rootMotion_.SetBoneName(name); }
+
+	// 抽出したデルタに掛ける倍率(単位変換用)。詳細はRootMotionExtractor::
+	// SetUnitScale()のコメント参照。実測して合わせ込むこと。
+	void SetRootMotionScale(float scale) { rootMotion_.SetUnitScale(scale); }
+
+	// ボーンのローカル空間で「前後」「左右」に対応する軸を指定する。
+	// モデルデータの座標変換過程で軸が入れ替わっていることがあるため、
+	// 実機で確認しながら合わせ込むこと(詳細はRootMotionExtractor::
+	// SetForwardAxis/SetRightAxisのコメント参照)。
+	void SetRootMotionForwardAxis(RootMotionAxis axis, float sign = 1.0f) { rootMotion_.SetForwardAxis(axis, sign); }
+	void SetRootMotionRightAxis(RootMotionAxis axis, float sign = 1.0f) { rootMotion_.SetRightAxis(axis, sign); }
+	void SetRootMotionExtractRotation(bool enabled) { rootMotion_.SetExtractRotation(enabled); }
+
+	// このフレームで蓄積されたルートモーションの移動量(ボーンの
+	// ローカル空間、まだワールド回転を反映していない値)を取得し、
+	// 内部を0にリセットする。呼ぶと消費されるので、1フレームにつき
+	// 1回だけ呼ぶこと(二重適用防止)。
+	Math::Vector3 ConsumeRootMotionDelta() { return rootMotion_.ConsumeDelta(); }
+	float ConsumeRootMotionYawDelta() { return rootMotion_.ConsumeYawDelta(); }
+
+private:
+	// 2つのローカル変換行列を、位置・回転・拡縮に分解してから個別に補間する。
+	// 行列のままLerpすると回転部分が歪む(せん断が入る)ため、
+	// 位置・拡縮はLerp、回転はSlerpで別々に補間してから合成し直す。
+	static Math::Matrix BlendMatrix(const Math::Matrix& from, const Math::Matrix& to, float t)
+	{
+		// Matrix::Decompose()はconstメンバ関数ではないため、
+		// const参照のfrom/toに対して直接は呼び出せない。
+		// ローカルの非constコピーを作ってから呼び出す。
+		Math::Matrix fromCopy = from;
+		Math::Matrix toCopy = to;
+
+		Math::Vector3 fromScale, fromTrans;
+		Math::Quaternion fromRot;
+		fromCopy.Decompose(fromScale, fromRot, fromTrans);
+
+		Math::Vector3 toScale, toTrans;
+		Math::Quaternion toRot;
+		toCopy.Decompose(toScale, toRot, toTrans);
+
+		// Slerpは2つのクォータニオンの内積が負だと最短経路を通らず、
+		// ブレンド中に不自然な回り込みが起きる。片方の符号を反転させて
+		// 内積を正にしてからSlerpする(クォータニオンq と -q は同じ回転を
+		// 表すため、符号反転しても結果の姿勢は変わらない)。
+		if (fromRot.Dot(toRot) < 0.0f) {
+			toRot = Math::Quaternion(-toRot.x, -toRot.y, -toRot.z, -toRot.w);
+		}
+
+		const Math::Vector3 blendedScale = Math::Vector3::Lerp(fromScale, toScale, t);
+		const Math::Quaternion blendedRot = Math::Quaternion::Slerp(fromRot, toRot, t);
+		const Math::Vector3 blendedTrans = Math::Vector3::Lerp(fromTrans, toTrans, t);
+
+		return Math::Matrix::CreateScale(blendedScale)
+			* Math::Matrix::CreateFromQuaternion(blendedRot)
+			* Math::Matrix::CreateTranslation(blendedTrans);
+	}
+
+	SkeletonComponent* skeleton_ = nullptr;
+
+	KdAnimator							animator_;
+
+	// 現在再生中のアニメーションデータ(Play()の多重頭出し防止用)
+	std::shared_ptr<KdAnimationData>	spNowPlaying_ = nullptr;
+
+	float								m_fps = 60.0f;
+
+	// Play()にtargetDurationSecondsが渡された場合、m_fpsの代わりに使う
+	// 「1秒あたりに進めるアニメーション時間」。-1以下ならm_fps基準に戻す。
+	float								targetSpeedOverride_ = -1.0f;
+
+	// --- クロスフェード用のワーク ---------------------------------------
+	std::vector<Math::Matrix>			blendFromLocalTransforms_; // 切り替わる直前の全ボーンのローカル行列
+	float								blendDuration_ = 0.15f;    // ブレンドにかける時間(秒)
+	float								blendElapsed_ = 0.0f;      // ブレンド開始からの経過時間(blendDuration_以上ならブレンド終了)
+
+	// --- ルートモーション ---------------------------------------------
+	// ボーン解決・巻き戻り検知・基準位置の管理はすべてこちらに委譲
+	// (詳細はRootMotionExtractor.h参照)。
+	RootMotionExtractor					rootMotion_;
+};
+
+// ============================================================
+// SkeletonComponent::Start() / PreUpdate() の遅延定義
+//
+// SkeletonComponent.hはModelAnimatorComponentを前方宣言のみしており、
+// 本体をそちらのクラス定義内に書くと「認識できない型」エラーになる
+// (GetComponent<T>()のstatic_cast、AdvanceFK()の呼び出しはどちらも
+// 完全な型定義を要求するため)。循環インクルード(このファイルが
+// SkeletonComponent.hをincludeしている)を避けつつ両方を成立させるため、
+// 両クラスの定義が出揃うこの位置で定義する。
+// ============================================================
+inline void SkeletonComponent::Start()
+{
+	selfTransform_ = GetOwner()->GetComponent<TransformComponent>();
+	// ModelAnimatorComponentを持たない(外部からWorkNodes()を直接
+	// 書き換えるだけの)SkeletonComponentも存在しうる(nullptrのままでよい)。
+	animator_ = GetOwner()->GetComponent<ModelAnimatorComponent>();
+}
+
+inline void SkeletonComponent::PreUpdate(float deltaTime)
+{
+	if (animator_ != nullptr) {
+		animator_->AdvanceFK(deltaTime);
+	}
+	Finalize();
+}

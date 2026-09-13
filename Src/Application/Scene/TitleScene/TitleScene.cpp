@@ -1,10 +1,10 @@
 ﻿#include "TitleScene.h"
-#include "../../main.h"
+#include "Application/main.h"
 
-#include "../../Components/Render/SpriteRenderComponent.h"
-#include "../../Components/Transform/TransformComponent.h"
+#include "Application/Components/Graphics/Render/SpriteRenderComponent.h"
+#include "Application/Components/Core/TransformComponent.h"
 
-#include "../SceneEvents.h"
+#include "Application/Core/EventBus/Events/SceneEvents.h"
 
 void TitleScene::Init()
 {

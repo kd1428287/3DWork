@@ -1,7 +1,7 @@
-#pragma once
+﻿#pragma once
 
-#include "../../Components/Collision/ColliderComponent.h"
-#include "../../Core/GameObject.h"
+#include "Application/Components/Physics/Collision/ColliderComponent.h"
+#include "Application/Entity/GameObject.h"
 
 // ============================================================
 // このフレームに存在する全ColliderComponentの一覧をキャッシュしておく。

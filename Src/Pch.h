@@ -122,20 +122,25 @@
 //===============================================
 #include "Framework/KdFramework.h"
 
-#include "Application/Components/ComponentTypeID.h" 
-#include "Application/Components/ComponentBase.h"   
-#include "Application/Core/TagInterfaces.h"   
+#include "Application/Entity/ComponentTypeID.h" 
+#include "Application/Entity/ComponentBase.h"   
+#include "Application/Entity/TagInterfaces.h"   
+#include "Application/Core/EventBus/EventBus.h"
+#include "Application/Core/EventBus/Events/Event.h"
+#include "Application/Entity/Handle.h"
+#include "Application/Entity/SceneContext.h"
+#include "Application/Entity/GameObject.h"
+#include "Application/Entity/TagInterfaces.h"   
+#include "Application/Entity/ObjectManager.h"   
 
-#include "Application/Engine/EventBus/EventBus.h"
-#include "Application/Engine/EventBus/Event/Event.h"
-#include "Application/Core/Handle.h"
-#include "Application/Core/SceneContext.h"
-#include "Application/Core/GameObject.h"
-#include "Application/Core/ObjectManager.h"   
+#include "Application/Definitions/Physics/ColliderCategory.h"
+#include "Application/Definitions/Physics/TriangleMeshData.h"
+#include "Application/Definitions/Loaders/JsonLoader.h"
 
-#include "Application/Components/Transform/TransformComponent.h"   
-#include "Application/Components/Collision/ColliderComponent.h"   
+#include "Application/Components/Core/TransformComponent.h"   
+#include "Application/Components/Physics/Collision/ColliderComponent.h"   
 #include "Application/Systems/Collision/ColliderRegistry.h"   
 #include "Application/Systems/Collision/CollisionMath.h"   
 #include "Application/Systems/Collision/RaycastSystem.h"   
+
 

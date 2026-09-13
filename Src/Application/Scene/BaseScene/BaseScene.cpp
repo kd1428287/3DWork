@@ -1,6 +1,6 @@
 ﻿#include "BaseScene.h"
-#include "../../main.h"
-#include "../../Editor/MapEditor.h"
+#include "Application/main.h"
+#include "Application/Editor/Tools/MapEditor.h"
 
 BaseScene::BaseScene() = default;
 BaseScene::~BaseScene() = default;

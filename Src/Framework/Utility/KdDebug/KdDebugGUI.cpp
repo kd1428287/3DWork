@@ -1,10 +1,10 @@
-﻿#include "../../../Application/main.h"
+﻿#include "Application/main.h"
 
 #include "KdDebugGUI.h"
-#include "../../../Application/Editor/EditorViewport.h"
-#include "../../../Application/Editor/MapEditor.h"
-#include "../../../Application/Editor/EffectEditor.h"
-#include "../../../Application/Editor/ShaderTuningEditor.h"
+#include "Application/Editor/Common/EditorViewport.h"
+#include "Application/Editor/Tools/MapEditor.h"
+#include "Application/Editor/Tools/EffectEditor.h"
+#include "Application/Editor/Tools/ShaderTuningEditor.h"
 
 // DockBuilder系APIを使うために必要(公式にも初期配置構築の定番として使われる内部ヘッダ)
 #include "imgui_internal.h"

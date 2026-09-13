@@ -1,33 +1,35 @@
 ﻿#include "GameScene.h"
-#include"../SceneManager.h"
+#include"Application/Core/Scene/SceneManager.h"
 
 // system
-#include "../../Systems/InputSystem.h"
-#include "../../Systems/TimeScaleSystem.h"
-#include "../../Systems/CameraSystem.h"
-#include "../../Systems/Collision/ColliderRegistry.h"
-#include "../../Systems/Collision/CollisionSystem.h"
-#include "../../Effect/EffectDispatcher.h"
-#include "../../Effect/SlashTrailDispatcher.h"
+#include "Application/Systems/InputSystem.h"
+#include "Application/Systems/GamePlay/TimeScaleSystem.h"
+#include "Application/Systems/GamePlay/CameraSystem.h"
+#include "Application/Systems/Collision/ColliderRegistry.h"
+#include "Application/Systems/Collision/CollisionSystem.h"
+#include "Application/Effect/Particle/EffectDispatcher.h"
+#include "Application/Effect/SlashTrail/SlashTrailDispatcher.h"
 
 // factory
-#include "../../Factories/Game/PlayerFactory.h"
-#include "../../Factories/Game/PlayerDefinitionLoader.h"
-#include "../../Factories/Map/MapLoader.h"
-#include "../../Factories/Map/TerrainFactory.h"
-#include "../../Factories/Game/EnemyFactory.h"
-#include "../../Components/Character/Enemy/EnemyDefinition.h"
-#include "../../Components/Character/Enemy/Warrock/WarrockAIData.h"
-#include "../../Components/Character/Enemy/Brute/BruteAIData.h"
-#include "../../Components/Character/Enemy/EnemyDefinition.h"
-#include "../../Factories/Common/CameraFactory.h"
+#include "Application/Factories/GamePlay/Character/PlayerFactory.h"
+#include "Application/Factories/GamePlay/Character/EnemyFactory.h"
+#include "Application/Factories/GamePlay/Map/TerrainFactory.h"
+#include "Application/Factories/Common/CameraFactory.h"
+
+
+// definitions
+#include "Application/Definitions/Loaders/PlayerDefinitionLoader.h"
+#include "Application/Definitions/Loaders/MapLoader.h"
+#include "Application/Definitions/Character/Enemy/EnemyDefinition.h"
+#include "Application/Definitions/Character/Enemy/Warrock/WarrockAIData.h"
+#include "Application/Definitions/Character/Enemy/EnemyDefinition.h"
 
 // component
-#include "../../Components/Camera/CameraTargetComponent.h"
-#include "../../Components/Transform/TransformComponent.h"
-#include "../../Components/Animation/SkeletonComponent.h"
-#include "../../Components/Animation/ModelAnimatorComponent.h"
-#include "../../Components/Render/ModelRenderComponent.h"
+#include "Application/Components/GamePlay/Camera/CameraTargetComponent.h"
+#include "Application/Components/Core/TransformComponent.h"
+#include "Application/Components/Graphics/Animation/SkeletonComponent.h"
+#include "Application/Components/Graphics/Animation/ModelAnimatorComponent.h"
+#include "Application/Components/Graphics/Render/ModelRenderComponent.h"
 
 GameScene::GameScene()
 {
@@ -105,10 +107,8 @@ void GameScene::Init()
 	cameraSystem_ = std::make_unique<CameraSystem>(*objManager_);
 
 	// system
-	inputSystem_ = std::make_unique<InputSystem>();
-	inputSystem_->RegisterPlayer(player->GetComponent<PlayerInputComponent>());
-	inputSystem_->RegisterCameraOrbit(camera->GetComponent<CameraOrbitComponent>());
-	inputSystem_->RegisterObjectManager(objManager_.get());
+	/*inputSystem_ = std::make_unique<InputSystem>();
+	inputSystem_->RegisterObjectManager(objManager_.get());*/
 
 	colliderRegistry_ = std::make_unique<ColliderRegistry>();
 	collisionSystem_ = std::make_unique<CollisionSystem>();
@@ -119,7 +119,7 @@ void GameScene::Init()
 	timeScaleSystem_ = std::make_unique<TimeScaleSystem>(*localBus_, *objManager_);
 
 	systemManager_->SetExecutionOrder(
-		[this](float dt) { inputSystem_->Update(dt); },
+		//[this](float dt) { inputSystem_->Update(dt); },
 		[this](float dt) { timeScaleSystem_->Update(dt); },
 		[this](float dt) { objManager_->PreUpdate(dt); },
 		[this](float dt) { objManager_->Update(dt); },

@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "../../Engine/SystemManager/SystemManager.h"
+#include "Application/Systems/SystemManager.h"
 
 class BaseScene
 {

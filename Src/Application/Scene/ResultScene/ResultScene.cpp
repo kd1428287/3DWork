@@ -1,6 +1,6 @@
 ﻿#include "ResultScene.h"
-#include "../../main.h"
-#include "../SceneEvents.h"
+#include "Application/main.h"
+#include "Application/Core/EventBus/Events/SceneEvents.h"
 
 void ResultScene::Init()
 {

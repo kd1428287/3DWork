@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "CollisionMath.h"
-#include "../../Components/Collision/ColliderCategory.h"
+#include "Application/Definitions/Physics/ColliderCategory.h"
 #include "ColliderRegistry.h"
 
 // ============================================================

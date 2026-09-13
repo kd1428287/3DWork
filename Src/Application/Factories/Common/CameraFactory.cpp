@@ -1,11 +1,12 @@
 ﻿#include "CameraFactory.h"
-#include "../../Components/Camera/CameraComponent.h"
-#include "../../Components/Camera/CameraFollowComponent.h"
-#include "../../Components/Camera/CameraViewComponent.h"
-#include "../../Components/Camera/CameraOrbitComponent.h"
-#include "../../Components/Camera/CameraTargetComponent.h"
-#include "../../Components/Camera/CameraCollisionComponent.h"
-#include "../../Components/Camera/CameraShakeComponent.h"
+#include "Application/Components/GamePlay/Camera/CameraComponent.h"
+#include "Application/Components/GamePlay/Camera/CameraFollowComponent.h"
+#include "Application/Components/GamePlay/Camera/CameraViewComponent.h"
+#include "Application/Components/GamePlay/Camera/CameraOrbitComponent.h"
+#include "Application/Components/GamePlay/Camera/CameraTargetComponent.h"
+#include "Application/Components/GamePlay/Camera/CameraCollisionComponent.h"
+#include "Application/Components/GamePlay/Camera/CameraShakeComponent.h"
+#include "Application/Components/GamePlay/Camera/CameraInputCompoent.h"
 
 
 GameObject* CameraFactory::CreateCamera(ObjectManager& objectManager, GameObject* target, int ownerCameraId)
@@ -29,6 +30,7 @@ GameObject* CameraFactory::CreateCamera(ObjectManager& objectManager, CameraTarg
 	objectManager.SetActiveCamera(cameraC);
 	auto* shake = camera->AddComponent<CameraShakeComponent>();
 	shake->SetRotationAmplitude({ 0.1f,0.1f,0.15f });
+	camera->AddComponent<CameraInputComponent>();
 
 	return camera;
 }
