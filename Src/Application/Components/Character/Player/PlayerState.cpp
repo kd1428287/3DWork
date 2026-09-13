@@ -32,8 +32,6 @@ void StateAttack::Enter(PlayerStatusController* controller) {
 	// 踏み込み移動はここ(Windup開始時点)では行わない。Windupが終わった
 	// 瞬間(Update()側、AttackActiveへの切り替わり)に開始する
 	// (振りかぶり中に前進してしまうと予備動作の説得力が薄れるため)。
-
-	KdDebugGUI::Instance().AddLog("AttackWindup"); // 必要なら
 }
 
 void StateAttack::Update(PlayerStatusController* controller, float deltaTime) {
@@ -64,14 +62,12 @@ void StateAttack::Update(PlayerStatusController* controller, float deltaTime) {
 		}
 		controller->SetWeaponHitBoxEnabled(data.weaponSlots, true); // 攻撃判定が実際に発生する一瞬だけ有効化
 		controller->SetWeaponTrailEmitting(data.weaponSlots, true); // 武器の軌跡エフェクトもHitBoxと同じ窓で記録開始
-		KdDebugGUI::Instance().AddLog("\nAttackActive");
 	}
 	else if (phase_ == CombatState::AttackActive && elapsed_ >= data.activeDuration) {
 		phase_ = CombatState::AttackRecovery;
 		elapsed_ = 0.0f;
 		controller->SetWeaponHitBoxEnabled(data.weaponSlots, false); // 判定の発生窓を閉じる
 		controller->SetWeaponTrailEmitting(data.weaponSlots, false); // 軌跡エフェクトの記録も停止(既に生成済みの頂点はStopEmit後も自然に流れて消える)
-		KdDebugGUI::Instance().AddLog("\nAttackRecovery");
 	}
 	else if (phase_ == CombatState::AttackRecovery && elapsed_ >= data.recoveryDuration) {
 		// 自律的に終了し、ControllerにNoneへの復帰を要請する

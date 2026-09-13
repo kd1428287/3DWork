@@ -118,7 +118,7 @@ void EffectEditor::DrawPreviewParticles(ParticleDrawPass pass)
 void EffectEditor::RenderPreviewViewport()
 {
 	// ウィンドウが一度も開かれておらずサイズが確定していない場合は何もしない
-	if (!m_previewViewport.Color || !m_previewViewport.Depth) return;
+	if (!m_previewViewport.Color || !m_previewViewport.Depth || !m_previewViewport.Mask) return;
 	if (m_previewViewport.Width <= 0 || m_previewViewport.Height <= 0) return;
 
 	ID3D11DeviceContext* context = KdDirect3D::Instance().WorkDevContext();
@@ -126,20 +126,23 @@ void EffectEditor::RenderPreviewViewport()
 	// 退避
 	KdShaderManager::cbCamera savedCamera = KdShaderManager::Instance().GetCameraCB();
 
-	ID3D11RenderTargetView* savedRTV = nullptr;
+	ID3D11RenderTargetView* savedRTVs[2] = { nullptr, nullptr };
 	ID3D11DepthStencilView* savedDSV = nullptr;
-	context->OMGetRenderTargets(1, &savedRTV, &savedDSV);
+	context->OMGetRenderTargets(2, savedRTVs, &savedDSV);
 
 	UINT savedVPNum = 1;
 	D3D11_VIEWPORT savedVP = {};
 	context->RSGetViewports(&savedVPNum, &savedVP);
 
 	// プレビュー用バッファへ切り替え・クリア
-	ID3D11RenderTargetView* rtvs[] = { m_previewViewport.Color->WorkRTView() };
-	context->OMSetRenderTargets(1, rtvs, m_previewViewport.Depth->WorkDSView());
+	// ※スロット1(Mask)はカラーグレード処理を通らないこのプレビューでは中身を使わないが、
+	//   Alphaブレンドのパーティクル(m_PS_Masked)がSV_Target1へ書き込めるように必要
+	ID3D11RenderTargetView* rtvs[] = { m_previewViewport.Color->WorkRTView(), m_previewViewport.Mask->WorkRTView() };
+	context->OMSetRenderTargets(2, rtvs, m_previewViewport.Depth->WorkDSView());
 
 	static const float clearColor[4] = { 0.1f, 0.1f, 0.12f, 1.0f };
 	context->ClearRenderTargetView(m_previewViewport.Color->WorkRTView(), clearColor);
+	context->ClearRenderTargetView(m_previewViewport.Mask->WorkRTView(), kBlackColor);
 	context->ClearDepthStencilView(m_previewViewport.Depth->WorkDSView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
 	D3D11_VIEWPORT vp = {};
@@ -169,8 +172,9 @@ void EffectEditor::RenderPreviewViewport()
 	// 復元
 	KdShaderManager::Instance().WriteCBCamera(savedCamera.mView.Invert(), savedCamera.mProj);
 
-	context->OMSetRenderTargets(1, &savedRTV, savedDSV);
-	if (savedRTV) { savedRTV->Release(); }
+	context->OMSetRenderTargets(2, savedRTVs, savedDSV);
+	if (savedRTVs[0]) { savedRTVs[0]->Release(); }
+	if (savedRTVs[1]) { savedRTVs[1]->Release(); }
 	if (savedDSV) { savedDSV->Release(); }
 
 	context->RSSetViewports(savedVPNum, &savedVP);
@@ -371,22 +375,22 @@ void EffectEditor::DrawInspector()
 
 	{
 		bool drawDefault = KdHasDrawPassFlag(params.DrawPassFlags, ParticleDrawPass::Default);
-		bool drawBlight = KdHasDrawPassFlag(params.DrawPassFlags, ParticleDrawPass::Blight);
+		bool drawBright = KdHasDrawPassFlag(params.DrawPassFlags, ParticleDrawPass::Bright);
 
 		ImGui::Text("Draw Pass");
 		bool changed = false;
 		changed |= ImGui::Checkbox("Default", &drawDefault);
 		ImGui::SameLine();
-		changed |= ImGui::Checkbox("Blight", &drawBlight);
+		changed |= ImGui::Checkbox("Bright", &drawBright);
 
 		if (changed)
 		{
 			// 両方外すとどこにも描画されなくなってしまうので、最低Defaultだけは強制的に残す
-			if (!drawDefault && !drawBlight) { drawDefault = true; }
+			if (!drawDefault && !drawBright) { drawDefault = true; }
 
 			ParticleDrawPass flags = static_cast<ParticleDrawPass>(0);
 			if (drawDefault) { flags |= ParticleDrawPass::Default; }
-			if (drawBlight) { flags |= ParticleDrawPass::Blight; }
+			if (drawBright) { flags |= ParticleDrawPass::Bright; }
 			params.DrawPassFlags = flags;
 		}
 		ImGui::TextDisabled("両方チェックすると、通常描画とブルーム(発光)の両方に同時に描画される");
@@ -588,7 +592,7 @@ void EffectEditor::PreviewViewport::Resize(int w, int h)
 	if (w <= 0 || h <= 0) return;
 
 	// サイズが変わっていなければ作り直さない
-	if (w == Width && h == Height && Color && Depth) return;
+	if (w == Width && h == Height && Color && Depth && Mask) return;
 
 	Width = w;
 	Height = h;
@@ -627,6 +631,27 @@ void EffectEditor::PreviewViewport::Resize(int w, int h)
 
 		Depth = std::make_shared<KdTexture>();
 		Depth->Create(desc);
+	}
+
+	// ----- カラーグレード除外マスク書き込み用の捨てRT -----
+	//	このプレビューはカラーグレード処理を通らないため中身は使わないが、
+	//	Alphaブレンドのパーティクル(m_PS_Masked)がSV_Target1へ書き込めるように
+	//	スロット1として何かバインドしておく必要がある(単チャンネルで十分)
+	{
+		D3D11_TEXTURE2D_DESC desc = {};
+		desc.Usage = D3D11_USAGE_DEFAULT;
+		desc.Format = DXGI_FORMAT_R8_UNORM;
+		desc.BindFlags = D3D11_BIND_RENDER_TARGET;
+		desc.Width = (UINT)w;
+		desc.Height = (UINT)h;
+		desc.CPUAccessFlags = 0;
+		desc.MipLevels = 1;
+		desc.ArraySize = 1;
+		desc.SampleDesc.Count = 1;
+		desc.SampleDesc.Quality = 0;
+
+		Mask = std::make_shared<KdTexture>();
+		Mask->Create(desc);
 	}
 }
 

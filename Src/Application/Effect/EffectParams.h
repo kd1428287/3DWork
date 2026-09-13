@@ -28,7 +28,7 @@ enum class ParticleEmitMode
 enum class ParticleDrawPass : uint8_t
 {
 	Default = 1 << 0,	// 通常の合成(従来通りの見え方。DrawLitから描画される)
-	Blight = 1 << 1,	// ブルームポストシェーダーの入力として描画され、発光して見える(DrawBloomから描画される)
+	Bright = 1 << 1,	// ブルームポストシェーダーの入力として描画され、発光して見える(DrawBrightから描画される)
 };
 
 inline ParticleDrawPass operator|(ParticleDrawPass a, ParticleDrawPass b)

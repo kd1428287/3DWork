@@ -287,6 +287,7 @@
     <ClInclude Include="Src\Application\Components\Camera\CameraCollisionComponent.h" />
     <ClInclude Include="Src\Application\Components\Camera\CameraComponent.h" />
     <ClInclude Include="Src\Application\Components\Camera\CameraFollowComponent.h" />
+    <ClInclude Include="Src\Application\Components\Camera\CameraInputCompoent.h" />
     <ClInclude Include="Src\Application\Components\Camera\CameraOrbitComponent.h" />
     <ClInclude Include="Src\Application\Components\Camera\CameraShakeComponent.h" />
     <ClInclude Include="Src\Application\Components\Camera\CameraViewComponent.h" />
@@ -356,7 +357,6 @@
     <ClInclude Include="Src\Application\Components\Render\SpriteRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Sensors\GroundSensorComponent.h" />
     <ClInclude Include="Src\Application\Components\Transform\AttachToSocketComponent.h" />
-    <ClInclude Include="Src\Application\Components\Transform\SocketComponent.h" />
     <ClInclude Include="Src\Application\Components\Transform\TransformComponent.h" />
     <ClInclude Include="Src\Application\Components\UI\Enemy\EnemyHPBarComponent.h" />
     <ClInclude Include="Src\Application\Components\UI\Player\PlayerStatusUIComponent.h" />
@@ -390,6 +390,7 @@
     <ClInclude Include="Src\Application\Factories\Game\PlayerDefinition.h" />
     <ClInclude Include="Src\Application\Factories\Game\PlayerDefinitionLoader.h" />
     <ClInclude Include="Src\Application\Factories\Game\PlayerFactory.h" />
+    <ClInclude Include="Src\Application\Factories\Map\ColliderCategoryNames.h" />
     <ClInclude Include="Src\Application\Factories\Map\ComponentTypes.h" />
     <ClInclude Include="Src\Application\Factories\Map\MapData.h" />
     <ClInclude Include="Src\Application\Factories\Map\MapLoader.h" />
@@ -498,6 +499,7 @@
     <ClCompile Include="Src\Application\Factories\Game\PlayerDefinitionLoader.cpp" />
     <ClCompile Include="Src\Application\Factories\Game\PlayerFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\Map\ComponentRegistrations.cpp" />
+    <ClCompile Include="Src\Application\Factories\Map\MapData.cpp" />
     <ClCompile Include="Src\Application\Factories\Map\MapLoader.cpp" />
     <ClCompile Include="Src\Application\Factories\Map\TerrainFactory.cpp" />
     <ClCompile Include="Src\Application\main.cpp" />
@@ -575,6 +577,9 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle_PS_Masked.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle_VS.hlsl">

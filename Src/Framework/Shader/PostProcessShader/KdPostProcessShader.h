@@ -127,6 +127,13 @@ private:
 
 	KdRenderTargetPack	m_postEffectRTPack;
 
+	// カラーグレード除外マスク(R8_UNORM。0=グレーディング適用、1=完全除外)。
+	// パーティクル等、Alphaブレンドで描画されるオブジェクトのうち
+	// 「露出・彩度・色温度等のスタイライズを免れたい」ピクセルだけが、
+	// 描画時にPS側から能動的に書き込む(通常のLit/UnLit描画は
+	// この出力スロットを一切使わないため、0のクリア値のまま残る)。
+	KdRenderTargetPack	m_colorGradeMaskRTPack;
+
 	KdRenderTargetPack	m_blurRTPack;
 	KdRenderTargetPack	m_strongBlurRTPack;
 

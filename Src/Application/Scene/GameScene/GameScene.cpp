@@ -48,10 +48,10 @@ void GameScene::OnDrawEffects()
 	slashTrailDispatcher_->Draw(ParticleDrawPass::Default);
 }
 
-void GameScene::OnDrawBlight()
+void GameScene::OnDrawBright()
 {
-	effectDispatcher_->Draw(ParticleDrawPass::Blight);
-	slashTrailDispatcher_->Draw(ParticleDrawPass::Blight);
+	effectDispatcher_->Draw(ParticleDrawPass::Bright);
+	slashTrailDispatcher_->Draw(ParticleDrawPass::Bright);
 }
 
 

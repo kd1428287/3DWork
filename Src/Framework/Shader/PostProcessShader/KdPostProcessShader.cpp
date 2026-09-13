@@ -96,6 +96,10 @@ bool KdPostProcessShader::Init()
 	// ポストプロセス用のシーンの全描画用画像
 	m_postEffectRTPack.CreateRenderTarget(backBuffer->GetWidth(), backBuffer->GetHeight(), true);
 
+	// カラーグレード除外マスク(単チャンネルで十分。深度は不要)
+	// クリア値は0.0(=グレーディング適用がデフォルト)にする
+	m_colorGradeMaskRTPack.CreateRenderTarget(backBuffer->GetWidth(), backBuffer->GetHeight(), false, DXGI_FORMAT_R8_UNORM);
+
 	// ぼかし画像
 	m_blurRTPack.CreateRenderTarget(backBuffer->GetWidth(), backBuffer->GetHeight());
 	m_strongBlurRTPack.CreateRenderTarget(backBuffer->GetWidth() / 2, backBuffer->GetHeight() / 2);
@@ -167,11 +171,17 @@ void KdPostProcessShader::Draw()
 	// ポストエフェクトテクスチャの描画クリア
 	m_postEffectRTPack.ClearTexture();
 
+	// カラーグレード除外マスクの描画クリア(0=グレーディング適用がデフォルト)
+	m_colorGradeMaskRTPack.ClearTexture(kBlackColor);
+
 	// 光源描画テクスチャの描画クリア
 	m_brightEffectRTPack.ClearTexture(kBlackColor);
 
-	// レンダーターゲット変更
-	if (!m_postEffectRTChanger.ChangeRenderTarget(m_postEffectRTPack))
+	// レンダーターゲット変更(カラー本体+カラーグレード除外マスクを同時バインド：MRT)
+	// ※通常のLit/UnLit用PSはSV_Target1を出力しないため、マスク側は
+	//   ClearTexture()した0のまま残る。マスクを能動的に立てたい描画
+	//   (パーティクル等)側だけがSV_Target1へ書き込む
+	if (!m_postEffectRTChanger.ChangeRenderTargets(m_postEffectRTPack, m_colorGradeMaskRTPack))
 	{
 		// 失敗したらUndo
 		m_postEffectRTChanger.UndoRenderTarget();
@@ -183,7 +193,21 @@ void KdPostProcessShader::Draw()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void KdPostProcessShader::BeginBright()
 {
-	if (!m_brightRTChanger.ChangeRenderTarget(m_brightEffectRTPack.m_RTTexture, m_postEffectRTPack.m_ZBuffer, &m_brightEffectRTPack.m_viewPort))
+	// カラー本体(Bloom抽出元)+カラーグレード除外マスクを同時バインド(MRT)。
+	// ※ BloomパスでもAlphaブレンドのパーティクル(m_PS_Masked使用、SV_Target1へ書き込む)が
+	//   描画されうるため、Drawパス側と同様にマスクスロットを未バインドのまま残さない。
+	//   深度バッファ・ビューポートは従来通りm_postEffectRTPack/m_brightEffectRTPack側のものを使う
+	//  (ChangeRenderTargets(colorRTPack, maskRTPack)の2引数版はcolorRTPack自身のZBuffer/ViewPortを
+	//   使ってしまい、このBloomパスが必要とする深度・ビューポートの組み合わせと合わないため使わない)
+	ID3D11RenderTargetView* rtvs[2] =
+	{
+		m_brightEffectRTPack.m_RTTexture->WorkRTView(),
+		m_colorGradeMaskRTPack.m_RTTexture->WorkRTView()
+	};
+
+	ID3D11DepthStencilView* pDSV = m_postEffectRTPack.m_ZBuffer ? m_postEffectRTPack.m_ZBuffer->WorkDSView() : nullptr;
+
+	if (!m_brightRTChanger.ChangeRenderTargets(rtvs, 2, pDSV, &m_brightEffectRTPack.m_viewPort))
 	{
 		m_brightRTChanger.UndoRenderTarget();
 	}
@@ -303,8 +327,14 @@ void KdPostProcessShader::ColorGradeProcess()
 	// サンプラーステート設定
 	shaderMgr.ChangeSamplerState(KdSamplerState::Linear_Clamp);
 
-	// DoF結果を入力として、m_colorGradeRTPack に描画
-	DrawTexture(&m_depthOfFieldRTPack.m_RTTexture, 1, m_colorGradeRTPack.m_RTTexture, &m_colorGradeRTPack.m_viewPort);
+	// DoF結果(t0)+カラーグレード除外マスク(t1)を入力として、m_colorGradeRTPack に描画
+	std::shared_ptr<KdTexture> srcTexList[2] =
+	{
+		m_depthOfFieldRTPack.m_RTTexture,
+		m_colorGradeMaskRTPack.m_RTTexture
+	};
+
+	DrawTexture(srcTexList, 2, m_colorGradeRTPack.m_RTTexture, &m_colorGradeRTPack.m_viewPort);
 
 	shaderMgr.UndoSamplerState();
 }

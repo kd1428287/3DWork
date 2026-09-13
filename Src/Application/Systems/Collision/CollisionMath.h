@@ -398,7 +398,10 @@ namespace CollisionMath
 		const Math::Vector3 boxMin = boxCenter - boxHalf;
 		const Math::Vector3 boxMax = boxCenter + boxHalf;
 
-		float tMin = 0.0f;
+		// 起点が境界ちょうど/ごく僅かにめり込んでいるだけの場合まで
+		// 「内部から発射」扱いにしないための許容誤差。
+		constexpr float kSlabEpsilon = 1e-4f;
+		float tMin = -kSlabEpsilon;
 		float tMax = rayRange;
 		int hitAxis = -1;
 		float hitSign = 1.0f;
@@ -427,14 +430,13 @@ namespace CollisionMath
 		}
 
 		if (hitAxis == -1) {
-			// 原点自体がボックス内部から始まっている特殊ケース。
-			// 今回は「当たらない」扱いにしておく(呼び出し側で別途考慮すること)。
+			// 許容誤差を超えて深くめり込んでいる、正真正銘の内部発射ケースのみ。
 			return result;
 		}
 
 		result.hit = true;
-		result.distance = tMin;
-		result.hitPos = rayOrigin + rayDir * tMin;
+		result.distance = std::max(tMin, 0.0f); // 僅かな負値を0にクランプ
+		result.hitPos = rayOrigin + rayDir * result.distance;
 		result.hitNormal = Math::Vector3::Zero;
 		if (hitAxis == 0) result.hitNormal.x = hitSign;
 		else if (hitAxis == 1) result.hitNormal.y = hitSign;

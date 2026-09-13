@@ -63,6 +63,7 @@ void KdShaderManager::Init()
 	// ブレンドステート作成（ピクセルの最終色を決めるときに既に塗られている色と、どう合成するのかの選択ができる
 	m_blendStates[(int)KdBlendState::Alpha] = KdDirect3D::Instance().CreateBlendState(KdBlendMode::Alpha);
 	m_blendStates[(int)KdBlendState::Add] = KdDirect3D::Instance().CreateBlendState(KdBlendMode::Add);
+	m_blendStates[(int)KdBlendState::AlphaMasked] = KdDirect3D::Instance().CreateBlendState(KdBlendMode::AlphaMasked);
 
 	// 初期ブレンドステートの設定
 	KdDirect3D::Instance().WorkDevContext()->OMSetBlendState(m_blendStates[(int)KdBlendState::Alpha], Math::Color(0, 0, 0, 0), 0xFFFFFFFF);
@@ -444,7 +445,7 @@ void KdShaderManager::WriteCBAmbientLight(const Math::Vector4& col)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void KdShaderManager::WriteCBDirectionalLight(const Math::Vector3& dir, const Math::Vector3& col)
 {
-	cbLight& light = m_cb9_Light.Work();
+	cBright& light = m_cb9_Light.Work();
 
 	light.DirLight_Dir = dir;
 	light.DirLight_Color = col;
@@ -475,7 +476,7 @@ void KdShaderManager::WriteCBShadowArea(const Math::Matrix& proj, float dirLight
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void KdShaderManager::WriteCBPointLight(const std::list<PointLight>& pointLights)
 {
-	cbLight& light = m_cb9_Light.Work();
+	cBright& light = m_cb9_Light.Work();
 
 	light.PointLight_Num = (signed)pointLights.size();
 

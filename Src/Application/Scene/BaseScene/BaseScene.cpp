@@ -42,9 +42,6 @@ void BaseScene::Draw()
 	KdShaderManager::Instance().m_StandardShader.BeginLit();
 	{
 		objManager_->DrawLit();
-
-		
-
 	}
 	KdShaderManager::Instance().m_StandardShader.EndLit();
 
@@ -62,7 +59,7 @@ void BaseScene::Draw()
 	KdShaderManager::Instance().m_postProcessShader.BeginBright();
 	{
 		objManager_->DrawBright();
-		OnDrawBlight();
+		OnDrawBright();
 	}
 	KdShaderManager::Instance().m_postProcessShader.EndBright();
 }

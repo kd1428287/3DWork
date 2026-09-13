@@ -18,7 +18,8 @@ enum class KdSamplerAddressingMode {
 enum class KdBlendMode {
 	NoBlend,		// ブレンドをしない
 	Alpha,			// 半透明ブレンド
-	Add				// 加算ブレンド
+	Add,			// 加算ブレンド
+	AlphaMasked		// 半透明ブレンド＋MRTスロット1(カラーグレード除外マスク等)はブレンドせず上書き
 };
 
 //=======================================================================================
@@ -149,60 +150,60 @@ private:
 	// 全体の管理とバッファ、シェーダ、テクスチャなどのリソース作成などを行う。
 	// D3D9とは違って、このクラスは描画関係のメンバ関数を持たない。
 	//==============================================================
-	ID3D11Device*			m_pDevice = nullptr;
+	ID3D11Device* m_pDevice = nullptr;
 
 	//==============================================================
 	// 描画処理を行うクラス。
 	// 内部的には、レンダリングコマンドと呼ばれるバイナリデータを作成し、GPUに送る。
 	// GPUがレンダリングコマンドを解析することで実際の描画処理が行われる。
 	//==============================================================
-	ID3D11DeviceContext*	m_pDeviceContext = nullptr;	
+	ID3D11DeviceContext* m_pDeviceContext = nullptr;
 
 	//==============================================================
 	// ウインドウへの表示やダブルバッファリングなどを行うクラス。
 	// マルチサンプリング、リフレッシュレートなどの設定もできる。
 	//==============================================================
-	IDXGISwapChain*			m_pGISwapChain = nullptr;
+	IDXGISwapChain* m_pGISwapChain = nullptr;
 
 
 	// DrawVertices用 頂点バッファ
 	KdBuffer		m_tempFixedVertexBuffer[10];// 固定長 頂点バッファ
 	KdBuffer		m_tempVertexBuffer;			// 可変長 頂点バッファ
 
-	int				m_windowWidth				= 1280;
-	int				m_windowHeight				= 780;
+	int				m_windowWidth = 1280;
+	int				m_windowHeight = 780;
 
 	Math::Color		m_backBafferClearColor = { 0.9f,0.9f,0.9f,1.0f };
 
 	// バッファ
-	std::shared_ptr<KdTexture>	m_backBuffer	= nullptr;		// バックバッファ
-	std::shared_ptr<KdTexture>	m_zBuffer		= nullptr;		// Zバッファ
+	std::shared_ptr<KdTexture>	m_backBuffer = nullptr;		// バックバッファ
+	std::shared_ptr<KdTexture>	m_zBuffer = nullptr;		// Zバッファ
 
 	//------------------------
 	// 便利テクスチャ
 	//------------------------
 	// 1x1 白テクスチャ
-	std::shared_ptr<KdTexture>	m_texWhite		= nullptr;
+	std::shared_ptr<KdTexture>	m_texWhite = nullptr;
 
 	// デフォルト法線マップ（1x1 Z向き）
-	std::shared_ptr<KdTexture>	m_texNormal		= nullptr;
+	std::shared_ptr<KdTexture>	m_texNormal = nullptr;
 
-	bool						m_isFullScreen	= false;		// フルスクリーン動作かどうか
+	bool						m_isFullScreen = false;		// フルスクリーン動作かどうか
 
-//-------------------------------
-// シングルトン
-//-------------------------------
+	//-------------------------------
+	// シングルトン
+	//-------------------------------
 private:
 
 	KdDirect3D() {}
 
-	~KdDirect3D() 
+	~KdDirect3D()
 	{
 		Release();
 	}
 
 public:
-	static KdDirect3D &Instance() {
+	static KdDirect3D& Instance() {
 		static KdDirect3D instance;
 		return instance;
 	}

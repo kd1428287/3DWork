@@ -12,7 +12,7 @@ public:
 		selfTransform_ = GetOwner()->GetComponent<TransformComponent>();
 	}
 
-	void Update(float deltaTime) override {
+	void PostUpdate(float deltaTime) override {
 		if (selfTransform_ == nullptr) {
 			return; // 自分にTransformComponentが無ければ何もしない
 		}
@@ -25,6 +25,7 @@ public:
 		Math::Vector3 position;
 		Math::Quaternion rotation;
 		Math::Vector3 scale;
+
 		if (socket->GetWorldMatrix().Decompose(scale, rotation, position)) {
 			const Math::Vector3 rotatedOffset = Math::Vector3::Transform(position_, rotation);
 			selfTransform_->SetPosition(position + rotatedOffset);

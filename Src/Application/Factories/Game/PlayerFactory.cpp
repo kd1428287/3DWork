@@ -2,7 +2,6 @@
 #include "PlayerDefinitionLoader.h"
 
 #include "../../Components/Transform/TransformComponent.h"
-#include "../../Components/Transform/SocketComponent.h"
 #include "../../Components/Transform/AttachToSocketComponent.h"
 #include "../../Components/Movement/MovementComponent.h"
 #include "../../Components/Movement/VelocityComponent.h"
@@ -85,10 +84,10 @@ namespace
 		for (const auto& def : colliderDefs) {
 			CollisionShapeEntry* shape = nullptr;
 			if (def.interactsWith != ColliderCategory::None) {
-				shape = &collider->AddCapsule(def.name, def.radius, def.start, def.end, def.category, def.interactsWith);
+				shape = &collider->AddCapsule(def.name, def.radius, Math::Vector3(0,def.radius,0), def.end + Math::Vector3(0, 1, 0), def.category, def.interactsWith);
 			}
 			else {
-				shape = &collider->AddCapsule(def.name, def.radius, def.start, def.end, def.category);
+				shape = &collider->AddCapsule(def.name, def.radius, def.start + Math::Vector3(0, 1, 0), def.end + Math::Vector3(0, 1, 0), def.category);
 			}
 
 			if (def.isTrigger) {
@@ -129,6 +128,7 @@ GameObject* PlayerFactory::CreatePlayer(ObjectManager& objectManager, const Play
 
 	player->AddComponent<PlayerStatusController>();
 	player->AddComponent<CameraTargetComponent>()->SetLocalPosition({ 0.f,0.5f,0.f });
+	player->AddComponent<WireFrameComponent>();
 
 	// --- 腕・武器のソケット生成 -----------------------------------------
 	Handle<SkeletonComponent> skeletonHandle(skeleton);
@@ -200,6 +200,7 @@ GameObject* PlayerFactory::CreateWeapon(ObjectManager& objectManager, GameObject
 	trail->SetBaseTip(Math::Vector3{ 0,0,-0.75 }, Math::Vector3{ 0,0,-2.25 });
 	trail->SetBaseTip(Math::Vector3{ 0,0,-0.5 }, Math::Vector3{ 0,0,-1.5f });
 	trail->SetKey("Sword_Player");
+	trail->StartEmit();
 
 	weapon->AddComponent<WeaponComponent>();
 

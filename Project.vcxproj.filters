@@ -199,6 +199,9 @@
     <Filter Include="Src\Framework\Shader\SlashTrailShader">
       <UniqueIdentifier>{2c3f8073-e61d-4a25-a36e-760d8d9d2c55}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\Systems\Game">
+      <UniqueIdentifier>{788f6c95-7ee4-461d-87e3-5733b91a5919}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -476,9 +479,6 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Sensors\GroundSensorComponent.h">
       <Filter>Src\Application\Components\Sensors</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\Transform\SocketComponent.h">
-      <Filter>Src\Application\Components\Transform</Filter>
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Transform\AttachToSocketComponent.h">
       <Filter>Src\Application\Components\Transform</Filter>
@@ -786,6 +786,12 @@
     <ClInclude Include="Src\Application\Factories\Map\ComponentTypes.h">
       <Filter>Src\Application\Factories\Map</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Factories\Map\ColliderCategoryNames.h">
+      <Filter>Src\Application\Factories\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Camera\CameraInputCompoent.h">
+      <Filter>Src\Application\Components\Camera</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -1055,6 +1061,9 @@
     <ClCompile Include="Src\Application\Factories\Map\ComponentRegistrations.cpp">
       <Filter>Src\Application\Factories\Map</Filter>
     </ClCompile>
+    <ClCompile Include="Src\Application\Factories\Map\MapData.cpp">
+      <Filter>Src\Application\Factories\Map</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Src\Framework\Shader\inc_KdCommon.hlsli">
@@ -1139,6 +1148,9 @@
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\SlashTrailShader\SlashTrail_VS.hlsl">
       <Filter>Src\Framework\Shader\SlashTrailShader</Filter>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle_PS_Masked.hlsl">
+      <Filter>Src\Framework\Shader\GPUParticle</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

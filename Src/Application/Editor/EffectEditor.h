@@ -164,6 +164,13 @@ private:
 		std::shared_ptr<KdTexture>	Color;	// オフスクリーンのカラーバッファ
 		std::shared_ptr<KdTexture>	Depth;	// オフスクリーンのZバッファ
 
+		// カラーグレード除外マスク書き込み用の捨てRT(スロット1)。
+		// このプレビューはカラーグレード処理自体を通らないため中身は使わないが、
+		// Alphaブレンドのパーティクル(m_PS_Masked使用、SV_Target1へ書き込む)を
+		// 描画する際にスロット1が未バインドだとD3D11警告が出るため、
+		// 書き込み先として存在させるためだけに用意する
+		std::shared_ptr<KdTexture>	Mask;
+
 		int		Width = 0;
 		int		Height = 0;
 

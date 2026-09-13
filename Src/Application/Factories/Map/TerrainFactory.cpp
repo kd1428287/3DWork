@@ -9,6 +9,7 @@
 #include "../../Components/Animation/SkeletonComponent.h"
 #include "../../Components/Collision/ColliderComponent.h"
 #include "../../Components/Movement/FollowCameraComponent.h"
+#include "../../Components/Transform/TransformComponent.h"
 
 TerrainFactory::TerrainFactory()
 {
@@ -26,7 +27,7 @@ GameObject* TerrainFactory::CreateTerrain(ObjectManager& objectManager, int owne
 	auto* collider = ground->AddComponent<ColliderComponent>();
 	auto* groundModel = ground->AddComponent<ModelRenderComponent>();
 	transform->SetPosition({ 0.f,0.f,0.f });
-	collider->AddBox("body", Math::Vector3(100.f, 1.f, 100.f), Math::Vector3(0.f, -2.f, 0.f), ColliderCategory::Ground);
+	collider->AddBox("body", Math::Vector3(50.f, 0.5f, 50.f), Math::Vector3(0.f, -2.f, 0.f), ColliderCategory::Ground);
 
 	return ground;
 }
@@ -52,24 +53,23 @@ GameObject* TerrainFactory::CreateSkydome(ObjectManager& objectManager, int owne
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // MapEditorが保存したエンティティ1件からGameObjectを組み立てる。
 //	コンポーネントの種類ごとの分岐は一切持たず、ComponentRegistryに登録された
-//	create関数を呼ぶだけ。新しいコンポーネント種類を追加してもこの関数は無改修でよい
+//	create関数を呼ぶだけ。新しいコンポーネント種類を追加してもこの関数は無改修でよい。
+//	回転はMapEntity側で既にQuaternionなので、Euler変換は一切不要になった
+//	(以前あったCreateFromYawPitchRoll経由の変換と、それに伴う合成順序の不一致リスクは消えた)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-GameObject* TerrainFactory::CreateFromData(ObjectManager& objectManager, const EntityData& data)
+GameObject* TerrainFactory::CreateFromData(ObjectManager& objectManager, const MapEntity& data)
 {
 	auto* obj = objectManager.Instantiate(data.name);
 	auto* transform = obj->AddComponent<TransformComponent>();
 
-	transform->SetPosition(data.transform.position);
-	transform->SetScale(data.transform.scale);
+	transform->SetPosition(data.pos);
+	transform->SetRotation(data.rotation);
+	transform->SetScale(data.scale);
 
-	// オイラー角(度)→クォータニオン変換
-	// ※ TransformComponentの回転セッターの実際のシグネチャが不明なため、
-	//   一旦Quaternion版を想定して実装しています。実際のヘッダに合わせて調整してください
-	Math::Quaternion rot = Math::Quaternion::CreateFromYawPitchRoll(
-		DirectX::XMConvertToRadians(data.transform.rotation.y),
-		DirectX::XMConvertToRadians(data.transform.rotation.x),
-		DirectX::XMConvertToRadians(data.transform.rotation.z));
-	transform->SetRotation(rot);
+	// TODO: GameObject自体はMapEntity::idを知らない。将来「特定の配置オブジェクトを
+	// スクリプト/トリガーから参照したい」需要が出てきたら、data.idを持たせる
+	// 専用コンポーネント(例: MapEntityIdComponent)を追加するか、GameObjectFactory<int>
+	// (registry_)経由の登録を検討すること
 
 	for (const auto& entry : data.components)
 	{

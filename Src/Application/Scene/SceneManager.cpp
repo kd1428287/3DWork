@@ -14,10 +14,17 @@ void SceneManager::Init()
 		{
 			SetNextScene(e.nextScene);
 		});
-	m_sceneChangeSub = std::make_unique<ScopedSubscriber>(&GLOBALEVENT, id);
+	sceneChangeSub_ = std::make_unique<ScopedSubscriber>(&GLOBALEVENT, id);
+
+	id = GLOBALEVENT.Subscribe<Events::Scene::ReloadingSceneEvent>(
+		[this](const Events::Scene::ReloadingSceneEvent& e)
+		{
+			ChangeScene(currentSceneType_);
+		});
+	reloadSceneSub_ = std::make_unique<ScopedSubscriber>(&GLOBALEVENT, id);
 
 	// 開始シーンに切り替え
-	ChangeScene(m_currentSceneType);
+	ChangeScene(currentSceneType_);
 }
 
 SceneManager::~SceneManager() = default;
@@ -25,32 +32,32 @@ SceneManager::~SceneManager() = default;
 void SceneManager::Update()
 {
 	// シーン切替
-	if (m_currentSceneType != m_nextSceneType)
+	if (currentSceneType_ != nextSceneType_)
 	{
-		ChangeScene(m_nextSceneType);
+		ChangeScene(nextSceneType_);
 	}
 
-	m_currentScene->Update(Application::Instance().GetDeltaTime());
+	currentScene_->Update(Application::Instance().GetDeltaTime());
 }
 
 void SceneManager::PreDraw()
 {
-	m_currentScene->PreDraw(Application::Instance().GetDeltaTime());
+	currentScene_->PreDraw(Application::Instance().GetDeltaTime());
 }
 
 void SceneManager::Draw()
 {
-	m_currentScene->Draw();
+	currentScene_->Draw();
 }
 
 void SceneManager::DrawSprite()
 {
-	m_currentScene->DrawSprite();
+	currentScene_->DrawSprite();
 }
 
 void SceneManager::DrawDebug()
 {
-	m_currentScene->DrawDebug();
+	currentScene_->DrawDebug();
 }
 
 void SceneManager::ChangeScene(SceneType _sceneType)
@@ -59,17 +66,17 @@ void SceneManager::ChangeScene(SceneType _sceneType)
 	switch (_sceneType)
 	{
 	case SceneType::Title:
-		m_currentScene = std::make_shared<TitleScene>();
+		currentScene_ = std::make_shared<TitleScene>();
 		break;
 	case SceneType::Game:
-		m_currentScene = std::make_shared<GameScene>();
+		currentScene_ = std::make_shared<GameScene>();
 		break;
 	case SceneType::Result:
-		m_currentScene = std::make_shared<ResultScene>();
+		currentScene_ = std::make_shared<ResultScene>();
 		break;
 	}
 
-	//m_currentScene->Init();
+	//currentScene->Init();
 	// 現在のシーン情報を更新
-	m_currentSceneType = _sceneType;
+	currentSceneType_ = _sceneType;
 }

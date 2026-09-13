@@ -1,110 +1,123 @@
-[
-  {
-    "components": [
-      {
-        "params": {
-          "model": "Asset/Models/Terrains/CherryBlossum/Cherry_Blossom_Tree_a.gltf"
+{
+  "entities": [
+    {
+      "components": [
+        {
+          "params": {
+            "model": "Asset/Models/Terrains/Ground/Terrain.gltf"
+          },
+          "type": "ModelRender"
         },
-        "type": "ModelRender"
-      },
-      {
-        "params": {
-          "offset": [
-            0.0,
-            0.0,
-            0.0
-          ],
-          "size": [
-            1.0,
-            1.0,
-            1.0
-          ]
+        {
+          "params": {
+            "shapes": [
+              {
+                "categoryMask": [
+                  "Ground"
+                ],
+                "halfExtents": [
+                  50.0,
+                  0.5,
+                  50.0
+                ],
+                "isStatic": true,
+                "isTrigger": false,
+                "name": "Body",
+                "offset": [
+                  0.0,
+                  -0.5,
+                  0.0
+                ],
+                "shape": "Box",
+                "useDefaultCollideMask": true,
+                "wantsStayEvent": false
+              }
+            ]
+          },
+          "type": "Collider"
+        }
+      ],
+      "id": 1,
+      "name": "Groound",
+      "pos": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "components": [
+        {
+          "params": {
+            "model": "Asset/Models/Terrains/Sakura/sakura_big.gltf"
+          },
+          "type": "ModelRender"
         },
-        "type": "Collider"
-      }
-    ],
-    "name": "Object0",
-    "pos": [
-      7.899265289306641,
-      0.0,
-      0.0
-    ],
-    "rotate": [
-      0.0,
-      -0.0,
-      0.0
-    ],
-    "scale": [
-      10.0,
-      10.0,
-      10.0
-    ]
-  },
-  {
-    "components": [
-      {
-        "params": {
-          "model": "Asset/Models/Terrains/Ground/Terrain.gltf"
-        },
-        "type": "ModelRender"
-      },
-      {
-        "params": {
-          "offset": [
-            0.0,
-            -2.0,
-            0.0
-          ],
-          "size": [
-            100.0,
-            1.0,
-            100.0
-          ]
-        },
-        "type": "Collider"
-      }
-    ],
-    "name": "Ground",
-    "pos": [
-      0.0,
-      0.0,
-      0.0
-    ],
-    "rotate": [
-      0.0,
-      0.0,
-      0.0
-    ],
-    "scale": [
-      1.0,
-      1.0,
-      1.0
-    ]
-  },
-  {
-    "components": [
-      {
-        "params": {
-          "model": "Asset/Models/Terrains/Sakura/sakura_big.gltf"
-        },
-        "type": "ModelRender"
-      }
-    ],
-    "name": "Sakura",
-    "pos": [
-      -15.650147438049316,
-      0.0,
-      0.0
-    ],
-    "rotate": [
-      0.0,
-      -0.0,
-      0.0
-    ],
-    "scale": [
-      1.0,
-      1.0,
-      1.0
-    ]
-  }
-]
+        {
+          "params": {
+            "shapes": [
+              {
+                "capsuleEnd": [
+                  0.0,
+                  4.0,
+                  0.0
+                ],
+                "categoryMask": [
+                  "Bump"
+                ],
+                "halfExtents": [
+                  0.5,
+                  0.5,
+                  0.5
+                ],
+                "isStatic": true,
+                "isTrigger": false,
+                "name": "Body",
+                "offset": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "radius": 2.0,
+                "shape": "Capsule",
+                "useDefaultCollideMask": true,
+                "wantsStayEvent": false
+              }
+            ]
+          },
+          "type": "Collider"
+        }
+      ],
+      "id": 2,
+      "name": "Sakura",
+      "pos": [
+        0.0,
+        0.0,
+        -20.0
+      ],
+      "rotation": [
+        -0.0,
+        0.0,
+        -0.0,
+        1.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    }
+  ],
+  "version": 2
+}

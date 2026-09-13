@@ -2,6 +2,9 @@
 
 #include "MapEditor.h"
 #include "EditorViewport.h"
+#include "../Factories/Map/ColliderCategoryNames.h"
+
+#include "../Scene/SceneEvents.h"
 
 #include "imgui_internal.h"
 
@@ -11,18 +14,17 @@
 #include "nlohmann/json.hpp"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// pos/rotate(degree)/scale から行列を作る
-// ImGuizmoの内部フォーマット(float[16])はDirectXの行列メモリレイアウトと互換のため
-// そのままSimpleMath::Matrixへコピーできる
+// data.pos/rotation(Quaternion)/scale から行列を作る。
+// ImGuizmoのEuler経由(RecomposeMatrixFromComponents)は使わない。
+// (フェーズ0で回転をQuaternion一本化した理由の一つが、この変換をやめて
+//  合成順序の不一致による見た目のズレを構造的に無くすこと)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 DirectX::SimpleMath::Matrix MapObject::GetMatrix() const
 {
-	float m[16];
-	ImGuizmo::RecomposeMatrixFromComponents(&pos.x, &rotate.x, &scale.x, m);
-
-	DirectX::SimpleMath::Matrix mat;
-	memcpy(&mat, m, sizeof(float) * 16);
-	return mat;
+	using namespace DirectX::SimpleMath;
+	return Matrix::CreateScale(data.scale)
+		* Matrix::CreateFromQuaternion(data.rotation)
+		* Matrix::CreateTranslation(data.pos);
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -38,27 +40,44 @@ static void SetupMapDockLayout(ImGuiID dockspaceId, const ImVec2& size)
 
 	ImGuiID center = dockspaceId;
 
-	// 左：Hierarchy(幅30%)
 	ImGuiID left = ImGui::DockBuilderSplitNode(center, ImGuiDir_Left, 0.30f, nullptr, &center);
-
-	// 下：Map Editor(メニュー) + Assets(タブ)、高さ35%
 	ImGuiID bottom = ImGui::DockBuilderSplitNode(center, ImGuiDir_Down, 0.35f, nullptr, &center);
-
-	// 残った中央を Inspector(左) / Map Preview(右) に分割
 	ImGuiID preview = ImGui::DockBuilderSplitNode(center, ImGuiDir_Right, 0.45f, nullptr, &center);
 
 	ImGui::DockBuilderDockWindow("Hierarchy", left);
-	ImGui::DockBuilderDockWindow("Inspector", center);	// 残った中央上
+	ImGui::DockBuilderDockWindow("Inspector", center);
 	ImGui::DockBuilderDockWindow("Map Preview", preview);
 	ImGui::DockBuilderDockWindow("Assets", bottom);
-	ImGui::DockBuilderDockWindow("Map Editor", bottom);	// Assetsとタブ化
+	ImGui::DockBuilderDockWindow("Map Editor", bottom);
 
 	ImGui::DockBuilderFinish(dockspaceId);
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 毎フレーム更新
+// m_objects内をIdで探す。生indexで触れる箇所をここに集約する
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+MapObject* MapEditor::FindObject(ObjectId id)
+{
+	if (id == kInvalidObjectId) return nullptr;
+
+	for (auto& obj : m_objects)
+	{
+		if (obj.data.id == id) return &obj;
+	}
+	return nullptr;
+}
+
+const MapObject* MapEditor::FindObject(ObjectId id) const
+{
+	if (id == kInvalidObjectId) return nullptr;
+
+	for (auto& obj : m_objects)
+	{
+		if (obj.data.id == id) return &obj;
+	}
+	return nullptr;
+}
+
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // Undo / Redo
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -66,16 +85,14 @@ void MapEditor::PushUndo()
 {
 	UndoState state;
 	state.objects = m_objects;	// MapObjectはKdModelWork(shared_ptr経由)を持つのでコピーは軽量
-	state.selected = m_selected;
+	state.selectedId = m_selectedId;
 
 	m_undoStack.push_back(std::move(state));
 	if (m_undoStack.size() > kMaxUndoDepth)
 	{
-		// 古いものから捨てる(先頭要素の削除はO(n)だが、深さ上限が小さいので許容)
 		m_undoStack.erase(m_undoStack.begin());
 	}
 
-	// 新しい変更を積んだ時点で、それより新しかったRedo履歴は無効になる
 	m_redoStack.clear();
 }
 
@@ -85,14 +102,14 @@ void MapEditor::Undo()
 
 	UndoState redoState;
 	redoState.objects = m_objects;
-	redoState.selected = m_selected;
+	redoState.selectedId = m_selectedId;
 	m_redoStack.push_back(std::move(redoState));
 
 	UndoState prev = std::move(m_undoStack.back());
 	m_undoStack.pop_back();
 
 	m_objects = std::move(prev.objects);
-	m_selected = prev.selected;
+	m_selectedId = prev.selectedId;	// 安定IDなので、Undo後もindexズレを気にせず正しいオブジェクトを指す
 }
 
 void MapEditor::Redo()
@@ -101,21 +118,20 @@ void MapEditor::Redo()
 
 	UndoState undoState;
 	undoState.objects = m_objects;
-	undoState.selected = m_selected;
+	undoState.selectedId = m_selectedId;
 	m_undoStack.push_back(std::move(undoState));
 
 	UndoState next = std::move(m_redoStack.back());
 	m_redoStack.pop_back();
 
 	m_objects = std::move(next.objects);
-	m_selected = next.selected;
+	m_selectedId = next.selectedId;
 }
 
 void MapEditor::Update()
 {
 	ImGuizmo::BeginFrame();
 
-	// ギズモ操作中でなければショートカットキーを受け付ける
 	if (!ImGuizmo::IsUsing())
 	{
 		if (ImGui::IsKeyPressed(ImGuiKey_1)) m_operation = ImGuizmo::TRANSLATE;
@@ -123,8 +139,6 @@ void MapEditor::Update()
 		if (ImGui::IsKeyPressed(ImGuiKey_3)) m_operation = ImGuizmo::SCALE;
 	}
 
-	// Undo/Redo(テキスト入力中にCtrl+Zを奪うとInputTextの単体Undoと衝突するので、
-	// WantTextInput中(=どこかのテキストボックスにフォーカスがある間)は受け付けない)
 	if (!ImGui::GetIO().WantTextInput)
 	{
 		bool ctrl = ImGui::GetIO().KeyCtrl;
@@ -139,13 +153,8 @@ void MapEditor::Update()
 		}
 	}
 
-	// マップデータの外部変更検知(ホットリロード)
 	CheckHotReload();
 
-	// マップエディタ専用のコンテナウィンドウ
-	//	メインビューポートの右外側に初期配置することで、
-	//	マルチビューポート機能により起動時から「別ウィンドウ」として分離表示される
-	//	(EffectEditorの"Effect Editor Window"と同じ考え方)
 	ImGuiViewport* mainViewport = ImGui::GetMainViewport();
 
 	ImGui::SetNextWindowPos(
@@ -224,14 +233,15 @@ void MapEditor::DrawHierarchy()
 
 	ImGui::Separator();
 
-	for (int i = 0; i < (int)m_objects.size(); i++)
+	for (auto& obj : m_objects)
 	{
-		bool isSelected = (m_selected == i);
+		bool isSelected = (m_selectedId == obj.data.id);
 
-		std::string label = m_objects[i].name + "##" + std::to_string(i);
+		// ラベルの一意化はvector indexではなくIdで行う(indexは並び替え等で変わりうる為)
+		std::string label = obj.data.name + "##" + std::to_string(obj.data.id);
 		if (ImGui::Selectable(label.c_str(), isSelected))
 		{
-			m_selected = i;
+			m_selectedId = obj.data.id;
 		}
 	}
 
@@ -296,9 +306,7 @@ bool MapEditor::DrawComponentParamsGeneric(nlohmann::json& params, const Compone
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// Inspector内、選択中オブジェクトのコンポーネント一覧。
-//	追加はComponentRegistryに登録されている種類から選ぶだけ(TerrainFactory側の対応も
-//	ComponentRegistrations.cppに1箇所追加するだけで済む設計)
+// Inspector内、選択中オブジェクトのコンポーネント一覧
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void MapEditor::DrawComponentList(MapObject& obj)
 {
@@ -306,26 +314,39 @@ void MapEditor::DrawComponentList(MapObject& obj)
 
 	int removeIndex = -1;
 
-	for (int i = 0; i < (int)obj.components.size(); i++)
+	for (int i = 0; i < (int)obj.data.components.size(); i++)
 	{
-		ComponentEntry& entry = obj.components[i];
+		ComponentEntry& entry = obj.data.components[i];
 		ImGui::PushID(i);
 
 		bool open = ImGui::CollapsingHeader(entry.type.c_str(), ImGuiTreeNodeFlags_DefaultOpen);
-
-		ImGui::SameLine(ImGui::GetWindowWidth() - 70.0f);
-		if (ImGui::SmallButton("Remove")) { removeIndex = i; }
 
 		if (open)
 		{
 			ImGui::Indent();
 
+			// Removeはヘッダーと同じ行に置かず、開いた中身の先頭に置く。
+			// (CollapsingHeaderと同じ行にSameLineでボタンを乗せると、ヘッダー側が
+			//  クリックを奪ってしまいボタンが押せないことがある為)
+			if (ImGui::SmallButton("Remove Component")) { removeIndex = i; }
+			ImGui::Separator();
+
 			const ComponentTypeInfo* info = ComponentRegistry::Instance().Find(entry.type);
 			if (info)
 			{
-				bool edited = DrawComponentParamsGeneric(entry.params, *info);
+				bool edited = false;
 
-				// ModelRenderのmodelパラメータが変わったら、プレビュー用モデルも読み直す
+				if (info->drawCustomInspector)
+				{
+					// schemaでは表現できない構造(Colliderの形状リスト等)を持つコンポーネント。
+					// requestUndoCheckpointは中でIsItemActivated()等と組み合わせて呼ばれる想定
+					edited = info->drawCustomInspector(entry.params, [this]() { PushUndo(); });
+				}
+				else
+				{
+					edited = DrawComponentParamsGeneric(entry.params, *info);
+				}
+
 				if (edited && entry.type == "ModelRender")
 				{
 					obj.SyncPreviewModel();
@@ -333,7 +354,6 @@ void MapEditor::DrawComponentList(MapObject& obj)
 			}
 			else
 			{
-				// 保存後にレジストリ側から削除された種類が残っている場合等
 				ImGui::TextDisabled("未登録のコンポーネント種類です: %s", entry.type.c_str());
 			}
 
@@ -346,8 +366,8 @@ void MapEditor::DrawComponentList(MapObject& obj)
 	if (removeIndex >= 0)
 	{
 		PushUndo();
-		bool wasModelRender = (obj.components[removeIndex].type == "ModelRender");
-		obj.components.erase(obj.components.begin() + removeIndex);
+		bool wasModelRender = (obj.data.components[removeIndex].type == "ModelRender");
+		obj.data.components.erase(obj.data.components.begin() + removeIndex);
 		if (wasModelRender) { obj.SyncPreviewModel(); }
 	}
 
@@ -363,7 +383,6 @@ void MapEditor::DrawComponentList(MapObject& obj)
 			const std::string& typeName = kv.first;
 			const ComponentTypeInfo& info = kv.second;
 
-			// v1は同種コンポーネントの重複追加は禁止(シンプルに保つ)
 			if (obj.HasComponent(typeName)) continue;
 
 			if (ImGui::Selectable(typeName.c_str()))
@@ -373,7 +392,7 @@ void MapEditor::DrawComponentList(MapObject& obj)
 				ComponentEntry entry;
 				entry.type = typeName;
 				entry.params = info.defaultParams;
-				obj.components.push_back(std::move(entry));
+				obj.data.components.push_back(std::move(entry));
 
 				if (typeName == "ModelRender") { obj.SyncPreviewModel(); }
 			}
@@ -389,35 +408,57 @@ void MapEditor::DrawInspector()
 {
 	ImGui::Begin("Inspector");
 
-	if (m_selected < 0 || m_selected >= (int)m_objects.size())
+	MapObject* selected = FindSelected();
+	if (!selected)
 	{
 		ImGui::TextDisabled("オブジェクトが選択されていません");
 		ImGui::End();
 		return;
 	}
 
-	MapObject& obj = m_objects[m_selected];
+	MapObject& obj = *selected;
 
 	char nameBuf[128];
-	strcpy_s(nameBuf, obj.name.c_str());
+	strcpy_s(nameBuf, obj.data.name.c_str());
 	ImGui::InputText("Name", nameBuf, sizeof(nameBuf));
 	if (ImGui::IsItemActivated())
 	{
-		// テキストボックスにフォーカスが入った瞬間(編集前)の状態を退避
 		PushUndo();
 	}
 	if (ImGui::IsItemEdited())
 	{
-		obj.name = nameBuf;
+		obj.data.name = nameBuf;
 	}
 
-	ImGui::DragFloat3("Position", &obj.pos.x, 0.1f);
+	ImGui::DragFloat3("Position", &obj.data.pos.x, 0.1f);
 	if (ImGui::IsItemActivated()) { PushUndo(); }
 
-	ImGui::DragFloat3("Rotation", &obj.rotate.x, 1.0f);
-	if (ImGui::IsItemActivated()) { PushUndo(); }
+	// 回転はdata.rotation(Quaternion)が正だが、Inspector上ではEuler角(度)で編集させる。
+	// 選択が変わった時だけQuaternion→Eulerへ変換してキャッシュし、それ以外のフレームは
+	// このキャッシュ値をそのまま表示・編集する(毎フレーム変換し直すとEuler表現の非一意性で
+	// 値がガタつくことがある為)
+	if (m_inspectorEulerForId != obj.data.id)
+	{
+		DirectX::SimpleMath::Vector3 eulerRad = obj.data.rotation.ToEuler();
+		m_inspectorEulerDeg = {
+			DirectX::XMConvertToDegrees(eulerRad.x),
+			DirectX::XMConvertToDegrees(eulerRad.y),
+			DirectX::XMConvertToDegrees(eulerRad.z)
+		};
+		m_inspectorEulerForId = obj.data.id;
+	}
 
-	ImGui::DragFloat3("Scale", &obj.scale.x, 0.1f, 0.01f, 100.0f);
+	ImGui::DragFloat3("Rotation", &m_inspectorEulerDeg.x, 1.0f);
+	if (ImGui::IsItemActivated()) { PushUndo(); }
+	if (ImGui::IsItemEdited())
+	{
+		obj.data.rotation = DirectX::SimpleMath::Quaternion::CreateFromYawPitchRoll(
+			DirectX::XMConvertToRadians(m_inspectorEulerDeg.y),
+			DirectX::XMConvertToRadians(m_inspectorEulerDeg.x),
+			DirectX::XMConvertToRadians(m_inspectorEulerDeg.z));
+	}
+
+	ImGui::DragFloat3("Scale", &obj.data.scale.x, 0.1f, 0.01f, 100.0f);
 	if (ImGui::IsItemActivated()) { PushUndo(); }
 
 	ImGui::Separator();
@@ -453,51 +494,42 @@ void MapEditor::DrawInspector()
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // ギズモ描画・操作
-//	KdShaderManager の カメラCB(mView / mProjection) を使用
-//	※メンバ名はプロジェクト側の実際の型に合わせて調整してください
+//	ImGuizmoのRecomposeMatrixFromComponents/DecomposeMatrixToComponents(Euler経由)は使わず、
+//	SimpleMath::Matrix::CreateFromQuaternion/Decompose()で直接やり取りする。
+//	これによりQuaternionの保存値を一切経由せず操作でき、Euler往復も発生しない
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void MapEditor::DrawGizmo()
 {
-	if (m_selected < 0 || m_selected >= (int)m_objects.size()) { m_gizmoWasUsing = false; return; }
+	MapObject* selected = FindSelected();
+	if (!selected) { m_gizmoWasUsing = false; return; }
 	if (m_previewViewport.Width <= 0 || m_previewViewport.Height <= 0) { m_gizmoWasUsing = false; return; }
 
 	ImGuizmo::SetOrthographic(false);
-
-	// この関数はDrawPreviewWindow()の中、「Map Preview」ウィンドウがまだアクティブな
-	// (Begin〜Endの)間に呼ばれる想定。引数無しのSetDrawlist()はその時点で
-	// ImGuiが認識している現在のウィンドウのdrawlistを拾うので、これで自動的に
-	// 「Map Preview」ウィンドウ上に(=Sceneウィンドウではなくプレビュー画面上に)描画される
 	ImGuizmo::SetDrawlist();
 
-	// Sceneウィンドウ全体ではなく、Map Previewウィンドウ内の画像表示範囲を基準にする
 	const ImVec2& rectPos = m_previewViewport.ScreenPos;
 	const ImVec2& rectSize = m_previewViewport.ScreenSize;
 	ImGuizmo::SetRect(rectPos.x, rectPos.y, rectSize.x, rectSize.y);
 
-	// カメラもゲームカメラ(KdShaderManagerのカメラCB)ではなく、
-	// RenderPreviewViewport()で実際にプレビュー画面を描いた時と同じ
-	// プレビュー専用カメラ(m_previewCamera)の行列を使う
 	DirectX::SimpleMath::Matrix view = m_previewCamera.GetView(GetPreviewTarget());
 	DirectX::SimpleMath::Matrix proj = m_previewCamera.GetProj(
 		(float)m_previewViewport.Width / (float)m_previewViewport.Height);
 
-	MapObject& obj = m_objects[m_selected];
+	MapObject& obj = *selected;
 
-	float matrix[16];
-	ImGuizmo::RecomposeMatrixFromComponents(&obj.pos.x, &obj.rotate.x, &obj.scale.x, matrix);
+	DirectX::SimpleMath::Matrix matrix = obj.GetMatrix();
 
 	ImGuizmo::Manipulate(
 		reinterpret_cast<const float*>(&view),
 		reinterpret_cast<const float*>(&proj),
-		m_operation, m_mode, matrix,
+		m_operation, m_mode, reinterpret_cast<float*>(&matrix),
 		nullptr,
 		m_useSnap ? m_snapValue : nullptr);
 
 	bool isUsing = ImGuizmo::IsUsing();
 
 	// ドラッグ「開始」の瞬間(前フレームは操作していなかった)だけUndoを1回積む。
-	// この時点ではobj.pos/rotate/scaleはまだ書き換えていないので、
-	// ここが正しく「操作前」のスナップショットになる
+	// この時点ではobj.dataはまだ書き換えていないので、正しく「操作前」のスナップショットになる
 	if (isUsing && !m_gizmoWasUsing)
 	{
 		PushUndo();
@@ -505,7 +537,17 @@ void MapEditor::DrawGizmo()
 
 	if (isUsing)
 	{
-		ImGuizmo::DecomposeMatrixToComponents(matrix, &obj.pos.x, &obj.rotate.x, &obj.scale.x);
+		DirectX::SimpleMath::Vector3 newScale, newPos;
+		DirectX::SimpleMath::Quaternion newRot;
+		matrix.Decompose(newScale, newRot, newPos);
+
+		obj.data.pos = newPos;
+		obj.data.rotation = newRot;
+		obj.data.scale = newScale;
+
+		// Inspector側のEuler表示キャッシュも追従させる(ギズモで回した直後にInspectorを
+		// 見た時、古いEuler値のまま止まって見えないように)
+		m_inspectorEulerForId = kInvalidObjectId;
 	}
 
 	m_gizmoWasUsing = isUsing;
@@ -519,7 +561,6 @@ void MapEditor::DrawAssetPicker()
 {
 	ImGui::Begin("Assets");
 
-	// 初回のみ登録済みリストを読み込む
 	if (!m_assetListLoaded)
 	{
 		LoadModelRegistry(m_registryPathBuf);
@@ -552,18 +593,14 @@ void MapEditor::DrawAssetPicker()
 		{
 			m_selectedAsset = i;
 
-			// オブジェクトが選択中なら、クリックしたアセットをそのまま割り当てる
-			if (m_selected >= 0 && m_selected < (int)m_objects.size())
+			if (MapObject* target = FindSelected())
 			{
 				PushUndo();
 
-				MapObject& target = m_objects[m_selected];
 				std::string fullPath = kAssetsFilePath + path;
 
-				// 既にModelRenderが付いていればそのmodelパラメータを書き換え、
-				// 無ければデフォルト値で新規追加する
 				ComponentEntry* modelRender = nullptr;
-				for (auto& c : target.components)
+				for (auto& c : target->data.components)
 				{
 					if (c.type == "ModelRender") { modelRender = &c; break; }
 				}
@@ -576,29 +613,28 @@ void MapEditor::DrawAssetPicker()
 					{
 						entry.params = info->defaultParams;
 					}
-					target.components.push_back(std::move(entry));
-					modelRender = &target.components.back();
+					target->data.components.push_back(std::move(entry));
+					modelRender = &target->data.components.back();
 				}
 
 				modelRender->params["model"] = fullPath;
-				target.SyncPreviewModel();
+				target->SyncPreviewModel();
 			}
 		}
 	}
 
 	ImGui::Separator();
 
-	if (m_selected < 0 || m_selected >= (int)m_objects.size())
+	MapObject* selected = FindSelected();
+	if (!selected)
 	{
 		ImGui::TextDisabled("オブジェクトを選択してください");
 		ImGui::End();
 		return;
 	}
 
-	MapObject& obj = m_objects[m_selected];
-
 	std::string currentModel;
-	for (auto& c : obj.components)
+	for (auto& c : selected->data.components)
 	{
 		if (c.type == "ModelRender") { currentModel = c.params.value("model", std::string()); break; }
 	}
@@ -617,7 +653,6 @@ void MapEditor::LoadModelRegistry(const std::string& path)
 	nlohmann::json j;
 	if (!JsonLoader::Load(path, j))
 	{
-		// 未作成(初回起動)/壊れたJSON、いずれもリストが空のまま始まる
 		return;
 	}
 
@@ -647,7 +682,6 @@ void MapEditor::SaveModelRegistry(const std::string& path)
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // Windowsのファイル選択ダイアログでモデルファイルを1つ登録する
-//	選択されたファイルは実行ディレクトリからの相対パスに変換して登録・保存する
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void MapEditor::AddModelViaFileDialog()
 {
@@ -671,7 +705,7 @@ void MapEditor::AddModelViaFileDialog()
 
 	if (!result)
 	{
-		return;	// キャンセルされた
+		return;
 	}
 
 	std::string relativePath;
@@ -683,10 +717,9 @@ void MapEditor::AddModelViaFileDialog()
 	}
 	catch (...)
 	{
-		relativePath = fileBuf;	// 変換に失敗した場合はフルパスのまま登録
+		relativePath = fileBuf;
 	}
 
-	// 既に登録済みなら何もしない
 	for (auto& p : m_modelFileList)
 	{
 		if (p == relativePath) return;
@@ -708,17 +741,13 @@ void MapEditor::RemoveRegisteredModel(int index)
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 配置済みオブジェクトの実描画(共通部分)
-//	現在のKdShaderManagerのカメラCBに対して描画するだけの処理。
-//	どのカメラ(ゲームカメラ/プレビュー専用カメラ)が設定されているかは呼び出し側の責任とする
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void MapEditor::DrawObjects()
 {
 	for (auto& obj : m_objects)
 	{
-		// モデル未割り当てのオブジェクトはスキップ
 		if (!obj.modelWork.IsEnable()) continue;
 
-		// ノード行列の再計算が必要なら計算(SetModelData直後など)
 		if (obj.modelWork.NeedCalcNodeMatrices())
 		{
 			obj.modelWork.CalcNodeMatrices();
@@ -730,13 +759,10 @@ void MapEditor::DrawObjects()
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // プレビュー用カメラの注視点：選択中オブジェクトがあればその位置。
-// 未選択時は原点固定ではなく、配置済みオブジェクト全体の重心を注視点にする
-// (原点固定のままだと、マップが原点から離れた場所に作られている場合に
-//  何も選択していない状態でプレビューを開くと画角内に何も入らず「何も映らない」ように見える)
+// 未選択時は配置済みオブジェクト全体の重心(オブジェクトが無ければ原点)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 DirectX::SimpleMath::Vector3 MapEditor::GetPreviewTarget() const
 {
-	// ギズモ操作中は注視点を固定する(操作開始時点にキャッシュした値をそのまま返す)
 	if (ImGuizmo::IsUsing())
 	{
 		return m_previewTargetCache;
@@ -744,14 +770,14 @@ DirectX::SimpleMath::Vector3 MapEditor::GetPreviewTarget() const
 
 	DirectX::SimpleMath::Vector3 target = { 0,0,0 };
 
-	if (m_selected >= 0 && m_selected < (int)m_objects.size())
+	if (const MapObject* selected = FindSelected())
 	{
-		target = m_objects[m_selected].pos;
+		target = selected->data.pos;
 	}
 	else if (!m_objects.empty())
 	{
 		DirectX::SimpleMath::Vector3 sum = { 0,0,0 };
-		for (auto& obj : m_objects) { sum += obj.pos; }
+		for (auto& obj : m_objects) { sum += obj.data.pos; }
 		target = sum / (float)m_objects.size();
 	}
 
@@ -761,7 +787,6 @@ DirectX::SimpleMath::Vector3 MapEditor::GetPreviewTarget() const
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 配置済みオブジェクトの実描画
-//	SceneManager::Draw() など、3D描画パスから呼び出すこと
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void MapEditor::DrawPlacedObjects()
 {
@@ -770,44 +795,38 @@ void MapEditor::DrawPlacedObjects()
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // マップ全体を、専用カメラ・専用オフスクリーンバッファへ描画する
-//	EffectEditor::RenderPreviewViewport()と同じ構成：
-//	現在のRT/ビューポート/カメラCBを退避し、プレビュー用に差し替えて描画した後、元に戻す
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void MapEditor::RenderPreviewViewport()
 {
-	// ウィンドウが一度も開かれておらずサイズが確定していない場合は何もしない
 	if (!m_previewViewport.Color || !m_previewViewport.Depth) return;
 	if (m_previewViewport.Width <= 0 || m_previewViewport.Height <= 0) return;
 
-	ID3D11DeviceContext* DevCon = KdDirect3D::Instance().WorkDevContext();
+	ID3D11DeviceContext* context = KdDirect3D::Instance().WorkDevContext();
 
-	// 退避
 	KdShaderManager::cbCamera savedCamera = KdShaderManager::Instance().GetCameraCB();
 
 	ID3D11RenderTargetView* savedRTV = nullptr;
 	ID3D11DepthStencilView* savedDSV = nullptr;
-	DevCon->OMGetRenderTargets(1, &savedRTV, &savedDSV);
+	context->OMGetRenderTargets(1, &savedRTV, &savedDSV);
 
 	UINT savedVPNum = 1;
 	D3D11_VIEWPORT savedVP = {};
-	DevCon->RSGetViewports(&savedVPNum, &savedVP);
+	context->RSGetViewports(&savedVPNum, &savedVP);
 
-	// プレビュー用バッファへ切り替え・クリア
 	ID3D11RenderTargetView* rtvs[] = { m_previewViewport.Color->WorkRTView() };
-	DevCon->OMSetRenderTargets(1, rtvs, m_previewViewport.Depth->WorkDSView());
+	context->OMSetRenderTargets(1, rtvs, m_previewViewport.Depth->WorkDSView());
 
 	static const float clearColor[4] = { 0.1f, 0.1f, 0.12f, 1.0f };
-	DevCon->ClearRenderTargetView(m_previewViewport.Color->WorkRTView(), clearColor);
-	DevCon->ClearDepthStencilView(m_previewViewport.Depth->WorkDSView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+	context->ClearRenderTargetView(m_previewViewport.Color->WorkRTView(), clearColor);
+	context->ClearDepthStencilView(m_previewViewport.Depth->WorkDSView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
 	D3D11_VIEWPORT vp = {};
 	vp.Width = (float)m_previewViewport.Width;
 	vp.Height = (float)m_previewViewport.Height;
 	vp.MinDepth = 0.0f;
 	vp.MaxDepth = 1.0f;
-	DevCon->RSSetViewports(1, &vp);
+	context->RSSetViewports(1, &vp);
 
-	// プレビュー用カメラの注視点(選択中オブジェクト、または配置済み全体の重心)
 	DirectX::SimpleMath::Vector3 target = GetPreviewTarget();
 
 	DirectX::SimpleMath::Matrix view = m_previewCamera.GetView(target);
@@ -815,47 +834,30 @@ void MapEditor::RenderPreviewViewport()
 		(float)m_previewViewport.Width / (float)m_previewViewport.Height);
 
 	KdShaderManager::Instance().WriteCBCamera(view.Invert(), proj);
-	KdShaderManager::Instance().ChangeRasterizerState(KdRasterizerState::CullNone);
 
-	// マップ全体(配置済みオブジェクトすべて)を描画する
-	//	KdStandardShader::DrawModel()自体はVS/PS/InputLayout/サンプラーステートをセットしない
-	//	(それらはBeginLit()側の責務)。DrawPlacedObjects()はSceneManager::Draw()内の
-	//	BeginLit()〜EndLit()ブラケットの中で呼ばれる想定だが、こちらはメインシーンの描画とは
-	//	別タイミングで独立して呼ばれるパスなので、自前でBeginLit()/EndLit()を呼んで
-	//	パイプライン状態を保証する
 	KdShaderManager::Instance().m_StandardShader.BeginLit();
 	DrawObjects();
 	KdShaderManager::Instance().m_StandardShader.EndLit();
 
-	// 復元
-	KdShaderManager::Instance().UndoRasterizerState();
 	KdShaderManager::Instance().WriteCBCamera(savedCamera.mView.Invert(), savedCamera.mProj);
 
-	DevCon->OMSetRenderTargets(1, &savedRTV, savedDSV);
+	context->OMSetRenderTargets(1, &savedRTV, savedDSV);
 	if (savedRTV) { savedRTV->Release(); }
 	if (savedDSV) { savedDSV->Release(); }
 
-	DevCon->RSSetViewports(savedVPNum, &savedVP);
+	context->RSSetViewports(savedVPNum, &savedVP);
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// マップ全体プレビューウィンドウ(RenderPreviewViewport()が描いた絵を表示する)
-//	右ドラッグでオービット回転、ホイールでズーム(EffectEditor::DrawPreviewWindow()と同じ操作感)
+// マップ全体プレビューウィンドウ
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void MapEditor::DrawPreviewWindow()
 {
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-
-	// ImGuiはデフォルトで「タイトルバー以外の空き領域をドラッグしてもウィンドウが動く」ため、
-	// ImGui::Image()自体はクリックを捕捉しない(ボタンではない)ので、
-	// 何もしないとギズモ操作や右ドラッグオービットより先にウィンドウ移動が発生してしまう。
-	// このウィンドウ内ではドラッグ操作をギズモ/カメラ操作専用にしたいので、NoMoveを付ける
-	// (タブ部分からのドッキング操作には影響しない)
 	ImGui::Begin("Map Preview", nullptr, ImGuiWindowFlags_NoMove);
 
 	ImVec2 regionSize = ImGui::GetContentRegionAvail();
 
-	// ウィンドウサイズが変わったらオフスクリーンバッファを作り直す
 	if (regionSize.x >= 1.0f && regionSize.y >= 1.0f)
 	{
 		m_previewViewport.Resize((int)regionSize.x, (int)regionSize.y);
@@ -868,7 +870,6 @@ void MapEditor::DrawPreviewWindow()
 
 		ImGui::Image((ImTextureID)m_previewViewport.Color->WorkSRView(), regionSize);
 
-		// 右ドラッグ：オービット回転、ホイール：ズーム
 		if (ImGui::IsItemHovered())
 		{
 			ImGuiIO& io = ImGui::GetIO();
@@ -887,9 +888,6 @@ void MapEditor::DrawPreviewWindow()
 			}
 		}
 
-		// ギズモは「Map Preview」ウィンドウがまだアクティブな(Begin〜Endの)間に呼ぶことで、
-		// ImGuizmo::SetDrawlist()が自動的にこのウィンドウのdrawlistを拾ってくれる
-		// (Sceneウィンドウではなくプレビュー画面上で操作できるようにするため)
 		DrawGizmo();
 	}
 
@@ -906,14 +904,11 @@ void MapEditor::DrawPreviewWindow()
 void MapEditor::PreviewViewport::Resize(int w, int h)
 {
 	if (w <= 0 || h <= 0) return;
-
-	// サイズが変わっていなければ作り直さない
 	if (w == Width && h == Height && Color && Depth) return;
 
 	Width = w;
 	Height = h;
 
-	// ----- カラーバッファ -----
 	{
 		D3D11_TEXTURE2D_DESC desc = {};
 		desc.Usage = D3D11_USAGE_DEFAULT;
@@ -931,7 +926,6 @@ void MapEditor::PreviewViewport::Resize(int w, int h)
 		Color->Create(desc);
 	}
 
-	// ----- Zバッファ -----
 	{
 		D3D11_TEXTURE2D_DESC desc = {};
 		desc.Usage = D3D11_USAGE_DEFAULT;
@@ -978,49 +972,38 @@ void MapEditor::AddObject()
 	PushUndo();
 
 	MapObject obj;
-	obj.name = "Object" + std::to_string(m_objects.size());
+	obj.data.id = m_nextId++;
+	obj.data.name = "Object" + std::to_string(obj.data.id);
 	m_objects.push_back(obj);
-	m_selected = (int)m_objects.size() - 1;
+	m_selectedId = obj.data.id;
 }
 
 void MapEditor::RemoveSelected()
 {
-	if (m_selected < 0 || m_selected >= (int)m_objects.size()) return;
+	MapObject* selected = FindSelected();
+	if (!selected) return;
 
 	PushUndo();
 
-	m_objects.erase(m_objects.begin() + m_selected);
-	m_selected = -1;
+	m_objects.erase(
+		std::remove_if(m_objects.begin(), m_objects.end(),
+			[this](const MapObject& o) { return o.data.id == m_selectedId; }),
+		m_objects.end());
+
+	m_selectedId = kInvalidObjectId;
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// セーブ/ロード(仮実装：nlohmann/json使用)
+// セーブ/ロード
+//	実際のファイルI/O・スキーマ変換はMapData.h/.cppのLoadMapFile/SaveMapFileに一元化されている
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void MapEditor::Save(const std::string& path)
 {
-	nlohmann::json j;
+	std::vector<MapEntity> entities;
+	entities.reserve(m_objects.size());
+	for (auto& obj : m_objects) { entities.push_back(obj.data); }
 
-	for (auto& obj : m_objects)
-	{
-		nlohmann::json componentsJson = nlohmann::json::array();
-		for (auto& c : obj.components)
-		{
-			componentsJson.push_back({
-				{ "type",   c.type },
-				{ "params", c.params }
-				});
-		}
-
-		j.push_back({
-			{ "name",       obj.name },
-			{ "pos",        { obj.pos.x, obj.pos.y, obj.pos.z } },
-			{ "rotate",     { obj.rotate.x, obj.rotate.y, obj.rotate.z } },
-			{ "scale",      { obj.scale.x, obj.scale.y, obj.scale.z } },
-			{ "components", componentsJson }
-			});
-	}
-
-	if (!JsonLoader::Save(path, j))
+	if (!SaveMapFile(path, entities))
 	{
 		KdDebugGUI::Instance().AddLog("MapEditor: 保存に失敗 %s\n", path.c_str());
 		return;
@@ -1039,14 +1022,11 @@ void MapEditor::Save(const std::string& path)
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // マップデータ(JSON)の更新日時をポーリングし、外部から変更されていたら自動で再読み込みする
-//	・エディタ外(テキストエディタ、Git、別ツール等)でJSONを直接編集した場合の即時反映用
-//	・0.5秒間隔でチェックするため、毎フレームファイルI/Oは発生しない
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void MapEditor::CheckHotReload()
 {
 	if (!m_autoReload) return;
 
-	// ポーリング間隔を空ける(毎フレームGetFileAttributesExを呼ばない)
 	m_reloadCheckTimer += Application::Instance().GetDeltaTime();
 	if (m_reloadCheckTimer < 0.5f) return;
 	m_reloadCheckTimer = 0.0f;
@@ -1054,11 +1034,9 @@ void MapEditor::CheckHotReload()
 	FILETIME writeTime;
 	if (!JsonLoader::GetLastWriteTime(m_filePathBuf, writeTime))
 	{
-		// ファイルが存在しない等 → 何もしない
 		return;
 	}
 
-	// 初回チェック時は基準時刻を記録するだけ(起動直後の誤リロード防止)
 	if (m_lastWriteTime.dwLowDateTime == 0 && m_lastWriteTime.dwHighDateTime == 0)
 	{
 		m_lastWriteTime = writeTime;
@@ -1067,103 +1045,278 @@ void MapEditor::CheckHotReload()
 
 	if (CompareFileTime(&writeTime, &m_lastWriteTime) == 0)
 	{
-		// 更新なし
 		return;
 	}
 
 	m_lastWriteTime = writeTime;
 
-	// 選択状態はできる範囲で維持する
-	int keepSelected = m_selected;
-
+	// 選択状態は安定IDで保持しているので、Load()後もm_selectedIdをそのまま使い回せる
+	// (同じIDのオブジェクトが引き続き存在すれば選択状態は自然に復元される。
+	//  以前はvector indexで持っていたため、ここで明示的に退避/復元する必要があった)
 	Load(m_filePathBuf);
-
-	if (keepSelected >= 0 && keepSelected < (int)m_objects.size())
-	{
-		m_selected = keepSelected;
-	}
 
 	KdDebugGUI::Instance().AddLog("MapEditor: 外部変更を検知し自動リロードしました (%s)\n", m_filePathBuf);
 }
 
 void MapEditor::Load(const std::string& path)
 {
-	nlohmann::json j;
-	if (!JsonLoader::Load(path, j))
+	MapFile mapFile;
+	if (!LoadMapFile(path, mapFile))
 	{
-		// ファイルが無い/JSONとして壊れている、いずれもここで弾かれる(例外は投げない)
 		KdDebugGUI::Instance().AddLog("MapEditor: 読み込み失敗 %s\n", path.c_str());
 		return;
 	}
 
 	std::vector<MapObject> loaded;
+	loaded.reserve(mapFile.entities.size());
 
-	try
+	for (auto& entity : mapFile.entities)
 	{
-		for (auto& e : j)
-		{
-			MapObject obj;
-			obj.name = e.at("name").get<std::string>();
-			obj.pos = { e.at("pos")[0],    e.at("pos")[1],    e.at("pos")[2] };
-			obj.rotate = { e.at("rotate")[0], e.at("rotate")[1], e.at("rotate")[2] };
-			obj.scale = { e.at("scale")[0],  e.at("scale")[1],  e.at("scale")[2] };
-
-			if (e.contains("components") && e["components"].is_array())
-			{
-				// 現行フォーマット：componentsの配列
-				for (auto& c : e["components"])
-				{
-					ComponentEntry entry;
-					entry.type = c.at("type").get<std::string>();
-					entry.params = c.value("params", nlohmann::json::object());
-					obj.components.push_back(std::move(entry));
-				}
-			}
-			else if (e.contains("model"))
-			{
-				// 旧フォーマット(components導入前)の"model"キーとの後方互換：
-				// ModelRenderコンポーネント1つに変換して読み込む
-				std::string modelPath = e.value("model", std::string());
-				if (!modelPath.empty())
-				{
-					ComponentEntry entry;
-					entry.type = "ModelRender";
-					entry.params = { { "model", modelPath } };
-					obj.components.push_back(std::move(entry));
-				}
-			}
-
-			obj.SyncPreviewModel();	// ここで実際のモデル読み込みが走る
-
-			loaded.push_back(std::move(obj));
-		}
+		MapObject obj;
+		obj.data = std::move(entity);
+		obj.SyncPreviewModel();	// ここで実際のモデル読み込みが走る
+		loaded.push_back(std::move(obj));
 	}
-	catch (const nlohmann::json::exception&)
-	{
-		// 想定外のスキーマ(キー欠落・型不一致等)。
-		// ここで例外を握りつぶし、現在の m_objects には触れずに読み込み失敗として扱う
-		KdDebugGUI::Instance().AddLog("MapEditor: 読み込み失敗(不正なデータ形式) %s\n", path.c_str());
-		return;
-	}
+
+	ObjectId keepSelectedId = m_selectedId;
 
 	m_objects = std::move(loaded);
-	m_selected = -1;
+	m_nextId = mapFile.nextId;
 
-	// 別のマップに切り替わった以上、それまでのUndo/Redo履歴は意味を持たないので破棄する
+	// 同じIDのオブジェクトがまだ存在すれば選択状態を維持する(無ければ自然に非選択になる)
+	m_selectedId = FindObject(keepSelectedId) ? keepSelectedId : kInvalidObjectId;
+
 	m_undoStack.clear();
 	m_redoStack.clear();
+
+	// 現在のシーンを再生成させる
+	//GLOBALEVENT.Publish(Events::Scene::ReloadingSceneEvent());
+
 	KdDebugGUI::Instance().AddLog("MapEditor: 読み込みました %s\n", path.c_str());
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// Collider専用のInspector UI。
+//	実際のColliderComponentは「名前付きの複数形状(Sphere/Box/Capsule)」を持てる設計のため、
+//	他のコンポーネントのような汎用UI(DrawComponentParamsGeneric)では表現できない。
+//	ComponentRegistry::SetCustomInspector()経由でCollider種類にだけ後付けする(コンストラクタ参照)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+static bool DrawColliderInspector(nlohmann::json& params, const std::function<void()>& requestUndoCheckpoint)
+{
+	bool edited = false;
+
+	if (!params.contains("shapes") || !params["shapes"].is_array())
+	{
+		params["shapes"] = nlohmann::json::array();
+	}
+	auto& shapes = params["shapes"];
+
+	static const char* kShapeNames[] = { "Box", "Sphere", "Capsule" };
+	int removeIndex = -1;
+
+	for (int i = 0; i < (int)shapes.size(); i++)
+	{
+		auto& shape = shapes[i];
+		ImGui::PushID(i);
+
+		std::string name = shape.value("name", std::string("shape"));
+		std::string headerLabel = name + "##shapehdr";
+		bool open = ImGui::CollapsingHeader(headerLabel.c_str(), ImGuiTreeNodeFlags_DefaultOpen);
+
+		if (open)
+		{
+			ImGui::Indent();
+
+			// Removeはヘッダーと同じ行に置かず、開いた中身の先頭に置く
+			// (理由はDrawComponentList()の同種の修正と同じ)
+			if (ImGui::SmallButton("Remove Shape")) { removeIndex = i; }
+			ImGui::Separator();
+
+			char nameBuf[64];
+			strcpy_s(nameBuf, name.c_str());
+			ImGui::InputText("Name", nameBuf, sizeof(nameBuf));
+			if (ImGui::IsItemActivated()) { requestUndoCheckpoint(); }
+			if (ImGui::IsItemEdited()) { shape["name"] = std::string(nameBuf); edited = true; }
+
+			std::string shapeType = shape.value("shape", std::string("Box"));
+			int currentIdx = 0;
+			for (int k = 0; k < 3; k++) { if (shapeType == kShapeNames[k]) { currentIdx = k; break; } }
+			if (ImGui::Combo("Shape", &currentIdx, kShapeNames, 3))
+			{
+				requestUndoCheckpoint();
+				shapeType = kShapeNames[currentIdx];
+				shape["shape"] = shapeType;
+				edited = true;
+			}
+
+			{
+				auto arr = shape.value("offset", std::vector<float>{0.0f, 0.0f, 0.0f});
+				while (arr.size() < 3) { arr.push_back(0.0f); }
+				float v[3] = { arr[0], arr[1], arr[2] };
+				ImGui::DragFloat3("Offset", v, 0.1f);
+				if (ImGui::IsItemActivated()) { requestUndoCheckpoint(); }
+				if (ImGui::IsItemEdited()) { shape["offset"] = { v[0], v[1], v[2] }; edited = true; }
+			}
+
+			if (shapeType == "Sphere")
+			{
+				float radius = shape.value("radius", 0.5f);
+				ImGui::DragFloat("Radius", &radius, 0.05f, 0.01f, 100.0f);
+				if (ImGui::IsItemActivated()) { requestUndoCheckpoint(); }
+				if (ImGui::IsItemEdited()) { shape["radius"] = radius; edited = true; }
+			}
+			else if (shapeType == "Capsule")
+			{
+				float radius = shape.value("radius", 0.5f);
+				ImGui::DragFloat("Radius", &radius, 0.05f, 0.01f, 100.0f);
+				if (ImGui::IsItemActivated()) { requestUndoCheckpoint(); }
+				if (ImGui::IsItemEdited()) { shape["radius"] = radius; edited = true; }
+
+				auto endArr = shape.value("capsuleEnd", std::vector<float>{0.0f, 1.0f, 0.0f});
+				while (endArr.size() < 3) { endArr.push_back(0.0f); }
+				float endV[3] = { endArr[0], endArr[1], endArr[2] };
+				ImGui::DragFloat3("Capsule End", endV, 0.1f);
+				if (ImGui::IsItemActivated()) { requestUndoCheckpoint(); }
+				if (ImGui::IsItemEdited()) { shape["capsuleEnd"] = { endV[0], endV[1], endV[2] }; edited = true; }
+			}
+			else // Box
+			{
+				auto heArr = shape.value("halfExtents", std::vector<float>{0.5f, 0.5f, 0.5f});
+				while (heArr.size() < 3) { heArr.push_back(0.5f); }
+				float he[3] = { heArr[0], heArr[1], heArr[2] };
+				ImGui::DragFloat3("Half Extents", he, 0.05f, 0.01f, 100.0f);
+				if (ImGui::IsItemActivated()) { requestUndoCheckpoint(); }
+				if (ImGui::IsItemEdited()) { shape["halfExtents"] = { he[0], he[1], he[2] }; edited = true; }
+			}
+
+			bool isTrigger = shape.value("isTrigger", false);
+			ImGui::Checkbox("Is Trigger", &isTrigger);
+			if (ImGui::IsItemActivated()) { requestUndoCheckpoint(); }
+			if (ImGui::IsItemEdited()) { shape["isTrigger"] = isTrigger; edited = true; }
+
+			bool isStatic = shape.value("isStatic", false);
+			ImGui::Checkbox("Is Static", &isStatic);
+			if (ImGui::IsItemActivated()) { requestUndoCheckpoint(); }
+			if (ImGui::IsItemEdited()) { shape["isStatic"] = isStatic; edited = true; }
+
+			bool wantsStay = shape.value("wantsStayEvent", false);
+			ImGui::Checkbox("Wants Stay Event", &wantsStay);
+			if (ImGui::IsItemActivated()) { requestUndoCheckpoint(); }
+			if (ImGui::IsItemEdited()) { shape["wantsStayEvent"] = wantsStay; edited = true; }
+
+			ImGui::Separator();
+
+			// categoryMask：この形状が「何者であるか」。複数選択可(坂道はGround|Bump等)
+			ImGui::Text("Category");
+			{
+				auto categoryNames = shape.value("categoryMask", std::vector<std::string>{"Bump"});
+				bool changed = false;
+				int col = 0;
+				for (auto& kv : GetColliderCategoryFlags())
+				{
+					const char* flagName = kv.first;
+					bool has = std::find(categoryNames.begin(), categoryNames.end(), std::string(flagName)) != categoryNames.end();
+					bool before = has;
+
+					if (col > 0) { ImGui::SameLine(); }
+					ImGui::Checkbox(flagName, &has);
+					if (ImGui::IsItemActivated()) { requestUndoCheckpoint(); }
+
+					if (has != before)
+					{
+						if (has) { categoryNames.push_back(flagName); }
+						else { categoryNames.erase(std::remove(categoryNames.begin(), categoryNames.end(), std::string(flagName)), categoryNames.end()); }
+						changed = true;
+					}
+
+					col = (col + 1) % 3;
+				}
+				if (changed) { shape["categoryMask"] = categoryNames; edited = true; }
+			}
+
+			// collideMask：この形状が「誰と判定したいか」。既定ではColliderLayerMatrixの
+			// デフォルトに任せ、チェックを外した時だけ個別に選べるようにする
+			ImGui::Text("Collide With");
+			{
+				bool useDefault = shape.value("useDefaultCollideMask", true);
+				ImGui::Checkbox("Use Layer Matrix Default", &useDefault);
+				if (ImGui::IsItemActivated()) { requestUndoCheckpoint(); }
+				if (ImGui::IsItemEdited()) { shape["useDefaultCollideMask"] = useDefault; edited = true; }
+
+				if (!useDefault)
+				{
+					auto collideNames = shape.value("collideMask", std::vector<std::string>{});
+					bool changed = false;
+					int col = 0;
+					for (auto& kv : GetColliderCategoryFlags())
+					{
+						const char* flagName = kv.first;
+						bool has = std::find(collideNames.begin(), collideNames.end(), std::string(flagName)) != collideNames.end();
+						bool before = has;
+
+						std::string label = std::string(flagName) + "##collide";
+						if (col > 0) { ImGui::SameLine(); }
+						ImGui::Checkbox(label.c_str(), &has);
+						if (ImGui::IsItemActivated()) { requestUndoCheckpoint(); }
+
+						if (has != before)
+						{
+							if (has) { collideNames.push_back(flagName); }
+							else { collideNames.erase(std::remove(collideNames.begin(), collideNames.end(), std::string(flagName)), collideNames.end()); }
+							changed = true;
+						}
+
+						col = (col + 1) % 3;
+					}
+					if (changed) { shape["collideMask"] = collideNames; edited = true; }
+				}
+			}
+
+			ImGui::Unindent();
+		}
+
+		ImGui::PopID();
+	}
+
+	if (removeIndex >= 0)
+	{
+		requestUndoCheckpoint();
+		shapes.erase(shapes.begin() + removeIndex);
+		edited = true;
+	}
+
+	if (ImGui::Button("+ Add Shape"))
+	{
+		requestUndoCheckpoint();
+
+		nlohmann::json newShape;
+		newShape["name"] = "shape" + std::to_string(shapes.size());
+		newShape["shape"] = "Box";
+		newShape["offset"] = { 0.0f, 0.0f, 0.0f };
+		newShape["halfExtents"] = { 0.5f, 0.5f, 0.5f };
+		newShape["isTrigger"] = false;
+		newShape["isStatic"] = false;
+		newShape["wantsStayEvent"] = false;
+		newShape["categoryMask"] = std::vector<std::string>{ "Bump" };
+		newShape["useDefaultCollideMask"] = true;
+		shapes.push_back(std::move(newShape));
+
+		edited = true;
+	}
+
+	return edited;
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // コンストラクタ：起動時に既存のマップデータ(m_filePathBuf)を自動ロードする
-// (EffectEditorと同じ挙動。未作成ならJsonLoader::Load側で失敗し、空のまま始まる)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 MapEditor::MapEditor()
 {
-	// Add Componentの選択肢・保存済みマップのコンポーネント実体化に必要なため、
-	// マップを読み込む前に必ず登録しておく(2重登録は内部でガード済み)
 	RegisterMapComponentTypes();
+
+	// Colliderだけは形状リストを持つため専用UIを後付けする(ComponentRegistrations.cppは
+	// ImGuiに依存させたくないので、UIの中身はこちら側に置いている)
+	ComponentRegistry::Instance().SetCustomInspector("Collider", DrawColliderInspector);
 
 	Load(m_filePathBuf);
 	LoadModelRegistry(m_registryPathBuf);

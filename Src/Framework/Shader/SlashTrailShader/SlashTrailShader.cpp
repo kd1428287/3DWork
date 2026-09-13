@@ -80,7 +80,7 @@ void SlashTrailShader::Begin()
 	KdShaderManager& shaderMgr = KdShaderManager::Instance();
 
 	shaderMgr.SetVertexShader(m_VS);
-	shaderMgr.SetPixelShader(m_PS);
+	//shaderMgr.SetPixelShader(m_PS);
 
 	ID3D11DeviceContext* DevCon = KdDirect3D::Instance().WorkDevContext();
 	DevCon->IASetInputLayout(m_inputLayout);

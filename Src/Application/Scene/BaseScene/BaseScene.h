@@ -17,7 +17,7 @@ public:
 	void PreDraw(float deltaTime);
 	void Draw();
 	virtual void OnDrawEffects() {};
-	virtual void OnDrawBlight() {};
+	virtual void OnDrawBright() {};
 	void DrawSprite();
 	void DrawDebug();
 

@@ -51,23 +51,23 @@ static const char* DrawPassToString(ParticleDrawPass p)
 	switch (p)
 	{
 	case ParticleDrawPass::Default:   return "Default";
-	case ParticleDrawPass::Blight: return "Blight";
+	case ParticleDrawPass::Bright: return "Bright";
 	}
 	return "Default";
 }
 // 単一のパス名文字列 → フラグ1個分(旧形式JSONの後方互換読み込み専用)
 static ParticleDrawPass DrawPassFromString(const std::string& s)
 {
-	if (s == "Blight") { return ParticleDrawPass::Blight; }
+	if (s == "Bright") { return ParticleDrawPass::Bright; }
 	return ParticleDrawPass::Default;
 }
 
-// DrawPassFlags(ビットフラグ) → JSON配列("Default"/"Blightのうち立っているものだけを列挙)
+// DrawPassFlags(ビットフラグ) → JSON配列("Default"/"Brightのうち立っているものだけを列挙)
 static nlohmann::json DrawPassFlagsToJson(ParticleDrawPass flags)
 {
 	nlohmann::json arr = nlohmann::json::array();
 	if (KdHasDrawPassFlag(flags, ParticleDrawPass::Default)) { arr.push_back(DrawPassToString(ParticleDrawPass::Default)); }
-	if (KdHasDrawPassFlag(flags, ParticleDrawPass::Blight)) { arr.push_back(DrawPassToString(ParticleDrawPass::Blight)); }
+	if (KdHasDrawPassFlag(flags, ParticleDrawPass::Bright)) { arr.push_back(DrawPassToString(ParticleDrawPass::Bright)); }
 	return arr;
 }
 
@@ -89,7 +89,7 @@ static ParticleDrawPass DrawPassFlagsFromJson(const nlohmann::json& j, ParticleD
 
 			const std::string s = entry.get<std::string>();
 			if (s == "Default") { flags |= ParticleDrawPass::Default;   any = true; }
-			else if (s == "Blight") { flags |= ParticleDrawPass::Blight; any = true; }
+			else if (s == "Bright") { flags |= ParticleDrawPass::Bright; any = true; }
 		}
 
 		return any ? flags : defaults;

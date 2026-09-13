@@ -10,7 +10,8 @@ struct PointLight
 {
 	PointLight() {}
 	PointLight(const Math::Vector3& color, float radius, const Math::Vector3& pos, int isBright)
-		:Color(color), Radius(radius), Pos(pos), IsBright(isBright) {}
+		:Color(color), Radius(radius), Pos(pos), IsBright(isBright) {
+	}
 
 	Math::Vector3 Color;	// 色
 	float	Radius = 0.0f;	// 半径
@@ -47,6 +48,7 @@ enum class KdBlendState
 {
 	Alpha,			// 透明度による色合成
 	Add,			// 加算による色合成
+	AlphaMasked,	// 透明度による色合成＋MRTスロット1(カラーグレード除外マスク等)は上書き
 	Max
 };
 
@@ -98,7 +100,7 @@ public:
 	};
 
 	// ライト定数バッファ用構造体
-	struct cbLight
+	struct cBright
 	{
 		static const int	MaxPointLightNum = 100;
 
@@ -188,7 +190,7 @@ public:
 
 	const cbFog& GetFogCB() const { return m_cb8_Fog.Get(); }
 
-	const cbLight& GetLightCB() const { return m_cb9_Light.Get(); }
+	const cBright& GetLightCB() const { return m_cb9_Light.Get(); }
 
 	void WriteCBCamera(const Math::Matrix& cam, const Math::Matrix& proj);
 
@@ -228,7 +230,7 @@ private:
 	KdConstantBuffer<cbFog>	m_cb8_Fog;
 
 	// ライト定数バッファ
-	KdConstantBuffer<cbLight>	m_cb9_Light;
+	KdConstantBuffer<cBright>	m_cb9_Light;
 
 	KdAmbientController m_ambientController;
 

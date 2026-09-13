@@ -2,6 +2,7 @@
 #include "../Transform/TransformComponent.h"
 #include "CameraComponent.h"
 
+// 描画前にカメラ情報をシェーダーに転送
 class CameraViewComponent : public ComponentBase, public IRenderable
 {
 public:
@@ -17,7 +18,6 @@ public:
 		if (!camera_ || !transform_) { return; }
 
 		camera_->GetCamera().SetCameraMatrix(transform_->GetWorldMatrix());
-		//camera_->GetCamera().SetCameraMatrix(Math::Matrix::Identity);
 		camera_->GetCamera().SetToShader();
 	}
 

@@ -5,23 +5,7 @@
 #include "WeaponComponent.h"
 #include "../../Core/Handle.h"
 
-// ============================================================
-// WeaponSetComponent
-// キャラクター(Player/Enemy)1体が持つ「武器/攻撃部位」の集合を、
-// スロット名(文字列)で管理する汎用コンポーネント。
-//
-// Player: 装備の付け替え等は今は無く、常に単一スロット
-//         (PlayerStatusController::kMainWeaponSlot = "Main")のみ使用する。
-// Enemy : 素手キャラの拳・足・尻尾など、部位ごとに複数登録できる
-//         (例: "LeftFist"/"RightFist"/"RightFoot"等)。技データ側
-//         (AttackMoveData::weaponSlots / EnemyAttackDefinition::weaponSlots)
-//         が「どのスロットを有効化するか」を指定する。
-//
-// スロット名をenumではなく文字列にしているのは、EnemyAIDataが
-// 「C++の型を分けずデータの中身の差し替えで敵種の個体差を表現する」
-// というデータ駆動方針を取っているため(EnemyAIData.h冒頭コメント参照)。
-// 敵種を追加するたびに部位名のenumを増やす必要が無いようにしている。
-// ============================================================
+// キャラクターが持つ攻撃判定をスロット名で管理する汎用コンポーネント
 class WeaponSetComponent : public ComponentBase
 {
 public:

@@ -75,19 +75,26 @@ void KdRenderTargetPack::ClearTexture(const Math::Color& fillColor)
 //
 //===========================================
 
-bool KdRenderTargetChanger::Validate(ID3D11RenderTargetView* pRTV)
+bool KdRenderTargetChanger::Validate(ID3D11RenderTargetView* const* pRTVs, UINT numRTV)
 {
-	if (!pRTV)
+	if (!pRTVs || numRTV == 0 || numRTV > kMaxSimultaneousRTV)
 	{
-		assert(0 && "変更先のRenderTargetがありません");
-
+		assert(0 && "変更先のRenderTargetの指定が不正です");
 		return false;
 	}
 
-	if (m_saveRTV)
+	for (UINT i = 0; i < numRTV; ++i)
+	{
+		if (!pRTVs[i])
+		{
+			assert(0 && "変更先のRenderTargetがありません");
+			return false;
+		}
+	}
+
+	if (m_savedRTVCount != 0)
 	{
 		assert(0 && "既にRenderTargetを変更済みです");
-
 		return false;
 	}
 
@@ -97,30 +104,8 @@ bool KdRenderTargetChanger::Validate(ID3D11RenderTargetView* pRTV)
 bool KdRenderTargetChanger::ChangeRenderTarget(ID3D11RenderTargetView* pRTV,
 	ID3D11DepthStencilView* pDSV, D3D11_VIEWPORT* pVP)
 {
-	if (!Validate(pRTV)) { return false; }
-
-	ID3D11DeviceContext* DevCon = KdDirect3D::Instance().WorkDevContext();
-
-	if (!m_saveRTV)
-	{
-		// 情報保存
-		DevCon->OMGetRenderTargets(1, &m_saveRTV, &m_saveDSV);
-	}
-
-	// レンダーターゲット切替 ----- ----- ----- ----- -----
-	DevCon->OMSetRenderTargets(1, &pRTV, pDSV);
-
-	if (pVP)
-	{
-		// 情報保存
-		DevCon->RSGetViewports(&m_numVP, &m_saveVP);
-
-		DevCon->RSSetViewports(1, pVP);
-
-		m_changeVP = true;
-	}
-
-	return true;
+	// 単一RTVも内部的にはMRT用の実装(1枚版)へ委譲する
+	return ChangeRenderTargets(&pRTV, 1, pDSV, pVP);
 }
 
 bool KdRenderTargetChanger::ChangeRenderTarget(std::shared_ptr<KdTexture> RTT,
@@ -143,19 +128,69 @@ bool KdRenderTargetChanger::ChangeRenderTarget(KdRenderTargetPack& RTPack)
 	return ChangeRenderTarget(RTPack.m_RTTexture, RTPack.m_ZBuffer, &RTPack.m_viewPort);
 }
 
+bool KdRenderTargetChanger::ChangeRenderTargets(ID3D11RenderTargetView* const* pRTVs, UINT numRTV,
+	ID3D11DepthStencilView* pDSV, D3D11_VIEWPORT* pVP)
+{
+	if (!Validate(pRTVs, numRTV)) { return false; }
+
+	ID3D11DeviceContext* DevCon = KdDirect3D::Instance().WorkDevContext();
+
+	// 情報保存：これから何枚バインドするか(numRTV)に関わらず、
+	// 常に最大枚数(kMaxSimultaneousRTV)ぶん退避しておく。
+	// ※OMSetRenderTargetsはNumViewsで指定した数以外の全スロットを暗黙的に
+	//   解除する仕様のため、例えば「現在2枚(カラー+マスク)バインドされている状態から
+	//   シャドウマップ用に1枚だけへ一時的に切り替える」ような場合、numRTV=1でしか
+	//   退避しないと2枚目の情報が失われ、Undo時に2枚目が未バインドのまま
+	//   戻ってしまう(実際にこれが今回の警告の原因だった)
+	DevCon->OMGetRenderTargets(kMaxSimultaneousRTV, m_saveRTVs, &m_saveDSV);
+	m_savedRTVCount = kMaxSimultaneousRTV;
+
+	// レンダーターゲット切替 ----- ----- ----- ----- -----
+	DevCon->OMSetRenderTargets(numRTV, pRTVs, pDSV);
+
+	if (pVP)
+	{
+		DevCon->RSGetViewports(&m_numVP, &m_saveVP);
+		DevCon->RSSetViewports(1, pVP);
+		m_changeVP = true;
+	}
+
+	return true;
+}
+
+bool KdRenderTargetChanger::ChangeRenderTargets(KdRenderTargetPack& colorRTPack, KdRenderTargetPack& maskRTPack)
+{
+	if (!colorRTPack.m_RTTexture || !maskRTPack.m_RTTexture) { return false; }
+
+	ID3D11RenderTargetView* rtvs[2] =
+	{
+		colorRTPack.m_RTTexture->WorkRTView(),
+		maskRTPack.m_RTTexture->WorkRTView()
+	};
+
+	ID3D11DepthStencilView* pDSV = colorRTPack.m_ZBuffer ? colorRTPack.m_ZBuffer->WorkDSView() : nullptr;
+
+	return ChangeRenderTargets(rtvs, 2, pDSV, &colorRTPack.m_viewPort);
+}
+
 void KdRenderTargetChanger::UndoRenderTarget()
 {
 	// 復帰すべきレンダーターゲットが存在しない
-	if (!m_saveRTV) { return; }
+	if (m_savedRTVCount == 0) { return; }
 
-	KdDirect3D::Instance().WorkDevContext()->OMSetRenderTargets(1, &m_saveRTV, m_saveDSV);
+	KdDirect3D::Instance().WorkDevContext()->OMSetRenderTargets(m_savedRTVCount, m_saveRTVs, m_saveDSV);
 
 	if (m_changeVP)
 	{
 		KdDirect3D::Instance().WorkDevContext()->RSSetViewports(1, &m_saveVP);
 	}
 
-	KdSafeRelease(m_saveRTV);
+	for (UINT i = 0; i < m_savedRTVCount; ++i)
+	{
+		KdSafeRelease(m_saveRTVs[i]);
+	}
+	m_savedRTVCount = 0;
+
 	KdSafeRelease(m_saveDSV);
 
 	m_changeVP = false;
@@ -163,6 +198,11 @@ void KdRenderTargetChanger::UndoRenderTarget()
 
 void KdRenderTargetChanger::Release()
 {
-	KdSafeRelease(m_saveRTV);
+	for (UINT i = 0; i < kMaxSimultaneousRTV; ++i)
+	{
+		KdSafeRelease(m_saveRTVs[i]);
+	}
+	m_savedRTVCount = 0;
+
 	KdSafeRelease(m_saveDSV);
 }

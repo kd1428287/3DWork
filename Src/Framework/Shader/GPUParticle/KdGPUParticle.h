@@ -34,6 +34,10 @@ enum class KdParticleBillboardMode
 //	で切り替わる値。1つのEffectInstance(1回のDraw()呼び出し)の中で
 //	LayerごとにBlendModeを変える事はできない点に注意(そうしたい場合はLayerごとに
 //	別のEffectInstance/KdGPUParticleへ分ける必要がある)
+//
+//	※ Alpha指定時のみ、描画PSがカラーグレード除外マスク(SV_Target1)を
+//	  書き込む(KdGPUParticle_PS_Masked.hlsl使用)。Addはこの仕組みの対象外
+//	  (別RTへの加算描画+事後合成で個別に対応する。KdPostProcessShader側の設計参照)
 enum class KdParticleBlendMode
 {
 	Add,	// 加算合成(発光系の火花・炎向け)
@@ -147,7 +151,8 @@ private:
 	ID3D11ComputeShader* m_CS_Update = nullptr;
 
 	ID3D11VertexShader* m_VS = nullptr;
-	ID3D11PixelShader* m_PS = nullptr;
+	ID3D11PixelShader* m_PS = nullptr;			// Add用(SV_Target0のみ)
+	ID3D11PixelShader* m_PS_Masked = nullptr;	// Alpha用(SV_Target0+カラーグレード除外マスク)
 
 	//================================================
 	// バッファ

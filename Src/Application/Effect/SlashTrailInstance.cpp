@@ -12,6 +12,31 @@ namespace
 		x = std::clamp(x, 0.0f, 1.0f);
 		return x * x * (3.0f - 2.0f * x);
 	}
+
+	// Catmull-Romスプライン(uniform)。P1→P2間をtで補間する。P0/P3は前後の制御点
+	DirectX::SimpleMath::Vector3 CatmullRom(
+		const DirectX::SimpleMath::Vector3& P0, const DirectX::SimpleMath::Vector3& P1,
+		const DirectX::SimpleMath::Vector3& P2, const DirectX::SimpleMath::Vector3& P3,
+		float t)
+	{
+		const float t2 = t * t;
+		const float t3 = t2 * t;
+
+		return 0.5f * (
+			(2.0f * P1) +
+			(-P0 + P2) * t +
+			(2.0f * P0 - 5.0f * P1 + 4.0f * P2 - P3) * t2 +
+			(-P0 + 3.0f * P1 - 3.0f * P2 + P3) * t3);
+	}
+
+	// スプライン補間・幅計算より後段の処理で使う、細分化済みの1点
+	struct ResampledPoint
+	{
+		DirectX::SimpleMath::Vector3	Tip;
+		DirectX::SimpleMath::Vector3	Base;
+		float							Age = 0.0f;
+		float							Speed = 0.0f;
+	};
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -27,10 +52,18 @@ bool SlashTrailInstance::Init(const SlashTrailParams& params)
 
 	isRecording_ = false;
 	hasLastRecordedTip_ = false;
+	hasCurrentTip_ = false;
+	hasSmoothedSpeed_ = false;
+	smoothedSpeed_ = 0.0f;
+	hasSmoothedTipOffset_ = false;
+	smoothedTipOffset_ = 0.0f;
 	sinceLastSampleTime_ = 0.0f;
 
+	const UINT vertexCapacityPoints = (params_.SplineMaxPoints > params_.MaxSamples)
+		? params_.SplineMaxPoints : params_.MaxSamples;
+
 	renderer_ = std::make_shared<SlashTrailRenderer>();
-	if (!renderer_->Init(params_.MaxSamples * 2))
+	if (!renderer_->Init(vertexCapacityPoints * 2))
 	{
 		renderer_.reset();
 		return false;
@@ -50,6 +83,11 @@ void SlashTrailInstance::BeginRecording()
 
 	isRecording_ = true;
 	hasLastRecordedTip_ = false;
+	hasCurrentTip_ = false;
+	hasSmoothedSpeed_ = false;
+	smoothedSpeed_ = 0.0f;
+	hasSmoothedTipOffset_ = false;
+	smoothedTipOffset_ = 0.0f;
 	sinceLastSampleTime_ = 0.0f;
 }
 
@@ -60,25 +98,39 @@ void SlashTrailInstance::UpdateTipBase(const DirectX::SimpleMath::Vector3& tip, 
 {
 	if (!isRecording_) { return; }
 
+	currentTip_ = tip;
+	hasCurrentTip_ = true;
+
 	const float minDistSq = params_.MinSampleDistance * params_.MinSampleDistance;
 	const bool shouldRecord = !hasLastRecordedTip_ ||
 		(tip - lastRecordedTip_).LengthSquared() >= minDistSq;
 
 	if (!shouldRecord) { return; }
 
-	float speed = params_.SpeedWidthReference;
+	float rawSpeed = params_.SpeedWidthReference;
 	if (hasLastRecordedTip_)
 	{
 		const float dist = (tip - lastRecordedTip_).Length();
 		const float dt = (sinceLastSampleTime_ > 1e-5f) ? sinceLastSampleTime_ : 1e-5f;
-		speed = dist / dt;
+		rawSpeed = dist / dt;
+	}
+
+	if (hasSmoothedSpeed_)
+	{
+		const float alpha = std::clamp(params_.SpeedSmoothingAlpha, 0.0f, 1.0f);
+		smoothedSpeed_ = std::lerp(smoothedSpeed_, rawSpeed, alpha);
+	}
+	else
+	{
+		smoothedSpeed_ = rawSpeed;
+		hasSmoothedSpeed_ = true;
 	}
 
 	SlashTrailSample sample;
 	sample.Tip = tip;
 	sample.Base = base;
 	sample.Age = 0.0f;
-	sample.Speed = speed;
+	sample.Speed = smoothedSpeed_;
 	samples_.push_back(sample);
 
 	lastRecordedTip_ = tip;
@@ -97,7 +149,14 @@ void SlashTrailInstance::EndRecording()
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 毎フレーム更新
+// 毎フレーム更新：Age加算→間引き→tipOffsetのEMA平滑化→頂点再構築
+//
+//	【tipOffsetの平滑化】
+//	rawTipOffset = 「直近に記録されたサンプル(samples_.back())→現在の実際の剣先
+//	(currentTip_)」の距離。記録中は毎フレーム連続的に伸びるが、振りが速いフレームほど
+//	1フレームあたりの伸び量が大きくなり、これがそのままUVの進行量になると
+//	非等幅なテクスチャの模様が急激に切り替わって見える(速度に比例して悪化する
+//	太さの脈動の原因)。EMAでこの値を滑らかにしてからRebuildVertices()へ渡す
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void SlashTrailInstance::Update(float deltaTime)
 {
@@ -109,6 +168,29 @@ void SlashTrailInstance::Update(float deltaTime)
 	}
 
 	TrimExpiredSamples();
+
+	if (!samples_.empty() && hasCurrentTip_)
+	{
+		const float rawTipOffset = (currentTip_ - samples_.back().Tip).Length();
+
+		if (hasSmoothedTipOffset_)
+		{
+			const float alpha = std::clamp(params_.TipOffsetSmoothingAlpha, 0.0f, 1.0f);
+			smoothedTipOffset_ = std::lerp(smoothedTipOffset_, rawTipOffset, alpha);
+		}
+		else
+		{
+			smoothedTipOffset_ = rawTipOffset;
+			hasSmoothedTipOffset_ = true;
+		}
+	}
+	else
+	{
+		// サンプルが無い、またはまだ剣先座標を受け取っていない場合はリセットしておく
+		smoothedTipOffset_ = 0.0f;
+		hasSmoothedTipOffset_ = false;
+	}
+
 	RebuildVertices();
 }
 
@@ -150,21 +232,6 @@ void SlashTrailInstance::TrimOverflowSamples()
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // samples_から、墨レイヤー(vertices_)と芯レイヤー(coreVertices_)の頂点配列を作り直す
-//
-//	【UV.xの決め方(距離ベースのタイリング)】
-//	従来はUV.x = fadeRate(Age/FadeLengthの正規化値)を使い、トレイル全体の長さに
-//	関わらず常に0～1へ引き伸ばしていた。これだと非等幅なテクスチャ(墨の一筆)を
-//	使った時、トレイルの物理的な長さが振りの速さで変わるたびにテクスチャの
-//	太さパターンまで伸び縮みして見えてしまう(「電動ノコギリ」現象)。
-//
-//	対策として、samples_を最新(back)から最古(front)へ向かって走査し、
-//	「現在の切っ先(最新サンプルのTip)からの累積距離」を各サンプルごとに求め、
-//	UV.x = fmod(累積距離 / UVTileLength, 1.0) とする。これによりテクスチャの
-//	1パターンが常に一定の物理距離に対応するようになり、トレイルが伸び縮みしても
-//	パターンの繰り返し回数が増減するだけで、個々のパターンの太さ自体は変化しない。
-//	最新サンプルを基準点(距離0)に固定しているため、フレームが進んで新しい
-//	サンプルが追加されても、既存部分の距離基準がずれてパターンが滑って見える
-//	(いわゆる「泳ぐ」)現象も起きない
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void SlashTrailInstance::RebuildVertices()
 {
@@ -174,10 +241,66 @@ void SlashTrailInstance::RebuildVertices()
 	const size_t sampleCount = samples_.size();
 	if (sampleCount < 2) { return; }
 
-	vertices_.reserve(sampleCount * 2);
-	coreVertices_.reserve(sampleCount * 2);
-
 	using namespace DirectX::SimpleMath;
+
+	// ----- 1. スプラインによる細分化(resampledを構築) -----
+	std::vector<ResampledPoint> resampled;
+
+	if (params_.SplineEnabled)
+	{
+		const size_t segmentCount = sampleCount - 1;
+		UINT subdiv = (params_.SplineSubdivisions > 0) ? params_.SplineSubdivisions : 1;
+		if (params_.SplineMaxPoints > 1 && segmentCount > 0)
+		{
+			const UINT maxSubdivBySegment =
+				static_cast<UINT>((params_.SplineMaxPoints - 1) / segmentCount);
+			if (maxSubdivBySegment < 1) { subdiv = 1; }
+			else if (subdiv > maxSubdivBySegment) { subdiv = maxSubdivBySegment; }
+		}
+
+		resampled.reserve(segmentCount * subdiv + 1);
+
+		for (size_t i = 0; i < segmentCount; ++i)
+		{
+			const SlashTrailSample& s0 = samples_[(i == 0) ? 0 : i - 1];
+			const SlashTrailSample& s1 = samples_[i];
+			const SlashTrailSample& s2 = samples_[i + 1];
+			const SlashTrailSample& s3 = samples_[(i + 2 < sampleCount) ? i + 2 : sampleCount - 1];
+
+			const UINT stepsThisSegment = (i + 1 == segmentCount) ? subdiv : subdiv - 1;
+
+			for (UINT step = 0; step <= stepsThisSegment; ++step)
+			{
+				const float t = static_cast<float>(step) / static_cast<float>(subdiv);
+
+				ResampledPoint p;
+				p.Tip = CatmullRom(s0.Tip, s1.Tip, s2.Tip, s3.Tip, t);
+				p.Base = CatmullRom(s0.Base, s1.Base, s2.Base, s3.Base, t);
+				p.Age = std::lerp(s1.Age, s2.Age, t);
+				p.Speed = std::lerp(s1.Speed, s2.Speed, t);
+				resampled.push_back(p);
+			}
+		}
+	}
+	else
+	{
+		resampled.reserve(sampleCount);
+		for (const auto& s : samples_)
+		{
+			ResampledPoint p;
+			p.Tip = s.Tip;
+			p.Base = s.Base;
+			p.Age = s.Age;
+			p.Speed = s.Speed;
+			resampled.push_back(p);
+		}
+	}
+
+	const size_t pointCount = resampled.size();
+	if (pointCount < 2) { return; }
+
+	vertices_.reserve(pointCount * 2);
+	coreVertices_.reserve(pointCount * 2);
 
 	const float fadeLengthSafe = (params_.FadeLength > 0.0f) ? params_.FadeLength : 0.0001f;
 	const float speedRefSafe = (params_.SpeedWidthReference > 0.0f) ? params_.SpeedWidthReference : 0.0001f;
@@ -185,30 +308,30 @@ void SlashTrailInstance::RebuildVertices()
 
 	const float tPeak = std::clamp(params_.BleedPeakTime / fadeLengthSafe, 0.01f, 0.99f);
 
-	// ----- 距離ベースUV用:最新(back)からの累積距離を先に計算しておく -----
-	//	cumDist[i] = samples_[i]からsamples_[末尾](最新の切っ先)までの経路長
-	std::vector<float> cumDist(sampleCount, 0.0f);
-	for (size_t idx = sampleCount - 1; idx-- > 0; )
+	// ----- 距離ベースUV用:最新(back)からの累積距離を、細分化後の点列で計算し直す -----
+	std::vector<float> cumDist(pointCount, 0.0f);
+	for (size_t idx = pointCount - 1; idx-- > 0; )
 	{
-		// idxはsampleCount-2から0まで降順で回る(idx-- > 0の性質を利用)
-		const float segment = (samples_[idx + 1].Tip - samples_[idx].Tip).Length();
+		const float segment = (resampled[idx + 1].Tip - resampled[idx].Tip).Length();
 		cumDist[idx] = cumDist[idx + 1] + segment;
 	}
 
+	// ----- tipOffsetはUpdate()で既にEMA平滑化済みの値をそのまま使う -----
+	const float tipOffset = smoothedTipOffset_;
+
 	const Vector3 camPos = KdShaderManager::Instance().GetCameraCB().CamPos;
 
-	for (size_t idx = 0; idx < sampleCount; ++idx)
+	for (size_t idx = 0; idx < pointCount; ++idx)
 	{
-		const SlashTrailSample& sample = samples_[idx];
+		const ResampledPoint& sample = resampled[idx];
 
 		const float fadeRate = std::clamp(1.0f - sample.Age / fadeLengthSafe, 0.0f, 1.0f);
 
-		// ----- UV.xの決定(距離ベース or 従来の時間ベース) -----
 		float u = fadeRate;
 		if (params_.UseDistanceBasedUV)
 		{
-			u = fmodf(cumDist[idx] / tileLengthSafe, 1.0f);
-			if (u < 0.0f) { u += 1.0f; }	// fmodfは負値を返す事があるための保険
+			u = fmodf((cumDist[idx] + tipOffset) / tileLengthSafe, 1.0f);
+			if (u < 0.0f) { u += 1.0f; }
 		}
 
 		const Vector3 color = Vector3::Lerp(params_.ColdColor, params_.HotColor, fadeRate);

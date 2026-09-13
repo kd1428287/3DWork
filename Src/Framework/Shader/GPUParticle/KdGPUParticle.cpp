@@ -181,13 +181,24 @@ bool KdGPUParticle::CreateShaders()
 		}
 	}
 
-	// ピクセルシェーダー
+	// ピクセルシェーダー(Add用：SV_Target0のみ)
 	{
 #include "KdGPUParticle_PS.shaderInc"
 
 		if (FAILED(Dev->CreatePixelShader(compiledBuffer, sizeof(compiledBuffer), nullptr, &m_PS)))
 		{
 			assert(0 && "GPUパーティクル：ピクセルシェーダー作成失敗");
+			return false;
+		}
+	}
+
+	// ピクセルシェーダー(Alpha用：SV_Target0+カラーグレード除外マスク)
+	{
+#include "KdGPUParticle_PS_Masked.shaderInc"
+
+		if (FAILED(Dev->CreatePixelShader(compiledBuffer, sizeof(compiledBuffer), nullptr, &m_PS_Masked)))
+		{
+			assert(0 && "GPUパーティクル：ピクセルシェーダー作成失敗(Masked)");
 			return false;
 		}
 	}
@@ -205,6 +216,7 @@ void KdGPUParticle::Release()
 	KdSafeRelease(m_CS_Update);
 	KdSafeRelease(m_VS);
 	KdSafeRelease(m_PS);
+	KdSafeRelease(m_PS_Masked);
 
 	KdSafeRelease(m_particleUAV);
 	KdSafeRelease(m_particleSRV);
@@ -301,6 +313,8 @@ void KdGPUParticle::Update(float deltaTime, const Math::Vector3& gravity)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void KdGPUParticle::Draw(const std::shared_ptr<KdTexture>& texture, KdParticleBlendMode blendMode)
 {
+
+
 	if (!m_initialized) { return; }
 
 	ID3D11DeviceContext* DevCon = KdDirect3D::Instance().WorkDevContext();
@@ -310,7 +324,10 @@ void KdGPUParticle::Draw(const std::shared_ptr<KdTexture>& texture, KdParticleBl
 	// シェーダーのセット(頂点バッファを使わないためInputLayoutは不要＝nullptrでOK)
 	shaderMgr.SetVertexShader(m_VS);
 	DevCon->IASetInputLayout(nullptr);
-	shaderMgr.SetPixelShader(m_PS);
+
+	// Alphaブレンド時のみ、カラーグレード除外マスクを書き込むPSへ切り替える。
+	// (Addは背景への加算値のためマスク方式が成立しない。詳細はKdParticleBlendModeのコメント参照)
+	shaderMgr.SetPixelShader(blendMode == KdParticleBlendMode::Alpha ? m_PS_Masked : m_PS);
 
 	// パーティクル本体バッファをVS用SRVとしてセット
 	DevCon->VSSetShaderResources(0, 1, &m_particleSRV);
@@ -325,7 +342,9 @@ void KdGPUParticle::Draw(const std::shared_ptr<KdTexture>& texture, KdParticleBl
 	shaderMgr.ChangeSamplerState(KdSamplerState::Linear_Clamp, 0);
 
 	// ブレンドモードの切り替え・Z書き込み無効(重なった時に不透明に潰れないように)
-	const KdBlendState blendState = (blendMode == KdParticleBlendMode::Alpha) ? KdBlendState::Alpha : KdBlendState::Add;
+	// ※Alpha時はm_PS_MaskedがSV_Target1(カラーグレード除外マスク)へも書き込むため、
+	//   通常のKdBlendState::AlphaではなくAlphaMasked(スロット1は上書き、ブレンドしない)を使う
+	const KdBlendState blendState = (blendMode == KdParticleBlendMode::Alpha) ? KdBlendState::AlphaMasked : KdBlendState::Add;
 	shaderMgr.ChangeBlendState(blendState);
 	shaderMgr.ChangeDepthStencilState(KdDepthStencilState::ZWriteDisable);
 

@@ -8,9 +8,9 @@ ComboAttackTable CreateDebugComboAttackTable()
 	// (段が進むごとに、踏み込みが大きく・隙も大きくなる方向で仮に振っている)。
 
 	// 1段目: 素早い差し込み
-	table[0].windupDuration = 0.15f;
-	table[0].activeDuration = 0.35f;
-	table[0].recoveryDuration = 0.52f;
+	table[0].windupDuration =	0.18f;// 0.13f;		// 20F
+	table[0].activeDuration =	0.35f;// 0.25f;		// 40F	
+	table[0].recoveryDuration = 1.05f;// 0.75f;		// 120F
 	table[0].stepDistance = 2.0f;
 	table[0].stepDuration = 0.4f;
 	table[0].engageDistance = 1.2f; // 差し込み技なので間合いはやや近め
@@ -23,7 +23,7 @@ ComboAttackTable CreateDebugComboAttackTable()
 	// 2段目
 	table[1].windupDuration = 0.18f;
 	table[1].activeDuration = 0.35f;
-	table[1].recoveryDuration = 0.52f;
+	table[1].recoveryDuration = 1.05f;
 	table[1].stepDistance = 1.6f;
 	table[1].stepDuration = 0.4f;
 	table[1].engageDistance = 1.2f;

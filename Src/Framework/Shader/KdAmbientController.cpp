@@ -7,14 +7,14 @@ void KdAmbientController::Init()
 {
 	// 光源のパラメータ
 	{
-		const KdShaderManager::cbLight& cbLight = KdShaderManager::Instance().GetLightCB();
+		const KdShaderManager::cBright& cBright = KdShaderManager::Instance().GetLightCB();
 
-		m_parameter.m_ambientLightColor = cbLight.AmbientLight;
+		m_parameter.m_ambientLightColor = cBright.AmbientLight;
 
-		m_parameter.m_directionalLightDir = cbLight.DirLight_Dir;
+		m_parameter.m_directionalLightDir = cBright.DirLight_Dir;
 		m_parameter.m_directionalLightDir.Normalize();
 
-		m_parameter.m_directionalLightColor = cbLight.DirLight_Color;
+		m_parameter.m_directionalLightColor = cBright.DirLight_Color;
 	}
 
 	// フォグのパラメータ

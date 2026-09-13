@@ -1,6 +1,7 @@
 #include "inc_KdPostProcessShader.hlsli"
 
 Texture2D g_inputTex : register(t0);
+Texture2D g_colorGradeMaskTex : register(t1); // 追加：カラーグレード除外マスク(R8_UNORM。0=適用,1=除外)
 SamplerState g_samLinear : register(s0); // 必要に応じてレジスタや定義を確認してください
 
 // 露出などを渡すための定数バッファ（KdPostProcessShader::cbColorGradeInfo と同じレイアウト）
@@ -57,25 +58,46 @@ float3 ApplySaturation(float3 color, float saturation)
 float4 main(VSOutput input) : SV_Target
 {
     // 1. 直前の処理（DoFやBloom合成後）までの色を取得（リニア・HDR）
-	float3 color = g_inputTex.Sample(g_samLinear, input.UV).rgb;
+	float3 srcColor = g_inputTex.Sample(g_samLinear, input.UV).rgb;
+
+	// カラーグレード除外マスク(0=通常通り適用、1=完全除外)
+	float mask = g_colorGradeMaskTex.Sample(g_samLinear, input.UV).r;
+
+	//------------------------------------------------------------
+	// 経路A：通常のグレーディング(露出・WB・トーンマップ・コントラスト・彩度・ガンマ)
+	//------------------------------------------------------------
+	float3 gradedColor = srcColor;
 
     // 2. 露出（Exposure）の適用
-	color *= g_exposure;
+	gradedColor *= g_exposure;
 
     // 3. ホワイトバランス（色温度／Tint）の適用
-	color = ApplyWhiteBalance(color, g_temperature, g_tint);
+	gradedColor = ApplyWhiteBalance(gradedColor, g_temperature, g_tint);
 
     // 4. ACES Filmic トーンマッピングの適用（HDR -> 0～1のLDRへ収める）
-	color = ACESFilm(color);
+	gradedColor = ACESFilm(gradedColor);
 
     // 5. コントラストの適用（LDR化した後の方が破綻しにくい）
-	color = ApplyContrast(color, g_contrast);
+	gradedColor = ApplyContrast(gradedColor, g_contrast);
 
     // 6. 彩度の適用
-	color = ApplySaturation(color, g_saturation);
+	gradedColor = ApplySaturation(gradedColor, g_saturation);
 
     // 7. ガンマ補正（SRGB空間への変換）
-	color = pow(saturate(color), 1.0f / 2.2f);
+	gradedColor = pow(saturate(gradedColor), 1.0f / 2.2f);
 
-	return float4(color, 1.0f);
+	//------------------------------------------------------------
+	// 経路B：マスク対象(パーティクル等)用。
+	// 露出・ホワイトバランス・コントラスト・彩度の"スタイライズ"は
+	// 一切適用しないが、ACESトーンマッピングとガンマ補正だけは
+	// 経路Aと共通で通す。ここを省略してsrcColorをそのまま出すと、
+	// HDR値が未変換のまま出力され白飛び・不自然な明るさになるため注意。
+	//------------------------------------------------------------
+	float3 unGradedColor = ACESFilm(srcColor);
+	unGradedColor = pow(saturate(unGradedColor), 1.0f / 2.2f);
+
+	// mask=1の場所だけ経路Bを使う(パーティクルの不透明度に応じて連続的に混ざる)
+	float3 finalColor = lerp(gradedColor, unGradedColor, mask);
+
+	return float4(finalColor, 1.0f);
 }

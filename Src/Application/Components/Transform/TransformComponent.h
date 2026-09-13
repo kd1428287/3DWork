@@ -1,12 +1,6 @@
 ﻿#pragma once
 
-// Math::Vector3 / Math::Quaternion / Math::Matrix は既存のMath名前空間の型を想定
-//
-// 親子関係のアタッチ/デタッチ判断（循環参照チェック、
-// ワールド座標を維持したままの付け替え、ソケットとの同期など）は
-// このクラスの責務にせず、外部の AttachmentSystem / SocketSystem 側で行う。
-// このクラスは「今の親が誰か」を保持し、行列を合成するだけに専念する。
-
+// 位置情報を管理
 class TransformComponent : public ComponentBase {
 public:
 	explicit TransformComponent(GameObject* owner, Math::Vector3 pos = {}, Math::Quaternion rot = {}, Math::Vector3 scale = { 1.f,1.f,1.f })
@@ -107,6 +101,4 @@ protected:
 	mutable Math::Matrix cachedUnscaledMatrix_ = Math::Matrix::Identity;
 	mutable uint32_t     cachedVersion_ = 0xFFFFFFFFu; // 初回は必ず再計算させる
 	uint32_t             localVersion_ = 0;
-
-	friend class SocketComponent;
 };

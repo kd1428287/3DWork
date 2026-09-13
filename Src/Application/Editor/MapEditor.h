@@ -3,42 +3,37 @@
 // ※ ImGui / DirectXTK(SimpleMath) は既存のPCH等で読み込まれている前提です。
 //    ImGuizmo は本ファイルでのみ使うため明示的にインクルードします。
 #include "ImGuizmo.h"
-#include "../Factories/Map/ComponentTypes.h"
+#include "../Factories/Map/MapData.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// マップに配置する1オブジェクト分のデータ
-//	Transform + 任意個数のコンポーネント構成を持つ。実際のGameObjectへの実体化は
-//	TerrainFactory側がComponentRegistry経由で行う(このファイルは実コンポーネントの詳細を知らない)
+// マップに配置する1オブジェクト分の、Editor側の実体。
+//	保存・実行時に使われるデータそのもの(id/Transform/コンポーネント構成)は
+//	MapEntity(MapData.h、唯一の正となるスキーマ)が持ち、MapObjectはそれに
+//	Editorだけで必要なプレビュー用リソース(modelWork)を添えて包むだけの薄いラッパー
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 struct MapObject
 {
-	std::string					name = "Object";
+	MapEntity	data;
 
-	DirectX::SimpleMath::Vector3	pos = { 0,0,0 };
-	DirectX::SimpleMath::Vector3	rotate = { 0,0,0 };	// 度数法(degree) X,Y,Z
-	DirectX::SimpleMath::Vector3	scale = { 1,1,1 };
+	KdModelWork	modelWork;		// プレビュー表示専用。data.componentsの"ModelRender"から同期する
 
-	std::vector<ComponentEntry>	components;	// JSON保存されるコンポーネント構成
-
-	KdModelWork	modelWork;		// プレビュー表示専用。componentsの"ModelRender"から同期する
-
-	// pos/rotate/scale から4x4行列を生成
+	// data.pos/rotation/scale から4x4行列を生成
 	DirectX::SimpleMath::Matrix GetMatrix() const;
 
 	// 指定した種類のコンポーネントを持っているか
 	bool HasComponent(const std::string& type) const
 	{
-		for (auto& c : components) { if (c.type == type) return true; }
+		for (auto& c : data.components) { if (c.type == type) return true; }
 		return false;
 	}
 
-	// components内の"ModelRender"コンポーネントのmodelパラメータを見て、
+	// data.components内の"ModelRender"コンポーネントのmodelパラメータを見て、
 	// プレビュー用のmodelWorkを読み込み直す。
 	// コンポーネントの追加/削除/パラメータ編集のたびに呼び出すこと
 	void SyncPreviewModel()
 	{
 		std::string path;
-		for (auto& c : components)
+		for (auto& c : data.components)
 		{
 			if (c.type == "ModelRender")
 			{
@@ -53,14 +48,14 @@ struct MapObject
 			return;
 		}
 
-		std::shared_ptr<KdModelData> data = KdAssets::Instance().m_modeldatas.GetData(path);
-		if (!data)
+		std::shared_ptr<KdModelData> modelData = KdAssets::Instance().m_modeldatas.GetData(path);
+		if (!modelData)
 		{
 			KdDebugGUI::Instance().AddLog("MapEditor: モデル読み込み失敗 %s\n", path.c_str());
 			return;
 		}
 
-		modelWork.SetModelData(data);
+		modelWork.SetModelData(modelData);
 	}
 };
 
@@ -116,6 +111,13 @@ private:
 	//	RenderPreviewViewport()・DrawGizmo()の両方で同じ注視点を使うための共通処理
 	DirectX::SimpleMath::Vector3 GetPreviewTarget() const;
 
+	// m_objects内をIdで探す(見つからなければnullptr)。生indexでm_objectsへ触れる箇所を
+	// ここに集約し、Undo/Redoやホットリロードでindexがズレても壊れないようにする
+	MapObject* FindObject(ObjectId id);
+	const MapObject* FindObject(ObjectId id) const;
+	MapObject* FindSelected() { return FindObject(m_selectedId); }
+	const MapObject* FindSelected() const { return FindObject(m_selectedId); }
+
 	void AddObject();
 	void RemoveSelected();
 
@@ -128,7 +130,7 @@ private:
 	struct UndoState
 	{
 		std::vector<MapObject>	objects;
-		int						selected = -1;
+		ObjectId				selectedId = kInvalidObjectId;
 	};
 
 	static constexpr size_t kMaxUndoDepth = 50;
@@ -163,7 +165,9 @@ private:
 	void RemoveRegisteredModel(int index);
 
 	std::vector<MapObject>	m_objects;
-	int						m_selected = -1;
+	ObjectId				m_selectedId = kInvalidObjectId;	// 生indexではなく安定IDで選択を保持
+	ObjectId				m_nextId = 1;						// 次に新規追加するオブジェクトのID
+	// (Load時にMapFile::nextIdから復元される)
 
 	ImGuizmo::OPERATION			m_operation = ImGuizmo::TRANSLATE;
 	ImGuizmo::MODE				m_mode = ImGuizmo::WORLD;
@@ -184,6 +188,14 @@ private:
 	bool		m_autoReload = true;	// trueなら外部変更を自動検知
 	float		m_reloadCheckTimer = 0.0f;	// ポーリング間隔調整用
 	FILETIME	m_lastWriteTime = {};		// 最後に確認したファイル更新日時
+
+	// Inspectorでの回転表示用キャッシュ(Euler角・度)。
+	// data.rotationはQuaternionで保存されるが、人間がドラッグ編集するにはEuler角の方が
+	// 直感的なので、選択が変わった時だけQuaternion→Eulerへ変換してここに持つ。
+	// 編集中(ドラッグ中)は毎フレーム再変換せずこの値をそのまま使うことで、
+	// Quaternion→Euler変換の非一意性による値の飛び(ジンバルロック周辺のガタつき)を避ける
+	DirectX::SimpleMath::Vector3	m_inspectorEulerDeg = { 0,0,0 };
+	ObjectId						m_inspectorEulerForId = kInvalidObjectId;
 
 	//=====================================================
 	// Map Preview 専用ビューポート

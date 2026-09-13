@@ -17,9 +17,9 @@ public:
 	void DrawDebug();
 
 	// 次のシーンをセット (次のフレームから切り替わる)
-	void SetNextScene(SceneType _nextScene)
+	void SetNextScene(SceneType nextScene)
 	{
-		m_nextSceneType = _nextScene;
+		nextSceneType_ = nextScene;
 	}
 private:
 
@@ -31,21 +31,17 @@ private:
 	void ChangeScene(SceneType _sceneType);
 
 	// 現在のシーンのインスタンスを保持しているポインタ
-	std::shared_ptr<BaseScene> m_currentScene = nullptr;
+	std::shared_ptr<BaseScene> currentScene_ = nullptr;
 
 	// 現在のシーンの種類を保持している変数
-	SceneType m_currentSceneType = SceneType::Game;
-	//SceneType m_currentSceneType = SceneType::Title;
+	SceneType currentSceneType_ = SceneType::Game;
 
 	// 次のシーンの種類を保持している変数
-	SceneType m_nextSceneType = m_currentSceneType;
+	SceneType nextSceneType_ = currentSceneType_;
 
-	// Events::Scene::SceneChangeRequestEvent の購読。
-	// 「どの敵を倒したら」等の遷移理由はここでは一切判断せず、
-	// 受け取ったSceneTypeへSetNextSceneするだけの薄い受け口にする。
-	// unique_ptrにしているのはSceneManager.hにEventBus.hをincludeさせないため
-	// (前方宣言のみで済ませる)。
-	std::unique_ptr<ScopedSubscriber> m_sceneChangeSub;
+	// イベントの購読。
+	std::unique_ptr<ScopedSubscriber> sceneChangeSub_;
+	std::unique_ptr<ScopedSubscriber> reloadSceneSub_;
 
 private:
 

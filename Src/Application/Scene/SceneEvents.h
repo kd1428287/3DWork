@@ -6,7 +6,7 @@ namespace Events
 {
 	namespace Scene
 	{
-		// 「指定のシーンへ遷移してほしい」という、発行者を問わない汎用イベント。
+		// 指定のシーンへ遷移する汎用イベント
 		struct SceneChangeRequestEvent : public Event
 		{
 			SceneType nextScene;
@@ -14,6 +14,11 @@ namespace Events
 			explicit SceneChangeRequestEvent(SceneType scene)
 				: nextScene(scene)
 			{}
+		};
+
+		// 現在のシーンを生成し直すイベント
+		struct ReloadingSceneEvent : public Event
+		{
 		};
 	}
 }

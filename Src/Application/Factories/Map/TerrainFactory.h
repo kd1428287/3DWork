@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include "../GameObjectFactory.h"
-#include "MapData.h" // 構造体をインクルード
+#include "MapData.h" // MapEntityをインクルード
 
 class GameObject;
 
@@ -22,7 +22,7 @@ public:
 	 *        data.components に列挙された種類をComponentRegistry経由で1つずつ実体化する。
 	 *        登録されていない種類はログを出してスキップする(オブジェクト自体は生成する)
 	 */
-	GameObject* CreateFromData(ObjectManager& objectManager, const EntityData& data);
+	GameObject* CreateFromData(ObjectManager& objectManager, const MapEntity& data);
 
 private:
 	GameObjectFactory<int> registry_;

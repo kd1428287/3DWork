@@ -291,7 +291,7 @@
         "blendMode": "Alpha",
         "drawPass": [
           "Default",
-          "Blight"
+          "Bright"
         ],
         "emitInterval": 0.0,
         "emitMode": "Burst",
@@ -461,8 +461,7 @@
       "params": {
         "blendMode": "Alpha",
         "drawPass": [
-          "Default",
-          "Blight"
+          "Default"
         ],
         "emitInterval": 0.0,
         "emitMode": "Burst",
@@ -632,8 +631,7 @@
       "params": {
         "blendMode": "Alpha",
         "drawPass": [
-          "Default",
-          "Blight"
+          "Default"
         ],
         "emitInterval": 0.0,
         "emitMode": "Burst",

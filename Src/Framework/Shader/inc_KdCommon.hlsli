@@ -37,7 +37,7 @@ cbuffer cbFog : register(b8)
 //------------------------------
 // 定数バッファ(ライト)
 //------------------------------
-cbuffer cbLight : register(b9)
+cbuffer cBright : register(b9)
 {
 	// 環境光
 	float4  g_AmbientLight;

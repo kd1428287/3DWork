@@ -313,9 +313,9 @@ bool KdDirect3D::Init(HWND hWnd, int w, int h, bool deviceDebug, std::string& er
 		bufferSize *= 2;	// 容量を倍にしていく
 	}
 
-	m_windowWidth	= w;
-	m_windowHeight	= h;
-	m_isFullScreen	= false;
+	m_windowWidth = w;
+	m_windowHeight = h;
+	m_isFullScreen = false;
 
 	return true;
 }
@@ -498,6 +498,28 @@ ID3D11BlendState* KdDirect3D::CreateBlendState(KdBlendMode mode) const
 		desc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
 		desc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
 		desc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
+	}
+	// 半透明ブレンド＋MRTスロット1は上書き(ブレンド無効)
+	//	※IndependentBlendEnable=FALSEのままだと、スロット0用のAlphaブレンド式が
+	//	  スロット1(カラーグレード除外マスク等、シェーダーが直接書きたい値)にも
+	//	  そのまま適用されてしまい、スロット1側のSrcAlphaが未定義な値になる結果、
+	//	  意図した値が書き込まれなくなる。そのためスロット1だけ独立してBlendEnable=FALSE
+	//	  (シェーダー出力をそのまま上書き)にする
+	else if (mode == KdBlendMode::AlphaMasked)
+	{
+		desc.IndependentBlendEnable = TRUE;
+
+		// スロット0：通常のAlphaブレンドと同じ
+		desc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+		desc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+		desc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+		desc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+		desc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+		desc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
+
+		// スロット1：ブレンドせず、シェーダーが出力した値をそのまま書き込む
+		desc.RenderTarget[1].BlendEnable = FALSE;
+		desc.RenderTarget[1].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 	}
 
 	// ステートオブジェクト作成
