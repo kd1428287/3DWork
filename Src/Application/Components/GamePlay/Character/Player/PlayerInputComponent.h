@@ -33,7 +33,7 @@ public:
 	// GameObjectのUpdate、またはPreUpdateで毎フレーム呼び出す。
 	// 先行入力バッファの有効期限を減算しつつ、KdInputManagerから今フレームの
 	// 生入力を読み取ってmoveDirection_/dashHeld_等へ反映する。
-	void Update(float deltaTime) override {
+	void PreUpdate(float deltaTime) override {
 		// --- 先行入力バッファの寿命管理 -------------------------------
 		for (auto it = inputBuffer_.begin(); it != inputBuffer_.end();) {
 			it->timeRemaining -= deltaTime;

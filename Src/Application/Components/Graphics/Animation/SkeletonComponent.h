@@ -9,8 +9,8 @@ class SkeletonComponent : public ComponentBase, public IModelRenderSource {
 public:
 	explicit SkeletonComponent(GameObject* owner) : ComponentBase(owner) {}
 
-	void SetModelData(std::string_view fileName) { m_modelWork.SetModelData(KdAssets::Instance().m_modeldatas.GetData(fileName)); }
-	void SetModelData(const std::shared_ptr<KdModelData>& data) { m_modelWork.SetModelData(data); }
+	void SetModelData(std::string_view fileName) { modelWork_.SetModelData(KdAssets::Instance().m_modeldatas.GetData(fileName)); }
+	void SetModelData(const std::shared_ptr<KdModelData>& data) { modelWork_.SetModelData(data); }
 
 	void Start() override;
 	void PreUpdate(float deltaTime) override;
@@ -23,17 +23,17 @@ public:
 	}
 
 	void Finalize() {
-		if (m_modelWork.NeedCalcNodeMatrices())
+		if (modelWork_.NeedCalcNodeMatrices())
 		{
-			m_modelWork.CalcNodeMatrices();
-			++m_boneVersion;
+			modelWork_.CalcNodeMatrices();
+			++boneVersion_;
 		}
 	}
 
 	// ボーンのモデルローカル空間行列
 	bool TryGetBoneLocalMatrix(std::string_view boneName, Math::Matrix& outMatrix) const
 	{
-		const KdModelWork::Node* node = m_modelWork.FindNode(boneName);
+		const KdModelWork::Node* node = modelWork_.FindNode(boneName);
 		if (node == nullptr) { return false; }
 		outMatrix = node->m_worldTransform;
 		return true;
@@ -52,17 +52,17 @@ public:
 		return true;
 	}
 
-	uint32_t GetBoneVersion() const { return m_boneVersion; }
+	uint32_t GetBoneVersion() const { return boneVersion_; }
 
-	KdModelWork& WorkModel() { return m_modelWork; }
+	KdModelWork& WorkModel() { return modelWork_; }
 
-	KdModelWork* GetModel() override { return &m_modelWork; }
-	// 必要なら: モデル未ロード時はfalseを返すよう調整
+	KdModelWork* GetModel() override { return &modelWork_; }
+
 	bool IsModelDrawable() const override { return true; }
 
 private:
-	KdModelWork m_modelWork;
+	KdModelWork modelWork_;
 	TransformComponent* selfTransform_ = nullptr; // 兄弟コンポーネント
 	ModelAnimatorComponent* animator_ = nullptr;   // 兄弟コンポーネント(付いていなければnullptr)
-	uint32_t m_boneVersion = 0;
+	uint32_t boneVersion_ = 0;
 };

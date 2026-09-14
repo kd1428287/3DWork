@@ -6,39 +6,17 @@ public:
 	// dampingPerSecond: impulseVelocity_が1秒間でこの割合まで落ちる減衰係数。
 	explicit VelocityComponent(GameObject* owner, float dampingPerSecond = 0.05f)
 		: ComponentBase(owner), dampingPerSecond_(dampingPerSecond) {
-	}
+	};
 
-	void Start() override {
-		transform_ = GetOwner()->GetComponent<TransformComponent>();
-		if (transform_ == nullptr) {
-			std::printf(
-				"[VelocityComponent] warning: %s has no TransformComponent\n",
-				GetOwner()->GetName().c_str());
-		}
-	}
-
-	void Update(float deltaTime) override {
-		if (transform_ == nullptr) return;
-
-		const float clampedDeltaTime = std::min(deltaTime, kMaxDeltaTime);
-
-		if (continuousVelocity_.LengthSquared() > kMaxSpeed * kMaxSpeed) {
-			continuousVelocity_.Normalize();
-			continuousVelocity_ *= kMaxSpeed;
-		}
-
-		const Math::Vector3 totalVelocity = impulseVelocity_ + continuousVelocity_;
-		if (totalVelocity.LengthSquared() > kStopThresholdSq) {
-			transform_->Translate(totalVelocity * clampedDeltaTime);
-		}
-
+	void DampingUpdate(float deltaTime)
+	{
 		// 摩擦減衰
-		const float decay = std::pow(dampingPerSecond_, clampedDeltaTime);
+		const float decay = std::pow(dampingPerSecond_, deltaTime);
 		impulseVelocity_ *= decay;
 
 		if (impulseVelocity_.LengthSquared() < kStopThresholdSq) {
 			impulseVelocity_ = Math::Vector3::Zero;
-		}
+		};
 	}
 
 	void AddImpulse(const Math::Vector3& impulse) { impulseVelocity_ += impulse; }
@@ -65,10 +43,7 @@ public:
 
 private:
 	static constexpr float kStopThresholdSq = 0.0001f;
-	static constexpr float kMaxDeltaTime = 1.0f / 30.0f;
-	static constexpr float kMaxSpeed = 25.0f;
 
-	TransformComponent* transform_ = nullptr;
 	Math::Vector3 impulseVelocity_ = Math::Vector3::Zero;
 	Math::Vector3 continuousVelocity_ = Math::Vector3::Zero;
 	float dampingPerSecond_;

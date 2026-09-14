@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "../../../../Tags/IEnemyBehavior.h"
+#include "Application/Definitions/Character/Enemy/IEnemyBehavior.h"
 #include "WarrockActions.h"
 
 class WarrockBehavior : public IEnemyBehavior

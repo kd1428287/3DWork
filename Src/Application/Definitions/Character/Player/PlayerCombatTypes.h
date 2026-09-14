@@ -158,6 +158,38 @@ struct MotionClipData
 };
 
 // --- Player用の1コンボ攻撃1発分のデータ ---------------------------
+// 旧AttackMoveData(このファイル内で独自定義していたもの)はAttackData
+// (CombatData.h)へ統合されたため、Playerの1技分の設定は今後AttackData
+// 型をそのまま使う。フィールドの対応は以下の通り:
+//
+//   旧 AttackMoveData::windupDuration            → AttackData::phaseData.windup.targetDuration
+//   旧 AttackMoveData::activeDuration             → AttackData::phaseData.active.targetDuration
+//   旧 AttackMoveData::recoveryDuration            → AttackData::phaseData.recovery.targetDuration
+//   旧 AttackMoveData::animationName               → AttackData::phaseData.animationName
+//   旧 AttackMoveData::stepDistance/stepDuration/  → AttackData::moveData.stepDistance/stepDuration/
+//       engageDistance/stepDirection/blendDuration/   engageDistance/stepDirection/blendDuration/
+//       useRootMotion                                 useRootMotion
+//   旧 AttackMoveData::recoveryEvadeCancelStart/   → AttackData::cancelData.recoveryEvadeCancelStart/
+//       recoveryAttackCancelStart/                     recoveryAttackCancelStart/
+//       comboWindowAfterRecovery                       comboWindowAfterRecovery
+//   旧 AttackMoveData::weaponSlots                  → AttackData::weaponSlots
+//
+// ダメージ・体幹ダメージ等(AttackData::info)は旧構造体には無かった値で、
+// 統合にあたり新たに保持できるようになった(既定値のままでよければ
+// 変更不要)。AttackData::cancelData.recoveryMoveCancelStartもPlayer側では
+// 未使用だった項目だが、既定値のまま無視して問題ない。
+//
+// PlayerStatusController等、旧AttackMoveData型で1技分のテーブルを
+// 保持していた箇所は、型をAttackDataに置き換えた上で上記対応表に
+// 沿ってメンバ参照を書き換えること。
+
+// --- コンボの繋がり方(コンボ木) -------------------------------------
+// 以前はコンボを「配列＋comboIndex_をインクリメント」だけで表現しており、
+// 「次の攻撃は常にindex+1」「全攻撃がコンボに参加できる」という前提が
+// 暗黙に組み込まれていた。分岐コンボや、単発で完結する非コンボ攻撃
+// (強攻撃・突進攻撃等)を追加できるよう、攻撃をID参照で繋ぐ木構造へ
+// 置き換える。
+
 // このコンボ内での「次の技」候補1件分。
 struct ComboLink
 {
@@ -165,20 +197,23 @@ struct ComboLink
 	ActionCommand requiredCommand = ActionCommand::Attack;
 
 	// 同じrequiredCommandを持つLinkが複数ある場合、値が小さい方から
-	// 順に(コントローラー側の追加条件で)チェックし、最初に成立した
-	// ものを採用する。分岐が無いなら既定の0のままでよい。
+	// 順に(コントローラー側の追加条件と合わせて)チェックし、最初に
+	// 成立したものを採用する。分岐が無いなら既定の0のままでよい。
 	int priority = 0;
 
-	// 繋がる先の攻撃ID。存在しないIDを指定した場合はロード時にassert
-	// で検出する(下記バリデーション参照)。
+	// 繋がる先の攻撃id(PlayerAttackDefinition::id)。存在しないidを
+	// 指定した場合はPlayerAttackTable::Validate()で検出する。
 	std::string nextAttackId;
 };
 
-// Player用の1技分のデータ。EnemyAttackDefinitionと対になる構成。
+// Player用の1技分のデータ。EnemyAttackDefinition(EnemyAIData.h)と
+// 対になる構成で、汎用のAttackDataをメンバに持ち、Player固有の
+// コンボ接続情報を添える。
 struct PlayerAttackDefinition
 {
-	std::string id;     // このテーブル内でユニークな識別子
-	AttackData attack;  // 汎用の攻撃データ(CombatData.h、Enemyと共通)
+	std::string id; // PlayerAttackTable内でユニークな識別子
+
+	AttackData attack; // 汎用の攻撃データ(CombatData.h、Enemyと共通)
 
 	// Recovery中(attack.cancelData.comboWindowAfterRecovery込み)に
 	// 入力があった場合、ここに列挙されたLinkのうち条件に合うものへ
@@ -187,11 +222,14 @@ struct PlayerAttackDefinition
 	std::vector<ComboLink> comboLinks;
 
 	// Idle(非コンボ中)から、この攻撃へ直接入るための入力コマンド。
-	// std::nulloptなら、他の攻撃のcomboLinks経由でしか辿り着けない
-	// 技として扱う(=分岐でしか出さない派生フィニッシュ用)。
+	// 未設定(std::nullopt)なら、他の攻撃のcomboLinks経由でしか
+	// 辿り着けない技として扱う(=分岐でしか出さない派生フィニッシュ用)。
 	std::optional<ActionCommand> entryCommand = ActionCommand::Attack;
 };
 
+// Playerが持つ全攻撃データの一覧。PlayerStatusControllerはこれを
+// 1つ保持し、現在の攻撃id(comboIndex_の代わり)を文字列で追跡する形に
+// なる。
 struct PlayerAttackTable
 {
 	std::vector<PlayerAttackDefinition> attacks;
@@ -199,8 +237,24 @@ struct PlayerAttackTable
 	const PlayerAttackDefinition* Find(const std::string& id) const
 	{
 		auto it = std::find_if(attacks.begin(), attacks.end(),
-			[&](const auto& a) { return a.id == id; });
+			[&](const PlayerAttackDefinition& a) { return a.id == id; });
 		return it != attacks.end() ? &*it : nullptr;
+	}
+
+	// id重複・comboLinksのリンク先不在・entryCommandの重複が無いかを
+	// チェックする(デバッグビルドでのassert等、テーブル構築直後に
+	// 呼ぶ想定)。falseの場合、テーブルの定義側に不整合がある。
+	bool Validate() const
+	{
+		for (size_t i = 0; i < attacks.size(); ++i) {
+			for (size_t j = i + 1; j < attacks.size(); ++j) {
+				if (attacks[i].id == attacks[j].id) return false;
+			}
+			for (const ComboLink& link : attacks[i].comboLinks) {
+				if (Find(link.nextAttackId) == nullptr) return false;
+			}
+		}
+		return true;
 	}
 };
 
@@ -330,4 +384,9 @@ struct GuardData
 	float guardHitDuration = 0.9f;
 };
 
-constexpr int kMaxComboHits = 6;
+// 以前は配列サイズ(コンボ段数の上限)そのものを表す定数だったが、
+// コンボ木への移行に伴い固定長配列という前提が無くなったため、
+// 役割を「1回のコンボで辿った段数がこれを超えたら想定外のループと
+// みなしてassertする」デバッグ用の安全弁に変更した
+// (PlayerAttackTable::comboLinksの循環参照による無限ループ検出用)。
+constexpr int kMaxComboChainLength = 6;

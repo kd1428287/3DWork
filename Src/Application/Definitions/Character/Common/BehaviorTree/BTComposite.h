@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "../../../../Tags/IBTNode.h"
+#include "IBTNode.h"
 
 // ============================================================
 // 子を上から順に実行し、途中でFailureが出たら即Failureで打ち切る

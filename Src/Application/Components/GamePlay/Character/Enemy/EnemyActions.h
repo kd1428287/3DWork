@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "../../../Tags/IBTNode.h"
+#include "Application/Definitions/Character/Common/BehaviorTree/IBTNode.h"
 #include "Application/Definitions/Character/Enemy/EnemyAIData.h"
 
 class EnemyAIController;

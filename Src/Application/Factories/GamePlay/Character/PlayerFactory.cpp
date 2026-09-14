@@ -18,6 +18,7 @@
 #include "Application/Components/GamePlay/Character/Player/PlayerMovementAnimationComponent.h"
 #include "Application/Components/GamePlay/Camera/CameraTargetComponent.h"
 
+#include "Application/Components/Physics/Movement/MotionComposerComponent.h"
 #include "Application/Components/Physics/Movement/MovementComponent.h"
 #include "Application/Components/Physics/Movement/VelocityComponent.h"
 #include "Application/Components/Physics/Movement/GravityComponent.h"
@@ -105,6 +106,7 @@ namespace
 	{
 		auto* input = player->AddComponent<PlayerInputComponent>();
 		auto* move = player->AddComponent<MovementComponent>(walkSpeed);
+		player->AddComponent<MotionComposerComponent>();
 	
 		move->SetMovementSource(input);
 	}

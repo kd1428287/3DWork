@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include "Application/Definitions/Character/Player/PlayerCombatTypes.h"
-#include "../Common/StateMachine/StateMachine.h"
+#include "Application/Definitions/Character/Common/StateMachine/StateMachine.h"
 
 // 前方宣言
 class PlayerStatusController;

@@ -835,9 +835,15 @@ void MapEditor::RenderPreviewViewport()
 
 	KdShaderManager::Instance().WriteCBCamera(view.Invert(), proj);
 
+	KdShaderManager::Instance().WorkAmbientController().Draw();
+
+	KdShaderManager::Instance().m_StandardShader.BeginGenerateDepthMapFromLight();
+	DrawObjects();
+	KdShaderManager::Instance().m_StandardShader.EndGenerateDepthMapFromLight();
 	KdShaderManager::Instance().m_StandardShader.BeginLit();
 	DrawObjects();
 	KdShaderManager::Instance().m_StandardShader.EndLit();
+	
 
 	KdShaderManager::Instance().WriteCBCamera(savedCamera.mView.Invert(), savedCamera.mProj);
 

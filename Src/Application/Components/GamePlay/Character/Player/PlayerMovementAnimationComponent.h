@@ -57,7 +57,7 @@ private:
 
 	float CurrentStartDuration() const;
 	float CurrentEndDuration() const;
-	const ActionPhaseData& ResolveTurnData(TurnDirection turn) const;
+	const MotionClipData& ResolveTurnData(TurnDirection turn) const;
 
 	void FaceDirection(const Math::Vector3& horizontalDir);
 
@@ -106,10 +106,10 @@ private:
 	};
 
 	TurnAnimationSet turnAnimSet_{
-	ActionPhaseData{ 0.25f, "APose_TurnL90",  true, 0.1f },
-	ActionPhaseData{ 0.25f, "APose_TurnR90",  true, 0.1f },
-	ActionPhaseData{ 0.35f, "APose_TurnL180", true, 0.1f }, 
-	ActionPhaseData{ 0.35f, "APose_TurnR180", true, 0.1f },
+	MotionClipData{ 0.25f, "APose_TurnL90",  true, 0.1f },
+	MotionClipData{ 0.25f, "APose_TurnR90",  true, 0.1f },
+	MotionClipData{ 0.35f, "APose_TurnL180", true, 0.1f }, 
+	MotionClipData{ 0.35f, "APose_TurnR180", true, 0.1f },
 	};
 
 	static constexpr const char* kIdleAnimation = "APose_Idle";

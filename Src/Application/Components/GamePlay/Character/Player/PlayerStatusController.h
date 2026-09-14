@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "Application/Definitions/Character/Player/PlayerCombatTypes.h"
 #include "Application/Definitions/Character/Player/PlayerCombatDataTable.h"
+#include "Application/Definitions/Character/Common/StateMachine/StateMachine.h"
 #include "../../../Tags/IHitReactionQuery.h"
 
 #include "PlayerInputComponent.h"
@@ -9,7 +10,6 @@
 #include "PlayerState.h"
 #include "../Combat/WeaponSetComponent.h"
 #include "../Combat/HitReactionComponent.h"
-#include "../Common/StateMachine/StateMachine.h"
 
 #include "../../../Graphics/Animation/FacingDirectionComponent.h" 
 #include "../../../Graphics/Animation/ModelAnimatorComponent.h"
@@ -33,11 +33,11 @@ public:
 		weaponSet_ = GetOwner()->GetComponent<WeaponSetComponent>(); // 武器/攻撃部位の制御を担当する兄弟コンポーネント(Enemyとも共有する汎用実装)
 
 		// コンボ各段のデータ(タイミング・踏み込み量等)をまとめて読み込む。
-		comboAttacks_ = CreateDebugComboAttackTable();
+		comboAttacks_ = std::array<AttackData, 1>();
 
 		// Evade/Guardの基本データも同様にデバッグ用テーブルから読み込む。
-		baseEvadeData_ = CreateDebugEvadeData();
-		baseGuardData_ = CreateDebugGuardData();
+		baseEvadeData_ = EvadeData();
+		baseGuardData_ = GuardData();
 
 		// 被弾時のパリィ/ガード/通常被弾の分岐と、それに伴うダメージ/
 		// ノックバック/エフェクト処理はHitReactionComponentへ切り出した
@@ -108,9 +108,9 @@ public:
 	bool CanReleaseGuard() const { return stateMachine_.Current()->CanReleaseGuard(this); }
 
 	// --- データ取得 (Stateが判定に使うため) ----------------------------
-	const AttackMoveData& GetCurrentAttackData() const { return currentAttack_; }
-	const EvadeMoveData& GetCurrentEvadeData() const { return currentEvade_; }
-	const GuardMoveData& GetCurrentGuardData() const { return currentGuard_; }
+	const AttackData& GetCurrentAttackData() const { return currentAttack_; }
+	const EvadeData& GetCurrentEvadeData() const { return currentEvade_; }
+	const GuardData& GetCurrentGuardData() const { return currentGuard_; }
 
 	// 回避方向を、Enter()時点の(=FacingDirectionComponentの追従が止まった直後の)
 	// 現在の前方と比較し、前後左右のどれに該当するかを判定する。
@@ -130,13 +130,13 @@ public:
 		if (!CanStartAttack()) return false;
 
 		currentAttack_ = comboAttacks_[comboIndex_];
-		comboIndex_ = (comboIndex_ + 1) % kMaxComboHits; // 最終段の次は1段目へ折り返す(kMaxComboHits段)
+		//comboIndex_ = (comboIndex_ + 1) % kMaxComboHits; // 最終段の次は1段目へ折り返す(kMaxComboHits段)
 
 		ForceTransitionTo(&stateAttack_);
 		return true;
 	}
 
-	bool TryStartEvade(const EvadeMoveData& move) {
+	bool TryStartEvade(const EvadeData& move) {
 		if (!CanStartEvade()) return false;
 		currentEvade_ = move;
 		TransitionTo(&stateEvade_);
@@ -332,7 +332,7 @@ private:
 			// AttackのRecoveryが(中断されずに)自然終了してNoneへ戻った
 			// 場合のみ、currentAttack_.comboWindowAfterRecovery秒だけ
 			// comboIndex_を維持し、次の攻撃入力をコンボ継続として扱う。
-			comboWindowRemaining_ = currentAttack_.comboWindowAfterRecovery;
+			//comboWindowRemaining_ = currentAttack_.comboWindowAfterRecovery;
 			if (comboWindowRemaining_ <= 0.0f) {
 				comboIndex_ = 0;
 			}
@@ -410,12 +410,12 @@ private:
 	static constexpr const char* kMainWeaponSlot = "Main";
 
 	// --- 戦闘データ ---
-	AttackMoveData currentAttack_;
-	EvadeMoveData currentEvade_;
-	GuardMoveData currentGuard_;
+	AttackData currentAttack_;
+	EvadeData currentEvade_;
+	GuardData currentGuard_;
 
-	EvadeMoveData baseEvadeData_;
-	GuardMoveData baseGuardData_;
+	EvadeData baseEvadeData_;
+	GuardData baseGuardData_;
 
 	int comboIndex_ = 0;
 

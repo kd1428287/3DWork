@@ -151,12 +151,6 @@
     <Filter Include="Src\Application\Components\GamePlay\Character\Enemy\Warrock">
       <UniqueIdentifier>{be62630d-ef65-4a2e-96a8-c559a8d52859}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Src\Application\Components\GamePlay\Character\Common\BehaviorTree">
-      <UniqueIdentifier>{9d5fc303-4774-4b85-bd2c-20e6b9b8474d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Src\Application\Components\GamePlay\Character\Common\StateMachine">
-      <UniqueIdentifier>{96018bdb-7fb8-4333-83e8-6cdaaa5933df}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Src\Application\Components\Graphics\Animation">
       <UniqueIdentifier>{b055dfad-3b5b-4a42-b474-eb59887ea62f}</UniqueIdentifier>
     </Filter>
@@ -267,6 +261,12 @@
     </Filter>
     <Filter Include="Src\Application\Editor\ThirdParty\imgui-node-editor">
       <UniqueIdentifier>{7e0336a7-0ccf-42db-b1bc-8d44df56f951}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Definitions\Character\Common\BehaviorTree">
+      <UniqueIdentifier>{b7bd20ae-57b4-4f97-bcd3-19cc8cfbeb6c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Definitions\Character\Common\StateMachine">
+      <UniqueIdentifier>{e6c53a1c-4883-49d0-a541-3a875c2e5054}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -501,24 +501,6 @@
     <ClInclude Include="Src\Application\Components\Core\TransformComponent.h">
       <Filter>Src\Application\Components\Core</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\BehaviorTree\BTComposite.h">
-      <Filter>Src\Application\Components\GamePlay\Character\Common\BehaviorTree</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\BehaviorTree\BTCondition.h">
-      <Filter>Src\Application\Components\GamePlay\Character\Common\BehaviorTree</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\BehaviorTree\BTNodeStatus.h">
-      <Filter>Src\Application\Components\GamePlay\Character\Common\BehaviorTree</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\BehaviorTree\BTOneShotAnimationAction.h">
-      <Filter>Src\Application\Components\GamePlay\Character\Common\BehaviorTree</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\BehaviorTree\BTWeightedAttackAction.h">
-      <Filter>Src\Application\Components\GamePlay\Character\Common\BehaviorTree</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\StateMachine\StateMachine.h">
-      <Filter>Src\Application\Components\GamePlay\Character\Common\StateMachine</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\CharacterEvents.h">
       <Filter>Src\Application\Components\GamePlay\Character\Common</Filter>
     </ClInclude>
@@ -649,9 +631,6 @@
       <Filter>Src\Application\Components\Tags</Filter>
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Tags\ICollidable.h">
-      <Filter>Src\Application\Components\Tags</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\Tags\IEnemyBehavior.h">
       <Filter>Src\Application\Components\Tags</Filter>
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Tags\IHitReactionQuery.h">
@@ -819,9 +798,6 @@
     <ClInclude Include="Src\Application\Core\EventBus\Events\Event.h">
       <Filter>Src\Application\Core\EventBus\Events</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\Tags\IBTNode.h">
-      <Filter>Src\Application\Components\Tags</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Enemy\EnemyActions.h">
       <Filter>Src\Application\Components\GamePlay\Character\Enemy</Filter>
     </ClInclude>
@@ -899,6 +875,33 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Editor\Tools\BTEditor.h">
       <Filter>Src\Application\Editor\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\BTComposite.h">
+      <Filter>Src\Application\Definitions\Character\Common\BehaviorTree</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\BTCondition.h">
+      <Filter>Src\Application\Definitions\Character\Common\BehaviorTree</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\BTNodeStatus.h">
+      <Filter>Src\Application\Definitions\Character\Common\BehaviorTree</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\BTOneShotAnimationAction.h">
+      <Filter>Src\Application\Definitions\Character\Common\BehaviorTree</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\BTWeightedAttackAction.h">
+      <Filter>Src\Application\Definitions\Character\Common\BehaviorTree</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\IBTNode.h">
+      <Filter>Src\Application\Definitions\Character\Common\BehaviorTree</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Character\Common\StateMachine\StateMachine.h">
+      <Filter>Src\Application\Definitions\Character\Common\StateMachine</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Physics\Movement\MotionComposerComponent.h">
+      <Filter>Src\Application\Components\Physics\Movement</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Character\Enemy\IEnemyBehavior.h">
+      <Filter>Src\Application\Definitions\Character\Enemy</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

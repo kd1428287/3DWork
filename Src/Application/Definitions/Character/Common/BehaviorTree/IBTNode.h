@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "../GamePlay/Character/Common/BehaviorTree/BTNodeStatus.h"
+#include "BTNodeStatus.h"
 
 // ============================================================
 // ビヘイビアツリーのノード基底インターフェース。

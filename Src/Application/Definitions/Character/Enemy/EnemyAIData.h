@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "../Common/CombatData.h"
+#include "../Combat/CombatData.h"
 
 // ============================================================
 // 敵1体分の挙動パラメータをまとめたデータ。C++の型を分けるのではなく、

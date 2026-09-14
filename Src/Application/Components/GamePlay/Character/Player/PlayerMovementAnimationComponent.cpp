@@ -166,7 +166,7 @@ void PlayerMovementAnimationComponent::BeginTurnOrStart(MovementState state, con
 		return;
 	}
 
-	const ActionPhaseData& turnData = ResolveTurnData(turn);
+	const MotionClipData& turnData = ResolveTurnData(turn);
 
 	pendingStateAfterTurn_ = state;
 	turnDuration_ = turnData.duration;
@@ -264,7 +264,7 @@ float PlayerMovementAnimationComponent::CurrentEndDuration() const
 	return (loopSource_ == LoopSource::Run) ? runAnimSet_.endDuration : walkAnimSet_.forward.endDuration;
 }
 
-const ActionPhaseData& PlayerMovementAnimationComponent::ResolveTurnData(TurnDirection turn) const
+const MotionClipData& PlayerMovementAnimationComponent::ResolveTurnData(TurnDirection turn) const
 {
 	switch (turn) {
 	case TurnDirection::Left90:   return turnAnimSet_.left90;

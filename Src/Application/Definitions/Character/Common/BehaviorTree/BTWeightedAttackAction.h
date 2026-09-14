@@ -1,6 +1,6 @@
 ﻿#pragma once
-#include "../../../../Tags/IBTNode.h"
-#include "Application/Definitions/Character/Enemy/EnemyAIData.h"
+#include "IBTNode.h"
+#include "../../Enemy/EnemyAIData.h"
 
 // ============================================================
 // 攻撃行動の共通「実行」部品(「判断」層とは独立)。
@@ -66,15 +66,15 @@ public:
 
 			// 攻撃全体(Windup+Active+Recovery)の秒数を目標としてアニメーション
 			// 速度を自動スケーリングする(Player/EnemyのPlayAnimationと同じ考え方)。
-			const float totalDuration = current_->windupDuration + current_->activeDuration + current_->recoveryDuration;
-			context->PlayAnimation(current_->animationName, false, totalDuration, current_->useRootMotion);
+			const float totalDuration = 2;//current_->windupDuration + current_->activeDuration + current_->recoveryDuration;
+			context->PlayAnimation(current_->attackData.phaseData.animationName, false, totalDuration, current_->attackData.moveData.useRootMotion);
 		}
 
 		elapsed_ += deltaTime;
 
 		switch (phase_) {
 		case Phase::Windup:
-			if (elapsed_ >= current_->windupDuration) {
+			if (elapsed_ >= 0/*current_->windupDuration*/) {
 				phase_ = Phase::Active;
 				elapsed_ = 0.0f;
 				context->SetWeaponHitBoxEnabled(true); // 攻撃判定が実際に発生する一瞬だけ有効化
@@ -82,7 +82,7 @@ public:
 			break;
 
 		case Phase::Active:
-			if (elapsed_ >= current_->activeDuration) {
+			if (elapsed_ >= 0/*current_->activeDuration*/) {
 				phase_ = Phase::Recovery;
 				elapsed_ = 0.0f;
 				context->SetWeaponHitBoxEnabled(false); // 判定の発生窓を閉じる
@@ -90,7 +90,7 @@ public:
 			break;
 
 		case Phase::Recovery:
-			if (elapsed_ >= current_->recoveryDuration) {
+			if (elapsed_ >= 0/*current_->recoveryDuration*/) {
 				// 攻撃1回分をやり切った時だけ、次の攻撃までのインターバルを
 				// 開始させる(クラス冒頭コメント参照)。
 				context->NotifyAttackCompleted();

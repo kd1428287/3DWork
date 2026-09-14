@@ -5,6 +5,7 @@
 #include "Application/Editor/Tools/MapEditor.h"
 #include "Application/Editor/Tools/EffectEditor.h"
 #include "Application/Editor/Tools/ShaderTuningEditor.h"
+#include "Application/Editor/Tools/BTEditor.h"
 
 // DockBuilder系APIを使うために必要(公式にも初期配置構築の定番として使われる内部ヘッダ)
 #include "imgui_internal.h"
@@ -134,7 +135,8 @@ void KdDebugGUI::GuiProcess()
 		// エフェクトエディタ
 		EffectEditor::Instance().Update();
 
-		
+		// BTエディタ
+		BTEditor::Instance().Update();
 	}
 
 	//===========================================================

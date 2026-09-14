@@ -43,7 +43,7 @@ void PlayerStatusController::HandleActionInput(PlayerInputComponent& input)
 	}
 
 	if (input.HasCommand(ActionCommand::Evade) && CanStartEvade()) {
-		EvadeMoveData data = baseEvadeData_;
+		EvadeData data = baseEvadeData_;
 		input.ConsumeCommand(ActionCommand::Evade, data.evadeDirection);
 		TryStartEvade(data);
 	}

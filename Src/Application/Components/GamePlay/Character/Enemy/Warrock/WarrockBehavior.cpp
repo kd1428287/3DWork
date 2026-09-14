@@ -1,10 +1,10 @@
 ﻿#include "WarrockBehavior.h"
 #include "../EnemyAIController.h"
 #include "../EnemyActions.h"
-#include "../../Common/BehaviorTree/BTComposite.h"
-#include "../../Common/BehaviorTree/BTCondition.h"
-#include "../../Common/BehaviorTree/BTOneShotAnimationAction.h"
-#include "../../Common/BehaviorTree/BTWeightedAttackAction.h"
+#include "Application/Definitions/Character/Common/BehaviorTree/BTComposite.h"
+#include "Application/Definitions/Character/Common/BehaviorTree/BTCondition.h"
+#include "Application/Definitions/Character/Common/BehaviorTree/BTOneShotAnimationAction.h"
+#include "Application/Definitions/Character/Common/BehaviorTree/BTWeightedAttackAction.h"
 #include "../../Combat/AttackSourceComponent.h"
 
 namespace
