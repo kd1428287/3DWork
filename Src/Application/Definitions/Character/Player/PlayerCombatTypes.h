@@ -1,9 +1,19 @@
-﻿
-#pragma once
+﻿#pragma once
+
+#include "../Combat/CombatData.h"
 
 // ============================================================
 // PlayerStatusController / PlayerInputComponent 双方から参照される
 // 型をまとめた共有ヘッダ。
+//
+// 【AttackData(CombatData.h)への統合について】
+// 以前はここにPlayer専用のAttackMoveData(windup/active/recoveryの秒数、
+// ステップ移動、キャンセル受付、武器スロット等を1つに束ねたもの)を
+// 独自定義していたが、Enemy側のEnemyAttackDefinition(EnemyAIData.h)と
+// 概念が重複していたため、汎用のAttackData(CombatData.h)へ統合した。
+// Player用の1技分のデータは以降AttackData型そのものを使う
+// (info/moveData/phaseData/cancelData/weaponSlotsの構成はCombatData.h
+// 参照)。
 // ============================================================
 
 enum class MovementState
@@ -134,8 +144,12 @@ inline TurnDirection ClassifyTurnDirection(const Math::Vector3& forward, const M
 	return isRight ? TurnDirection::Right90 : TurnDirection::Left90;
 }
 
-// --- 技の1フェーズ(入り/中/終わり)ごとのアニメーション再生情報 -----------
-struct ActionPhaseData
+// --- 単発アニメーション1本分の再生設定 -----------------------------
+// windup/active/recoveryのような複数フェーズへの分割は持たず、
+// 「1つのクリップをどう再生するか」だけを表す小さなデータ。
+// (旧名ActionPhaseData。実際には複数フェーズに分かれておらず、
+// 名前の「Phase」が実態と合っていなかったため改名した。)
+struct MotionClipData
 {
 	float duration = 0.2f;
 	std::string animationName;
@@ -143,35 +157,59 @@ struct ActionPhaseData
 	float blendDuration = 0.1f;
 };
 
-struct AttackMoveData
+// --- Player用の1コンボ攻撃1発分のデータ ---------------------------
+// このコンボ内での「次の技」候補1件分。
+struct ComboLink
 {
-	float windupDuration = 0.2f;
-	float activeDuration = 0.25f;
-	float recoveryDuration = 0.3f;
-	float stepDistance = 0.5f;
-	float stepDuration = 0.1f;
-	float engageDistance = 1.2f;
-	float recoveryEvadeCancelStart = 0.15f;
-	float recoveryAttackCancelStart = 0.2f;
+	// この入力コマンドが来たときにこのリンクを辿る候補になる。
+	ActionCommand requiredCommand = ActionCommand::Attack;
 
-	// Recovery終了(StateNone復帰)後も、この秒数まではcomboIndex_を
-	// 維持し、次の攻撃入力をコンボ継続として扱う。0の場合は従来通り
-	// None復帰と同時にコンボが途切れる。
-	float comboWindowAfterRecovery = 0.0f;
+	// 同じrequiredCommandを持つLinkが複数ある場合、値が小さい方から
+	// 順に(コントローラー側の追加条件で)チェックし、最初に成立した
+	// ものを採用する。分岐が無いなら既定の0のままでよい。
+	int priority = 0;
 
-	Math::Vector3 stepDirection = Math::Vector3::Zero;
-	float blendDuration = 0.1f;
-	bool useRootMotion = false;
-	std::string animationName = "Attack1";
-
-	// このAttackのActiveフェーズで有効化するWeaponSetComponent上のスロット名。
-	// Playerは常に単一武器のため既定で{"Main"}(PlayerStatusController::
-	// kMainWeaponSlotと合わせる)。敵側のEnemyAttackDefinition::weaponSlots
-	// と同じ考え方(WeaponSetComponent参照)。
-	std::vector<std::string> weaponSlots = { "Main" };
+	// 繋がる先の攻撃ID。存在しないIDを指定した場合はロード時にassert
+	// で検出する(下記バリデーション参照)。
+	std::string nextAttackId;
 };
 
-struct EvadeMoveData
+// Player用の1技分のデータ。EnemyAttackDefinitionと対になる構成。
+struct PlayerAttackDefinition
+{
+	std::string id;     // このテーブル内でユニークな識別子
+	AttackData attack;  // 汎用の攻撃データ(CombatData.h、Enemyと共通)
+
+	// Recovery中(attack.cancelData.comboWindowAfterRecovery込み)に
+	// 入力があった場合、ここに列挙されたLinkのうち条件に合うものへ
+	// 遷移する。空なら、ここでコンボが終了する
+	// (単発技・フィニッシュ技はこれで表現する)。
+	std::vector<ComboLink> comboLinks;
+
+	// Idle(非コンボ中)から、この攻撃へ直接入るための入力コマンド。
+	// std::nulloptなら、他の攻撃のcomboLinks経由でしか辿り着けない
+	// 技として扱う(=分岐でしか出さない派生フィニッシュ用)。
+	std::optional<ActionCommand> entryCommand = ActionCommand::Attack;
+};
+
+struct PlayerAttackTable
+{
+	std::vector<PlayerAttackDefinition> attacks;
+
+	const PlayerAttackDefinition* Find(const std::string& id) const
+	{
+		auto it = std::find_if(attacks.begin(), attacks.end(),
+			[&](const auto& a) { return a.id == id; });
+		return it != attacks.end() ? &*it : nullptr;
+	}
+};
+
+// --- 回避1回分のデータ全体 -----------------------------------------
+// (旧名EvadeMoveData。中身はevadeDistance/evadeDirection以外にも
+// 秒数・ジャスト回避判定窓・方向別アニメーション名まで含んでおり、
+// 「Move(移動)」だけを表す名前ではなくなっていたため、AttackData/
+// GuardDataと同じ「〜Data」の命名に揃えた。)
+struct EvadeData
 {
 	float activeDuration = 0.25f;
 	float recoveryDuration = 0.15f;
@@ -253,13 +291,17 @@ struct WalkAnimationSet
 // その場ターン(90度/180度、左右)のアニメーション。
 struct TurnAnimationSet
 {
-	ActionPhaseData left90;
-	ActionPhaseData right90;
-	ActionPhaseData left180;
-	ActionPhaseData right180;
+	MotionClipData left90;
+	MotionClipData right90;
+	MotionClipData left180;
+	MotionClipData right180;
 };
 
-struct GuardMoveData
+// --- ガード1回分のデータ全体 -----------------------------------------
+// (旧名GuardMoveData。ガード自体はその場に留まる行動で移動を伴わない
+// ため、「Move」という名前が実態と合っていなかった。AttackData/
+// EvadeDataと同じ「〜Data」の命名に揃えた。)
+struct GuardData
 {
 	float justWindowDuration = 0.55f;
 

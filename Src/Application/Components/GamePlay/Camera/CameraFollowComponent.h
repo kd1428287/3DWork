@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "../Camera/CameraTargetComponent.h"
 #include "CameraOrbitComponent.h"
+#include "../../Tags/ICameraTarget.h"
 
 // カメラの追従ロジックだけを持つ
 
@@ -82,25 +83,16 @@ public:
 
 		Math::Vector3 lockedPosition;
 		const bool positioned = (lockedTarget != nullptr) && ComputeLockedPosition(playerPos, lockedTarget, lockedPosition);
+		const bool isTransitioning = (positioned != wasPositionedLastFrame_);
 
-		// 通常追従(非ロック時)の目標位置は、ロック中かどうかに関わらず
-		// 遷移検出とオフセット計算の両方で使うため先に計算しておく。
-		const Math::Quaternion offsetRotation =
-			(orbit_ != nullptr) ? orbit_->GetOrbitRotation() : target->GetTargetRotation();
-		const Math::Vector3 followWorldOffset = Math::Vector3::Transform(localOffset_, offsetRotation);
-		const Math::Vector3 followPosition = playerPos + followWorldOffset;
-
-		// --- ロック状態の切り替わりを検出し、位置の飛びをイージングで吸収する ---
-		// ロックON/OFFの瞬間は目標位置の計算式そのものが変わるため、何もしないと
-		// カメラが瞬間移動してしまう。切り替わったフレームで「今の実位置」と
-		// 「切り替わった後の新しい目標位置」との差分(=横にずれていた量など)を
-		// positionEaseOffset_として保持しておき、以後は目標位置にこの差分を
-		// 足しながら時間経過で0へ減衰させることで、自然な遷移にする。
-		if (positioned != wasPositionedLastFrame_) {
-			const Math::Vector3 newTargetPosition = positioned ? lockedPosition : followPosition;
-			positionEaseOffset_ = transform_->GetPosition() - newTargetPosition;
-			positionEaseTimer_ = 0.0f;
-
+		// --- ロック状態の切り替わり時の向きの同期 ---
+		// 【重要】これはこの下のoffsetRotation/followPosition計算より
+		// 必ず先に行うこと。もし後回しにすると、切り替わったまさにこの
+		// フレームで、まだ同期前の(切り替わる前の)古いorbit_の値を使って
+		// offsetRotationやfollowPositionを計算してしまい、次のフレームで
+		// ようやく正しい値に切り替わる…という1フレームだけのズレが生じる。
+		// これが解除した瞬間に画面が「ガクッ」となる直接の原因だった。
+		if (isTransitioning) {
 			if (positioned) {
 				// ロック開始の瞬間、lockYaw_/lockPitch_を「今実際にカメラが
 				// 向いている方向」で初期化しておく。これをしないと、
@@ -127,7 +119,25 @@ public:
 				// (位置はイージングするのに向きだけ飛ぶと不自然に見えるため)。
 				orbit_->SetYawPitch(lockYaw_, lockPitch_);
 			}
+		}
 
+		// 通常追従(非ロック時)の目標位置。上の同期が終わった後に計算する
+		// ことで、切り替わったフレームでも正しい基準(同期済みのorbit_)を使う。
+		const Math::Quaternion offsetRotation =
+			(orbit_ != nullptr) ? orbit_->GetOrbitRotation() : target->GetTargetRotation();
+		const Math::Vector3 followWorldOffset = Math::Vector3::Transform(localOffset_, offsetRotation);
+		const Math::Vector3 followPosition = playerPos + followWorldOffset;
+
+		// --- ロック状態の切り替わりを検出し、位置の飛びをイージングで吸収する ---
+		// ロックON/OFFの瞬間は目標位置の計算式そのものが変わるため、何もしないと
+		// カメラが瞬間移動してしまう。切り替わったフレームで「今の実位置」と
+		// 「切り替わった後の新しい目標位置」との差分(=横にずれていた量など)を
+		// positionEaseOffset_として保持しておき、以後は目標位置にこの差分を
+		// 足しながら時間経過で0へ減衰させることで、自然な遷移にする。
+		if (isTransitioning) {
+			const Math::Vector3 newTargetPosition = positioned ? lockedPosition : followPosition;
+			positionEaseOffset_ = transform_->GetPosition() - newTargetPosition;
+			positionEaseTimer_ = 0.0f;
 			wasPositionedLastFrame_ = positioned;
 		}
 
@@ -153,7 +163,7 @@ public:
 		// 位置だけロックに追従させ、向きには触れない)。
 		if (followRotation_ && !TryLookAtLockedTarget(lockedTarget, deltaTime)) {
 			wasLockedLastFrame_ = false;
-			//orbit_->SetYawPitch(lockYaw_, lockPitch_);
+			orbit_->SetYawPitch(lockYaw_, lockPitch_);
 		}
 	}
 
@@ -268,7 +278,7 @@ private:
 	Math::Vector3 positionEaseOffset_ = Math::Vector3::Zero;
 	float positionEaseTimer_ = 0.0f;
 	// イージングにかける秒数。0にすると従来通り瞬間切り替えになる。
-	float positionEaseDuration_ = 1.f;
+	float positionEaseDuration_ = 0.35f;
 	// 前フレームでComputeLockedPositionが成功していた(=ロック位置を使っていた)か。
 	// wasLockedLastFrame_(向きの角度補間用)とは別管理。
 	bool wasPositionedLastFrame_ = false;

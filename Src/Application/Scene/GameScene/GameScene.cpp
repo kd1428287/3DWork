@@ -107,8 +107,7 @@ void GameScene::Init()
 	cameraSystem_ = std::make_unique<CameraSystem>(*objManager_);
 
 	// system
-	/*inputSystem_ = std::make_unique<InputSystem>();
-	inputSystem_->RegisterObjectManager(objManager_.get());*/
+	inputSystem_ = std::make_unique<InputSystem>(*localBus_);
 
 	colliderRegistry_ = std::make_unique<ColliderRegistry>();
 	collisionSystem_ = std::make_unique<CollisionSystem>();
@@ -119,7 +118,7 @@ void GameScene::Init()
 	timeScaleSystem_ = std::make_unique<TimeScaleSystem>(*localBus_, *objManager_);
 
 	systemManager_->SetExecutionOrder(
-		//[this](float dt) { inputSystem_->Update(dt); },
+		[this](float dt) { inputSystem_->Update(dt); },
 		[this](float dt) { timeScaleSystem_->Update(dt); },
 		[this](float dt) { objManager_->PreUpdate(dt); },
 		[this](float dt) { objManager_->Update(dt); },

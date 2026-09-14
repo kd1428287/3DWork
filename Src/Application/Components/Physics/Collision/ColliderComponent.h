@@ -3,7 +3,7 @@
 #include "Application/Systems/Collision/CollisionMath.h"
 #include "Application/Definitions/Physics/ColliderCategory.h"
 #include "Application/Definitions/Physics/TriangleMeshData.h"
-#include "ColliderLayerMatrix.h"
+#include "Application/Definitions/Physics/ColliderLayerMatrix.h"
 
 // ============================================================
 // 当たり判定の"形状"だけを表すコンポーネント。

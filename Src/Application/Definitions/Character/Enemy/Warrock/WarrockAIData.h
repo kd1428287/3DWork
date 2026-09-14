@@ -38,43 +38,43 @@ inline EnemyAIData CreateDebugWarrockAIData()
 
 	EnemyAttackDefinition punch;
 	punch.name = "Punch";
-	punch.animationName = "Punch";
-	punch.windupDuration = 0.5f;
-	punch.activeDuration = 0.4f;
-	punch.recoveryDuration = 0.7f;
+	punch.attackData.phaseData.animationName = "Punch";
+	punch.attackData.phaseData.windup.targetDuration = 0.5f;
+	punch.attackData.phaseData.active.targetDuration = 0.4f;
+	punch.attackData.phaseData.recovery.targetDuration = 0.7f;
 	punch.maxRange = 3.0f;
 	punch.weight = 2.0f;
 	data.attacks.push_back(punch);
 
 	EnemyAttackDefinition kick;
 	kick.name = "Kick";
-	kick.animationName = "Kick";
-	kick.windupDuration = 0.5f;
-	kick.activeDuration = 0.3f;
-	kick.recoveryDuration = 0.6f;
+	kick.attackData.phaseData.animationName = "Kick";
+	kick.attackData.phaseData.windup.targetDuration = 0.5f;
+	kick.attackData.phaseData.active.targetDuration = 0.3f;
+	kick.attackData.phaseData.recovery.targetDuration = 0.6f;
 	kick.maxRange = 3.5f;
 	kick.weight = 1.5f;
 	data.attacks.push_back(kick);
 
 	EnemyAttackDefinition swipe;
 	swipe.name = "Swipe";
-	swipe.animationName = "Swipning";
-	swipe.windupDuration = 0.7f;
-	swipe.activeDuration = 0.5f;
-	swipe.recoveryDuration = 0.9f;
+	swipe.attackData.phaseData.animationName = "Swipning";
+	swipe.attackData.phaseData.windup.targetDuration = 0.7f;
+	swipe.attackData.phaseData.active.targetDuration = 0.5f;
+	swipe.attackData.phaseData.recovery.targetDuration = 0.9f;
 	swipe.maxRange = 4.5f;
 	swipe.weight = 1.0f;
 	data.attacks.push_back(swipe);
 
 	EnemyAttackDefinition jumpAttack;
 	jumpAttack.name = "JumpAttack";
-	jumpAttack.animationName = "JumpAttack";
-	jumpAttack.windupDuration = 0.9f;
-	jumpAttack.activeDuration = 0.4f;
-	jumpAttack.recoveryDuration = 1.8f;
+	jumpAttack.attackData.phaseData.animationName = "JumpAttack";
+	jumpAttack.attackData.phaseData.windup.targetDuration = 0.9f;
+	jumpAttack.attackData.phaseData.active.targetDuration = 0.4f;
+	jumpAttack.attackData.phaseData.recovery.targetDuration = 1.8f;
 	jumpAttack.maxRange = 5.0f;
 	jumpAttack.weight = 0.6f; // 隙の大きい大技は選ばれる比率を下げる
-	jumpAttack.useRootMotion = true;
+	jumpAttack.attackData.moveData.useRootMotion = true;
 	data.attacks.push_back(jumpAttack);
 
 	return data;

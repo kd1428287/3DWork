@@ -16,6 +16,7 @@ namespace Events
 		{
 			float timeScale = 1.0f;
 			float duration = -1.0f;
+			mutable uint64_t issuedRequestId = 0; // TimeScaleSystemが発行直後に書き込む
 		};
 
 		// 指定したObjectFlagsマスクに一致するGameObject群のtimeScaleを一括で操作する
@@ -51,10 +52,26 @@ namespace Events
 	}
 }
 
-inline void RequestHitStopEvent(EventBus& bus, float scale, float duration)
+inline void PublishHitStop(EventBus& bus, float scale, float duration)
 {
 	Events::TimeScale::SetGlobalTimeScaleEvent e;
 	e.timeScale = scale;
 	e.duration = duration;
+	bus.Publish(e);
+}
+
+inline void PublishPause(EventBus& bus, uint64_t& id)
+{
+	Events::TimeScale::SetGlobalTimeScaleEvent e;
+	e.timeScale = 0.0f;
+	e.duration = -1.0f;
+	bus.Publish(e);
+	id = e.issuedRequestId;
+}
+
+inline void PublishPauseCancel(EventBus& bus, uint64_t& id)
+{
+	Events::TimeScale::CancelTimeScaleRequestEvent e;
+	e.requestId = id;
 	bus.Publish(e);
 }

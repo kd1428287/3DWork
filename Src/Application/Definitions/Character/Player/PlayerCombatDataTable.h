@@ -5,7 +5,7 @@
 // PlayerStatusController::comboAttacks_と同じ型をここに集約しておくことで、
 // 「コンボデータをどこかから読み込んで丸ごと差し替える」処理
 // (デバッグ用直書き/将来のJSON読み込み)がこの型を単位にやり取りできる。
-using ComboAttackTable = std::array<AttackMoveData, kMaxComboHits>;
+using ComboAttackTable = std::array<AttackData, kMaxComboHits>;
 
 // ============================================================
 // デバッグ用: コンボ各段のAttackMoveDataをコード上に直書きして返す。

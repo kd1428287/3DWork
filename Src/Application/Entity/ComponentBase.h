@@ -1,13 +1,8 @@
 ﻿#pragma once
-#include <cstdint>
 
 class GameObject;
 
-// ============================================================
-// 全コンポーネントの基底クラス。
-// GameObjectにアタッチされ、ライフサイクルフックを通じて
-// 振る舞いを実装する。派生クラスは必要なフックだけ override する。
-// ============================================================
+// 全コンポーネントの基底クラス
 class ComponentBase {
 public:
 	explicit ComponentBase(GameObject* owner)
@@ -23,11 +18,11 @@ public:
 	virtual void Awake() {}
 	// 最初のUpdateの前に一度だけ呼ばれる(他コンポーネントの参照解決などに使う)
 	virtual void Start() {}
-	// Update前
+	// Update前 入力の取得等
 	virtual void PreUpdate(float deltaTime) { (void)deltaTime; }
-	// 毎フレーム呼ばれる
+	// 毎フレーム呼ばれる　メイン処理
 	virtual void Update(float deltaTime) { (void)deltaTime; }
-	// Update後、描画前などに呼ばれる
+	// Update後、描画前などに呼ばれる　トランスフォーム同期等
 	virtual void PostUpdate(float deltaTime) { (void)deltaTime; }
 	// コンポーネントが破棄される直前に呼ばれる
 	virtual void OnDestroy() {}

@@ -93,7 +93,7 @@ struct SlashTrailParams
 	// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 	bool	CoreEnabled = true;
 	float	CoreWidthScale = 0.1f;
-	DirectX::SimpleMath::Vector3	CoreColor = { 1.0f, 0.95f, 0.8f };
+	DirectX::SimpleMath::Vector3	CoreColor = { 0.45f, 0.325f, 0.3f };
 	KdParticleBlendMode	CoreBlendMode = KdParticleBlendMode::Add;
 	ParticleDrawPass	CoreDrawPassFlags = ParticleDrawPass::Default;
 

@@ -21,14 +21,14 @@ namespace Events
 }
 
 // Publishヘルパー
-inline void RequestCameraShake(EventBus& bus, const float& trauma)
+inline void PublishCameraShake(EventBus& bus, const float& trauma)
 {
 	Events::Camera::CameraShakeEvent e;
 	e.trauma = trauma;
 	bus.Publish(e);
 }
 
-inline void CameraShakeSettings(EventBus& bus, const float& perSecond = -1.0f, const float& frequency = -1.0f, 
+inline void PublishCameraShakeSettings(EventBus& bus, const float& perSecond = -1.0f, const float& frequency = -1.0f, 
 	const Math::Vector3& posAmplitude = { 0.f,0.f,0.f }, const Math::Vector3& rotAmplitude = { 0.f,0.f,0.f })
 {
 	Events::Camera::CameraShakeSettingEvent e;

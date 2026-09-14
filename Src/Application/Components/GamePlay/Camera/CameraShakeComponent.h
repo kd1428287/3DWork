@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include "Application/Core/Math/PerlinNoise.h"
+
 // カメラシェイクを計算だけする
 // --- ノイズについて -----------------------------------------------
 // SampleNoise()は複数周波数のsin波を重ねただけの簡易実装。
@@ -68,4 +70,6 @@ private:
 
 	Math::Vector3    posOffset_{};
 	Math::Quaternion rotOffset_ = Math::Quaternion::Identity;
+
+	std::unique_ptr<PerlinNoise> noise_ = nullptr;
 };

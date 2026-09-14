@@ -259,6 +259,15 @@
     <Filter Include="Src\Application\Definitions\Character\Enemy\Warrock">
       <UniqueIdentifier>{01429a63-4029-44a3-b006-940f3e7deaff}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\Core\Math">
+      <UniqueIdentifier>{3f9cad13-59e7-4acd-b405-4865693c76ee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Definitions\Character\Combat">
+      <UniqueIdentifier>{661f3a81-5f03-48b4-8a5b-723c16175ba7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Editor\ThirdParty\imgui-node-editor">
+      <UniqueIdentifier>{7e0336a7-0ccf-42db-b1bc-8d44df56f951}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -603,9 +612,6 @@
     <ClInclude Include="Src\Application\Components\Graphics\Animation\TwoBoneIKComponent.h">
       <Filter>Src\Application\Components\Graphics\Animation</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\Graphics\Debug\WireFrameComponent.h">
-      <Filter>Src\Application\Components\Graphics\Debug</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Components\Graphics\Effect\SlashTrailComponent.h">
       <Filter>Src\Application\Components\Graphics\Effect</Filter>
     </ClInclude>
@@ -670,12 +676,6 @@
       <Filter>Src\Application\Components\Tags</Filter>
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Physics\Collision\ColliderComponent.h">
-      <Filter>Src\Application\Components\Physics\Collision</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\Physics\Collision\ColliderLayerMatrix.h">
-      <Filter>Src\Application\Components\Physics\Collision</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\Physics\Collision\ModelCollisionMeshBuilder.h">
       <Filter>Src\Application\Components\Physics\Collision</Filter>
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Physics\Movement\DirectionTransformSource.h">
@@ -855,6 +855,51 @@
     <ClInclude Include="Src\Application\Factories\GamePlay\Character\CharacterFactoryUtil.h">
       <Filter>Src\Application\Factories\GamePlay\Character</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Components\Graphics\Debug\WireFrameComponent.h">
+      <Filter>Src\Application\Components\Graphics\Debug</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Core\EventBus\Events\CollisionEvents.h">
+      <Filter>Src\Application\Core\EventBus\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Systems\Collision\CollisionEventPublisher.h">
+      <Filter>Src\Application\Systems\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Physics\ColliderLayerMatrix.h">
+      <Filter>Src\Application\Definitions\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Physics\ModelCollisionMeshBuilder.h">
+      <Filter>Src\Application\Definitions\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Core\Math\PerlinNoise.h">
+      <Filter>Src\Application\Core\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Systems\GamePlay\GameInputSystem.h">
+      <Filter>Src\Application\Systems\GamePlay</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Character\Combat\CombatData.h">
+      <Filter>Src\Application\Definitions\Character\Combat</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Editor\ThirdParty\imgui-node-editor\crude_json.h">
+      <Filter>Src\Application\Editor\ThirdParty\imgui-node-editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_bezier_math.h">
+      <Filter>Src\Application\Editor\ThirdParty\imgui-node-editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_canvas.h">
+      <Filter>Src\Application\Editor\ThirdParty\imgui-node-editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_extra_math.h">
+      <Filter>Src\Application\Editor\ThirdParty\imgui-node-editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_node_editor.h">
+      <Filter>Src\Application\Editor\ThirdParty\imgui-node-editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_node_editor_internal.h">
+      <Filter>Src\Application\Editor\ThirdParty\imgui-node-editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Editor\Tools\BTEditor.h">
+      <Filter>Src\Application\Editor\Tools</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -1031,9 +1076,6 @@
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerStatusController.cpp">
       <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
     </ClCompile>
-    <ClCompile Include="Src\Application\Components\Graphics\Debug\WireFrameComponent.cpp">
-      <Filter>Src\Application\Components\Graphics\Debug</Filter>
-    </ClCompile>
     <ClCompile Include="Src\Application\Components\Graphics\Render\ModelRenderComponent.cpp">
       <Filter>Src\Application\Components\Graphics\Render</Filter>
     </ClCompile>
@@ -1124,6 +1166,24 @@
     <ClCompile Include="Src\Application\Factories\GamePlay\Character\CharacterFactoryUtil.cpp">
       <Filter>Src\Application\Factories\GamePlay\Character</Filter>
     </ClCompile>
+    <ClCompile Include="Src\Application\Components\Graphics\Debug\WireFrameComponent.cpp">
+      <Filter>Src\Application\Components\Graphics\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Editor\ThirdParty\imgui-node-editor\crude_json.cpp">
+      <Filter>Src\Application\Editor\ThirdParty\imgui-node-editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_canvas.cpp">
+      <Filter>Src\Application\Editor\ThirdParty\imgui-node-editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_node_editor.cpp">
+      <Filter>Src\Application\Editor\ThirdParty\imgui-node-editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_node_editor_api.cpp">
+      <Filter>Src\Application\Editor\ThirdParty\imgui-node-editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Editor\Tools\BTEditor.cpp">
+      <Filter>Src\Application\Editor\Tools</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Src\Framework\Shader\inc_KdCommon.hlsli">
@@ -1149,6 +1209,15 @@
     </None>
     <None Include="Src\Framework\Shader\StandardShader\inc_KdSkyDomeShader.hlsli">
       <Filter>Src\Framework\Shader\StandardShader</Filter>
+    </None>
+    <None Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_bezier_math.inl">
+      <Filter>Src\Application\Editor\ThirdParty\imgui-node-editor</Filter>
+    </None>
+    <None Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_extra_math.inl">
+      <Filter>Src\Application\Editor\ThirdParty\imgui-node-editor</Filter>
+    </None>
+    <None Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_node_editor_internal.inl">
+      <Filter>Src\Application\Editor\ThirdParty\imgui-node-editor</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

@@ -129,7 +129,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
-      <AdditionalIncludeDirectories>.\;src;..\Library;..\Library\DirectXTK\Inc;..\Library\DirectXTex\DirectXTex;..\Library\tinygltf;..\Library\imgui;..\Library\Effekseer\Inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;src;..\Library;..\Library\DirectXTK\Inc;..\Library\DirectXTex\DirectXTex;..\Library\tinygltf;..\Library\imgui;..\Library\Effekseer\Inc;src\Application\Editor\ThirdParty\imgui-node-editor;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -329,8 +329,6 @@
     <ClInclude Include="Src\Application\Components\Graphics\UI\Enemy\EnemyHPBarComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Player\PlayerStatusUIComponent.h" />
     <ClInclude Include="Src\Application\Components\Physics\Collision\ColliderComponent.h" />
-    <ClInclude Include="Src\Application\Components\Physics\Collision\ColliderLayerMatrix.h" />
-    <ClInclude Include="Src\Application\Components\Physics\Collision\ModelCollisionMeshBuilder.h" />
     <ClInclude Include="Src\Application\Components\Physics\Movement\DirectionTransformSource.h" />
     <ClInclude Include="Src\Application\Components\Physics\Movement\FollowCameraComponent.h" />
     <ClInclude Include="Src\Application\Components\Physics\Movement\GravityComponent.h" />
@@ -352,13 +350,16 @@
     <ClInclude Include="Src\Application\Components\Tags\IRenderStateModifier.h" />
     <ClInclude Include="Src\Application\Core\EventBus\EventBus.h" />
     <ClInclude Include="Src\Application\Core\EventBus\Events\CameraEvents.h" />
+    <ClInclude Include="Src\Application\Core\EventBus\Events\CollisionEvents.h" />
     <ClInclude Include="Src\Application\Core\EventBus\Events\EffectEvents.h" />
     <ClInclude Include="Src\Application\Core\EventBus\Events\Event.h" />
     <ClInclude Include="Src\Application\Core\EventBus\Events\SceneEvents.h" />
     <ClInclude Include="Src\Application\Core\EventBus\Events\SlashTrailEvents.h" />
     <ClInclude Include="Src\Application\Core\EventBus\Events\TimeScaleEvents.h" />
+    <ClInclude Include="Src\Application\Core\Math\PerlinNoise.h" />
     <ClInclude Include="Src\Application\Core\Scene\SceneManager.h" />
     <ClInclude Include="Src\Application\Core\Scene\SceneType.h" />
+    <ClInclude Include="Src\Application\Definitions\Character\Combat\CombatData.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\CharacterCollisionDefaults.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\CharacterDefinitionCommon.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Enemy\EnemyAIData.h" />
@@ -377,9 +378,18 @@
     <ClInclude Include="Src\Application\Definitions\Map\ComponentTypes.h" />
     <ClInclude Include="Src\Application\Definitions\Map\MapData.h" />
     <ClInclude Include="Src\Application\Definitions\Physics\ColliderCategory.h" />
+    <ClInclude Include="Src\Application\Definitions\Physics\ColliderLayerMatrix.h" />
+    <ClInclude Include="Src\Application\Definitions\Physics\ModelCollisionMeshBuilder.h" />
     <ClInclude Include="Src\Application\Definitions\Physics\TriangleMeshData.h" />
     <ClInclude Include="Src\Application\Editor\Common\EditorViewport.h" />
+    <ClInclude Include="Src\Application\Editor\ThirdParty\imgui-node-editor\crude_json.h" />
+    <ClInclude Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_bezier_math.h" />
+    <ClInclude Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_canvas.h" />
+    <ClInclude Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_extra_math.h" />
+    <ClInclude Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_node_editor.h" />
+    <ClInclude Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_node_editor_internal.h" />
     <ClInclude Include="Src\Application\Editor\ThirdParty\ImGuizmo.h" />
+    <ClInclude Include="Src\Application\Editor\Tools\BTEditor.h" />
     <ClInclude Include="Src\Application\Editor\Tools\EffectEditor.h" />
     <ClInclude Include="Src\Application\Editor\Tools\MapEditor.h" />
     <ClInclude Include="Src\Application\Editor\Tools\ShaderTuningEditor.h" />
@@ -408,11 +418,13 @@
     <ClInclude Include="Src\Application\Scene\ResultScene\ResultScene.h" />
     <ClInclude Include="Src\Application\Scene\TitleScene\TitleScene.h" />
     <ClInclude Include="Src\Application\Systems\Collision\ColliderRegistry.h" />
+    <ClInclude Include="Src\Application\Systems\Collision\CollisionEventPublisher.h" />
     <ClInclude Include="Src\Application\Systems\Collision\CollisionMath.h" />
     <ClInclude Include="Src\Application\Systems\Collision\CollisionSystem.h" />
     <ClInclude Include="Src\Application\Systems\Collision\RaycastSystem.h" />
     <ClInclude Include="Src\Application\Systems\GamePlay\CameraSystem.h" />
     <ClInclude Include="Src\Application\Systems\GamePlay\ComboSystem.h" />
+    <ClInclude Include="Src\Application\Systems\GamePlay\GameInputSystem.h" />
     <ClInclude Include="Src\Application\Systems\GamePlay\TimeScaleSystem.h" />
     <ClInclude Include="Src\Application\Systems\InputSystem.h" />
     <ClInclude Include="Src\Application\Systems\SystemManager.h" />
@@ -491,7 +503,12 @@
     <ClCompile Include="Src\Application\Definitions\Map\ComponentRegistrations.cpp" />
     <ClCompile Include="Src\Application\Definitions\Map\MapData.cpp" />
     <ClCompile Include="Src\Application\Editor\Common\EditorViewport.cpp" />
+    <ClCompile Include="Src\Application\Editor\ThirdParty\imgui-node-editor\crude_json.cpp" />
+    <ClCompile Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_canvas.cpp" />
+    <ClCompile Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_node_editor.cpp" />
+    <ClCompile Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_node_editor_api.cpp" />
     <ClCompile Include="Src\Application\Editor\ThirdParty\ImGuizmo.cpp" />
+    <ClCompile Include="Src\Application\Editor\Tools\BTEditor.cpp" />
     <ClCompile Include="Src\Application\Editor\Tools\EffectEditor.cpp" />
     <ClCompile Include="Src\Application\Editor\Tools\MapEditor.cpp" />
     <ClCompile Include="Src\Application\Editor\Tools\ShaderTuningEditor.cpp" />
@@ -560,6 +577,9 @@
   <ItemGroup>
     <None Include="Asset\Data\Game\EnemyData.json" />
     <None Include="Asset\Data\Game\EnemySchema.json" />
+    <None Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_bezier_math.inl" />
+    <None Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_extra_math.inl" />
+    <None Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_node_editor_internal.inl" />
     <None Include="Src\Framework\Shader\GPUParticle\inc_KdGPUParticle.hlsli" />
     <None Include="Src\Framework\Shader\inc_KdCommon.hlsli" />
     <None Include="Src\Framework\Shader\PostProcessShader\inc_KdPostProcessShader.hlsli" />

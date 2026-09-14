@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "../Common/CombatData.h"
 
 // ============================================================
 // 敵1体分の挙動パラメータをまとめたデータ。C++の型を分けるのではなく、
@@ -14,34 +15,36 @@
 // なったためEnemyAIDataへ改名した。
 // ============================================================
 
-// 攻撃1種類分のデータ。拡張性を持たせるため、windup/active/recoveryの
-// 3フェーズ構成にしている(Player/EnemyのAttackMoveDataと同じ考え方)。
+// 攻撃1種類分のデータ。ダメージ/体幹ダメージ、windup/active/recoveryの
+// 3フェーズ構成、モーション制御、キャンセル設定等は汎用のAttackData
+// (CombatData.h、Player側のAttackDataと共通)にまとめてあり、ここには
+// BTの技選択(EnemyAIController/BTWeightedAttackAction<T>)にしか
+// 使わない値だけを残す。
 struct EnemyAttackDefinition
 {
 	std::string name = "Attack";
-	std::string animationName = "Attack1";
 
-	float windupDuration = 0.3f;
-	float activeDuration = 0.2f;
-	float recoveryDuration = 0.4f;
+	// ダメージ/体幹ダメージ、windup/active/recoveryの秒数
+	// (attackData.phaseData.windup/active/recovery.targetDuration)、
+	// アニメーション名(attackData.phaseData.animationName)、
+	// ルートモーション使用有無(attackData.moveData.useRootMotion。
+	// trueの場合、BTWeightedAttackAction<T>がEnemyAIController::
+	// PlayAnimation()へこの値を渡し、ModelAnimatorComponent側の
+	// ルートモーション抽出が有効化される。EnemyAIController::
+	// ApplyRootMotion()参照。JumpAttackのような踏み込みを伴う技での
+	// 利用を想定しているが、実アセットにルートモーションが
+	// 焼き込まれていない技はfalseのままでよい)等はすべてここに持つ。
+	AttackData attackData;
 
 	// ターゲットとの距離がこの値以下の場合にだけ選択候補になる。
 	// 技ごとに間合いを分けることで「近距離用の速い技」「中距離まで
-	// 届くリーチのある技」等のバリエーションを表現できる。
+	// 届くリーチのある技」等のバリエーションを表現できる。BT側の
+	// 技選択にしか使わないためattackDataには含めない。
 	float maxRange = 2.0f;
 
 	// 候補が複数ある場合の重み付き抽選に使う(値が大きいほど選ばれやすい)。
+	// こちらもBT側の技選択専用の値。
 	float weight = 1.0f;
-
-	// この技をアニメーションクリップのルートモーションで動かすか
-	// (PlayerのAttackMoveData::useRootMotionと同じ考え方)。trueの場合、
-	// BTWeightedAttackAction<T>がEnemyAIController::PlayAnimation()へ
-	// この値を渡し、ModelAnimatorComponent側のルートモーション抽出が
-	// 有効化される(EnemyAIController::ApplyRootMotion()参照)。
-	// JumpAttackのような踏み込みを伴う技での利用を想定しているが、
-	// 実アセットにルートモーションが焼き込まれていない技はfalseのまま
-	// でよい。
-	bool useRootMotion = false;
 };
 
 struct EnemyAIData

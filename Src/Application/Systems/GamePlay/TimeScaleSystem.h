@@ -83,7 +83,7 @@ private:
 		globalRequests_.push_back({ id, e.timeScale, e.duration });
 		requestLocations_[id] = RequestLocation{ RequestCategory::Global, 0, {} };
 		ApplyGlobal();
-		NotifyIssued(id);
+		e.issuedRequestId = id;
 	}
 
 	void OnSetMaskTimeScale(const Events::TimeScale::SetMaskTimeScaleEvent& e)

@@ -2,6 +2,7 @@
 
 #include "CollisionMath.h"
 #include "ColliderRegistry.h"
+#include "CollisionEventPublisher.h"
 
 // ============================================================
 // 当たり判定システム。
@@ -17,7 +18,14 @@
 // 「形状×形状」の粒度で行う。重なり判定の実際の幾何計算は
 // CollisionMath(状態を持たない純粋関数群)に委譲し、このクラスは
 // 「誰と誰の、どの形状同士が、前フレームから状態が変わったか」の
-// 記録とイベント発行だけに専念する。
+// 検出・記録・押し返しに専念する。
+//
+// イベントの生成と配信(Enter/Exit/Stayのイベントを組み立てて宛先の
+// ローカルバスに届ける部分)はCollisionEventPublisherに切り出している。
+// 「判定・記録」と「通知」を別クラスにすることで、通知方法だけを
+// 変えたい変更がこのクラスに波及しないようにする狙い。このクラスは
+// CollisionEventPublisherに「誰と誰がどうなったか」を渡すだけで、
+// イベント型(Events::Collision::～)そのものを直接組み立てることはない。
 //
 // Sphere/Box(OBB)/Capsule/Mesh/Polygonの5種類の形状は、すべてColliderComponent
 // のCollisionShapeEntryとして同じリストに混在する(以前はMesh/Polygonを
@@ -82,6 +90,7 @@ class CollisionSystem {
 public:
 	// Events::Collision::～ と毎回書かずに済むよう、クラス内だけに限定した
 	// using宣言(ヘッダ全体やincludeした側の名前空間を汚さないため)。
+	// 実体はCollisionEventPublisher側と同じ型(Events::Collision::～)。
 	using CollisionEnterEvent = Events::Collision::CollisionEnterEvent;
 	using CollisionExitEvent = Events::Collision::CollisionExitEvent;
 	// CollisionEnterEventと同じ形のイベント。継続中の重なりを毎フレーム
@@ -191,6 +200,7 @@ public:
 		// 形状名から解決し直し、解決できなければ静かにスキップする
 		// (Handle::Resolve()は世代番号まで検証するため、破棄後にポインタ値
 		//  だけ再利用された別物を誤って生存扱いしない)。
+		// イベントの組み立てと配信自体はCollisionEventPublisherに委譲する。
 		for (auto& entry : newlyEntered) {
 			const PairKey& key = entry.first;
 			const CollisionMath::OverlapResult& overlap = entry.second;
@@ -203,7 +213,7 @@ public:
 			const CollisionShapeEntry* shapeB = b->FindShape(key.second.shapeName);
 			if (shapeA == nullptr || shapeB == nullptr) continue; // 発行前に消された
 
-			PublishEnter(a, *shapeA, b, *shapeB, overlap);
+			CollisionEventPublisher::PublishEnter(a, *shapeA, b, *shapeB, overlap);
 		}
 
 		for (const PairKey& key : exitedKeys) {
@@ -215,7 +225,7 @@ public:
 			const CollisionShapeEntry* shapeB = b->FindShape(key.second.shapeName);
 			if (shapeA == nullptr || shapeB == nullptr) continue;
 
-			PublishExit(a, *shapeA, b, *shapeB);
+			CollisionEventPublisher::PublishExit(a, *shapeA, b, *shapeB);
 		}
 
 		// --- Phase 2.5: Stay通知。継続中のペアのうち、どちらかの形状が
@@ -237,7 +247,7 @@ public:
 
 			if (!shapeA->wantsStayEvent && !shapeB->wantsStayEvent) continue;
 
-			PublishStay(a, *shapeA, b, *shapeB, overlap, shapeA->wantsStayEvent, shapeB->wantsStayEvent);
+			CollisionEventPublisher::PublishStay(a, *shapeA, b, *shapeB, overlap, shapeA->wantsStayEvent, shapeB->wantsStayEvent);
 		}
 	}
 
@@ -470,114 +480,6 @@ private:
 			const float half = overlap.overlapDistance * 0.5f;
 			a->Translate(pushNormal * half);
 			b->Translate(-pushNormal * half);
-		}
-	}
-
-	// --- イベント通知 -------------------------------------------------
-
-	static CollisionEnterEvent MakeEnterEvent(
-		ColliderComponent* self, const CollisionShapeEntry& selfShape,
-		ColliderComponent* other, const CollisionShapeEntry& otherShape,
-		const CollisionMath::OverlapResult& hitResult, bool flipNormal) {
-
-		CollisionEnterEvent e;
-		e.selfObject = self->GetOwner();
-		e.selfCollider = self;
-		e.selfShapeName = selfShape.name;
-		e.otherObject = other->GetOwner();
-		e.otherCollider = other;
-		e.otherShapeName = otherShape.name;
-		e.hitResult = hitResult;
-		if (flipNormal) {
-			e.hitResult.hitNormal = -e.hitResult.hitNormal;
-		}
-		return e;
-	}
-
-	static CollisionExitEvent MakeExitEvent(
-		ColliderComponent* self, const CollisionShapeEntry& selfShape,
-		ColliderComponent* other, const CollisionShapeEntry& otherShape) {
-
-		CollisionExitEvent e;
-		e.selfObject = self->GetOwner();
-		e.selfCollider = self;
-		e.selfShapeName = selfShape.name;
-		e.otherObject = other->GetOwner();
-		e.otherCollider = other;
-		e.otherShapeName = otherShape.name;
-		return e;
-	}
-
-	static CollisionStayEvent MakeStayEvent(
-		ColliderComponent* self, const CollisionShapeEntry& selfShape,
-		ColliderComponent* other, const CollisionShapeEntry& otherShape,
-		const CollisionMath::OverlapResult& hitResult, bool flipNormal) {
-
-		// フィールド構成はCollisionEnterEventと同一。型を分けているのは
-		// 購読側がEnter/Stayを別々に選べるようにするため(理由は
-		// using CollisionStayEvent = ...の注釈を参照)。
-		CollisionStayEvent e;
-		e.selfObject = self->GetOwner();
-		e.selfCollider = self;
-		e.selfShapeName = selfShape.name;
-		e.otherObject = other->GetOwner();
-		e.otherCollider = other;
-		e.otherShapeName = otherShape.name;
-		e.hitResult = hitResult;
-		if (flipNormal) {
-			e.hitResult.hitNormal = -e.hitResult.hitNormal;
-		}
-		return e;
-	}
-
-	// 宛先(self)のGameObjectが持つローカルバスにだけ発行する。
-	// 以前はシーン共有のEventBus(SceneContext::eventBus)に投げていたため、
-	// CollisionEnterEvent等を購読している「シーン内の無関係な全オブジェクト」
-	// のハンドラまで毎回呼ばれ、各自でselfObject==自分かのフィルタが
-	// 必要だった。宛先はPublish時点で確定しているので、最初から
-	// self->GetOwner()->GetLocalEventBus()に直接投げることで、
-	// 無関係なオブジェクトには物理的に届かなくなる
-	// (GameObject::GetLocalEventBus()の追加が必要。無ければ
-	//  GameObject.h側に「このGameObject宛て専用のEventBusインスタンス」
-	//  を1つ持たせて公開するだけでよい)。
-	static void PublishToOwner(ColliderComponent* self, auto&& event) {
-		self->GetOwner()->GetLocalEventBus().Publish(std::forward<decltype(event)>(event));
-	}
-
-	static void PublishEnter(
-		ColliderComponent* a, const CollisionShapeEntry& shapeA,
-		ColliderComponent* b, const CollisionShapeEntry& shapeB,
-		const CollisionMath::OverlapResult& overlap) {
-
-		// overlapのhitNormalは「aをbから押し出す向き」で計算されている。
-		// a視点のイベントはそのまま、b視点のイベントは向きを反転させて使う。
-		// それぞれ自分自身(self)のローカルバスにだけ発行する。
-		PublishToOwner(a, MakeEnterEvent(a, shapeA, b, shapeB, overlap, false));
-		PublishToOwner(b, MakeEnterEvent(b, shapeB, a, shapeA, overlap, true));
-	}
-
-	static void PublishExit(
-		ColliderComponent* a, const CollisionShapeEntry& shapeA,
-		ColliderComponent* b, const CollisionShapeEntry& shapeB) {
-
-		PublishToOwner(a, MakeExitEvent(a, shapeA, b, shapeB));
-		PublishToOwner(b, MakeExitEvent(b, shapeB, a, shapeA));
-	}
-
-	// wantsStayA/wantsStayBは呼び出し側(Update())が既にチェック済みだが、
-	// 「shapeAだけ欲しい」「shapeBだけ欲しい」というケースもあるため、
-	// 片側だけ発行することを許すために個別に渡す。
-	static void PublishStay(
-		ColliderComponent* a, const CollisionShapeEntry& shapeA,
-		ColliderComponent* b, const CollisionShapeEntry& shapeB,
-		const CollisionMath::OverlapResult& overlap,
-		bool wantsStayA, bool wantsStayB) {
-
-		if (wantsStayA) {
-			PublishToOwner(a, MakeStayEvent(a, shapeA, b, shapeB, overlap, false));
-		}
-		if (wantsStayB) {
-			PublishToOwner(b, MakeStayEvent(b, shapeB, a, shapeA, overlap, true));
 		}
 	}
 

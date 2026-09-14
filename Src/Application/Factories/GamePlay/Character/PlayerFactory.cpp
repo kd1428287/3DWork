@@ -2,34 +2,39 @@
 #include "Application/Definitions/Loaders/PlayerDefinitionLoader.h"
 #include "CharacterFactoryUtil.h"
 
-#include "../../Components/Transform/TransformComponent.h"
-#include "../../Components/Transform/AttachToSocketComponent.h"
-#include "../../Components/Movement/MovementComponent.h"
-#include "../../Components/Movement/VelocityComponent.h"
-#include "../../Components/Movement/FacingDirectionComponent.h"
-#include "../../Components/Character/Player/PlayerInputComponent.h"
-#include "../../Components/Character/Data/HitReactionComponent.h"
-#include "../../Components/Camera/CameraTargetComponent.h"
-#include "../../Components/Render/ModelRenderComponent.h"
-#include "../../Components/Render/PolygonRenderComponent.h" 
-#include "../../Components/Effect/SlashTrailComponent.h"
-#include "../../Components/Animation/ModelAnimatorComponent.h"
-#include "../../Components/Animation/SkeletonComponent.h"
-#include "../../Components/Animation/BoneSocketComponent.h"
-#include "../../Components/Animation/TwoBoneIKComponent.h"
-#include "../../Components/Animation/RootMotionApplierComponent.h"
-#include "../../Components/Character/Player/PlayerStatusController.h"
-#include "../../Components/Character/Player/PlayerLockOnComponent.h"
-#include "../../Components/Character/Player/PlayerMovementAnimationComponent.h"
-#include "../../Components/Character/Data/PostureComponent.h"
-#include "../../Components/Character/Data/HealthComponent.h"
-#include "../../Components/Collision/GravityComponent.h"
-#include "../../Components/Collision/CharacterCollisionDefaults.h"
-#include "../../Components/Collision/AttackSourceComponent.h"
-#include "../../Components/Collision/WireFrameComponent.h"
-#include "../../Components/Sensors/GroundSensorComponent.h"
-#include "../../Components/Combat/WeaponSetComponent.h"
-#include "../../Components/Combat/WeaponComponent.h"
+#include "Application/Components/Core/TransformComponent.h"
+#include "Application/Components/Core/AttachToSocketComponent.h"
+#include "Application/Components/Core/BoneSocketComponent.h"
+
+#include "Application/Components/GamePlay/Character/Combat/WeaponSetComponent.h"
+#include "Application/Components/GamePlay/Character/Combat/WeaponComponent.h"
+#include "Application/Components/GamePlay/Character/Combat/AttackSourceComponent.h"
+#include "Application/Components/GamePlay/Character/Combat/HitReactionComponent.h"
+#include "Application/Components/GamePlay/Character/Combat/PostureComponent.h"
+#include "Application/Components/GamePlay/Character/Combat/HealthComponent.h"
+#include "Application/Components/GamePlay/Character/Player/PlayerInputComponent.h"
+#include "Application/Components/GamePlay/Character/Player/PlayerStatusController.h"
+#include "Application/Components/GamePlay/Character/Player/PlayerLockOnComponent.h"
+#include "Application/Components/GamePlay/Character/Player/PlayerMovementAnimationComponent.h"
+#include "Application/Components/GamePlay/Camera/CameraTargetComponent.h"
+
+#include "Application/Components/Physics/Movement/MovementComponent.h"
+#include "Application/Components/Physics/Movement/VelocityComponent.h"
+#include "Application/Components/Physics/Movement/GravityComponent.h"
+#include "Application/Components/Physics/Sensors/GroundSensorComponent.h"
+
+#include "Application/Components/Graphics/Render/ModelRenderComponent.h"
+#include "Application/Components/Graphics/Render/PolygonRenderComponent.h" 
+#include "Application/Components/Graphics/Effect/SlashTrailComponent.h"
+#include "Application/Components/Graphics/Animation/ModelAnimatorComponent.h"
+#include "Application/Components/Graphics/Animation/SkeletonComponent.h"
+#include "Application/Components/Graphics/Animation/TwoBoneIKComponent.h"
+#include "Application/Components/Graphics/Animation/RootMotionApplierComponent.h"
+#include "Application/Components/Graphics/Animation/FacingDirectionComponent.h"
+
+#include "Application/Components/Graphics/Debug/WireFrameComponent.h"
+
+#include "Application/Definitions/Character/Common/CharacterCollisionDefaults.h"
 
 namespace
 {
@@ -81,10 +86,10 @@ namespace
 
 		for (const auto& def : colliderDefs) {
 			if (def.interactsWith != ColliderCategory::None) {
-				collider->AddCapsule(def.name, def.radius, def.start, def.end, def.category, def.interactsWith);
+				//collider->AddCapsule(def.name, def.radius, def.start, def.end, def.category, def.interactsWith);
 			}
 			else {
-				collider->AddCapsule(def.name, def.radius, def.start, def.end, def.category);
+				//collider->AddCapsule(def.name, def.radius, def.start, def.end, def.category);
 			}
 
 			if (def.isTrigger) {

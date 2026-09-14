@@ -38,7 +38,7 @@ private:
 	std::unique_ptr<TerrainFactory> terrainFactory_ = nullptr;
 	std::unique_ptr<EffectDispatcher> effectDispatcher_ = nullptr;
 	std::unique_ptr<SlashTrailDispatcher> slashTrailDispatcher_ = nullptr;
-	//std::unique_ptr<InputSystem> inputSystem_ = nullptr;
+	std::unique_ptr<InputSystem> inputSystem_ = nullptr;
 	std::unique_ptr<TimeScaleSystem> timeScaleSystem_ = nullptr;
 	std::unique_ptr<CameraSystem> cameraSystem_ = nullptr;
 	std::unique_ptr<ColliderRegistry> colliderRegistry_ = nullptr;
