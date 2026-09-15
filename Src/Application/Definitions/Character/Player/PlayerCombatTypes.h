@@ -371,7 +371,7 @@ struct GuardData
 	// あった。そのため継続姿勢は専用のLoopアニメーションとして持たせ、
 	// 構え動作終了後・各種リアクション終了後は常にこちらへ明示的に
 	// 再生し直す。
-	std::string loopAnimationName = "APose2DefenseL_Loop";
+	std::string loopAnimationName = "DefenseL_Loop";
 
 	// パリィ成立時に再生する専用モーションと、その再生を強制する秒数
 	// (この間はガードキーを離しても解除されない。StateGuard参照)。

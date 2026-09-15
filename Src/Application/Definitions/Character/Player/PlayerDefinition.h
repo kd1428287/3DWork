@@ -39,6 +39,11 @@ struct PlayerDefinition
 	std::vector<CapsuleColliderDefinition> colliders;
 
 	float walkSpeed = 4.0f;
+	// 【要調整】仮の値。PlayerCombatMovementComponentが通常移動(Run)の
+	// 目標速度として参照する(walkSpeedと並んで、このDefinitionが唯一の
+	// データ源になるようにする。値自体を各コンポーネントが独自に
+	// ハードコードしないこと)。
+	float runSpeed = 8.0f;
 
 	// ソケットだけ生成しておくボーン（将来の装備拡張・ボーン構成確認用）
 	std::vector<std::string> auxiliarySocketBones;

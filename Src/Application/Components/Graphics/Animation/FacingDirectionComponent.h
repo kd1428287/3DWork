@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "../../Physics/Movement/MovementComponent.h"
 #include "../../Physics/Movement/VelocityComponent.h"
 
 // ============================================================
@@ -29,44 +30,18 @@ public:
 	//   向きがガタつくのを防ぐ)。
 	explicit FacingDirectionComponent(GameObject* owner,
 		float rotationSpeed = 10.0f, float moveThreshold = 0.001f)
-		: ComponentBase(owner), rotationSpeed_(rotationSpeed), moveThreshold_(moveThreshold) {}
+		: ComponentBase(owner), rotationSpeed_(rotationSpeed), moveThreshold_(moveThreshold) {
+	}
 
 	void Awake() override {
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
-		if (transform_ != nullptr) {
-			lastPosition_ = transform_->GetPosition();
-			hasLastPosition_ = true;
-		}
-
-		// 無くてもよい(任意)。存在する場合のみノックバック中の向き固定に使う。
-		velocityComponent_ = GetOwner()->GetComponent<VelocityComponent>();
+		movement_ = GetOwner()->GetComponent<MovementComponent>();
+		// 無くてもよい(任意)。存在する場合のみノックバック中の向き固定に使う
+		velocity_ = GetOwner()->GetComponent<VelocityComponent>();
 	}
 
-	void Update(float deltaTime) override {
-		if (transform_ == nullptr) return;
+	void PostUpdate(float deltaTime) override {
 
-		const Math::Vector3 currentPosition = transform_->GetPosition();
-
-		if (!hasLastPosition_) {
-			// 初回フレームは前の位置が無く差分が取れないため、記録だけして終わる。
-			lastPosition_ = currentPosition;
-			hasLastPosition_ = true;
-			return;
-		}
-
-		// 外部(PlayerStatusController等)から向きの自動更新を止められている間は、
-		// 位置の記録だけ更新して回転はスキップする。攻撃/回避中(特に
-		// ルートモーションで移動する技)は、移動方向がアニメーション側の
-		// 都合で毎フレーム大きく変わりうるため、それに合わせて向きまで
-		// 追従させてしまうと、その回転がまた次のフレームの移動方向計算に
-		// 影響し(ルートモーションのデルタは現在の向きで変換されるため)、
-		// 向きと移動が互いに干渉して暴れる不具合があった(実際に発生)。
-		// ノックバック中の扱いと同じ考え方で、この間はlastPosition_の
-		// 更新も含めて丸ごとスキップする。
-		if (!updateEnabled_) {
-			lastPosition_ = currentPosition;
-			return;
-		}
 
 		// ノックバック中(外力で強制的に押し出されている間)は向きを固定する。
 		// 「今どちらへ飛ばされているか」ではなく「攻撃を受けた時点の向き」を
@@ -74,25 +49,15 @@ public:
 		// (位置差分だけ蓄積させて後で反映する、という中途半端な状態にしないため。
 		//  ノックバックが終わった直後の1フレームで大きな差分が出て急に
 		//  振り向く、という事故を避ける)。
-		if (velocityComponent_ != nullptr && velocityComponent_->IsImpulseActive()) {
-			lastPosition_ = currentPosition;
+		if (velocity_ != nullptr && velocity_->IsImpulseActive()) {
 			return;
 		}
 
-		Math::Vector3 delta = currentPosition - lastPosition_;
-		lastPosition_ = currentPosition;
-
-		// 上下移動(ジャンプ・落下・段差の乗り上げ等)は向きの判定に使わない。
-		delta.y = 0.0f;
-
-		if (delta.LengthSquared() < moveThreshold_ * moveThreshold_) {
-			// ほぼ動いていない場合は現在の向きを維持する
-			// (立ち止まった瞬間に正面へリセットされるような不自然さを防ぐ)。
-			return;
+		Math::Quaternion targetRotation = Math::Quaternion::Identity;
+		if (movement_ && movement_->GetDesiredDirection() != Math::Vector3::Zero)
+		{
+			targetRotation = LookRotationYawOnly(movement_->GetDesiredDirection());
 		}
-
-		delta.Normalize();
-		const Math::Quaternion targetRotation = LookRotationYawOnly(delta);
 
 		// rotationSpeed_ * deltaTimeをそのままtに使うと、フレームレートが
 		// 極端に低い場合に1を超えうるためclampしておく(Slerpの定義域外を
@@ -141,9 +106,8 @@ private:
 	}
 
 	TransformComponent* transform_ = nullptr;
-	VelocityComponent* velocityComponent_ = nullptr; // 無くてもよい(任意)
-	Math::Vector3 lastPosition_{};
-	bool hasLastPosition_ = false;
+	MovementComponent* movement_ = nullptr;
+	VelocityComponent* velocity_ = nullptr; // 無くてもよい(任意)
 
 	float rotationSpeed_;
 	float moveThreshold_;

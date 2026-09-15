@@ -7,7 +7,7 @@
 #include "Application/Entity/GameObject.h"
 #include "Application/Components/Graphics/Render/ModelRenderComponent.h"
 #include "Application/Components/Graphics/Animation/SkeletonComponent.h"
-#include "Application/Components/Graphics/Debug/WireFrameComponent.h"
+#include "Application/Components/Graphics/Render/WireFrameComponent.h"
 
 #include "Application/Components/Physics/Collision/ColliderComponent.h"
 #include "Application/Components/Physics/Movement/FollowCameraComponent.h"

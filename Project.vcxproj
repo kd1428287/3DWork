@@ -297,6 +297,9 @@
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Enemy\LockOnTargetComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Enemy\Warrock\WarrockActions.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Enemy\Warrock\WarrockBehavior.h" />
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerAttackSelector.h" />
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerCombatMovementComponent.h" />
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerFacingComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerInputComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerLockOnComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerMovementAnimationComponent.h" />
@@ -311,7 +314,6 @@
     <ClInclude Include="Src\Application\Components\Graphics\Animation\staticModelComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Animation\TwoBoneIK.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Animation\TwoBoneIKComponent.h" />
-    <ClInclude Include="Src\Application\Components\Graphics\Debug\WireFrameComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Effect\SlashTrailComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Effect\SlowEffectComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\GaugeBarRenderer.h" />
@@ -320,6 +322,7 @@
     <ClInclude Include="Src\Application\Components\Graphics\Render\Mod\SkyDomeEdgeFadeComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\PolygonRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\SpriteRenderComponent.h" />
+    <ClInclude Include="Src\Application\Components\Graphics\Render\WireFrameComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Enemy\EnemyHPBarComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Player\PlayerStatusUIComponent.h" />
     <ClInclude Include="Src\Application\Components\Physics\Collision\ColliderComponent.h" />
@@ -487,13 +490,16 @@
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Enemy\EnemyAIController.cpp" />
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Enemy\Warrock\WarrockActions.cpp" />
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Enemy\Warrock\WarrockBehavior.cpp" />
+    <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerAttackSelector.cpp" />
+    <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerCombatMovementComponent.cpp" />
+    <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerFacingComponent.cpp" />
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerMovementAnimationComponent.cpp" />
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerState.cpp" />
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerStatusController.cpp" />
-    <ClCompile Include="Src\Application\Components\Graphics\Debug\WireFrameComponent.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\Render\ModelRenderComponent.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\Render\Mod\ForceMaxDepthComponent.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\Render\Mod\SkyDomeEdgeFadeComponent.cpp" />
+    <ClCompile Include="Src\Application\Components\Graphics\Render\WireFrameComponent.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\UI\Enemy\EnemyHPBarComponent.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\UI\Player\PlayerStatusUIComponent.cpp" />
     <ClCompile Include="Src\Application\Core\Scene\SceneManager.cpp" />

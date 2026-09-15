@@ -24,7 +24,7 @@
 #include "Application/Components/Graphics/Render/ModelRenderComponent.h"
 #include "Application/Components/Graphics/UI/Enemy/EnemyHPBarComponent.h"
 #include "Application/Components/Graphics/Animation/FacingDirectionComponent.h"
-#include "Application/Components/Graphics/Debug/WireFrameComponent.h"
+#include "Application/Components/Graphics/Render/WireFrameComponent.h"
 
 namespace
 {

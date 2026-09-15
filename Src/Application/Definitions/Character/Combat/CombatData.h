@@ -33,7 +33,7 @@ struct AnimationSegment
 // 攻撃フェーズ管理データ
 struct AttackPhaseData
 {
-	std::string animationName = "Attack1"; // 元となるアニメーションクリップ名
+	std::string animationName = "APose_Attack02_1"; // 元となるアニメーションクリップ名
 
 	AnimationSegment windup;   // 予備動作の区間と目標秒数
 	AnimationSegment active;   // 判定持続の区間と目標秒数

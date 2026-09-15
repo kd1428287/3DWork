@@ -154,9 +154,6 @@
     <Filter Include="Src\Application\Components\Graphics\Animation">
       <UniqueIdentifier>{b055dfad-3b5b-4a42-b474-eb59887ea62f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Src\Application\Components\Graphics\Debug">
-      <UniqueIdentifier>{149960e8-15f3-4bf7-bd09-eaa76fe2a492}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Src\Application\Components\Graphics\Effect">
       <UniqueIdentifier>{493ceec9-fdd1-43a0-aff0-cb0f5f942595}</UniqueIdentifier>
     </Filter>
@@ -831,9 +828,6 @@
     <ClInclude Include="Src\Application\Factories\GamePlay\Character\CharacterFactoryUtil.h">
       <Filter>Src\Application\Factories\GamePlay\Character</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\Graphics\Debug\WireFrameComponent.h">
-      <Filter>Src\Application\Components\Graphics\Debug</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Core\EventBus\Events\CollisionEvents.h">
       <Filter>Src\Application\Core\EventBus\Events</Filter>
     </ClInclude>
@@ -908,6 +902,18 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Editor\EditorHost.h">
       <Filter>Src\Application\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerFacingComponent.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerCombatMovementComponent.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerAttackSelector.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Graphics\Render\WireFrameComponent.h">
+      <Filter>Src\Application\Components\Graphics\Render</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1175,9 +1181,6 @@
     <ClCompile Include="Src\Application\Factories\GamePlay\Character\CharacterFactoryUtil.cpp">
       <Filter>Src\Application\Factories\GamePlay\Character</Filter>
     </ClCompile>
-    <ClCompile Include="Src\Application\Components\Graphics\Debug\WireFrameComponent.cpp">
-      <Filter>Src\Application\Components\Graphics\Debug</Filter>
-    </ClCompile>
     <ClCompile Include="Src\Application\Editor\ThirdParty\imgui-node-editor\crude_json.cpp">
       <Filter>Src\Application\Editor\ThirdParty\imgui-node-editor</Filter>
     </ClCompile>
@@ -1198,6 +1201,18 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Editor\EditorHost.cpp">
       <Filter>Src\Application\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerAttackSelector.cpp">
+      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerCombatMovementComponent.cpp">
+      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerFacingComponent.cpp">
+      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\Graphics\Render\WireFrameComponent.cpp">
+      <Filter>Src\Application\Components\Graphics\Render</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
