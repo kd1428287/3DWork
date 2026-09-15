@@ -421,6 +421,7 @@
     <ClInclude Include="Src\Application\Systems\Collision\ColliderRegistry.h" />
     <ClInclude Include="Src\Application\Systems\Collision\CollisionEventPublisher.h" />
     <ClInclude Include="Src\Application\Systems\Collision\CollisionMath.h" />
+    <ClInclude Include="Src\Application\Systems\Collision\CollisionResolver.h" />
     <ClInclude Include="Src\Application\Systems\Collision\CollisionSystem.h" />
     <ClInclude Include="Src\Application\Systems\Collision\RaycastSystem.h" />
     <ClInclude Include="Src\Application\Systems\GamePlay\CameraSystem.h" />

@@ -14,6 +14,16 @@ class Application
 	// メンバ
 public:
 
+	// 起動モード
+	//	EditorOnly … エディタツールのみを起動する(ゲームプレイ更新は行わない)
+	//	Play       … 通常通りゲームをプレイする
+	enum class AppMode
+	{
+		Undecided,
+		EditorOnly,
+		Play,
+	};
+
 	// アプリケーション実行
 	void Execute();
 
@@ -29,7 +39,14 @@ public:
 	int		GetNowFPS()			const { return m_fpsController.m_nowfps; }
 	int		GetMaxFPS()			const { return m_fpsController.m_maxFps; }
 	float	GetDeltaTime()		const { return m_fpsController.GetDeltaTime(); }
+
+	// 現在の起動モードを取得(他クラスからモードで分岐したい場合用)
+	AppMode GetAppMode() const { return m_appMode; }
+
 private:
+
+	// 起動時にエディタのみ/プレイのどちらで実行するかを選択させる
+	AppMode SelectStartupMode();
 
 	void KdBeginUpdate();
 	void Update();
@@ -56,6 +73,9 @@ private:
 
 	// ゲーム終了フラグ trueで終了する (メインスレッドのみが書き込む)
 	std::atomic<bool>	m_endFlag = false;
+
+	// 起動時に選択されたモード(SelectStartupModeで決定され、以降は読み取り専用として扱う)
+	AppMode				m_appMode = AppMode::Undecided;
 
 	//=====================================================
 	// マルチスレッド関連

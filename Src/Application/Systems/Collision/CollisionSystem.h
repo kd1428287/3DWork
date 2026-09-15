@@ -3,6 +3,7 @@
 #include "CollisionMath.h"
 #include "ColliderRegistry.h"
 #include "CollisionEventPublisher.h"
+#include "CollisionResolver.h"
 
 // ============================================================
 // 当たり判定システム。
@@ -18,7 +19,17 @@
 // 「形状×形状」の粒度で行う。重なり判定の実際の幾何計算は
 // CollisionMath(状態を持たない純粋関数群)に委譲し、このクラスは
 // 「誰と誰の、どの形状同士が、前フレームから状態が変わったか」の
-// 検出・記録・押し返しに専念する。
+// 検出・記録に専念する。
+//
+// 押し返し(位置補正)の「集約」と「適用」はCollisionResolverに切り出して
+// いる。以前はこのクラスが検出ループの中で直接Translate()していたが、
+// それだとペア(A,B)を解決してAを動かした直後に後続のペア(A,C)の判定が
+// 既に動いた後の位置で行われてしまい、コライダーの評価順(=ObjectManager
+// への登録順)によって結果が変わる問題があった。今は検出フェーズ
+// (Phase 1)では位置を一切書き換えず、CollisionResolver::AddContact()で
+// 「このコライダーをこの向きにどれだけ押し出すべきか」を溜めるだけにし、
+// 全ペアの検出が終わった後(Phase 1.5)でResolver::Resolve()を1回呼んで
+// まとめて適用する(詳細はCollisionResolver.h参照)。
 //
 // イベントの生成と配信(Enter/Exit/Stayのイベントを組み立てて宛先の
 // ローカルバスに届ける部分)はCollisionEventPublisherに切り出している。
@@ -53,10 +64,11 @@
 //     コライダー数が増えたら空間分割(グリッド/BVH等)の導入を検討する。
 //     (Mesh/Polygon形状は各形状エントリ自身が持つ境界球による足切りは
 //      あるが、コライダー一覧全体に対する空間分割ではない)
-//   - 押し返し(位置補正)は実装済み(ResolvePushBack参照)だが簡易版。
-//     質量を考慮しない(静的/非静的の二値のみ)、複数接触の同時解決は
-//     しない(ペアごとの逐次補正)、トルク(回転方向の応答)は無く並進
-//     移動のみ、という制約がある。
+//   - 押し返し(位置補正)は実装済み(CollisionResolver参照)だが簡易版。
+//     質量を考慮しない(静的/非静的の二値のみ)。複数接触の同時解決は、
+//     真の連立解法ではなく「既に押し出し済みの分を差し引いて不足分だけ
+//     追加する」逐次的な近似(CollisionResolver::Resolve()参照)。
+//     トルク(回転方向の応答)は無く並進移動のみ、という制約がある。
 //   - 連続衝突検出(トンネリング対策)は無い。1フレームで貫通するほど
 //     速いオブジェクトがあれば当たり判定をすり抜ける。
 //   - 重なりペアの記録にはHandle<ColliderComponent>(Handle.h参照)+
@@ -68,14 +80,18 @@
 //     invalidateされるのを避けるため、インデックスではなく名前で参照する)。
 //
 // 再入(reentrancy)への配慮:
-//   Update()は「検出(Phase 1)」と「通知(Phase 2)」を完全に分離している。
-//   EventBus::Publish()は購読者のコールバックを同期実行するため、もし
-//   検出中(a->GetShapes()/b->GetShapes()をライブに参照している最中)に
-//   Publish()を呼ぶと、コールバック側が「ヒットした瞬間にこの形状を
-//   消す/追加する」というアクションゲームでは典型的な処理をしただけで、
-//   今まさに参照中のvectorが書き換わりイテレータ破壊やダングリング
-//   参照を引き起こす。検出フェーズでは一切Publish()を呼ばず、全ペアの
-//   判定が終わった後にまとめて通知することで、この問題を構造的に防ぐ。
+//   Update()は「検出(Phase 1)」「押し返しの適用(Phase 1.5)」「通知
+//   (Phase 2)」を完全に分離している。EventBus::Publish()は購読者の
+//   コールバックを同期実行するため、もし検出中(a->GetShapes()/
+//   b->GetShapes()をライブに参照している最中)にPublish()を呼ぶと、
+//   コールバック側が「ヒットした瞬間にこの形状を消す/追加する」という
+//   アクションゲームでは典型的な処理をしただけで、今まさに参照中の
+//   vectorが書き換わりイテレータ破壊やダングリング参照を引き起こす。
+//   検出フェーズでは一切Publish()を呼ばず、全ペアの判定が終わった後に
+//   まとめて通知することで、この問題を構造的に防ぐ。押し返しの適用
+//   (Phase 1.5)も同じ理由でPhase 1とは分離している(Resolve()が
+//   Transform/MotionComposerを触るのは、検出のためのライブなループを
+//   全て抜けた後)。
 //   なお、Publish()のコールバック内でGameObject/コンポーネントを
 //   破棄したい場合は、GameObject::RequestRemoveComponent()等の
 //   予約系APIを使うこと(即時破棄はこのフレーム中の他の処理から
@@ -107,7 +123,8 @@ public:
 	// 総当たりの重なりをチェックする。Scene側の「このフレームの移動は
 	// 全て確定した」タイミング(ObjectManager::Update()の後、Flush()の前
 	// あたり)で、ColliderRegistry::Refresh()より後に呼ぶことを想定している。
-	// 検出/通知の分離については、クラス冒頭のコメント「再入への配慮」を参照。
+	// 検出/押し返し適用/通知の分離については、クラス冒頭のコメント
+	// 「再入への配慮」を参照。
 	void Update(const ColliderRegistry& registry) {
 		const std::vector<ColliderComponent*>& colliders = registry.GetColliders();
 
@@ -119,7 +136,8 @@ public:
 		std::unordered_map<PairKey, CollisionMath::OverlapResult, PairKeyHash> currentOverlaps;
 		std::vector<std::pair<PairKey, CollisionMath::OverlapResult>> newlyEntered;
 
-		// --- Phase 1: 検出のみ。ユーザーコードは一切呼ばない -------------
+		// --- Phase 1: 検出のみ。位置は一切書き換えず、ユーザーコードも
+		// 一切呼ばない ----------------------------------------------------
 		for (size_t i = 0; i < colliders.size(); ++i) {
 			ColliderComponent* a = colliders[i];
 			if (!IsCollidable(a)) continue;
@@ -147,14 +165,11 @@ public:
 						const CollisionMath::OverlapResult overlap = Overlaps(*a, shapeA, *b, shapeB);
 						if (!overlap.hit) continue;
 
-						// 押し返し(位置補正)。両方が非トリガーの時だけ行う。
-						// イベントの発行(Enter/Exit)とは独立して、重なっている
-						// 間は毎フレーム実行する必要があるため、状態変化の
-						// 記録より前、検出したその場で直接位置を書き換える
-						// (Translate()はshapes_を触らないため、この形状リストの
-						// イテレーション自体を壊す心配はない)。
+						// 押し返しが必要な接触情報をCollisionResolverへ溜める
+						// だけにする(実際の適用はPhase 1.5でまとめて行う)。
+						// 両方が非トリガーの時だけ対象にする。
 						if (!shapeA.isTrigger && !shapeB.isTrigger) {
-							ResolvePushBack(a, shapeA, b, shapeB, overlap);
+							AddPushContacts(a, shapeA, b, shapeB, overlap, resolver_);
 						}
 
 						const PairKey key = MakeKey(a, shapeA, b, shapeB);
@@ -168,6 +183,11 @@ public:
 				}
 			}
 		}
+
+		// --- Phase 1.5: 押し返しの適用。検出のためのライブなループを
+		// 全て抜けた後にまとめて行う。コライダーごとに接触を集約する
+		// アルゴリズムの詳細はCollisionResolver::Resolve()参照。
+		resolver_.Resolve();
 
 		// 前フレームは重なっていたが今回は重なりが消えたペア = Exit
 		std::vector<PairKey> exitedKeys;
@@ -412,29 +432,24 @@ private:
 		return triShape.TestTriangleVsOBB(triWorldMatrix, other.GetShapeWorldOBB(otherShape));
 	}
 
-	// --- 押し返し(位置補正) ---------------------------------------------
-	// KdColliderには無かった機能。CollisionMathが計算済みの押し出し方向
-	// (hitNormal)とめり込み量(overlapDistance)を使って、実際に位置を
-	// 補正する。Sphere/Box/Mesh/Polygonのどの組み合わせでも、
-	// isStatic/isTriggerはCollisionShapeEntryが共通で持っているため、
-	// この関数1つで全パターンをまかなえる。
+	// --- 押し返し(位置補正)の接触情報を組み立てる ------------------------
+	// 実際の適用(Translate/ApplyCollisionCorrection)はCollisionResolverが
+	// Phase 1.5でまとめて行う。ここでは「誰を」「どちらへ」「どれだけ」
+	// 押し出すべきかを計算し、resolver.AddContact()に渡すだけ。
 	//
 	// 簡易実装であることに注意:
 	//   - 質量を考慮しない(静的/非静的の二値のみ)。
-	//   - 同じフレーム内で複数の相手と同時に重なっている場合(角に挟まる等)、
-	//     ペアごとに逐次補正するだけの簡易処理(Gauss-Seidel的な近似)。
-	//     真の同時解決(全接触を連立して解く)はしていないため、
-	//     多接触時に軽い震え(ジッター)が出る可能性がある。
 	//   - 回転・トルクへの応答はない(並進移動のみ)。
 	//   - 両方が非静的な場合(キャラクター同士など)は、押し出し方向を
 	//     水平面に投影してから使う。最近接点ベースの法線が斜め上/真上を
 	//     向くケース(相手の頭寄りに近づいた場合など)で、押し合いが
 	//     「よじ登り」に見えてしまうのを防ぐため。地形(isStatic=true)
 	//     との押し合いはこれまで通り3D方向のまま。
-	static void ResolvePushBack(
+	static void AddPushContacts(
 		ColliderComponent* a, const CollisionShapeEntry& shapeA,
 		ColliderComponent* b, const CollisionShapeEntry& shapeB,
-		const CollisionMath::OverlapResult& overlap) {
+		const CollisionMath::OverlapResult& overlap,
+		CollisionResolver& resolver) {
 
 		if (overlap.overlapDistance <= 0.0f) return;
 		if (shapeA.isStatic && shapeB.isStatic) return; // 両方静的なら押し返しようがない
@@ -471,15 +486,15 @@ private:
 		}
 
 		if (shapeA.isStatic) {
-			b->Translate(-pushNormal * overlap.overlapDistance);
+			resolver.AddContact(b, -pushNormal, overlap.overlapDistance);
 		}
 		else if (shapeB.isStatic) {
-			a->Translate(pushNormal * overlap.overlapDistance);
+			resolver.AddContact(a, pushNormal, overlap.overlapDistance);
 		}
 		else {
 			const float half = overlap.overlapDistance * 0.5f;
-			a->Translate(pushNormal * half);
-			b->Translate(-pushNormal * half);
+			resolver.AddContact(a, pushNormal, half);
+			resolver.AddContact(b, -pushNormal, half);
 		}
 	}
 
@@ -487,4 +502,9 @@ private:
 	// Enter/Exit/Stayの判定に使う。OverlapResultも一緒に保持しているのは
 	// Stay通知のためで、Exit判定自体はキーの有無だけで足りる。
 	std::unordered_map<PairKey, CollisionMath::OverlapResult, PairKeyHash> previousOverlaps_;
+
+	// 押し返しの集約と適用を行う。Update()の呼び出しをまたいで状態を
+	// 持たない(Resolve()の最後に自分でクリアする)が、毎フレーム同じ
+	// インスタンスを使い回すことで不要な確保/解放を避ける。
+	CollisionResolver resolver_;
 };
