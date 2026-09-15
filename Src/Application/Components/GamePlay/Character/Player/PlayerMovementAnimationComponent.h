@@ -29,7 +29,7 @@ class PlayerMovementAnimationComponent : public ComponentBase
 public:
 	explicit PlayerMovementAnimationComponent(GameObject* owner) : ComponentBase(owner) {}
 
-	void Start() override;
+	void Awake() override;
 
 	// 毎フレーム、PlayerStatusController::HandleMovementInputから呼ばれる。
 	// inputDirectionは正規化されていなくてもよい(内部で正規化する)。

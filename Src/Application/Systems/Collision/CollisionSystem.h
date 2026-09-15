@@ -7,20 +7,6 @@
 
 // ============================================================
 // 当たり判定システム。
-//
-// InputSystem/CameraSystemと同じ「シーンに1つ、外側から明示的に
-// Update()を呼んでもらう」System。対象コライダーは固定登録ではなく、
-// ColliderRegistryが1フレームに1回キャッシュした一覧を使う
-// (RaycastSystemと共有することで、同じ内容の再スキャンを避けている。
-//  詳細はColliderRegistry参照)。
-//
-// ColliderComponentが複数の名前付き形状を持てるようになったため、
-// ペアの総当たりは「コンポーネント×コンポーネント」ではなく
-// 「形状×形状」の粒度で行う。重なり判定の実際の幾何計算は
-// CollisionMath(状態を持たない純粋関数群)に委譲し、このクラスは
-// 「誰と誰の、どの形状同士が、前フレームから状態が変わったか」の
-// 検出・記録に専念する。
-//
 // 押し返し(位置補正)の「集約」と「適用」はCollisionResolverに切り出して
 // いる。以前はこのクラスが検出ループの中で直接Translate()していたが、
 // それだとペア(A,B)を解決してAを動かした直後に後続のペア(A,C)の判定が
@@ -30,27 +16,6 @@
 // 「このコライダーをこの向きにどれだけ押し出すべきか」を溜めるだけにし、
 // 全ペアの検出が終わった後(Phase 1.5)でResolver::Resolve()を1回呼んで
 // まとめて適用する(詳細はCollisionResolver.h参照)。
-//
-// イベントの生成と配信(Enter/Exit/Stayのイベントを組み立てて宛先の
-// ローカルバスに届ける部分)はCollisionEventPublisherに切り出している。
-// 「判定・記録」と「通知」を別クラスにすることで、通知方法だけを
-// 変えたい変更がこのクラスに波及しないようにする狙い。このクラスは
-// CollisionEventPublisherに「誰と誰がどうなったか」を渡すだけで、
-// イベント型(Events::Collision::～)そのものを直接組み立てることはない。
-//
-// Sphere/Box(OBB)/Capsule/Mesh/Polygonの5種類の形状は、すべてColliderComponent
-// のCollisionShapeEntryとして同じリストに混在する(以前はMesh/Polygonを
-// MeshColliderComponent/PolygonColliderComponentという専用コンポーネントに
-// 分離していたが、CollisionSystem/RaycastSystem/ColliderRegistryが
-// 「ColliderComponent用」「TriangleColliderComponent用」の2系統を持つ
-// 羽目になり、実質同じロジックの重複が大きかったため統合した)。
-// これにより、このクラスのペア総当たりは1本のループ・1種類のキー・
-// 1種類のイベントで完結する。
-//
-// Box形状は回転を考慮するOBBとして扱う(3Dアクションでの利用を前提に、
-// TransformComponentの回転・不均一スケールにきちんと追従する。
-// 詳細はColliderComponent::GetShapeWorldOBB/CollisionMath::OrientedBox
-// 参照)。
 //
 // Mesh/Polygon同士(どちらも三角形の集合)の当たり判定は非対応
 // (Overlaps()内でIsTriangleShape(shapeA.shape) && IsTriangleShape(shapeB.shape)
@@ -104,21 +69,6 @@
 // ============================================================
 class CollisionSystem {
 public:
-	// Events::Collision::～ と毎回書かずに済むよう、クラス内だけに限定した
-	// using宣言(ヘッダ全体やincludeした側の名前空間を汚さないため)。
-	// 実体はCollisionEventPublisher側と同じ型(Events::Collision::～)。
-	using CollisionEnterEvent = Events::Collision::CollisionEnterEvent;
-	using CollisionExitEvent = Events::Collision::CollisionExitEvent;
-	// CollisionEnterEventと同じ形のイベント。継続中の重なりを毎フレーム
-	// 通知する(Unity等のOnTriggerStayに相当)。Events::Collision名前空間
-	// 側にCollisionEnterEventと同じフィールド構成で追加しておくこと
-	// (selfObject/selfCollider/selfShapeName/otherObject/otherCollider/
-	//  otherShapeName/hitResult)。Enterと型を分けているのは、購読側が
-	// Subscribe<CollisionEnterEvent>とSubscribe<CollisionStayEvent>を
-	// 独立に選べるようにするため(型を共有すると、Enterだけ欲しい購読者に
-	// Stayまで混ざって届いてしまう)。
-	using CollisionStayEvent = Events::Collision::CollisionStayEvent;
-
 	// ColliderRegistryが1フレームに1回キャッシュした一覧を使い、形状単位で
 	// 総当たりの重なりをチェックする。Scene側の「このフレームの移動は
 	// 全て確定した」タイミング(ObjectManager::Update()の後、Flush()の前

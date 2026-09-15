@@ -31,7 +31,7 @@ public:
 		float rotationSpeed = 10.0f, float moveThreshold = 0.001f)
 		: ComponentBase(owner), rotationSpeed_(rotationSpeed), moveThreshold_(moveThreshold) {}
 
-	void Start() override {
+	void Awake() override {
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
 		if (transform_ != nullptr) {
 			lastPosition_ = transform_->GetPosition();

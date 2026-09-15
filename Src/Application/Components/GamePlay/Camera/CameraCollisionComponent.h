@@ -18,20 +18,17 @@ class CameraCollisionComponent : public ComponentBase {
 public:
 	explicit CameraCollisionComponent(GameObject* owner) : ComponentBase(owner) {}
 
-	void Start() override {
+	void Awake() override {
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
 	}
 
-	// カメラの太さの近似半径。壁際で細い柱の角をすり抜けにくくする
-	// (Sphere/Capsule/Boxに対してのみ有効。地形(Mesh/Polygon)には
-	// 効かない。RaycastSystem::SphereCastClosestのコメント参照)。
+	// カメラの太さの近似半径
 	void SetSweepRadius(float radius) { sweepRadius_ = radius; }
 
 	// 別GameObjectのコンポーネントを参照するため、Handle<T>で受け取る。
 	void SetPivotTarget(Handle<CameraTargetComponent> target) { pivotTarget_ = target; }
 
 	// ピボットをターゲット原点から少し上に持ち上げる
-	// (足元基準だと壁際で地面すれすれの視点になりやすいため)。
 	void SetPivotOffset(const Math::Vector3& offset) { pivotOffset_ = offset; }
 
 	// 壁面からどれだけ手前で止めるか(めり込み防止の余白)。
@@ -57,7 +54,7 @@ public:
 		// 別途保持しない)。
 		GameObject* ignoreOwner = pivotTarget->GetOwner();
 
-		const Math::Vector3 pivot = pivotTarget->GetTargetPosition() + pivotOffset_;
+		const Math::Vector3 pivot = pivotTarget->GetFixationPoint() + pivotOffset_;
 		const Math::Vector3 desired = transform_->GetPosition(); // Followが決めた理想位置
 
 		const Math::Vector3 toDesired = desired - pivot;
@@ -103,5 +100,5 @@ private:
 	float skinWidth_ = 0.3f;
 	float pullOutSpeed_ = 8.0f;
 	float currentDistance_ = -1.0f; // 未初期化フラグ
-	float sweepRadius_ = 0.15f;
+	float sweepRadius_ = 0.55f;
 };

@@ -21,7 +21,7 @@ class PlayerStatusController : public ComponentBase, public IHitReactionQuery
 public:
 	explicit PlayerStatusController(GameObject* owner) : ComponentBase(owner) {}
 
-	void Start() override
+	void Awake() override
 	{
 		inputComponent_ = GetOwner()->GetComponent<PlayerInputComponent>();
 		movementComponent_ = GetOwner()->GetComponent<MovementComponent>();

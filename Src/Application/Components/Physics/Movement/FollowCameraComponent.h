@@ -8,7 +8,7 @@ class FollowCameraComponent : public ComponentBase, public IRenderable
 public:
 	explicit FollowCameraComponent(GameObject* owner) :ComponentBase(owner) {};
 
-	void Start() override
+	void Awake() override
 	{
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
 	}

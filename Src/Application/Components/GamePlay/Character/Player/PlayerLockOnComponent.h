@@ -32,7 +32,7 @@ class PlayerLockOnComponent : public ComponentBase
 public:
 	explicit PlayerLockOnComponent(GameObject* owner) : ComponentBase(owner) {}
 
-	void Start() override {
+	void Awake() override {
 		// SceneContext経由でアクティブカメラを取得する
 		// (GameObject::GetContext()参照。Sceneに1つだけの既知の対象は
 		//  ここにまとめる、という既存の方針に沿う)。

@@ -6,7 +6,7 @@ class RootMotionApplierComponent : public ComponentBase
 public:
 	explicit RootMotionApplierComponent(GameObject* owner) : ComponentBase(owner) {}
 
-	void Start() override
+	void Awake() override
 	{
 		modelAnimator_ = GetOwner()->GetComponent<ModelAnimatorComponent>();
 		transform_ = GetOwner()->GetComponent<TransformComponent>();

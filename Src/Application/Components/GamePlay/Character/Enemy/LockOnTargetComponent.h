@@ -14,7 +14,7 @@ class LockOnTargetComponent : public ComponentBase
 public:
 	explicit LockOnTargetComponent(GameObject* owner) : ComponentBase(owner) {}
 
-	void Start() override {
+	void Awake() override {
 		// ロック照準を合わせたい高さがあるならBoneSocketComponentを
 		// 併用する想定(無ければ足元のTransform原点にフォールバック)。
 		reticleSocket_ = GetOwner()->GetComponent<BoneSocketComponent>();

@@ -3,18 +3,15 @@
 
 void HitReactionComponent::Awake()
 {
-	EventBus& localBus = GetOwner()->GetLocalEventBus();
-	const SubscriptionId subscriptionId = localBus.Subscribe<CollisionSystem::CollisionEnterEvent>(
-		[this](const CollisionSystem::CollisionEnterEvent& e) { OnCollisionEnter(e); });
-	subscriber_ = ScopedSubscriber(&localBus, subscriptionId);
-}
-
-void HitReactionComponent::Start()
-{
 	postureComponent_ = GetOwner()->GetComponent<PostureComponent>();
 	healthComponent_ = GetOwner()->GetComponent<HealthComponent>();
 	velocityComponent_ = GetOwner()->GetComponent<VelocityComponent>();
 	transform_ = GetOwner()->GetComponent<TransformComponent>();
+
+	EventBus& localBus = GetOwner()->GetLocalEventBus();
+	const SubscriptionId subscriptionId = localBus.Subscribe<Events::Collision::CollisionEnterEvent>(
+		[this](const Events::Collision::CollisionEnterEvent& e) { OnCollisionEnter(e); });
+	subscriber_ = ScopedSubscriber(&localBus, subscriptionId);
 }
 
 Math::Vector3 HitReactionComponent::ComputeKnockbackDirection(GameObject* attacker) const
@@ -36,7 +33,7 @@ Math::Vector3 HitReactionComponent::ComputeKnockbackDirection(GameObject* attack
 	return dir;
 }
 
-void HitReactionComponent::OnCollisionEnter(const CollisionSystem::CollisionEnterEvent& e)
+void HitReactionComponent::OnCollisionEnter(const Events::Collision::CollisionEnterEvent& e)
 {
 	if (query_ == nullptr) return;
 	if (e.selfShapeName != "HurtBox") return;

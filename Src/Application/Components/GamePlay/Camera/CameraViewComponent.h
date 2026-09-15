@@ -7,7 +7,7 @@ class CameraViewComponent : public ComponentBase, public IRenderable
 public:
 	explicit CameraViewComponent(GameObject* owner) : ComponentBase(owner) {}
 
-	void Start() override {
+	void Awake() override {
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
 		camera_ = GetOwner()->GetComponent<CameraComponent>();
 	}

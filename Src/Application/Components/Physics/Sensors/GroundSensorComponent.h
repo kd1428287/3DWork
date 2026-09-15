@@ -9,7 +9,7 @@ class GroundSensorComponent : public ComponentBase {
 public:
 	explicit GroundSensorComponent(GameObject* owner) : ComponentBase(owner) {}
 
-	void Start() override {
+	void Awake() override {
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
 		if (transform_ == nullptr) {
 			std::printf(

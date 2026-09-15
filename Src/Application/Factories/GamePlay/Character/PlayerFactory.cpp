@@ -18,7 +18,7 @@
 #include "Application/Components/GamePlay/Character/Player/PlayerMovementAnimationComponent.h"
 #include "Application/Components/GamePlay/Camera/CameraTargetComponent.h"
 
-#include "Application/Components/Physics/Movement/MotionComposerComponent.h"
+#include "Application/Components/Physics/Movement/MovementResolverComponent.h"
 #include "Application/Components/Physics/Movement/MovementComponent.h"
 #include "Application/Components/Physics/Movement/VelocityComponent.h"
 #include "Application/Components/Physics/Movement/GravityComponent.h"
@@ -87,10 +87,10 @@ namespace
 
 		for (const auto& def : colliderDefs) {
 			if (def.interactsWith != ColliderCategory::None) {
-				//collider->AddCapsule(def.name, def.radius, def.start, def.end, def.category, def.interactsWith);
+				collider->AddCapsule(def.name, def.radius, def.start, def.end, def.category, def.interactsWith);
 			}
 			else {
-				//collider->AddCapsule(def.name, def.radius, def.start, def.end, def.category);
+				collider->AddCapsule(def.name, def.radius, def.start, def.end, def.category);
 			}
 
 			if (def.isTrigger) {
@@ -106,7 +106,7 @@ namespace
 	{
 		auto* input = player->AddComponent<PlayerInputComponent>();
 		auto* move = player->AddComponent<MovementComponent>(walkSpeed);
-		player->AddComponent<MotionComposerComponent>();
+		player->AddComponent<MovementResolverComponent>();
 	
 		move->SetMovementSource(input);
 	}
@@ -131,7 +131,7 @@ GameObject* PlayerFactory::CreatePlayer(ObjectManager& objectManager, const Play
 	AttachMovement(player, definition.walkSpeed);
 
 	player->AddComponent<PlayerStatusController>();
-	player->AddComponent<CameraTargetComponent>()->SetLocalPosition({ 0.f,0.5f,0.f });
+	player->AddComponent<CameraTargetComponent>()->SetOffset({ 0.f,1.5f,0.f });
 	player->AddComponent<WireFrameComponent>();
 
 	// --- 腕・武器のソケット生成 -----------------------------------------

@@ -1,6 +1,6 @@
 ﻿#include "PlayerMovementAnimationComponent.h"
 
-void PlayerMovementAnimationComponent::Start()
+void PlayerMovementAnimationComponent::Awake()
 {
 	modelAnimatorComponent_ = GetOwner()->GetComponent<ModelAnimatorComponent>();
 	transform_ = GetOwner()->GetComponent<TransformComponent>();

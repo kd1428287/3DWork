@@ -22,14 +22,11 @@ public:
 		currentPosition_ = from_;
 	}
 
-	void Start() override {
+	void Awake() override {
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
 		if (transform_) transform_->SetPosition(from_);
 	}
 
-	// 進行を進め、現在位置を更新する。
-	// MotionComposerComponentが毎フレーム呼ぶ(コンポーネントの
-	// 呼び出し順に依存しないよう、合成役が明示的に駆動する)。
 	void Advance(float deltaTime) {
 		if (finished_) return;
 

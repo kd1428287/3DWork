@@ -62,7 +62,7 @@ public:
 		, midBoneName_(std::move(midBoneName))
 		, endBoneName_(std::move(endBoneName)) {}
 
-	void Start() override {
+	void Awake() override {
 		skeleton_ = GetOwner()->GetComponent<SkeletonComponent>();
 		ownerTransform_ = GetOwner()->GetComponent<TransformComponent>();
 	}

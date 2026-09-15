@@ -2,9 +2,8 @@
 
 #include "Core/Scene/SceneManager.h"
 
-#include "Editor/Common/EditorViewport.h"
-#include "Editor/Tools/EffectEditor.h"
-#include "Editor/Tools/MapEditor.h"
+#include "Editor/EditorHost.h"
+#define EDITOR_ENABLED
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // エントリーポイント
@@ -45,8 +44,8 @@ void Application::KdBeginUpdate()
 	// 入力状況の更新
 	KdInputManager::Instance().Update();
 
-	// ※空間環境(アンビエント)の更新はDirect3Dの定数バッファ書き込みを伴うため、
-	//   GPUに触れる処理としてKdBeginDraw()側(描画スレッド)に移動した
+	// 空間環境の更新
+	KdShaderManager::Instance().WorkAmbientController().Update();
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -63,13 +62,6 @@ void Application::KdPostUpdate()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void Application::Update()
 {
-	// エディタのみモードでは、ゲームプレイ自体の更新は行わない
-	// (プレビュー用に一部のオブジェクトだけ動かしたい場合はここに個別処理を追加してください)
-	if (m_appMode == AppMode::EditorOnly)
-	{
-		return;
-	}
-
 	SceneManager::Instance().Update();
 }
 
@@ -81,11 +73,8 @@ void Application::KdBeginDraw(bool usePostProcess)
 	// 3D描画先を切り替える
 	//	・エディタ表示中 … オフスクリーン(Sceneウィンドウ用バッファ)
 	//	・エディタ非表示中 … バックバッファへ直接フルスクリーン描画
-	EditorViewport::Instance().BeginSceneDraw();
+	//EditorViewport::Instance().BeginSceneDraw();
 
-	// 空間環境(アンビエント)の更新・描画
-	//	定数バッファへの書き込み(GPUアクセス)を伴うため、Updateスレッドではなくこちらで実行する
-	KdShaderManager::Instance().WorkAmbientController().Update();
 	KdShaderManager::Instance().WorkAmbientController().Draw();
 
 	if (!usePostProcess) return;
@@ -97,22 +86,18 @@ void Application::KdBeginDraw(bool usePostProcess)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void Application::KdPostDraw()
 {
-	if (EditorViewport::Instance().IsEnabled())
-	{
+	if (EditorHost::Instance().IsViewportEnabled()) {
 		// バックバッファをクリアし、ImGui(ドッキングUI)用のレンダーターゲットに戻す
 		KdDirect3D::Instance().ClearBackBuffer();
 
 		ID3D11RenderTargetView* rtvs[] = { KdDirect3D::Instance().WorkBackBuffer()->WorkRTView() };
 		KdDirect3D::Instance().WorkDevContext()->OMSetRenderTargets(1, rtvs, KdDirect3D::Instance().WorkZBuffer()->WorkDSView());
-
-
 	}
 	// エディタ非表示中：ゲーム画面はBeginSceneDraw()で既にバックバッファへ直接描画済みのため、
 	// ここで再クリアするとゲーム画面が消えてしまうので何もしない
 
 	// Imguiのレンダリング(エディタ非表示中は中身が空でも軽量に呼べる)
-	KdDebugGUI::Instance().GuiProcess();
-
+	EditorHost::Instance().Draw();
 	// BackBuffer -> 画面表示
 	KdDirect3D::Instance().WorkSwapChain()->Present(0, 0);
 }
@@ -151,25 +136,6 @@ void Application::PostDraw()
 void Application::DrawSprite()
 {
 	SceneManager::Instance().DrawSprite();
-}
-
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 起動モード選択
-//	ウィンドウ/Direct3D初期化より前に呼び出す想定(ネイティブダイアログのみ使用)
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-Application::AppMode Application::SelectStartupMode()
-{
-	// ANSI(MessageBoxA)は実行環境のコードページ次第で日本語が文字化けすることがあるため、
-	// ソースのUTF-8をそのままUTF-16として扱えるワイド文字版(MessageBoxW)を使用する
-	int result = MessageBoxW(
-		nullptr,
-		L"「はい」でエディタのみ起動します。\n「いいえ」でゲームをプレイします。",
-		L"起動モード選択",
-		MB_YESNO | MB_ICONQUESTION);
-
-	m_appMode = (result == IDYES) ? AppMode::EditorOnly : AppMode::Play;
-
-	return m_appMode;
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -225,7 +191,7 @@ bool Application::Init(int w, int h)
 	//===================================================================
 	// imgui初期化
 	//===================================================================
-	KdDebugGUI::Instance().GuiInit(w, h);
+	EditorHost::Instance().Init(w, h);
 
 	//===================================================================
 	// シェーダー初期化
@@ -301,12 +267,6 @@ bool Application::Init(int w, int h)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void Application::Execute()
 {
-	//===================================================================
-	// 起動モード選択(エディタのみ / プレイ)
-	//	ウィンドウ・Direct3D初期化より前に選ばせる
-	//===================================================================
-	SelectStartupMode();
-
 	KdCSVData windowData("Asset/Data/WindowSettings.csv");
 	const std::vector<std::string>& sizeData = windowData.GetLine(0);
 
@@ -317,28 +277,12 @@ void Application::Execute()
 		return;
 	}
 
-	// エディタのみモードの場合は、起動直後からエディタ画面を開いた状態にする
-	// ※EditorViewportに有効/無効を外部から切り替えるAPI(例:SetEnabled)が無い場合は追加してください
-	if (m_appMode == AppMode::EditorOnly)
-	{
-		EditorViewport::Instance().SetEnabled(true);
-	}
-
 	//===================================================================
 	// ゲームループ
 	//===================================================================
 
 	// 時間
 	m_fpsController.Init();
-
-	//===================================================================
-	// Update/Renderスレッドの手番制御を初期化し、Updateスレッドを起動
-	//	・Updateスレッド … ゲームの更新(Update)処理
-	//	・このスレッド(メイン) … ウィンドウメッセージ処理 + 描画(Render)処理
-	//===================================================================
-	m_threadExit = false;
-	m_turn = FrameTurn::Update;			// まずUpdateスレッドに1フレーム目を計算させる
-	m_updateThread = std::thread(&Application::UpdateThreadMain, this);
 
 	// ループ
 	while (1)
@@ -384,17 +328,15 @@ void Application::Execute()
 
 		//=========================================
 		//
-		// このスレッド(描画側)の手番が来るまで待機
-		//	Updateスレッドが前フレームの更新を終えるまでここでブロックする
+		// アプリケーション更新処理
 		//
 		//=========================================
 
-		OutputDebugStringA("[Render] cvRender待機開始\n");
+		KdBeginUpdate();
 		{
-			std::unique_lock<std::mutex> lock(m_syncMutex);
-			m_cvRender.wait(lock, [this] { return m_turn == FrameTurn::Render; });
+			Update();
 		}
-		OutputDebugStringA("[Render] cvRender待機終了 → 描画開始\n");
+		KdPostUpdate();
 
 		//=========================================
 		//
@@ -408,36 +350,13 @@ void Application::Execute()
 
 			Draw();
 
-			// エフェクトプレビュー専用ビューポートへの描画
-			EffectEditor::Instance().RenderPreviewViewport();
-			// マッププレビュー
-			MapEditor::Instance().RenderPreviewViewport();
-
-
 			PostDraw();
 
 			DrawSprite();
 
-
+			EditorHost::Instance().RenderPreviewViewports();
 		}
-
-		//=========================================
-		//
-		// ゲームオブジェクトの読み取りが完了したので、
-		// 次フレームのUpdateスレッドに手番を渡す
-		// (この後のImGui描画・Present(Vsync待ち)はUpdateスレッドと並行実行される)
-		//
-		//=========================================
-
-		OutputDebugStringA("[Render] 描画完了 → Updateスレッドへ手番を渡す\n");
-		{
-			std::lock_guard<std::mutex> lock(m_syncMutex);
-			m_turn = FrameTurn::Update;
-		}
-		m_cvUpdate.notify_one();
-
 		KdPostDraw();
-		OutputDebugStringA("[Render] KdPostDraw完了(Present済み)\n");
 
 		//=========================================
 		//
@@ -446,59 +365,6 @@ void Application::Execute()
 		//=========================================
 
 		m_fpsController.Update();
-	}
-
-	//===================================================================
-	// Updateスレッドの終了待ち
-	//===================================================================
-	m_threadExit = true;
-	m_cvUpdate.notify_all();
-	if (m_updateThread.joinable())
-	{
-		m_updateThread.join();
-	}
-}
-
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// Updateスレッドのエントリ関数
-//	メインスレッドと手番(m_turn)を交互に受け渡しながらゲーム更新のみを行う
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void Application::UpdateThreadMain()
-{
-	while (true)
-	{
-		// 自分の手番(Update)が来るまで待機
-		OutputDebugStringA("[Update] cvUpdate待機開始\n");
-		{
-			std::unique_lock<std::mutex> lock(m_syncMutex);
-			m_cvUpdate.wait(lock, [this] { return m_turn == FrameTurn::Update || m_threadExit; });
-
-			if (m_threadExit)
-			{
-				break;
-			}
-		}
-		OutputDebugStringA("[Update] cvUpdate待機終了 → 更新開始\n");
-
-		//=========================================
-		// アプリケーション更新処理
-		//=========================================
-
-		KdBeginUpdate();
-		OutputDebugStringA("[Update] KdBeginUpdate完了\n");
-		{
-			Update();
-		}
-		OutputDebugStringA("[Update] Update完了\n");
-		KdPostUpdate();
-		OutputDebugStringA("[Update] KdPostUpdate完了 → 描画スレッドへ手番を渡す\n");
-
-		// 更新完了。描画スレッドに手番を渡す
-		{
-			std::lock_guard<std::mutex> lock(m_syncMutex);
-			m_turn = FrameTurn::Render;
-		}
-		m_cvRender.notify_one();
 	}
 }
 

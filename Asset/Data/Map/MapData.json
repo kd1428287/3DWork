@@ -117,6 +117,68 @@
         1.0,
         1.0
       ]
+    },
+    {
+      "components": [
+        {
+          "params": {
+            "model": "Asset/Models/Terrains/Sakura/sakura_big.gltf"
+          },
+          "type": "ModelRender"
+        },
+        {
+          "params": {
+            "shapes": [
+              {
+                "capsuleEnd": [
+                  0.0,
+                  4.0,
+                  0.0
+                ],
+                "categoryMask": [
+                  "Bump"
+                ],
+                "halfExtents": [
+                  0.5,
+                  0.5,
+                  0.5
+                ],
+                "isStatic": true,
+                "isTrigger": false,
+                "name": "shape0",
+                "offset": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "radius": 2.0,
+                "shape": "Capsule",
+                "useDefaultCollideMask": true,
+                "wantsStayEvent": false
+              }
+            ]
+          },
+          "type": "Collider"
+        }
+      ],
+      "id": 3,
+      "name": "Object3",
+      "pos": [
+        0.0,
+        0.0,
+        -15.568358421325684
+      ],
+      "rotation": [
+        -0.0,
+        0.0,
+        -0.0,
+        1.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
     }
   ],
   "version": 2

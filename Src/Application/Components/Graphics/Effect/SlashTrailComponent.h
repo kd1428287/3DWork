@@ -8,7 +8,7 @@ public:
 	{
 	}
 
-	void Start() override
+	void Awake() override
 	{
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
 	}

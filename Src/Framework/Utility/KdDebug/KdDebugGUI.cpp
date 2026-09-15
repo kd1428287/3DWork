@@ -87,66 +87,21 @@ void KdDebugGUI::GuiInit(int w, int h)
 	m_uqLog = std::make_unique<ImGuiAppLog>();
 }
 
-void KdDebugGUI::GuiProcess()
-{
-	// 初期化されてないなら動作させない
-	if (!m_uqLog) return;
 
-	//===========================================================
-	// ImGui開始
-	//===========================================================
+void KdDebugGUI::BeginFrame()
+{
+	if (!m_uqLog) return;
 	ImGui_ImplDX11_NewFrame();
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
+}
 
-	//===========================================================
-	// 以下にImGui描画処理を記述
-	//===========================================================
-
-	// ログウィンドウ
-	//m_uqLog->Draw("Log Window");
-
-	// エディタ表示中のみ、ドッキングUI一式(Hierarchy/Inspector/Assets/Scene/Log)を描画する
-	// "Pause"入力でON/OFF切替(main.cpp の Execute() 内を参照)
-	if (EditorViewport::Instance().IsEnabled())
-	{
-
-		// 画面全体を覆うドックスペースの土台
-		ImGuiID dockspaceId = ImGui::GetID("MainDockSpace");
-
-		// このIDのノードがまだ存在しない(=imgui.iniに保存された配置が無い)場合のみ、
-		// Unity風の既定レイアウトを構築する。2回目以降はユーザーが動かした配置がそのまま復元される
-		if (ImGui::DockBuilderGetNode(dockspaceId) == nullptr)
-		{
-			SetupDefaultDockLayout(dockspaceId);
-		}
-
-		ImGui::DockSpaceOverViewport(dockspaceId, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
-
-		// ゲーム画面を表示するSceneウィンドウ(中身はオフスクリーンに描画されたゲーム画面)
-		EditorViewport::Instance().DrawSceneWindow();
-
-		// マップエディタ
-		MapEditor::Instance().Update();
-
-		// シェーダーエディタ
-		ShaderTuningEditor::Instance().Update();
-
-		// エフェクトエディタ
-		EffectEditor::Instance().Update();
-
-		// BTエディタ
-		BTEditor::Instance().Update();
-	}
-
-	//===========================================================
-	// ここより上にImGuiの描画はする事
-	//===========================================================
+void KdDebugGUI::EndFrame()
+{
+	if (!m_uqLog) return;
 	ImGui::Render();
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
-	// マルチビューポート：ドッキングウィンドウを画面外にドラッグして分離した「別ウィンドウ」の更新・描画
-	//	(メインウィンドウの描画とは別に、ここでまとめて処理する)
 	if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 	{
 		ImGui::UpdatePlatformWindows();

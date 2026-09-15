@@ -3,43 +3,12 @@
 #include "CameraOrbitComponent.h"
 #include "../../Tags/ICameraTarget.h"
 
-// カメラの追従ロジックだけを持つ
-
-// --- ロックオン対応 -------------------------------------------------
-// SceneContext::lockedTarget(PlayerLockOnComponentが更新する、シーンに
-// 1つだけの既知のロック対象。SceneContext.h参照)が有効な間は、
-// 「位置」も「向き」も対象基準で毎フレーム計算し直す
-// (以前はここが2段階に分かれていて不具合の元になっていた。下記参照)。
-//
-// 【経緯】
-// 1段階目: 位置も向きも同じ回転(カメラ→対象の向き)で決めていたところ、
-//   カメラ・プレイヤー・対象が一直線に並び、プレイヤーが対象を隠す
-//   不具合が発生した。
-// 2段階目: 位置をロック開始時点のマウス操作の軌道のまま「凍結」させ、
-//   向きだけを対象へ向けるようにしたところ、位置はワールド空間で固定の
-//   オフセットベクトルのままプレイヤーに追従するだけなので、プレイヤーが
-//   横に動くと「固定されたオフセット方向」と「対象を追って回転する向き」
-//   がズレていき、ロックした瞬間だけ整列していたプレイヤーが画角から
-//   外れてしまう不具合が発生した。
-// 3段階目(現在): 位置の基準そのものを「プレイヤー→対象の水平方向」から
-//   毎フレーム再計算する(ComputeLockedPosition()参照)。カメラ・
-//   プレイヤー・対象が一直線に並ばないよう、対象方向からlockOnYawBias_
-//   だけ左右にずらした「肩越し」の位置に構える。これによりプレイヤーが
-//   動いても位置と向きが常に対象との関係で決まるため、ズレが蓄積しない。
-//   向き自体はComputeLockedPositionで決まった位置からTryLookAtLockedTarget()
-//   で改めて対象へ向ける。
-//
-// 4段階目(今回追加): ロックON/OFFの瞬間は目標位置の計算式そのものが
-//   切り替わるため、何もしないとカメラが瞬間移動してしまう。切り替わった
-//   フレームで「実位置と新しい目標位置の差分」をpositionEaseOffset_として
-//   保持し、以後は目標位置にこの差分を足しながら時間経過で0へ減衰させる
-//   ことで、ロック開始/解除どちらの向きの遷移も自然なイージングにしている
-//   (Resolve()内、ComputeLockedPosition呼び出し直後のブロック参照)。
+// カメラの追従ロジック
 class CameraFollowComponent : public ComponentBase {
 public:
 	explicit CameraFollowComponent(GameObject* owner) : ComponentBase(owner) {}
 
-	void Start() override {
+	void Awake() override {
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
 
 		// 存在する場合のみマウス軌道回転を優先して使う
@@ -48,7 +17,7 @@ public:
 
 	// 別オブジェクトのためHandleで受け取る
 	void SetTarget(Handle<CameraTargetComponent> target) { target_ = target; }
-	void SetLocalOffset(const Math::Vector3& offset) { localOffset_ = offset; }
+	void SetDistance(const float& distance) { cameraDistance_ = distance; }
 
 	// 追従対象の向きにもカメラを合わせたい場合はtrue(三人称カメラ等)。
 	void SetFollowRotation(bool follow) { followRotation_ = follow; }
@@ -74,7 +43,7 @@ public:
 		CameraTargetComponent* target = target_.Resolve();
 		if (target == nullptr) return;
 
-		const Math::Vector3 playerPos = target->GetTargetPosition();
+		const Math::Vector3 playerPos = target->GetFixationPoint();
 
 		GameObject* lockedTarget = nullptr;
 		if (const SceneContext* context = GetOwner()->GetContext()) {
@@ -125,7 +94,7 @@ public:
 		// ことで、切り替わったフレームでも正しい基準(同期済みのorbit_)を使う。
 		const Math::Quaternion offsetRotation =
 			(orbit_ != nullptr) ? orbit_->GetOrbitRotation() : target->GetTargetRotation();
-		const Math::Vector3 followWorldOffset = Math::Vector3::Transform(localOffset_, offsetRotation);
+		const Math::Vector3 followWorldOffset = Math::Vector3::Transform(Math::Vector3::Forward, offsetRotation) * cameraDistance_;
 		const Math::Vector3 followPosition = playerPos + followWorldOffset;
 
 		// --- ロック状態の切り替わりを検出し、位置の飛びをイージングで吸収する ---
@@ -189,7 +158,7 @@ private:
 		const Math::Quaternion positionRotation =
 			Math::Quaternion::CreateFromYawPitchRoll(aimYaw + lockOnYawBias_, lockOnPositionPitch_, 0.0f);
 
-		const Math::Vector3 worldOffset = Math::Vector3::Transform(localOffset_, positionRotation);
+		const Math::Vector3 worldOffset = Math::Vector3::Transform(Math::Vector3::Forward, positionRotation) * cameraDistance_;
 		outPosition = playerPos + worldOffset;
 		return true;
 	}
@@ -249,7 +218,7 @@ private:
 	TransformComponent* transform_ = nullptr;
 	CameraOrbitComponent* orbit_ = nullptr;        // 同一GameObjectの兄弟コンポーネントなので生ポインタのまま
 	Handle<CameraTargetComponent> target_;         // 別GameObjectの参照なのでHandle化
-	Math::Vector3 localOffset_{ 0.0f, 0.0f, -10.0f };
+	float cameraDistance_ = 5.f;
 	bool followRotation_ = true;
 
 	// ロック中の向き

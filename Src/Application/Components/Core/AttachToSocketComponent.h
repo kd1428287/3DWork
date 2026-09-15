@@ -6,7 +6,7 @@ public:
 	explicit AttachToSocketComponent(GameObject* owner, Handle<TransformComponent> socketHandle)
 		: ComponentBase(owner), socketHandle_(socketHandle) {}
 
-	void Start() override {
+	void Awake() override {
 		selfTransform_ = GetOwner()->GetComponent<TransformComponent>();
 	}
 

@@ -2,7 +2,7 @@
 #include "../../../GamePlay/Character/Combat/HealthComponent.h"
 #include "../../../GamePlay/Character/Combat/PostureComponent.h"
 
-void PlayerStatusUIComponent::Start()
+void PlayerStatusUIComponent::Awake()
 {
 	// HealthComponentは必須想定。取得できない場合は設計ミスの可能性が
 	// 高いため、assert等で早期に気づけるようにしてもよい。

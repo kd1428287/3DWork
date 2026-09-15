@@ -29,7 +29,7 @@ public:
 	EnemyAIController(GameObject* owner, const EnemyAIData& data, std::unique_ptr<IEnemyBehavior> behavior)
 		: ComponentBase(owner), data_(data), behavior_(std::move(behavior)) {}
 
-	void Start() override
+	void Awake() override
 	{
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
 		movementComponent_ = GetOwner()->GetComponent<MovementComponent>();
@@ -46,8 +46,8 @@ public:
 
 		EventBus& localBus = GetOwner()->GetLocalEventBus();
 
-		const SubscriptionId collisionId = localBus.Subscribe<CollisionSystem::CollisionEnterEvent>(
-			[this](const CollisionSystem::CollisionEnterEvent& e) { OnCollisionEnter(e); });
+		const SubscriptionId collisionId = localBus.Subscribe<Events::Collision::CollisionEnterEvent>(
+			[this](const Events::Collision::CollisionEnterEvent& e) { OnCollisionEnter(e); });
 		collisionSubscriber_ = ScopedSubscriber(&localBus, collisionId);
 
 		if (healthComponent_ != nullptr) {
@@ -183,7 +183,7 @@ public:
 private:
 	void UpdateTargetAcquisition();
 	TransformComponent* FindPlayerTransform() const;
-	void OnCollisionEnter(const CollisionSystem::CollisionEnterEvent& e);
+	void OnCollisionEnter(const Events::Collision::CollisionEnterEvent& e);
 	void OnParried(const AttackSourceComponent::ParriedEvent& e);
 	void OnDied();
 	void RequestDespawn();

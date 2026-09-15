@@ -15,7 +15,7 @@ public:
 	explicit DirectionTransformSource(GameObject* owner)
 		: ComponentBase(owner) {}
 
-	void Start() override
+	void Awake() override
 	{
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
 	}

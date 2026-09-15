@@ -12,7 +12,7 @@ public:
 	void SetModelData(std::string_view fileName) { modelWork_.SetModelData(KdAssets::Instance().m_modeldatas.GetData(fileName)); }
 	void SetModelData(const std::shared_ptr<KdModelData>& data) { modelWork_.SetModelData(data); }
 
-	void Start() override;
+	void Awake() override;
 	void PreUpdate(float deltaTime) override;
 
 	void PostUpdate(float deltaTime) override {

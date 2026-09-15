@@ -11,7 +11,7 @@ public:
 	explicit GravityComponent(GameObject* owner, float gravityAcceleration = -20.0f)
 		: ComponentBase(owner), gravityAcceleration_(gravityAcceleration) {}
 
-	void Start() override {
+	void Awake() override {
 		velocity_ = GetOwner()->GetComponent<VelocityComponent>();
 		groundSensor_ = GetOwner()->GetComponent<GroundSensorComponent>();
 	}

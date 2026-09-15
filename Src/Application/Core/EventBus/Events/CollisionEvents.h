@@ -41,12 +41,5 @@ namespace Events
 			ColliderComponent* otherCollider = nullptr;
 			std::string otherShapeName;
 		};
-
-		// 以前はMesh/PolygonColliderComponent(TriangleColliderComponent)との
-		// 接触通知用にTerrainCollisionEnterEvent/TerrainCollisionExitEventを
-		// 別途持っていたが、Mesh/PolygonがColliderComponentの
-		// CollisionShapeEntryへ統合されたことで、相手も常にColliderComponent
-		// になったため不要になった(CollisionEnterEvent/CollisionExitEventで
-		// Mesh/Polygonとの接触も含めて表現できる)。
 	}
 };

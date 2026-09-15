@@ -47,8 +47,9 @@ public:
 
 	// --- コンポーネント操作 ----------------------------------------
 
-	template <typename T, typename... Args>
-	T* AddComponent(Args&&... args) {
+	template<typename T, typename ...Args>
+	T* AddComponent(Args && ...args)
+	{
 		static_assert(std::is_base_of_v<ComponentBase, T>,
 			"T must derive from ComponentBase");
 
@@ -64,9 +65,12 @@ public:
 		// コンパイル時に判定し、該当するものだけタグレジストリに登録する。
 		RegisterTags<T, TAG_INTERFACES>(rawPtr, base);
 
-		rawPtr->Awake();
+		RequestAwake(rawPtr);
+
 		return rawPtr;
 	}
+
+	void RequestAwake(ComponentBase* component);
 
 	template <typename T>
 	T* GetComponent() const {
@@ -325,3 +329,4 @@ private:
 
 	EventBus localEventBus_; // このGameObject宛てのイベント専用バス
 };
+

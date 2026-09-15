@@ -13,9 +13,7 @@
 //      (GetMovementYawRotation()。旧InputSystemが持っていた変換ロジックをここに集約)
 class CameraComponent : public ComponentBase {
 public:
-	explicit CameraComponent(GameObject* owner) : ComponentBase(owner) {}
-
-	void Awake() override
+	explicit CameraComponent(GameObject* owner) : ComponentBase(owner) 
 	{
 		if (!camera_)
 		{
@@ -24,7 +22,8 @@ public:
 		camera_->SetProjectionMatrix(60);
 	}
 
-	void Start() override {
+	void Awake() override
+	{
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
 
 		follow_ = GetOwner()->GetComponent<CameraFollowComponent>();

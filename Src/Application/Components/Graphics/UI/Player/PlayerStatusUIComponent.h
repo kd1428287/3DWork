@@ -20,7 +20,7 @@ class PlayerStatusUIComponent : public ComponentBase
 public:
 	explicit PlayerStatusUIComponent(GameObject* owner) : ComponentBase(owner) {}
 
-	void Start() override;
+	void Awake() override;
 	void Update(float deltaTime) override;
 
 private:

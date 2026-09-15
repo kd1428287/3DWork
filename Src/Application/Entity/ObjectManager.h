@@ -34,12 +34,33 @@ public:
 		return rawPtr;
 	}
 
+	void RequestAwake(ComponentBase* component) {
+		pendingAwakeComponents_.push_back(component);
+	}
+
 	// 破棄予約。実際の削除は明示的にFlush()を呼んだタイミングで行う。
 	void Destroy(GameObject* target) {
 		pendingDestroy_.push_back(target);
 	}
 
 	// --- 各フェーズ(それぞれ独立して呼び出し可能) --------------------
+
+	void UpdateAwake()
+	{
+		while (!pendingAwakeComponents_.empty())
+		{
+			std::vector<ComponentBase*> processingList;
+			processingList.swap(pendingAwakeComponents_);
+
+			for (auto* component : processingList)
+			{
+				if (component)
+				{
+					component->Awake();
+				}
+			}
+		}
+	}
 
 	void PreUpdate(float deltaTime) {
 		// フレーム先頭で生の(スケールされていない)経過時間を記録しておく。
@@ -48,6 +69,8 @@ public:
 		context_.unscaledDeltaTime = deltaTime;
 
 		float dt = deltaTime * timeScale_;
+
+		UpdateAwake();
 
 		for (auto& obj : objects_) {
 			if ((obj->GetFlags() & currentUpdateMask_) == 0)continue;
@@ -161,6 +184,7 @@ public:
 private:
 	std::vector<std::unique_ptr<GameObject>> objects_;
 	std::vector<GameObject*> pendingDestroy_;
+	std::vector<ComponentBase*> pendingAwakeComponents_;
 	SceneContext context_; 
 	float timeScale_ = 1.0f;
 	uint8_t currentUpdateMask_ = 

@@ -78,7 +78,7 @@ void EnemyAIController::FaceHorizontalTarget(const Math::Vector3& targetPosition
 }
 
 // --- 被弾処理 -----------------------------------------------------------
-void EnemyAIController::OnCollisionEnter(const CollisionSystem::CollisionEnterEvent& e)
+void EnemyAIController::OnCollisionEnter(const Events::Collision::CollisionEnterEvent& e)
 {
 	if (isDead_) return;
 	if (e.selfShapeName != "HurtBox") return;

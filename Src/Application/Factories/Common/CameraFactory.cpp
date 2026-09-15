@@ -23,10 +23,11 @@ GameObject* CameraFactory::CreateCamera(ObjectManager& objectManager, CameraTarg
 	camera->AddComponent<CameraOrbitComponent>();
 	camera->AddComponent<CameraViewComponent>();
 	follow->SetTarget(Handle<CameraTargetComponent>(target));
-	follow->SetLocalOffset({ 0.0f, 1.0f, -5.0f });
+	follow->SetDistance(5.f);
 	auto* collision = camera->AddComponent<CameraCollisionComponent>(); // Followより後
 	collision->SetPivotTarget(Handle<CameraTargetComponent>(target));
-	collision->SetSweepRadius(0.5f);
+	collision->SetPivotOffset(Math::Vector3(0.f, -0.5f, 0.f));;
+	collision->SetSweepRadius(0.3f);
 	objectManager.SetActiveCamera(cameraC);
 	auto* shake = camera->AddComponent<CameraShakeComponent>();
 	shake->SetRotationAmplitude({ 0.1f,0.1f,0.15f });

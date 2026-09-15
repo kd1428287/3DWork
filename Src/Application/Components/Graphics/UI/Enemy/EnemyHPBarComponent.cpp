@@ -1,7 +1,7 @@
 ﻿#include "EnemyHPBarComponent.h"
 #include "../../../GamePlay/Character/Combat/PostureComponent.h" // パスはプロジェクトに合わせて調整
 
-void EnemyHPBarComponent::Start()
+void EnemyHPBarComponent::Awake()
 {
 	health_ = GetOwner()->GetComponent<HealthComponent>();
 	posture_ = GetOwner()->GetComponent<PostureComponent>(); // 任意。無ければ体幹バーは描画しない

@@ -1,38 +1,9 @@
 ﻿#pragma once
 
-// ============================================================
 // 当たり判定の純粋な幾何計算だけを集めた場所。
-//
-// KdCollision.cpp(ポリゴン/メッシュ含む低レベル判定関数群)の役割を
-// 引き継ぐ部分。Sphere/Box(OBB。回転を考慮するBOX)/Capsule(線分+半径)/
-// Rayの基本形状に加え、三角形単位の判定(KdPointToTriangle/DirectX::
-// TriangleTests::Intersects相当)もここに集約している。
-//
-// Capsule絡みの判定(CapsuleVsOBB/CapsuleVsTriangle)は、線分と相手形状の
-// 「真の最近接点対」を解析的に一発で求めるのではなく、"交互射影法"
-// (線分側→相手側→線分側…と最近接点を数回往復させ収束させる近似)で
-// 求めている。線分・OBB・三角形はいずれも凸形状なので、この方法は
-// 数回の反復で実用上十分な精度に収束する(Capsule vs Capsuleのみ、
-// 線分同士の最近接点対を解析的に一発で求める古典的な閉じた式
-// (ClosestPtSegmentSegment)があるため、そちらを使っている)。
-//
-// 三角形1枚に対する判定はここでは「1枚だけ」を見て結果を返す関数と
-// している。複数の三角形(メッシュ/ポリゴン)をまとめて相手にする際の
-// 反復処理(境界での足切り、複数面にまたがる押し出しの合成、ワールド
-// 変換のキャッシュなど)はColliderComponent::CollisionShapeEntry側の
-// 責務にしている(TestTriangleVsSphere/TestTriangleVsOBB/
-// TestTriangleVsRay参照)。KdModelCollision/KdPolygonCollisionが
-// 「全ての面をループしながら結果を合成する」役目を持っていたのと同じ
-// 責務分担を、コンポーネント指向向けに引き継いだもの。
-//
-// GameObjectやComponentを一切知らない、状態を持たない純粋関数の
-// 集まりにしている。ColliderComponent/CollisionSystem/RaycastSystemの
-// どこからでも同じ計算を使い回せるようにするため。
-// ============================================================
 namespace CollisionMath
 {
-	// 形状同士の重なり判定結果。KdCollider::CollisionResultの役割を
-	// 引き継ぐが、名前はこのプロジェクトの命名に合わせている。
+	// 形状同士の重なり判定結果
 	struct OverlapResult
 	{
 		bool hit = false;
@@ -41,7 +12,7 @@ namespace CollisionMath
 		float overlapDistance = 0.0f;  // めり込み量
 	};
 
-	// レイ判定結果。
+	// レイ判定結果
 	struct RayHitResult
 	{
 		bool hit = false;
@@ -95,7 +66,6 @@ namespace CollisionMath
 		result.hit = true;
 
 		// めり込みが最も小さい軸を押し出し方向として選ぶ
-		// (最小移動量で分離できる軸、という一般的なAABB分離手法)。
 		if (overlapX <= overlapY && overlapX <= overlapZ) {
 			result.overlapDistance = overlapX;
 			result.hitNormal = Math::Vector3(diff.x >= 0.0f ? 1.0f : -1.0f, 0.0f, 0.0f);
@@ -140,8 +110,7 @@ namespace CollisionMath
 			result.overlapDistance = sphereRadius - dist;
 		}
 		else {
-			// 球の中心がAABBの内部にある(深く貫通済み)。最も浅い面へ
-			// 押し出す簡易処理にする(AABBVsAABBと同じ最小軸選択の考え方)。
+			// 球の中心がAABBの内部にある(深く貫通済み)。最も浅い面へ押し出す簡易処理
 			const Math::Vector3 toMax = (boxCenter + boxHalf) - sphereCenter;
 			const Math::Vector3 toMin = sphereCenter - (boxCenter - boxHalf);
 
@@ -159,7 +128,7 @@ namespace CollisionMath
 		return result;
 	}
 
-	// rayDirは正規化済みである前提(呼び出し側で正規化しておくこと)。
+	// rayDirは正規化済みである前提
 	inline RayHitResult RayVsSphere(
 		const Math::Vector3& rayOrigin, const Math::Vector3& rayDir, float rayRange,
 		const Math::Vector3& sphereCenter, float sphereRadius)
@@ -187,7 +156,7 @@ namespace CollisionMath
 		return result;
 	}
 
-	// 点から線分への最近接点。Capsule(線分+半径)の判定全般で使う基礎関数。
+	// 点から線分への最近接点
 	inline Math::Vector3 ClosestPointOnSegment(
 		const Math::Vector3& p, const Math::Vector3& a, const Math::Vector3& b)
 	{
@@ -200,9 +169,7 @@ namespace CollisionMath
 		return a + ab * t;
 	}
 
-	// 線分同士の最近接点対を求める(Christer Ericson「リアルタイム衝突判定」の
-	// ClosestPtSegmentSegmentと同一のアルゴリズム)。Capsule vs Capsuleの
-	// 判定で、両カプセルの軸線分がどこで最も近づくかを求めるために使う。
+	// 線分同士の最近接点対を求める
 	inline void ClosestPointSegmentSegment(
 		const Math::Vector3& p1, const Math::Vector3& q1,
 		const Math::Vector3& p2, const Math::Vector3& q2,
@@ -261,20 +228,6 @@ namespace CollisionMath
 		outC2 = p2 + d2 * t;
 	}
 
-	// ============================================================
-	// Capsule(線分+半径。カプセルコライダー)の判定。
-	//
-	// キャラクターの主判定形状として、Sphere(不均一スケールで歪む/
-	// 段差に引っかかりやすい)やBox(角に引っかかりやすい)よりも
-	// 段差・斜面追従が滑らかなため、Unity(CapsuleCollider)/
-	// Unreal(UCapsuleComponent)ともにキャラクター用のデフォルト形状
-	// として採用している。
-	//
-	// 中身は「線分(start-end)の周りに半径radiusを膨らませた形状」
-	// というだけなので、他形状との判定は基本的に「まず線分側の
-	// 最近接点(あるいは最近接点対)を求め、そこから先はSphereの判定
-	// 関数に委譲する」という形に帰着できる(半径付きの点=球なので)。
-	// ============================================================
 	struct Capsule
 	{
 		Math::Vector3	start{};
@@ -445,11 +398,7 @@ namespace CollisionMath
 		return result;
 	}
 
-	// ------------------------------------------------------------
 	// 三角形単位の判定
-	// KdCollision.cpp(KdPointToTriangle/DirectX::TriangleTests::Intersects
-	// を使っていた部分)の役割を引き継ぐ。ここでは三角形1枚のみを見る。
-	// ------------------------------------------------------------
 
 	// 三角形の表向き法線(v0->v1->v2の順を表とする)。
 	inline Math::Vector3 TriangleNormal(
@@ -460,9 +409,7 @@ namespace CollisionMath
 		return normal;
 	}
 
-	// 点から三角形への最近接点を求める。
-	// ※出典: 「リアルタイム衝突判定」(Christer Ericson) の重心座標法。
-	//   KdPointToTriangleと同一のアルゴリズム。
+	// 点から三角形への最近接点
 	inline Math::Vector3 ClosestPointOnTriangle(
 		const Math::Vector3& p,
 		const Math::Vector3& a, const Math::Vector3& b, const Math::Vector3& c)
@@ -511,8 +458,6 @@ namespace CollisionMath
 	}
 
 	// 球 vs 三角形1枚。closest point法による判定
-	// (KdCollision.cppのKdPointToTriangle+HitCheckAndPosUpdate相当)。
-	// hitNormalは「球を三角形から押し出す向き」。
 	inline OverlapResult SphereVsTriangle(
 		const Math::Vector3& sphereCenter, float sphereRadius,
 		const Math::Vector3& v0, const Math::Vector3& v1, const Math::Vector3& v2)
@@ -541,15 +486,9 @@ namespace CollisionMath
 		return result;
 	}
 
-	// AABB vs 三角形1枚。
+	// AABB vs 三角形1枚
 	// 正確な交差判定にはSAT(分離軸判定/13軸)を使うが、押し出し量・向きの
 	// 計算は「三角形の平面法線方向にBOXを投影して押し出す」近似で行う
-	// (KdCollider/KdCollision.cppには元々BOX-vs-メッシュの実装が無く
-	//  TODOだった部分。地形メッシュに箱がめり込むケースを扱うために
-	//  今回新規に追加している)。
-	// ※非常に鋭い角にBOXの角が刺さるようなケースでは、この近似だと
-	//   押し出し方向がわずかに不自然になることがある(面の広い場所での
-	//   押し出しを優先する設計のため、地形のような用途では実用上問題ない)。
 	inline OverlapResult AABBVsTriangle(
 		const Math::Vector3& boxCenter, const Math::Vector3& boxHalf,
 		const Math::Vector3& v0, const Math::Vector3& v1, const Math::Vector3& v2)
@@ -609,11 +548,7 @@ namespace CollisionMath
 		return result;
 	}
 
-	// Capsule vs 三角形1枚。線分と三角形はどちらも凸形状なので、
-	// 「線分上の点から三角形への最近接点」→「その点から線分への最近接点」
-	// を数回往復させる(交互射影法)だけで真の最近接点対に収束する。
-	// 収束後はSphereVsTriangleにそのまま委譲すればよい
-	// (収束済みの点を中心とする半径radiusの球、として扱えるため)。
+	// Capsule vs 三角形1枚
 	inline OverlapResult CapsuleVsTriangle(
 		const Capsule& capsule, const Math::Vector3& v0, const Math::Vector3& v1, const Math::Vector3& v2)
 	{
@@ -629,10 +564,7 @@ namespace CollisionMath
 	}
 
 
-	// レイ vs 三角形1枚の判定(DirectX::TriangleTests::Intersects相当)。
-	// ※両面にヒットする(裏面からでも貫通しない)。片面カリングが
-	//   必要な用途(視界を遮る壁など、裏側からは素通りしてほしい場合)は
-	//   呼び出し側でdet(=法線とレイの向きの関係)を見て弾くこと。
+	// レイ vs 三角形1枚の判定
 	inline RayHitResult RayVsTriangle(
 		const Math::Vector3& rayOrigin, const Math::Vector3& rayDir, float rayRange,
 		const Math::Vector3& v0, const Math::Vector3& v1, const Math::Vector3& v2)
@@ -667,14 +599,8 @@ namespace CollisionMath
 		return result;
 	}
 
-	// ============================================================
-	// OBB(回転を考慮するBOX)の判定。
-	//
-	// KdCollider.hのDirectX::BoundingOrientedBox相当だが、DirectXの型に
-	// 依存せず Vector3(中心) + Vector3(半径サイズ) + Quaternion(向き) の
-	// 組で表す(このプロジェクトの他の型と同じくMath::Vector3/Quaternionで
-	// 完結させるため)。
-	//
+	// OBB(回転を考慮するBOX)の判定
+	
 	// 実装方針:「一方のBOXのローカル座標系(回転を打ち消した空間)に
 	// 相手を持ち込んでから、既存のAABB用の関数を再利用する」という
 	// 手法を基本にしている。
@@ -685,7 +611,6 @@ namespace CollisionMath
 	//   - OBB相手(BOX同士): 相手も回転しているため、片方をローカル空間に
 	//     持ち込むだけでは軸並行にならない。この組み合わせだけは
 	//     15軸(両BOXの主軸3+3、主軸同士の外積9)のSATを別途実装する。
-	// ============================================================
 	struct OrientedBox
 	{
 		Math::Vector3		center{};
@@ -736,7 +661,7 @@ namespace CollisionMath
 		return result;
 	}
 
-	// 三角形1枚 vs OBB。
+	// 三角形1枚 vs OBB
 	inline OverlapResult OBBVsTriangle(
 		const OrientedBox& box, const Math::Vector3& v0, const Math::Vector3& v1, const Math::Vector3& v2)
 	{

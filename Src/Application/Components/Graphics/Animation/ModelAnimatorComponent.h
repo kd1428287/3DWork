@@ -13,11 +13,6 @@ public:
 		skeleton_ = GetOwner()->GetComponent<SkeletonComponent>();
 	}
 
-	void Start() override
-	{
-		skeleton_ = GetOwner()->GetComponent<SkeletonComponent>();
-	}
-
 	// アニメーション名を指定して再生開始
 	// ・animName				… アニメーション名
 	// ・loop					… ループ再生するか
@@ -170,8 +165,8 @@ private:
 	RootMotionExtractor					rootMotion_;
 };
 
-// SkeletonComponent::Start() / PreUpdate() の遅延定義
-inline void SkeletonComponent::Start()
+// SkeletonComponent::Awake() / PreUpdate() の遅延定義
+inline void SkeletonComponent::Awake()
 {
 	selfTransform_ = GetOwner()->GetComponent<TransformComponent>();
 	// ModelAnimatorComponentを持たない(外部からWorkNodes()を直接

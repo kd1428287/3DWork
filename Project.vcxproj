@@ -326,7 +326,7 @@
     <ClInclude Include="Src\Application\Components\Physics\Movement\DirectionTransformSource.h" />
     <ClInclude Include="Src\Application\Components\Physics\Movement\FollowCameraComponent.h" />
     <ClInclude Include="Src\Application\Components\Physics\Movement\GravityComponent.h" />
-    <ClInclude Include="Src\Application\Components\Physics\Movement\MotionComposerComponent.h" />
+    <ClInclude Include="Src\Application\Components\Physics\Movement\MovementResolverComponent.h" />
     <ClInclude Include="Src\Application\Components\Physics\Movement\MovementComponent.h" />
     <ClInclude Include="Src\Application\Components\Physics\Movement\TweenMoveComponent.h" />
     <ClInclude Include="Src\Application\Components\Physics\Movement\VelocityComponent.h" />
@@ -383,6 +383,7 @@
     <ClInclude Include="Src\Application\Definitions\Physics\ModelCollisionMeshBuilder.h" />
     <ClInclude Include="Src\Application\Definitions\Physics\TriangleMeshData.h" />
     <ClInclude Include="Src\Application\Editor\Common\EditorViewport.h" />
+    <ClInclude Include="Src\Application\Editor\EditorHost.h" />
     <ClInclude Include="Src\Application\Editor\ThirdParty\imgui-node-editor\crude_json.h" />
     <ClInclude Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_bezier_math.h" />
     <ClInclude Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_canvas.h" />
@@ -505,6 +506,7 @@
     <ClCompile Include="Src\Application\Definitions\Map\ComponentRegistrations.cpp" />
     <ClCompile Include="Src\Application\Definitions\Map\MapData.cpp" />
     <ClCompile Include="Src\Application\Editor\Common\EditorViewport.cpp" />
+    <ClCompile Include="Src\Application\Editor\EditorHost.cpp" />
     <ClCompile Include="Src\Application\Editor\ThirdParty\imgui-node-editor\crude_json.cpp" />
     <ClCompile Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_canvas.cpp" />
     <ClCompile Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_node_editor.cpp" />
@@ -519,6 +521,7 @@
     <ClCompile Include="Src\Application\Effect\Particle\EffectInstance.cpp" />
     <ClCompile Include="Src\Application\Effect\SlashTrail\SlashTrailDispatcher.cpp" />
     <ClCompile Include="Src\Application\Effect\SlashTrail\SlashTrailInstance.cpp" />
+    <ClCompile Include="Src\Application\Entity\GameObject.cpp" />
     <ClCompile Include="Src\Application\Factories\Common\CameraFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\GamePlay\Character\CharacterFactoryUtil.cpp" />
     <ClCompile Include="Src\Application\Factories\GamePlay\Character\EnemyFactory.cpp" />

@@ -33,7 +33,7 @@ class EnemyHPBarComponent : public ComponentBase
 public:
 	explicit EnemyHPBarComponent(GameObject* owner) : ComponentBase(owner) {}
 
-	void Start() override;
+	void Awake() override;
 	void Update(float deltaTime) override;
 
 	// 9スライスを使いたい場合はStart()後にこれらを呼んで設定を上書きする。

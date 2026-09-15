@@ -897,7 +897,7 @@
     <ClInclude Include="Src\Application\Definitions\Character\Common\StateMachine\StateMachine.h">
       <Filter>Src\Application\Definitions\Character\Common\StateMachine</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\Physics\Movement\MotionComposerComponent.h">
+    <ClInclude Include="Src\Application\Components\Physics\Movement\MovementResolverComponent.h">
       <Filter>Src\Application\Components\Physics\Movement</Filter>
     </ClInclude>
     <ClInclude Include="Src\Application\Definitions\Character\Enemy\IEnemyBehavior.h">
@@ -905,6 +905,9 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Systems\Collision\CollisionResolver.h">
       <Filter>Src\Application\Systems\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Editor\EditorHost.h">
+      <Filter>Src\Application\Editor</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1189,6 +1192,12 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Editor\Tools\BTEditor.cpp">
       <Filter>Src\Application\Editor\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Entity\GameObject.cpp">
+      <Filter>Src\Application\Entity</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Editor\EditorHost.cpp">
+      <Filter>Src\Application\Editor</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

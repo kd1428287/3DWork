@@ -109,24 +109,39 @@ struct ImGuiAppLog
 	}
 };
 
+//============================================================
+// KdDebugGUI
+//	・ImGuiのインフラ(Context生成/破棄、フレーム境界)のみを担当する。
+//	・ドッキングレイアウトや各エディタツールのUpdate呼び出しは持たない(EditorHostの責務)。
+//	・EditorHostや各エディタツールのヘッダを一切includeしない
+//	  → 将来ImGuiだけで完結する軽量デバッグHUDとして他プロジェクトに転用しやすい。
+//============================================================
 class KdDebugGUI
 {
 public:
+	// ImGui Context生成、フォント読み込みなど(1度だけ呼ぶ)
 	void GuiInit(int w, int h);
-	void GuiProcess();
+
+	// フレーム開始(NewFrame三点セット)。何を描くかはこのクラスの関知するところではない
+	void BeginFrame();
+
+	// フレーム終了(Render〜マルチビューポート処理)。Present直前に呼ぶこと
+	void EndFrame();
+
+	// ImGui Context破棄。Application::Release()などから明示的に呼ぶ想定
+	// (静的破棄順に依存しないよう、デストラクタ任せにしない)
+	void GuiRelease();
 
 	void AddLog(const char* fmt, ...);
 	void ClearLog();
-	
-private:
-	void GuiRelease();
 
+private:
 	// ImGui
 	std::unique_ptr<ImGuiAppLog> m_uqLog = nullptr;
 
-//=====================================================
-// シングルトンパターン
-//=====================================================
+	//=====================================================
+	// シングルトンパターン
+	//=====================================================
 private:
 	KdDebugGUI();
 	~KdDebugGUI();

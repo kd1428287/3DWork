@@ -427,7 +427,7 @@ class ColliderComponent : public ComponentBase
 public:
 	explicit ColliderComponent(GameObject* owner) : ComponentBase(owner) {}
 
-	void Start() override {
+	void Awake() override {
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
 		if (transform_ == nullptr) {
 			std::printf(

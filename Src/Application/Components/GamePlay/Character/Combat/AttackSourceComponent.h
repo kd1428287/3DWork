@@ -24,7 +24,7 @@ public:
 	// 発行されるイベント。「反応するかどうか」「どう反応するか」は
 	// 完全に攻撃者側(購読する側)に委ねる。被弾側(PlayerStatusController等)
 	// はGameObjectの具体的な型を一切知らずにこれをPublish()するだけで
-	// 済む(HealthComponent::DiedEvent/CollisionSystem::CollisionEnterEvent
+	// 済む(HealthComponent::DiedEvent/Events::Collision::CollisionEnterEvent
 	// と同じ、GameObjectローカルバス経由の疎結合パターン)。
 	//
 	// 【現状】パリィ時のリアクション自体は未実装(一旦保留)。将来Enemy側に

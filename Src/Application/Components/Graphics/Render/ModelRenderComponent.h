@@ -22,7 +22,7 @@ class ModelRenderComponent : public ComponentBase, public IRenderable
 public:
 	explicit ModelRenderComponent(GameObject* owner);
 
-	void Start() override;
+	void Awake() override;
 
 	// 光を遮るオブジェクト(影を落とす側)としてシャドウマップに描く
 	void GenerateDepthMapFromLight() override;

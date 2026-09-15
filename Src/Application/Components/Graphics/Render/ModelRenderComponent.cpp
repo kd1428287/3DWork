@@ -13,7 +13,7 @@ ModelRenderComponent::ModelRenderComponent(GameObject* owner)
 // 個別描画パラメータ適用者(IRenderStateModifier)を、それぞれ
 // タグレジストリ経由で1度だけ収集しておく
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void ModelRenderComponent::Start()
+void ModelRenderComponent::Awake()
 {
 	transform_ = GetOwner()->GetComponent<TransformComponent>();
 

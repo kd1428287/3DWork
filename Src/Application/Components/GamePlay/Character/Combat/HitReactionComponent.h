@@ -12,7 +12,6 @@ public:
 	explicit HitReactionComponent(GameObject* owner) : ComponentBase(owner) {}
 
 	void Awake() override;
-	void Start() override;
 
 	// パリィ/ガード/通常被弾のどれで判定するかを問い合わせる相手を登録する
 	void SetQuerySource(IHitReactionQuery* query) { query_ = query; }
@@ -24,7 +23,7 @@ public:
 	void SetLargeStaggerDuration(float seconds) { largeStaggerDuration_ = seconds; }
 
 private:
-	void OnCollisionEnter(const CollisionSystem::CollisionEnterEvent& e);
+	void OnCollisionEnter(const Events::Collision::CollisionEnterEvent& e);
 	void SpawnWeaponClashEffect(GameObject* attackerWeaponObj, bool isParry);
 	void SpawnDamageEffect(GameObject* self,GameObject* attackerWeaponObj);
 

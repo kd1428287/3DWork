@@ -25,7 +25,7 @@ public:
 		: ComponentBase(owner), speed_(speed) {
 	}
 
-	void Start() override
+	void Awake() override
 	{
 		// 自オブジェクトに入力ソースがあるならそちらを優先
 		auto sources = GetOwner()->GetTagged<IMovementSource>();
