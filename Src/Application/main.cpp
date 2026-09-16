@@ -3,7 +3,6 @@
 #include "Core/Scene/SceneManager.h"
 
 #include "Editor/EditorHost.h"
-#define EDITOR_ENABLED
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // エントリーポイント
@@ -73,7 +72,7 @@ void Application::KdBeginDraw(bool usePostProcess)
 	// 3D描画先を切り替える
 	//	・エディタ表示中 … オフスクリーン(Sceneウィンドウ用バッファ)
 	//	・エディタ非表示中 … バックバッファへ直接フルスクリーン描画
-	//EditorViewport::Instance().BeginSceneDraw();
+	EditorHost::Instance().BeginSceneDraw();
 
 	KdShaderManager::Instance().WorkAmbientController().Draw();
 
@@ -86,18 +85,22 @@ void Application::KdBeginDraw(bool usePostProcess)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void Application::KdPostDraw()
 {
-	if (EditorHost::Instance().IsViewportEnabled()) {
+	if (EditorHost::Instance().IsViewportEnabled())
+	{
 		// バックバッファをクリアし、ImGui(ドッキングUI)用のレンダーターゲットに戻す
 		KdDirect3D::Instance().ClearBackBuffer();
 
 		ID3D11RenderTargetView* rtvs[] = { KdDirect3D::Instance().WorkBackBuffer()->WorkRTView() };
 		KdDirect3D::Instance().WorkDevContext()->OMSetRenderTargets(1, rtvs, KdDirect3D::Instance().WorkZBuffer()->WorkDSView());
+
+
 	}
 	// エディタ非表示中：ゲーム画面はBeginSceneDraw()で既にバックバッファへ直接描画済みのため、
 	// ここで再クリアするとゲーム画面が消えてしまうので何もしない
 
-	// Imguiのレンダリング(エディタ非表示中は中身が空でも軽量に呼べる)
+	// エディタ用ドッキングUI一式の描画(エディタ非表示中は中身が空でも軽量に呼べる)
 	EditorHost::Instance().Draw();
+
 	// BackBuffer -> 画面表示
 	KdDirect3D::Instance().WorkSwapChain()->Present(0, 0);
 }
@@ -189,7 +192,7 @@ bool Application::Init(int w, int h)
 	}
 
 	//===================================================================
-	// imgui初期化
+	// エディタ初期化(imgui含む。EDITOR_ENABLED未定義ビルドでは何もしない)
 	//===================================================================
 	EditorHost::Instance().Init(w, h);
 
@@ -354,6 +357,11 @@ void Application::Execute()
 
 			DrawSprite();
 
+			// エディタのプレビュー用ビューポートへの描画(エフェクト/マップ)
+			// ※通常描画パイプライン(Draw〜PostDraw〜DrawSprite)が完全に終わった後に実施する。
+			//   ここまででレンダーターゲット/パイプラインステートは全て元の状態に戻っているため、
+			//   エディタ側の描画はこのクリーンな状態から独立して行える。
+			//   KD_EDITOR_ENABLED未定義ビルドでは何もしない
 			EditorHost::Instance().RenderPreviewViewports();
 		}
 		KdPostDraw();
@@ -371,6 +379,11 @@ void Application::Execute()
 // アプリケーション終了
 void Application::Release()
 {
+	// エディタ関連の解放(内部でImGuiのContext破棄まで行う)
+	// KdDirect3D::Instance().Release()より前に呼ぶこと(ImGuiのDX11バックエンド解放が
+	// デバイス/コンテキスト破棄後になると不正になるため)
+	EditorHost::Instance().Release();
+
 	KdInputManager::Instance().Release();
 
 	KdShaderManager::Instance().Release();

@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "../Combat/CombatData.h"
+#include "Application/Components/GamePlay/Character/Common/CharacterInputBufferComponent.h"
 
 // ============================================================
 // PlayerStatusController / PlayerInputComponent 双方から参照される
@@ -38,11 +39,22 @@ enum class CombatState
 
 
 
+// Playerが「先行入力として覚えておきたいコマンド」の語彙。
+// CharacterInputBufferComponent<TCommand>(../Common/
+// CharacterInputBufferComponent.h)はコマンドの語彙に依存しない汎用の
+// 入れ物であり、この列挙型自体はPlayer固有の値としてここに置く
+// (将来Enemy AIが同じ仕組みを使う場合は、EnemyCommandのような
+//  別の語彙をEnemy側のヘッダに定義し、
+//  CharacterInputBufferComponent<EnemyCommand>を使えばよい。
+//  Playerの語彙をEnemy側へ流用する必要は無い)。
 enum class ActionCommand
 {
 	Attack,
 	Evade,
 };
+
+// Player用の入力バッファコンポーネントの具体化。
+using PlayerActionBufferComponent = CharacterInputBufferComponent<ActionCommand>;
 
 
 // --- 前後左右4方向の分類 -----------------------------------------

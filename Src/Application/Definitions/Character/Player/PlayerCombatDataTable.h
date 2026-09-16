@@ -14,7 +14,7 @@ using ComboAttackTable = std::array<AttackData, 1>;
 //// 実際の読み込み処理(JSON等)が決まったら、この関数を呼んでいる箇所
 //// (PlayerStatusController::Start()参照)をそちらに差し替えるだけで良い。
 //// ============================================================
-//ComboAttackTable CreateDebugComboAttackTable();
+ComboAttackTable CreateDebugComboAttackTable();
 //
 //// ============================================================
 //// デバッグ用: Evade/Guardの基本データ(コンボのように段数は無く単一構成)を
@@ -25,5 +25,5 @@ using ComboAttackTable = std::array<AttackData, 1>;
 //// デフォルト値は、万一読み込みに失敗した場合の安全側フォールバックとして
 //// 残す)。
 //// ============================================================
-//EvadeMoveData CreateDebugEvadeData();
-//GuardMoveData CreateDebugGuardData();
+EvadeData CreateDebugEvadeData();
+GuardData CreateDebugGuardData();

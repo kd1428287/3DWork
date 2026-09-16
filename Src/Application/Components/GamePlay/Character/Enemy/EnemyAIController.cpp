@@ -95,7 +95,7 @@ void EnemyAIController::OnCollisionEnter(const Events::Collision::CollisionEnter
 	PublishGenericEffect(*GetOwner()->GetContext()->eventBus, "BloodSplatter", transform_->GetPosition());
 
 	if (healthComponent_ != nullptr) {
-		healthComponent_->TakeDamage(attack->damage);
+		healthComponent_->TakeDamage(attack->GetAttackDamageData().damage);
 	}
 
 	if (behavior_) {

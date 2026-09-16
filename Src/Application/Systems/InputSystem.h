@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "Application/Editor/EditorHost.h"
 #include "Application/Editor/Common/EditorViewPort.h"
 #include "Application/Core/EventBus/Events/TimeScaleEvents.h"
 
@@ -15,7 +16,7 @@ public:
 			// エディタ描画のON/OFFを切り替え
 			EditorViewport::Instance().ToggleEnabled();
 			
-			bool flg = EditorViewport::Instance().IsEnabled();
+			bool flg = EditorHost::Instance().IsViewportEnabled();
 			KdInputManager::Instance().SetAxisConfineToWindowCenter("Look", !flg);
 			
 			// エディタOFF中(プレイ中)はカーソルを隠し、ON中(編集中)は表示する

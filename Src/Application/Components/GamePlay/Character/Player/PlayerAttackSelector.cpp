@@ -17,7 +17,7 @@ namespace
 	{
 		PlayerAttackDefinition def;
 		def.id = id;
-		def.attack.info.damage = damage;
+		def.attack.damageData.damage = damage;
 		def.attack.phaseData.animationName = id; // 仮: idをそのままクリップ名に流用
 		def.attack.phaseData.windup.targetDuration = windup;
 		def.attack.phaseData.active.targetDuration = active;
@@ -27,7 +27,7 @@ namespace
 		// Idleからは1段目(Attack1)にしか直接入れない。2段目以降は
 		// 前段のcomboLinks経由でしか辿り着けない技として扱うため、
 		// entryCommandを未設定(nullopt)にしておく。
-		def.entryCommand = (id == "Attack1") ? std::optional<ActionCommand>(ActionCommand::Attack)
+		def.entryCommand = (id == "APose_Attack02_1") ? std::optional<ActionCommand>(ActionCommand::Attack)
 			: std::nullopt;
 
 		if (!nextId.empty()) {
@@ -46,12 +46,12 @@ namespace
 	PlayerAttackTable BuildDebugAttackTable()
 	{
 		PlayerAttackTable table;
-		table.attacks.push_back(MakeComboHit("Attack1", "Attack2", 0.2f, 0.15f, 0.3f, 10.0f));
-		table.attacks.push_back(MakeComboHit("Attack2", "Attack3", 0.2f, 0.15f, 0.3f, 10.0f));
-		table.attacks.push_back(MakeComboHit("Attack3", "Attack4", 0.2f, 0.15f, 0.3f, 12.0f));
-		table.attacks.push_back(MakeComboHit("Attack4", "Attack5", 0.25f, 0.15f, 0.35f, 12.0f));
-		table.attacks.push_back(MakeComboHit("Attack5", "Attack6", 0.25f, 0.2f, 0.35f, 14.0f));
-		table.attacks.push_back(MakeComboHit("Attack6", "", 0.3f, 0.2f, 0.5f, 20.0f)); // 最終段(フィニッシュ)
+		table.attacks.push_back(MakeComboHit("APose_Attack02_1", "APose_Attack02_2", 0.18f, 0.35f, 1.05f, 10.0f));
+		table.attacks.push_back(MakeComboHit("APose_Attack02_2", "APose_Attack02_3", 0.18f, 0.35f, 1.05f, 10.0f));
+		table.attacks.push_back(MakeComboHit("APose_Attack02_3", "APose_Attack02_4", 0.2f, 0.15f, 0.3f, 12.0f));
+		table.attacks.push_back(MakeComboHit("APose_Attack02_4", "APose_Attack02_5", 0.25f, 0.15f, 0.35f, 12.0f));
+		table.attacks.push_back(MakeComboHit("APose_Attack02_5", "APose_Attack02_6", 0.25f, 0.2f, 0.35f, 14.0f));
+		table.attacks.push_back(MakeComboHit("APose_Attack02_6", "", 0.3f, 0.2f, 0.5f, 20.0f)); // 最終段(フィニッシュ)
 		return table;
 	}
 }

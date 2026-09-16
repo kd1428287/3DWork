@@ -114,5 +114,5 @@ private:
 
 	static constexpr const char* kIdleAnimation = "APose_Idle";
 	static constexpr float kBlendDuration = 0.15f;
-	static constexpr const char* kRootMotionBoneName = "root";
+	static constexpr const char* kRootMotionBoneName = "mixamorig_Hips";
 };

@@ -11,10 +11,15 @@ SamplerState g_ss : register(s0);
 //============================================
 float4 main(VSOutput In) : SV_Target0
 {
+	// ゲージ用切り抜き(UV.xがFillRatioを超えたら描画しない)
+	if (In.UV.x > g_fillRatio)
+		discard;
+
 	// テクスチャ色取得
 	float4 texCol = g_inputTex.Sample(g_ss, In.UV);
 	//アルファテスト
-	if (texCol.a < 0.1f) discard;
+	if (texCol.a < 0.1f)
+		discard;
 	
 	// テクスチャ色 * 指定色
 	return texCol * g_color;

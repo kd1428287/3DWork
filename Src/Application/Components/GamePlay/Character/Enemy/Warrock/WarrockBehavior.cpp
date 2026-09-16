@@ -135,7 +135,7 @@ void WarrockBehavior::OnHit(EnemyAIController* owner, const AttackSourceComponen
 	hitReactionPending_ = true;
 
 	if (PostureComponent* posture = owner->GetPostureComponent()) {
-		posture->AddPostureDamage(attack.postureDamage);
+		//posture->AddPostureDamage(attack.GetAttackDamageData().damage);
 
 		// 体幹が尽きた(=崩し発生)。実際に大スタンとして割り込ませる
 		if (posture->IsBroken()) {

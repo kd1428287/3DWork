@@ -52,6 +52,17 @@ public:
 		m_cb0.Work().mTransform = m;
 	}
 
+	// ゲージ等の水平フィル切り抜き比率をセット
+	// ・ratio			… 0.0～1.0。UV.xがこの値を超えるピクセルはピクセルシェーダー側でdiscardされる
+	//                    (1.0を指定すると実質的に切り抜きなし)
+	// 【注意】次回このシェーダーで通常描画を行う前に、必ず SetFillRatio(1.0f) で戻すこと。
+	// 　　　　このバッファの内容は明示的にセットし直すまで前回の値が残り続けるため、
+	// 　　　　戻し忘れると以降のスプライト/フォント描画まで切り抜かれてしまう。
+	void SetFillRatio(float ratio)
+	{
+		m_cb0.Work().FillRatio = ratio;
+	}
+
 	// 2D画像描画(Begin～End間で実行すると、処理効率が上がる)
 	// ・tex			… 描画するテクスチャ(Texture)
 	// ・x				… x座標(ピクセル)
@@ -64,7 +75,7 @@ public:
 	void DrawTex(const KdTexture* tex, int x, int y, int w, int h, const Math::Rectangle* srcRect = nullptr, const Math::Color* color = &kWhiteColor, const Math::Vector2& pivot = { 0.5, 0.5f });
 	void DrawTex(const std::weak_ptr<KdTexture> tex, int x, int y, int w, int h, const Math::Rectangle* srcRect = nullptr, const Math::Color* color = &kWhiteColor, const Math::Vector2& pivot = { 0.5, 0.5f })
 	{
-		if(tex.expired())return;
+		if (tex.expired())return;
 		DrawTex(tex.lock().get(), x, y, w, h, srcRect, color, pivot);
 	}
 
@@ -139,15 +150,17 @@ private:
 	// フォント描画
 	void DrawFont(std::shared_ptr<KdFontSprite>& fontSprite, const Math::Vector2& Pos, const Math::Color* color, const int antiAliasingFlag);
 
-	ID3D11VertexShader*		m_VS = nullptr;				// 頂点シェーダー
-	ID3D11InputLayout*		m_VLayout = nullptr;		// 頂点レイアウト
+	ID3D11VertexShader* m_VS = nullptr;				// 頂点シェーダー
+	ID3D11InputLayout* m_VLayout = nullptr;		// 頂点レイアウト
 
-	ID3D11PixelShader*		m_PS = nullptr;				// ピクセルシェーダー
+	ID3D11PixelShader* m_PS = nullptr;				// ピクセルシェーダー
 
 	// 定数バッファ
 	struct cbSprite {
 		Math::Matrix		mTransform;
 		Math::Vector4		Color = { 1, 1, 1, 1 };
+		float				FillRatio = 1.0f;	// ゲージ用切り抜き比率(0.0～1.0 / 1.0で切り抜きなし)
+		float				_pad[3] = {};		// 16バイト境界合わせ用パディング
 	};
 	KdConstantBuffer<cbSprite>	m_cb0;
 

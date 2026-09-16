@@ -5,25 +5,28 @@
 #include "../../Camera/CameraComponent.h"
 #include "../../Camera/CameraOrbitComponent.h"
 
-// 先行入力バッファの1エントリ。Attack/Evadeのようなタップ入力のみを扱う。
-// パリィはGuard開始直後の時間窓として表現するため、ここには含まれない。
-struct BufferedInput
-{
-	ActionCommand command;
-	float timeRemaining; // 先行入力が有効な残り時間（秒、例: 0.2秒）
-
-	// このコマンドが積まれた瞬間の移動入力方向(正規化済み)のスナップショット。
-	// 方向を使わないコマンド(Attack等)では単に無視される。
-	// バッファ滞留中に入力方向が変わっても、積まれた瞬間の意図がブレないようにする。
-	Math::Vector3 direction = Math::Vector3::Zero;
-};
+#include "../Common/CharacterInputBufferComponent.h"
 
 // プレイヤーの入力状態を保持するコンポーネント。
 // KdInputManagerから得た生入力を自ら読み取り、移動方向についてはカメラ相対の
 // 変換まで内部で完結させる(旧InputSystemが担っていた変換ロジックを移管)。
+//
+// 先行入力バッファ(Attack/Evadeのようなタップ入力を一定時間覚えておく仕組み)
+// 自体はCharacterInputBufferComponentへ切り出した。ここに残るのは
+// 「Playerの入力を生でどう受け取るか」(カメラ相対変換・Dash/Guardの
+// 押しっぱなし判定・Lock押下)だけで、HasCommand/ConsumeCommandは
+// actionBuffer_への薄い委譲になっている。
 class PlayerInputComponent : public ComponentBase, public IMovementSource {
 public:
 	explicit PlayerInputComponent(GameObject* owner) : ComponentBase(owner) {}
+
+	void Awake()
+	{
+		actionBuffer_ = GetOwner()->GetComponent<PlayerActionBufferComponent>();
+		if (actionBuffer_ == nullptr) {
+			actionBuffer_ = GetOwner()->AddComponent<PlayerActionBufferComponent>();
+		}
+	}
 
 	// カメラのactiveCamera(SceneContext経由)が使えない/yawを決められない場合に
 	// フォールバック先として参照するCameraOrbitComponent。
@@ -31,51 +34,48 @@ public:
 	void SetCameraOrbitFallback(Handle<CameraOrbitComponent> orbit) { cameraOrbitFallback_ = orbit; }
 
 	// GameObjectのUpdate、またはPreUpdateで毎フレーム呼び出す。
-	// 先行入力バッファの有効期限を減算しつつ、KdInputManagerから今フレームの
-	// 生入力を読み取ってmoveDirection_/dashHeld_等へ反映する。
-	void PreUpdate(float deltaTime) override {
-		// --- 先行入力バッファの寿命管理 -------------------------------
-		for (auto it = inputBuffer_.begin(); it != inputBuffer_.end();) {
-			it->timeRemaining -= deltaTime;
-			if (it->timeRemaining <= 0.0f) {
-				it = inputBuffer_.erase(it); // 有効期限切れは削除
-			}
-			else {
-				++it;
-			}
-		}
-
+	// KdInputManagerから今フレームの生入力を読み取ってmoveDirection_/
+	// dashHeld_等へ反映し、タップ入力はactionBuffer_へ積む。先行入力バッファ
+	// 自体の寿命管理はCharacterInputBufferComponent::PostUpdate()側が行う
+	// (このコンポーネントのPreUpdateより後に呼ばれるため、今フレーム
+	//  積んだ分がその場で減算されてしまうことはない)。
+	void PreUpdate(float deltaTime) override
+	{
 		// --- 移動方向の取得とカメラ相対変換 ---------------------------
 		const Math::Vector2 axis = KdInputManager::Instance().GetAxisState("Move");
 		Math::Vector3 dir{ axis.x, 0.0f, axis.y };
 
-		// カメラの水平方向(yaw)を移動方向の基準にする
-		bool usedActualCameraForward = false;
-		if (SceneContext* context = GetOwner()->GetContext()) {
-			if (CameraComponent* camera = context->activeCamera) {
-				Math::Vector3 camForward = camera->GetForward();
-				camForward.y = 0.0f;
-				if (camForward.LengthSquared() > kMinCameraForwardLengthSq) {
-					camForward.Normalize();
-					const float yaw = std::atan2(-camForward.x, -camForward.z);
-					const Math::Quaternion yawOnly =
-						Math::Quaternion::CreateFromAxisAngle(Math::Vector3::Up, yaw);
-					dir = Math::Vector3::Transform(dir, yawOnly);
-					usedActualCameraForward = true;
+		if (dir != Math::Vector3::Zero)
+		{
+			// カメラの水平方向(yaw)を移動方向の基準にする
+			bool usedActualCameraForward = false;
+			if (SceneContext* context = GetOwner()->GetContext()) {
+				if (CameraComponent* camera = context->activeCamera) {
+					Math::Vector3 camForward = camera->GetForward();
+					camForward.y = 0.0f;
+					if (camForward.LengthSquared() > kMinCameraForwardLengthSq) {
+						camForward.Normalize();
+						const float yaw = std::atan2(-camForward.x, -camForward.z);
+						const Math::Quaternion yawOnly =
+							Math::Quaternion::CreateFromAxisAngle(Math::Vector3::Up, yaw);
+						dir = Math::Vector3::Transform(dir, yawOnly);
+						usedActualCameraForward = true;
+					}
 				}
 			}
-		}
 
-		// activeCameraが無い、あるいはカメラがほぼ真上/真下を向いていて
-		// yawを決められない場合は、CameraOrbitComponentの軌道角度に
-		// フォールバックする(未設定(固定カメラ等)の場合はワールド軸に
-		// 対する入力としてそのまま扱う)。
-		if (!usedActualCameraForward) {
-			if (CameraOrbitComponent* orbit = cameraOrbitFallback_.Resolve()) {
-				const Math::Quaternion yawOnly =
-					Math::Quaternion::CreateFromYawPitchRoll(orbit->GetYaw(), 0.0f, 0.0f);
-				dir = Math::Vector3::Transform(dir, yawOnly);
+			// activeCameraが無い、あるいはカメラがほぼ真上/真下を向いていて
+			// yawを決められない場合は、CameraOrbitComponentの軌道角度に
+			// フォールバックする(未設定(固定カメラ等)の場合はワールド軸に
+			// 対する入力としてそのまま扱う)。
+			if (!usedActualCameraForward) {
+				if (CameraOrbitComponent* orbit = cameraOrbitFallback_.Resolve()) {
+					const Math::Quaternion yawOnly =
+						Math::Quaternion::CreateFromYawPitchRoll(orbit->GetYaw(), 0.0f, 0.0f);
+					dir = Math::Vector3::Transform(dir, yawOnly);
+				}
 			}
+
 		}
 
 		SetMoveDirection(dir);
@@ -85,11 +85,13 @@ public:
 		guardHeld_ = KdInputManager::Instance().IsHold("Guard");
 
 		// --- 単発入力(押した瞬間だけバッファへ積む/フラグを立てる) -----
-		if (KdInputManager::Instance().IsPress("Attack")) {
-			PushCommand(ActionCommand::Attack);
-		}
-		if (KdInputManager::Instance().IsPress("Evade")) {
-			PushCommand(ActionCommand::Evade);
+		if (actionBuffer_ != nullptr) {
+			if (KdInputManager::Instance().IsPress("Attack")) {
+				actionBuffer_->PushCommand(ActionCommand::Attack, moveDirection_);
+			}
+			if (KdInputManager::Instance().IsPress("Evade")) {
+				actionBuffer_->PushCommand(ActionCommand::Evade, moveDirection_);
+			}
 		}
 		if (KdInputManager::Instance().IsPress("Lock")) {
 			lockPressed_ = true;
@@ -97,37 +99,19 @@ public:
 	}
 
 	// --- 外部（PlayerStatusControllerなど）が先行入力を確認/消費する関数 ---
+	// 実体はactionBuffer_(CharacterInputBufferComponent)への薄い委譲。
 
-	// 覗き見用。実行可能かどうかを先に判定してからConsumeCommand()を
-	// 呼びたい場合に使う。これを経由せずいきなりConsumeCommand()を呼ぶと、
-	// まだ猶予が残っている入力を実行不可なタイミングで誤って消費してしまう。
 	bool HasCommand(ActionCommand command) const {
-		for (const auto& input : inputBuffer_) {
-			if (input.command == command) return true;
-		}
-		return false;
+		return actionBuffer_ != nullptr && actionBuffer_->HasCommand(command);
 	}
 
 	bool ConsumeCommand(ActionCommand command) {
-		for (auto it = inputBuffer_.begin(); it != inputBuffer_.end(); ++it) {
-			if (it->command == command) {
-				inputBuffer_.erase(it); // 消費したためバッファから消す
-				return true;
-			}
-		}
-		return false;
+		return actionBuffer_ != nullptr && actionBuffer_->ConsumeCommand(command);
 	}
 
 	// 方向スナップショットも合わせて取り出したい場合(Evade等)はこちら。
 	bool ConsumeCommand(ActionCommand command, Math::Vector3& outDirection) {
-		for (auto it = inputBuffer_.begin(); it != inputBuffer_.end(); ++it) {
-			if (it->command == command) {
-				outDirection = it->direction;
-				inputBuffer_.erase(it);
-				return true;
-			}
-		}
-		return false;
+		return actionBuffer_ != nullptr && actionBuffer_->ConsumeCommand(command, outDirection);
 	}
 
 	bool IsGuardHeld() const { return guardHeld_; }
@@ -168,25 +152,12 @@ private:
 		moveDirection_ = direction;
 	}
 
-	// ボタンが押された瞬間に呼ばれる（バッファにキューイング）
-	// この瞬間のmoveDirection_を正規化してスナップショットしておく
-	// (Evadeの回避方向など、方向を伴うコマンド向け)。
-	void PushCommand(ActionCommand command, float bufferTime = 0.2f) {
-		Math::Vector3 dir = moveDirection_;
-		if (dir.LengthSquared() > kDirectionEpsilon) {
-			dir.Normalize();
-		}
-		else {
-			dir = Math::Vector3::Zero;
-		}
-		inputBuffer_.push_back({ command, bufferTime, dir });
-	}
+	PlayerActionBufferComponent* actionBuffer_ = nullptr;
 
 	Math::Vector3 moveDirection_;
 	bool dashHeld_ = false;
 	bool guardHeld_ = false;
 	bool lockPressed_ = false; // このフレームLockが押されたか(消費されるまで保持)
-	std::vector<BufferedInput> inputBuffer_; // 先行入力バッファ(Attack/Evadeのみ)
 
 	Handle<CameraOrbitComponent> cameraOrbitFallback_; // activeCamera不使用時のyawフォールバック先
 
@@ -194,6 +165,4 @@ private:
 	// の場合は、そこからyawを決めずCameraOrbitComponent側にフォールバックする、
 	// という閾値。
 	static constexpr float kMinCameraForwardLengthSq = 1e-6f;
-
-	static constexpr float kDirectionEpsilon = 1e-6f; // PushCommand()の方向正規化用しきい値
 };

@@ -32,6 +32,15 @@ public:
 		}
 	}
 
+	void SetAttackDamegeData(const std::vector<std::string>& slots, AttackDamegeData info)
+	{
+		for (const auto& slot : slots) {
+			if (WeaponComponent* weapon = Resolve(slot)) {
+				weapon->SetAttackDamegeData(info);
+			}
+		}
+	}
+
 	WeaponComponent* GetWeapon(const std::string& slot) const { return Resolve(slot); }
 
 private:

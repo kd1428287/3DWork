@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include "Application/Definitions/Character/Combat/CombatData.h"
+
 // ============================================================
 // AttackSourceComponent
 //
@@ -41,24 +43,7 @@ public:
 		float parryPostureDamage = 0.0f;
 	};
 
-	float damage = 10.0f;
-	float knockbackPower = 6.0f;
-	float hitStunSeconds = 0.5f;
-
-	// この攻撃をガードされた時に、被弾側の体幹(PostureComponent)へ
-	// 与えるダメージ量。
-	float postureDamage = 20.0f;
-
-	// ガード時のチップダメージ(HP)の割合。damage * chipDamageRatioが
-	// 実際にHealthComponentへ適用される(通常被弾のdamageそのものより
-	// 大幅に軽減される想定)。
-	float chipDamageRatio = 0.1f;
-
-	// この攻撃がジャスト(パリィ)で受けられた時に、攻撃者側の
-	// 体幹(PostureComponent)へ与えるダメージ量。通常のpostureDamageより
-	// 大きくするのが基本(弾き返された側が大きく怯む、という設計のため)。
-	float parryPostureDamage = 40.0f;
-
+	
 	// この攻撃の持ち主(武器なら、武器を装備しているキャラクター本体)
 	// への弱参照。パリィ成立時、被弾側から見て「攻撃者本体の
 	// PostureComponentを削る」「攻撃者本体へParriedEventを発行する」ために
@@ -75,4 +60,11 @@ public:
 	// 多段ヒット防止はできないので、必要ならここを使う。
 	// 例: if (alreadyHit.contains(e.otherObject)) return;
 	std::unordered_set<GameObject*> alreadyHit;
+
+	void SetAttackDamegeData(AttackDamegeData data) { damageData_ = data; }
+	const AttackDamegeData& GetAttackDamageData() { return damageData_; }
+
+private:
+	AttackDamegeData damageData_;
+
 };

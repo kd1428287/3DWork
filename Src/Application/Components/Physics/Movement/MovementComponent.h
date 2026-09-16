@@ -37,14 +37,10 @@ public:
 	}
 
 	// 入力ソースから今フレームの移動方向を取り込む。
-	// MotionComposerComponentが毎フレーム呼ぶ(呼び出し順に依存しない
-	// よう、合成役が明示的に駆動する形にしている)。
 	void FetchDesiredVelocity()
 	{
-		// source_が無い場合にreturnで抜けると前フレームの方向が
-		// 残り続け、SetMovementSource(nullptr)で入力を外した後も
-		// 最後の方向へ等速で動き続けてしまうため、必ずゼロで上書きする。
-		if (!source_)
+		// source_が無いか非アクティブのときゼロで上書きする
+		if (!source_ || !IsEnabled())
 		{
 			desiredVelocity_ = Math::Vector3::Zero;
 			return;

@@ -33,15 +33,19 @@ public:
 		: ComponentBase(owner), rotationSpeed_(rotationSpeed), moveThreshold_(moveThreshold) {
 	}
 
-	void Awake() override {
+	void Awake() override 
+	{
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
 		movement_ = GetOwner()->GetComponent<MovementComponent>();
 		// 無くてもよい(任意)。存在する場合のみノックバック中の向き固定に使う
 		velocity_ = GetOwner()->GetComponent<VelocityComponent>();
 	}
 
-	void PostUpdate(float deltaTime) override {
+	void PostUpdate(float deltaTime) override 
+	{
+		if (!movement_)return;
 
+		const Math::Vector3 desiredDirection = movement_->GetDesiredDirection();
 
 		// ノックバック中(外力で強制的に押し出されている間)は向きを固定する。
 		// 「今どちらへ飛ばされているか」ではなく「攻撃を受けた時点の向き」を
@@ -53,11 +57,11 @@ public:
 			return;
 		}
 
+		if (desiredDirection == Math::Vector3::Zero)return;
+
 		Math::Quaternion targetRotation = Math::Quaternion::Identity;
-		if (movement_ && movement_->GetDesiredDirection() != Math::Vector3::Zero)
-		{
-			targetRotation = LookRotationYawOnly(movement_->GetDesiredDirection());
-		}
+		lastMoveDirection_ = desiredDirection;
+		targetRotation = LookRotationYawOnly(lastMoveDirection_);
 
 		// rotationSpeed_ * deltaTimeをそのままtに使うと、フレームレートが
 		// 極端に低い場合に1を超えうるためclampしておく(Slerpの定義域外を
@@ -108,6 +112,8 @@ private:
 	TransformComponent* transform_ = nullptr;
 	MovementComponent* movement_ = nullptr;
 	VelocityComponent* velocity_ = nullptr; // 無くてもよい(任意)
+
+	Math::Vector3 lastMoveDirection_{};
 
 	float rotationSpeed_;
 	float moveThreshold_;

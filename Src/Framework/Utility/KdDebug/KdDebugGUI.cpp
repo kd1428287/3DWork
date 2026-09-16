@@ -1,53 +1,17 @@
 ﻿#include "Application/main.h"
 
 #include "KdDebugGUI.h"
-#include "Application/Editor/Common/EditorViewport.h"
-#include "Application/Editor/Tools/MapEditor.h"
-#include "Application/Editor/Tools/EffectEditor.h"
-#include "Application/Editor/Tools/ShaderTuningEditor.h"
-#include "Application/Editor/Tools/BTEditor.h"
 
-// DockBuilder系APIを使うために必要(公式にも初期配置構築の定番として使われる内部ヘッダ)
-#include "imgui_internal.h"
+// ※EditorHost/EditorViewport/各エディタツールのincludeは不要になった
+//   (このクラスは「何を描くか」を一切知らないため)
 
 KdDebugGUI::KdDebugGUI()
 {}
 KdDebugGUI::~KdDebugGUI()
 {
+	// 静的破棄順に依存させないため、本来はApplication::Release()等から
+	// GuiRelease()を明示的に呼ぶこと。デストラクタでの呼び出しは保険(GuiReleaseは多重呼び出し安全)
 	GuiRelease();
-}
-
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 初期ウィンドウ配置(Unity風)
-//	左：Hierarchy(全高) / 中央：Scene(上) / 右：Inspector(全高) / 下：Assets + Log(タブ)
-//	imgui.ini に保存された配置が存在しない(=初回起動、またはiniを削除した直後)場合のみ呼ばれる
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-static void SetupDefaultDockLayout(ImGuiID dockspaceId)
-{
-	ImGui::DockBuilderRemoveNode(dockspaceId);
-	ImGui::DockBuilderAddNode(dockspaceId, ImGuiDockNodeFlags_DockSpace);
-	ImGui::DockBuilderSetNodeSize(dockspaceId, ImGui::GetMainViewport()->Size);
-
-	ImGuiID center = dockspaceId;
-
-	// 左：Hierarchy(画面幅の18%、全高)
-	ImGuiID left = ImGui::DockBuilderSplitNode(center, ImGuiDir_Left, 0.18f, nullptr, &center);
-
-	// 右：Inspector(画面幅の22%、全高)
-	// ※center は既に左18%分を差し引いた幅になっているため、
-	//   画面全体基準で22%になるよう比率を 0.22/(1-0.18) に補正している
-	ImGuiID right = ImGui::DockBuilderSplitNode(center, ImGuiDir_Right, 0.22f / (1.0f - 0.18f), nullptr, &center);
-
-	// 下：Assets + Log(画面高さの30%) 、残った部分がScene(中央上)
-	ImGuiID bottom = ImGui::DockBuilderSplitNode(center, ImGuiDir_Down, 0.30f, nullptr, &center);
-
-	ImGui::DockBuilderDockWindow("Hierarchy", left);
-	ImGui::DockBuilderDockWindow("Inspector", right);
-	ImGui::DockBuilderDockWindow("Scene", center);
-	ImGui::DockBuilderDockWindow("Assets", bottom);
-	ImGui::DockBuilderDockWindow("Log Window", bottom);	// Assetsと同じノードなのでタブ化される
-
-	ImGui::DockBuilderFinish(dockspaceId);
 }
 
 void KdDebugGUI::GuiInit(int w, int h)
@@ -87,10 +51,11 @@ void KdDebugGUI::GuiInit(int w, int h)
 	m_uqLog = std::make_unique<ImGuiAppLog>();
 }
 
-
 void KdDebugGUI::BeginFrame()
 {
+	// 初期化されてないなら動作させない
 	if (!m_uqLog) return;
+
 	ImGui_ImplDX11_NewFrame();
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
@@ -98,10 +63,17 @@ void KdDebugGUI::BeginFrame()
 
 void KdDebugGUI::EndFrame()
 {
+	// 初期化されてないなら動作させない
 	if (!m_uqLog) return;
+
+	//===========================================================
+	// ここより上にImGuiの描画はする事
+	//===========================================================
 	ImGui::Render();
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
+	// マルチビューポート：ドッキングウィンドウを画面外にドラッグして分離した「別ウィンドウ」の更新・描画
+	//	(メインウィンドウの描画とは別に、ここでまとめて処理する)
 	if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 	{
 		ImGui::UpdatePlatformWindows();

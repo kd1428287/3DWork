@@ -1,5 +1,4 @@
-﻿// PlayerStatusController.cpp
-#include "PlayerStatusController.h"
+﻿#include "PlayerStatusController.h"
 
 #include "PlayerAttackSelector.h"
 #include "PlayerFacingComponent.h"
@@ -9,7 +8,7 @@
 #include "../Combat/HitReactionComponent.h"
 #include "../../../Physics/Collision/ColliderComponent.h"
 
-void PlayerStatusController::Start()
+void PlayerStatusController::Awake()
 {
 	inputComponent_ = GetOwner()->GetComponent<PlayerInputComponent>();
 	lockOnComponent_ = GetOwner()->GetComponent<PlayerLockOnComponent>();
@@ -26,8 +25,8 @@ void PlayerStatusController::Start()
 	// Evade/Guardは分岐を持たない単純な1件データのため、Attackのように
 	// 専用コンポーネントへ切り出さず、引き続きここでデバッグ用テーブルから
 	// 読み込む。
-	baseEvadeData_ = EvadeData();
-	baseGuardData_ = GuardData();
+	baseEvadeData_ = CreateDebugEvadeData();
+	baseGuardData_ = CreateDebugGuardData();
 
 	// 被弾時のパリィ/ガード/通常被弾の分岐と、それに伴うダメージ/
 	// ノックバック/エフェクト処理はHitReactionComponentへ切り出し済み
@@ -135,12 +134,6 @@ void PlayerStatusController::HandleActionInput(PlayerInputComponent& input)
 	}
 }
 
-const AttackData& PlayerStatusController::GetCurrentAttackData() const
-{
-	static const AttackData kEmptyAttackData; // attackSelector_未解決時のフォールバック
-	return (attackSelector_ != nullptr) ? attackSelector_->GetCurrentAttackData() : kEmptyAttackData;
-}
-
 EvadeDirection PlayerStatusController::ClassifyEvadeDirection(const Math::Vector3& inputDirection) const
 {
 	return (facing_ != nullptr) ? facing_->ClassifyEvadeDirection(inputDirection) : EvadeDirection::Forward;
@@ -215,28 +208,8 @@ void PlayerStatusController::FaceAttackTarget()
 
 void PlayerStatusController::SetWeapon(Handle<WeaponComponent> weapon)
 {
-	// 【重要】PlayerFactory等は、まだStart()が呼ばれていない構築中の
-	// タイミング(AddComponent<PlayerStatusController>()した直後)で
-	// このSetWeapon()を呼ぶ。weaponSet_はStart()内で初めて解決される
-	// キャッシュのため、ここで参照するとまだnullptrで登録が握りつぶされる。
-	// WeaponSetComponent自体は既にAddComponent済みのはずなので、
-	// ここだけは都度GetComponent()で解決する。
 	if (WeaponSetComponent* weaponSet = GetOwner()->GetComponent<WeaponSetComponent>()) {
 		weaponSet->RegisterWeapon(kMainWeaponSlot, weapon);
-	}
-}
-
-void PlayerStatusController::SetWeaponHitBoxEnabled(const std::vector<std::string>& slots, bool enabled)
-{
-	if (weaponSet_ != nullptr) {
-		weaponSet_->SetHitBoxEnabled(slots, enabled);
-	}
-}
-
-void PlayerStatusController::SetWeaponTrailEmitting(const std::vector<std::string>& slots, bool emitting)
-{
-	if (weaponSet_ != nullptr) {
-		weaponSet_->SetTrailEmitting(slots, emitting);
 	}
 }
 
@@ -285,6 +258,13 @@ void PlayerStatusController::CancelStepMove()
 	}
 }
 
+void PlayerStatusController::SetMovementEnabled(bool enabled)
+{
+	if (combatMovement_ != nullptr) {
+		combatMovement_->SetMovementEnabled(enabled);
+	}
+}
+
 void PlayerStatusController::TransitionTo(IPlayerState* nextState)
 {
 	// 通常の(失敗しうる)遷移。prevStateをOnStateChanged側で参照できるよう、
@@ -328,7 +308,7 @@ void PlayerStatusController::OnStateChanged(IPlayerState* prevState, IPlayerStat
 		// コンボ継続受付ウィンドウを開く。何秒開けるかはAttackData側の
 		// 値(cancelData.comboWindowAfterRecovery)を使う。
 		attackSelector_->NotifyRecoveryFinishedNaturally(
-			GetCurrentAttackData().cancelData.comboWindowAfterRecovery);
+			attackSelector_->GetCurrentAttackData().cancelData.comboWindowAfterRecovery);
 		return;
 	}
 

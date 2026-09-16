@@ -2,7 +2,7 @@
 
 
 // 被弾側も得るデータ構造体
-struct AttackInfo
+struct AttackDamegeData
 {
 	float damage = 10.0f;
 	float knockbackPower = 6.0f;
@@ -43,7 +43,7 @@ struct AttackPhaseData
 // モーション制御用データ
 struct AttackMoveData
 {
-	float stepDistance = 0.5f;
+	float stepDistance = 0.85f;
 	float stepDuration = 0.1f;
 	float engageDistance = 1.2f;
 
@@ -65,7 +65,7 @@ struct AttackCancelData
 // 攻撃行動全体のデータ構造体
 struct AttackData
 {
-	AttackInfo info;
+	AttackDamegeData damageData;
 	AttackMoveData moveData;
 	AttackPhaseData phaseData;
 	AttackCancelData cancelData;

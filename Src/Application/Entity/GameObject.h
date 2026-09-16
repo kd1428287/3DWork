@@ -144,10 +144,7 @@ public:
 		for (const auto id : componentOrder_) {
 			ComponentBase* comp = components_[id].get();
 			if (!comp->IsEnabled()) continue;
-			if (!comp->started_) {
-				comp->Start();
-				comp->started_ = true;
-			}
+			comp->Start();
 			comp->PreUpdate(scaledDeltaTime);
 		}
 	}

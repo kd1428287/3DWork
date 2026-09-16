@@ -65,6 +65,8 @@ public:
 		else trail_->StopEmit();
 	}
 
+	void SetAttackDamegeData(AttackDamegeData info) { attackSource_->SetAttackDamegeData(info); }
+
 	ColliderComponent* GetCollider() const { return collider_; }
 	AttackSourceComponent* GetAttackSource() const { return attackSource_; }
 

@@ -1,4 +1,6 @@
 ﻿#include "PlayerStatusController.h"
+#include "PlayerAttackSelector.h"
+#include "../Combat/WeaponSetComponent.h"
 #include "../../../Physics/Movement/TweenMoveComponent.h"
 
 // =================================================================
@@ -12,94 +14,101 @@ void StateNone::Enter(PlayerStatusController* controller) {
 
 // --- Attack State ---
 void StateAttack::Enter(PlayerStatusController* controller) {
-	//phase_ = CombatState::AttackWindup;
-	//elapsed_ = 0.0f;
+	phase_ = CombatState::AttackWindup;
+	elapsed_ = 0.0f;
 
-	//// ロック中ならロック対象へ、未ロックなら画面中心に最も近い敵へ正対する。
-	//// facingDirectionComponent_はAttack中無効化されているため、
-	//// ここで明示的に向きを合わせておく必要がある。
-	//controller->FaceAttackTarget();
+	// WeaponSetComponent/PlayerAttackSelectorはこのStateでしか使わないため、
+	// Controllerのファサードを経由せずここで直接解決する
+	// (PlayerCombatMovementComponent/PlayerFacingComponent/
+	//  ModelAnimatorComponentはStateEvade等とも共有するため、
+	//  引き続きControllerのファサード経由で呼ぶ)。
+	weaponSet_ = controller->GetOwner()->GetComponent<WeaponSetComponent>();
+	attackSelector_ = controller->GetOwner()->GetComponent<PlayerAttackSelector>();
 
-	//// 具体的なコンポーネント操作(Transform/TweenMoveComponent/
-	//// ModelAnimatorComponent)はController側に閉じ込め、Stateは
-	//// それを直接知らなくてよいようにする。
-	//const auto& data = controller->GetCurrentAttackData();
-	//// 攻撃全体(Windup+Active+Recovery)の秒数を目標としてアニメーション
-	//// 速度を自動スケーリングする(詳細はModelAnimatorComponent::Play参照)。
-	//const float targetDuration = data.windupDuration + data.activeDuration + data.recoveryDuration;
-	//controller->PlayAnimation(data.animationName, false, targetDuration, data.useRootMotion, data.blendDuration); // コンボ段数に応じたアニメーション
+	// ロック中ならロック対象へ、未ロックなら画面中心に最も近い敵へ正対する。
+	// facingDirectionComponent_はAttack中無効化されているため、
+	// ここで明示的に向きを合わせておく必要がある。
+	controller->FaceAttackTarget();
+	controller->SetMovementEnabled(false);
 
-	//// 踏み込み移動はここ(Windup開始時点)では行わない。Windupが終わった
-	//// 瞬間(Update()側、AttackActiveへの切り替わり)に開始する
-	//// (振りかぶり中に前進してしまうと予備動作の説得力が薄れるため)。
+	const AttackData& data = attackSelector_->GetCurrentAttackData();
+	weaponSet_->SetAttackDamegeData(data.weaponSlots, data.damageData);
+	
+	// 攻撃全体(Windup+Active+Recovery)の秒数を目標としてアニメーション
+	// 速度を自動スケーリングする
+	const float targetDuration = data.phaseData.windup.targetDuration
+		+ data.phaseData.active.targetDuration
+		+ data.phaseData.recovery.targetDuration;
+	controller->PlayAnimation(data.phaseData.animationName, false, targetDuration,
+		data.moveData.useRootMotion, data.moveData.blendDuration); // コンボ段数に応じたアニメーション
 }
 
 void StateAttack::Update(PlayerStatusController* controller, float deltaTime) {
-	//elapsed_ += deltaTime;
-	//const auto& data = controller->GetCurrentAttackData();
+	elapsed_ += deltaTime;
+	const AttackData& data = attackSelector_->GetCurrentAttackData();
 
-	//KdDebugGUI::Instance().AddLog("Attack");
+	if (phase_ == CombatState::AttackWindup && elapsed_ >= data.phaseData.windup.targetDuration) {
+		phase_ = CombatState::AttackActive;
+		elapsed_ = 0.0f;
 
-	//if (phase_ == CombatState::AttackWindup && elapsed_ >= data.windupDuration) {
-	//	phase_ = CombatState::AttackActive;
-	//	elapsed_ = 0.0f;
-
-	//	// 踏み込み移動はここ(Windupが終わった瞬間)から開始する。
-	//	// 移動時間はwindupDurationではなく専用のstepDurationを使う
-	//	// (以前はEnter()側でwindupDuration分だけ振りかぶり中に動かして
-	//	//  いたが、攻撃が実際に届き始めるタイミングと踏み込みを
-	//	//  合わせたいという理由でここへ移した)。
-	//	// useRootMotionがtrueの技(Attack5等)は、この決め打ち移動の
-	//	// 代わりにアニメーションのルートモーションで動くため呼ばない
-	//	// (PlayerStatusController::ApplyRootMotion参照)。
-	//	//
-	//	// 対象へずっと前進し続けるのではなく、engageDistance(技ごとの間合い)
-	//	// までしか詰めないようにする。対象が見つからない場合は
-	//	// 従来通りstepDirection/stepDistanceの決め打ち移動にフォールバックする
-	//	// (PlayerStatusController::RequestStepMoveTowardsTarget参照)。
-	//	if (!data.useRootMotion) {
-	//		controller->RequestStepMoveTowardsTarget(data.stepDirection, data.stepDistance, data.engageDistance, data.stepDuration);
-	//	}
-	//	controller->SetWeaponHitBoxEnabled(data.weaponSlots, true); // 攻撃判定が実際に発生する一瞬だけ有効化
-	//	controller->SetWeaponTrailEmitting(data.weaponSlots, true); // 武器の軌跡エフェクトもHitBoxと同じ窓で記録開始
-	//}
-	//else if (phase_ == CombatState::AttackActive && elapsed_ >= data.activeDuration) {
-	//	phase_ = CombatState::AttackRecovery;
-	//	elapsed_ = 0.0f;
-	//	controller->SetWeaponHitBoxEnabled(data.weaponSlots, false); // 判定の発生窓を閉じる
-	//	controller->SetWeaponTrailEmitting(data.weaponSlots, false); // 軌跡エフェクトの記録も停止(既に生成済みの頂点はStopEmit後も自然に流れて消える)
-	//}
-	//else if (phase_ == CombatState::AttackRecovery && elapsed_ >= data.recoveryDuration) {
+		// 踏み込み移動はここ(Windupが終わった瞬間)から開始する。
+		// 移動時間はwindupDurationではなく専用のstepDurationを使う
+		// (以前はEnter()側でwindupDuration分だけ振りかぶり中に動かして
+		//  いたが、攻撃が実際に届き始めるタイミングと踏み込みを
+		//  合わせたいという理由でここへ移した)。
+		// useRootMotionがtrueの技(Attack5等)は、この決め打ち移動の
+		// 代わりにアニメーションのルートモーションで動くため呼ばない
+		// (PlayerStatusController::ApplyRootMotion参照)。
+		//
+		// 対象へずっと前進し続けるのではなく、engageDistance(技ごとの間合い)
+		// までしか詰めないようにする。対象が見つからない場合は
+		// 従来通りstepDirection/stepDistanceの決め打ち移動にフォールバックする
+		// (PlayerCombatMovementComponent::RequestStepMoveTowardsTarget参照)。
+		if (!data.moveData.useRootMotion) {
+			controller->RequestStepMoveTowardsTarget(data.moveData.stepDirection, data.moveData.stepDistance,
+				data.moveData.engageDistance, data.moveData.stepDuration);
+		}
+		weaponSet_->SetHitBoxEnabled(data.weaponSlots, true); // 攻撃判定が実際に発生する一瞬だけ有効化
+		weaponSet_->SetTrailEmitting(data.weaponSlots, true); // 武器の軌跡エフェクトもHitBoxと同じ窓で記録開始
+	}
+	else if (phase_ == CombatState::AttackActive && elapsed_ >= data.phaseData.active.targetDuration) {
+		phase_ = CombatState::AttackRecovery;
+		elapsed_ = 0.0f;
+		weaponSet_->SetHitBoxEnabled(data.weaponSlots, false); // 判定の発生窓を閉じる
+		weaponSet_->SetTrailEmitting(data.weaponSlots, false); // 軌跡エフェクトの記録も停止(既に生成済みの頂点はStopEmit後も自然に流れて消える)
+	}
+	else if (phase_ == CombatState::AttackRecovery && elapsed_ >= data.phaseData.recovery.targetDuration) {
 		// 自律的に終了し、ControllerにNoneへの復帰を要請する
 		controller->ChangeStateToNone();
-	//}
+	}
 }
 
 void StateAttack::Exit(PlayerStatusController* controller) {
-	//// Windup中にStagger等で強制的に割り込まれた場合など、通常のUpdateの
-	//// 遷移では回収できないタイミングでもステップ移動が残らないよう、
-	//// Exitで必ず後始末する(Evadeと同じ考え方)。
-	//controller->CancelStepMove();
+	// Windup中にStagger等で強制的に割り込まれた場合など、通常のUpdateの
+	// 遷移では回収できないタイミングでもステップ移動が残らないよう、
+	// Exitで必ず後始末する(Evadeと同じ考え方)。
+	controller->CancelStepMove();
+	controller->SetMovementEnabled(true);
 
-	//const auto& data = controller->GetCurrentAttackData();
 
-	//// AttackActive中に割り込まれた場合、HitBoxが有効なまま次のStateへ
-	//// 遷移してしまうと、以後の状態(Stagger中など)でも攻撃判定が
-	//// 生き続けてしまう。通常のUpdate側の遷移(Active→Recovery)で
-	//// 既に無効化済みのケースがほとんどだが、その経路を通らない
-	//// 中断にも安全に対応できるよう、Exitで無条件に無効化しておく。
-	//controller->SetWeaponHitBoxEnabled(data.weaponSlots, false);
+	const AttackData& data = attackSelector_->GetCurrentAttackData();
 
-	//// HitBoxと同じ理由で、AttackActive中に割り込まれた場合でも
-	//// トレイルの記録が停止せずに残ってしまわないよう、無条件で止める。
-	//controller->SetWeaponTrailEmitting(data.weaponSlots, false);
+	// AttackActive中に割り込まれた場合、HitBoxが有効なまま次のStateへ
+	// 遷移してしまうと、以後の状態(Stagger中など)でも攻撃判定が
+	// 生き続けてしまう。通常のUpdate側の遷移(Active→Recovery)で
+	// 既に無効化済みのケースがほとんどだが、その経路を通らない
+	// 中断にも安全に対応できるよう、Exitで無条件に無効化しておく。
+	weaponSet_->SetHitBoxEnabled(data.weaponSlots, false);
+
+	// HitBoxと同じ理由で、AttackActive中に割り込まれた場合でも
+	// トレイルの記録が停止せずに残ってしまわないよう、無条件で止める。
+	weaponSet_->SetTrailEmitting(data.weaponSlots, false);
 }
 
 bool StateAttack::CanStartEvade(const PlayerStatusController* controller) const {
 	if (phase_ == CombatState::AttackRecovery) {
-		//return elapsed_ >= controller->GetCurrentAttackData().recoveryEvadeCancelStart;
+		return elapsed_ >= attackSelector_->GetCurrentAttackData().cancelData.recoveryEvadeCancelStart;
 	}
-	return true;
 	return false;
 }
 
@@ -107,15 +116,14 @@ bool StateAttack::CanStartAttack(const PlayerStatusController* controller) const
 	// Recovery中の一定タイミングを過ぎたら、次の攻撃(コンボ)への
 	// キャンセルを許可する。CanStartEvadeと同じ考え方。
 	if (phase_ == CombatState::AttackRecovery) {
-		//return elapsed_ >= controller->GetCurrentAttackData().recoveryAttackCancelStart;
+		return elapsed_ >= attackSelector_->GetCurrentAttackData().cancelData.recoveryAttackCancelStart;
 	}
-	return true;
 	return false;
 }
 
 bool StateAttack::CanStartGuard(const PlayerStatusController* controller) const {
 	if (phase_ == CombatState::AttackRecovery) {
-		//return elapsed_ >= controller->GetCurrentAttackData().recoveryEvadeCancelStart;
+		//return elapsed_ >= attackSelector_->GetCurrentAttackData().cancelData.recoveryEvadeCancelStart;
 		return true;
 	}
 	return false;
@@ -299,7 +307,7 @@ void StateStagger::Enter(PlayerStatusController* controller) {
 	KdDebugGUI::Instance().AddLog("Stagger");
 
 	// アニメーション未実装のためコメントアウト。
-	// AttackMoveData/GuardMoveDataのような専用データ構造をStaggerは
+	// AttackData/GuardDataのような専用データ構造をStaggerは
 	// 持たないため、isLarge_で仮のアニメーション名を直接出し分ける想定だった。
 	controller->PlayAnimation(isLarge_ ? "APose_Hit_B" : "APose_Hit_B");
 }
@@ -312,5 +320,4 @@ void StateStagger::Update(PlayerStatusController* controller, float deltaTime) {
 }
 
 void StateStagger::Exit(PlayerStatusController* controller)
-{
-}
+{}

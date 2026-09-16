@@ -1,5 +1,6 @@
 ﻿#include "EnemyHPBarComponent.h"
 #include "../../../GamePlay/Character/Combat/PostureComponent.h" // パスはプロジェクトに合わせて調整
+#include "../../../GamePlay/Camera/CameraComponent.h"
 
 void EnemyHPBarComponent::Awake()
 {

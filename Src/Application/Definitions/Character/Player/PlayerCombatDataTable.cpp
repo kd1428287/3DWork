@@ -1,5 +1,5 @@
-﻿//#include "PlayerCombatDataTable.h"
-//
+﻿#include "PlayerCombatDataTable.h"
+
 //ComboAttackTable CreateDebugComboAttackTable()
 //{
 //	ComboAttackTable table{};
@@ -85,38 +85,38 @@
 //
 //	return table;
 //}
-//EvadeMoveData CreateDebugEvadeData()
-//{
-//	EvadeMoveData data{};
-//	data.activeDuration = 0.25f;
-//	data.recoveryDuration = 0.15f;
-//	data.justWindowStart = 0.05f;
-//	data.justWindowEnd = 0.15f;
-//	data.evadeDistance = 3.0f;
-//	data.useRootMotion = true;
-//
-//	data.animationNameForward = "APose_Slide_F";
-//	data.animationNameBackward = "APose_Slide_B";
-//	data.animationNameLeft = "APose_Slide_L";
-//	data.animationNameRight = "APose_Slide_R";
-//
-//	return data;
-//}
-//
-//GuardMoveData CreateDebugGuardData()
-//{
-//	GuardMoveData data{};
-//	data.justWindowDuration = 0.15f;
-//
-//	data.animationName = "APose2DefenseL";
-//	data.startDuration = 0.1f;
-//	data.loopAnimationName = "DefenseL_Loop";
-//
-//	data.parrySuccessAnimationName = "DefenseL_Parry01";
-//	data.parrySuccessDuration = 0.8f;
-//
-//	data.guardHitAnimationName = "DefenseL_Hit01";
-//	data.guardHitDuration = 0.9f;
-//
-//	return data;
-//}
+EvadeData CreateDebugEvadeData()
+{
+	EvadeData data{};
+	data.activeDuration = 0.25f;
+	data.recoveryDuration = 0.15f;
+	data.justWindowStart = 0.05f;
+	data.justWindowEnd = 0.15f;
+	data.evadeDistance = 3.0f;
+	data.useRootMotion = true;
+
+	data.animationNameForward = "APose_Slide_F";
+	data.animationNameBackward = "APose_Slide_B";
+	data.animationNameLeft = "APose_Slide_L";
+	data.animationNameRight = "APose_Slide_R";
+
+	return data;
+}
+
+GuardData CreateDebugGuardData()
+{
+	GuardData data{};
+	data.justWindowDuration = 0.15f;
+
+	data.animationName = "APose2DefenseL";
+	data.startDuration = 0.1f;
+	data.loopAnimationName = "DefenseL_Loop";
+
+	data.parrySuccessAnimationName = "DefenseL_Parry01";
+	data.parrySuccessDuration = 0.8f;
+
+	data.guardHitAnimationName = "DefenseL_Hit01";
+	data.guardHitDuration = 0.9f;
+
+	return data;
+}

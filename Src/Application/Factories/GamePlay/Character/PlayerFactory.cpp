@@ -16,6 +16,9 @@
 #include "Application/Components/GamePlay/Character/Player/PlayerStatusController.h"
 #include "Application/Components/GamePlay/Character/Player/PlayerLockOnComponent.h"
 #include "Application/Components/GamePlay/Character/Player/PlayerMovementAnimationComponent.h"
+#include "Application/Components/GamePlay/Character/Player/PlayerCombatMovementComponent.h"
+#include "Application/Components/GamePlay/Character/Player/PlayerFacingComponent.h"
+#include "Application/Components/GamePlay/Character/Player/PlayerAttackSelector.h"
 #include "Application/Components/GamePlay/Camera/CameraTargetComponent.h"
 
 #include "Application/Components/Physics/Movement/MovementResolverComponent.h"
@@ -87,10 +90,10 @@ namespace
 
 		for (const auto& def : colliderDefs) {
 			if (def.interactsWith != ColliderCategory::None) {
-				collider->AddCapsule(def.name, def.radius, def.start, def.end, def.category, def.interactsWith);
+				//collider->AddCapsule(def.name, def.radius, def.start, def.end, def.category, def.interactsWith);
 			}
 			else {
-				collider->AddCapsule(def.name, def.radius, def.start, def.end, def.category);
+				//collider->AddCapsule(def.name, def.radius, def.start, def.end, def.category);
 			}
 
 			if (def.isTrigger) {
@@ -133,6 +136,9 @@ GameObject* PlayerFactory::CreatePlayer(ObjectManager& objectManager, const Play
 	player->AddComponent<PlayerStatusController>();
 	player->AddComponent<CameraTargetComponent>()->SetOffset({ 0.f,1.5f,0.f });
 	player->AddComponent<WireFrameComponent>();
+	player->AddComponent<PlayerCombatMovementComponent>()->SetMovementSpeeds(2.0f, 6.0f);
+	player->AddComponent<PlayerAttackSelector>();
+	player->AddComponent<PlayerFacingComponent>();
 
 	// --- 腕・武器のソケット生成 -----------------------------------------
 	Handle<SkeletonComponent> skeletonHandle(skeleton);

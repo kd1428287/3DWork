@@ -4,6 +4,8 @@
 
 // 前方宣言
 class PlayerStatusController;
+class WeaponSetComponent;
+class PlayerAttackSelector;
 
 // ============================================================
 // IPlayerState
@@ -68,6 +70,15 @@ public:
 	bool CanStartGuard(const PlayerStatusController* controller) const override;
 
 private:
+	// このAttack Stateでしか使わないコンポーネントは、Controllerの
+	// ファサードを経由せずEnter()で直接解決してメンバに持つ
+	// (WeaponSetComponent/PlayerAttackSelectorはStateAttack以外の
+	//  Stateからは参照されないため。PlayerCombatMovementComponent/
+	//  PlayerFacingComponent/ModelAnimatorComponentはStateEvade等とも
+	//  共有するため、引き続きControllerのファサード経由で呼ぶ)。
+	WeaponSetComponent* weaponSet_ = nullptr;
+	PlayerAttackSelector* attackSelector_ = nullptr;
+
 	CombatState phase_ = CombatState::AttackWindup;
 	float elapsed_ = 0.0f;
 };

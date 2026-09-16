@@ -30,10 +30,6 @@ public:
 
 	void Start() override;
 
-	// 【重要】PlayerFactory等が、まだStart()が呼ばれていない構築中の
-	// タイミング(AddComponent<PlayerCombatMovementComponent>()した直後)で
-	// PlayerDefinition::walkSpeed/runSpeedを渡して呼ぶ想定
-	// (PlayerStatusController::SetWeapon()と同じ制約)。
 	void SetMovementSpeeds(float walkSpeed, float runSpeed) {
 		walkSpeed_ = walkSpeed;
 		runSpeed_ = runSpeed;
@@ -51,7 +47,7 @@ public:
 	// (旧movementComponent_->SetEnabled(...)相当)。
 	void SetMovementEnabled(bool enabled);
 
-	// 決め打ちの軌道で移動する(回避、あるいは対象不明時の攻撃踏み込み)。
+	// 決め打ちの軌道で移動する
 	void RequestStepMove(const Math::Vector3& direction, float distance, float duration);
 
 	// targetが非nullptrなら、そこまでengageDistanceを残して詰める踏み込み

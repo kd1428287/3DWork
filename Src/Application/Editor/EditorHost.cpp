@@ -2,13 +2,14 @@
 
 #include "EditorHost.h"
 
-//#ifdef EDITOR_ENABLED
+#ifdef EDITOR_ENABLED
 
 #include "Common/EditorViewport.h"
 #include "Tools/MapEditor.h"
 #include "Tools/EffectEditor.h"
 #include "Tools/ShaderTuningEditor.h"
 #include "Tools/BTEditor.h"
+#include "Application/KdDebugGUI.h"
 
 // DockBuilder系APIを使うために必要(公式にも初期配置構築の定番として使われる内部ヘッダ)
 // ※旧KdDebugGUI.cppから移設。ドッキングレイアウトはエディタ固有の関心事のためこちらに置く
@@ -55,6 +56,11 @@ void EditorHost::Init(int w, int h)
 bool EditorHost::IsViewportEnabled() const
 {
 	return EditorViewport::Instance().IsEnabled();
+}
+
+void EditorHost::BeginSceneDraw()
+{
+	EditorViewport::Instance().BeginSceneDraw();
 }
 
 void EditorHost::RenderPreviewViewports()
@@ -111,4 +117,4 @@ void EditorHost::Release()
 	KdDebugGUI::Instance().GuiRelease();
 }
 
-//#endif  EDITOR_ENABLED
+#endif // EDITOR_ENABLED

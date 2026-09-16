@@ -19,9 +19,17 @@ public:
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
 		movement_ = GetOwner()->GetComponent<MovementComponent>();
 		velocity_ = GetOwner()->GetComponent<VelocityComponent>();
-		tween_ = GetOwner()->GetComponent<TweenMoveComponent>();
 
 		assert(transform_ != nullptr && "[MovementResolverComponent] Not Found TransformComponent");
+	}
+
+	void Start() override
+	{
+		tween_ = GetOwner()->GetComponent<TweenMoveComponent>();
+		if (tween_)
+		{
+			1 + 2;
+		}
 	}
 
 	void Update(float deltaTime) override

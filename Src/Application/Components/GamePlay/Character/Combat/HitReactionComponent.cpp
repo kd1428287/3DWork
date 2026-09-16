@@ -46,12 +46,13 @@ void HitReactionComponent::OnCollisionEnter(const Events::Collision::CollisionEn
 	attack->alreadyHit.insert(GetOwner());
 
 	GameObject* attacker = attack->ownerCharacter.Resolve();
+	const AttackDamegeData& attackData = attack->GetAttackDamageData();
 
 	if (query_->IsInParryWindow()) {
 		// パリィ成立: 攻撃側の体幹を削り、パリィされた通知を送る。
 		if (attacker != nullptr) {
 			if (PostureComponent* attackerPosture = attacker->GetComponent<PostureComponent>()) {
-				attackerPosture->AddPostureDamage(attack->parryPostureDamage);
+				attackerPosture->AddPostureDamage(attackData.parryPostureDamage);
 			}
 			attacker->GetLocalEventBus().Publish(AttackSourceComponent::ParriedEvent{});
 		}
@@ -65,13 +66,13 @@ void HitReactionComponent::OnCollisionEnter(const Events::Collision::CollisionEn
 		SpawnWeaponClashEffect(e.otherObject, /*isParry=*/false);
 
 		if (postureComponent_ != nullptr) {
-			postureComponent_->AddPostureDamage(attack->postureDamage);
+			postureComponent_->AddPostureDamage(attackData.postureDamage);
 			if (postureComponent_->IsBroken()) {
 				// TODO: 崩し状態(専用State)への遷移は別途実装。
 			}
 		}
 		if (healthComponent_ != nullptr) {
-			healthComponent_->TakeDamage(attack->damage * attack->chipDamageRatio);
+			healthComponent_->TakeDamage(attackData.damage * attackData.chipDamageRatio);
 		}
 		// ガード時でもノックバックする。
 		if (velocityComponent_ != nullptr) {
@@ -84,7 +85,7 @@ void HitReactionComponent::OnCollisionEnter(const Events::Collision::CollisionEn
 		// 通常被弾: ダメージ+体幹ダメージ+ノックバックを付与し、
 		// 体幹が壊れたかどうかで小さい/大きい反応に振り分ける。
 		if (healthComponent_ != nullptr) {
-			healthComponent_->TakeDamage(attack->damage);
+			healthComponent_->TakeDamage(attackData.damage);
 		}
 
 		if (transform_ != nullptr) {
@@ -96,13 +97,13 @@ void HitReactionComponent::OnCollisionEnter(const Events::Collision::CollisionEn
 		}
 
 		if (velocityComponent_ != nullptr) {
-			velocityComponent_->AddImpulse(ComputeKnockbackDirection(attacker) * attack->knockbackPower);
+			velocityComponent_->AddImpulse(ComputeKnockbackDirection(attacker) * attackData.knockbackPower);
 		}
 
 		// 通常被弾でも体幹にダメージを蓄積する(ガード時とは異なり全ダメージ分)。
 		bool postureBroken = false;
 		if (postureComponent_ != nullptr) {
-			postureComponent_->AddPostureDamage(attack->postureDamage);
+			postureComponent_->AddPostureDamage(attackData.postureDamage);
 			postureBroken = postureComponent_->IsBroken();
 			if (postureBroken) {
 				postureComponent_->Reset();
@@ -112,7 +113,7 @@ void HitReactionComponent::OnCollisionEnter(const Events::Collision::CollisionEn
 		PublishHitStop(*GetOwner()->GetContext()->eventBus, 0.f, 0.1f);
 		PublishCameraShake(*GetOwner()->GetContext()->eventBus, 0.75f);
 
-		query_->EnterStagger(postureBroken, postureBroken ? largeStaggerDuration_ : attack->hitStunSeconds);
+		query_->EnterStagger(postureBroken, postureBroken ? largeStaggerDuration_ : attackData.hitStunSeconds);
 	}
 }
 

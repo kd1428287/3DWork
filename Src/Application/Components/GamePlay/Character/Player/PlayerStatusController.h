@@ -5,9 +5,9 @@
 
 #include "PlayerInputComponent.h"
 #include "PlayerLockOnComponent.h"
-#include "PlayerAttackSelector.h"
 #include "PlayerMovementAnimationComponent.h"
 #include "PlayerState.h"
+#include "../Common/CharacterInputBufferComponent.h"
 
 #include "../Combat/WeaponSetComponent.h"
 #include "../../../Graphics/Animation/ModelAnimatorComponent.h"
@@ -53,7 +53,7 @@ class PlayerStatusController : public ComponentBase, public IHitReactionQuery
 public:
 	explicit PlayerStatusController(GameObject* owner) : ComponentBase(owner) {}
 
-	void Start() override;
+	void Awake() override;
 	void Update(float deltaTime) override;
 
 	// --- 移動軸: 参照 ---
@@ -79,8 +79,11 @@ public:
 	bool CanReleaseGuard() const { return stateMachine_.Current()->CanReleaseGuard(this); }
 
 	// --- 現在実行中の技データ(Stateが毎フレーム参照する) ---
-	// Attack分はattackSelector_が唯一の保持者。Controllerは中継するだけ。
-	const AttackData& GetCurrentAttackData() const;
+	// AttackはStateAttack自身がattackSelector_を直接保持して参照するため、
+	// ここでの中継は行わない(WeaponSetComponentの操作も同様にStateAttackが
+	// 直接行う。理由はPlayerState.h::StateAttackのコメント参照)。
+	// Evade/Guardは複数Stateにまたがらない単純な1件データのため、
+	// 引き続きControllerが保持・中継する。
 	const EvadeData& GetCurrentEvadeData() const { return currentEvade_; }
 	const GuardData& GetCurrentGuardData() const { return currentGuard_; }
 
@@ -107,10 +110,12 @@ public:
 	// --- 攻撃対象への正対(PlayerFacingComponentへの薄い委譲) ---
 	void FaceAttackTarget();
 
-	// --- 武器の攻撃判定(WeaponSetComponentへの薄い委譲) ---
+	// --- 武器の装備登録(WeaponSetComponentへの薄い委譲) ---
+	// ヒットボックス/トレイルのon-offはStateAttackのみが使うため、
+	// StateAttackがWeaponSetComponentを直接保持して呼ぶ(こちらの
+	// 登録処理はPlayerFactory等、Stateの外から呼ばれるため引き続き
+	// Controllerのファサードとして残す)。
 	void SetWeapon(Handle<WeaponComponent> weapon);
-	void SetWeaponHitBoxEnabled(const std::vector<std::string>& slots, bool enabled);
-	void SetWeaponTrailEmitting(const std::vector<std::string>& slots, bool emitting);
 
 	// --- アニメーション再生(ModelAnimatorComponentへの薄い委譲) ---
 	void PlayAnimation(const std::string& name, bool loop = false, float targetDurationSeconds = -1.0f,
@@ -125,6 +130,7 @@ public:
 	void RequestStepMoveTowardsTarget(const Math::Vector3& fallbackDirection, float stepDistance,
 		float engageDistance, float duration);
 	void CancelStepMove();
+	void SetMovementEnabled(bool enabled);
 
 private:
 	void TransitionTo(IPlayerState* nextState);
@@ -134,14 +140,12 @@ private:
 	void HandleMovementInput(const PlayerInputComponent& input, float deltaTime);
 	void HandleActionInput(PlayerInputComponent& input);
 
-	// --- 兄弟コンポーネント(既存) ---
+	// --- 兄弟コンポーネント ---
 	PlayerInputComponent* inputComponent_ = nullptr;
 	PlayerLockOnComponent* lockOnComponent_ = nullptr;
 	PlayerMovementAnimationComponent* movementAnimationComponent_ = nullptr;
 	ModelAnimatorComponent* modelAnimatorComponent_ = nullptr;
 	WeaponSetComponent* weaponSet_ = nullptr;
-
-	// --- 兄弟コンポーネント(新設。骨格段階では前方宣言のみ) ---
 	PlayerAttackSelector* attackSelector_ = nullptr;
 	PlayerFacingComponent* facing_ = nullptr;
 	PlayerCombatMovementComponent* combatMovement_ = nullptr;
@@ -166,6 +170,6 @@ private:
 	StateMachine<PlayerStatusController, IPlayerState> stateMachine_;
 
 	static constexpr float kDefaultAnimationBlendDuration = 0.15f;
-	static constexpr const char* kRootMotionBoneName = "root";
+	static constexpr const char* kRootMotionBoneName = "mixamorig_Hips";
 	static constexpr const char* kMainWeaponSlot = "Main";
 };

@@ -291,6 +291,7 @@
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Combat\PostureComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Combat\WeaponComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Combat\WeaponSetComponent.h" />
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\CharacterInputBufferComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\CharacterEvents.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Enemy\EnemyActions.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Enemy\EnemyAIController.h" />
@@ -496,6 +497,7 @@
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerMovementAnimationComponent.cpp" />
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerState.cpp" />
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerStatusController.cpp" />
+    <ClCompile Include="Src\Application\Components\Graphics\Render\GaugeBarRenderer.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\Render\ModelRenderComponent.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\Render\Mod\ForceMaxDepthComponent.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\Render\Mod\SkyDomeEdgeFadeComponent.cpp" />

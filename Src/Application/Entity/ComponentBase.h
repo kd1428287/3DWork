@@ -14,9 +14,9 @@ public:
 	ComponentBase& operator=(const ComponentBase&) = delete;
 
 	// --- ライフサイクルフック -----------------------------------
-	// GameObjectに追加された直後、一度だけ呼ばれる
-	virtual void Awake() {}
 	// 最初のUpdateの前に一度だけ呼ばれる(他コンポーネントの参照解決などに使う)
+	virtual void Awake() {}
+	// 毎F最初の更新前に呼ばれる
 	virtual void Start() {}
 	// Update前 入力の取得等
 	virtual void PreUpdate(float deltaTime) { (void)deltaTime; }
@@ -46,7 +46,6 @@ public:
 private:
 	GameObject* owner_ = nullptr;
 	bool enabled_ = true;
-	bool started_ = false;
 	uint64_t generation_ = 0;
 
 	// 全ComponentBase派生インスタンスで共有される、生成順の通し番号カウンタ。
