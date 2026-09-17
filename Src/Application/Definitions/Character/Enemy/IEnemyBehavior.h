@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include "../Common/BehaviorTree/IBTNode.h"
-#include "Application/Components/GamePlay/Character/Combat/AttackSourceComponent.h"
+#include "Application/Components/GamePlay/Character/Common/AttackSourceComponent.h"
 
 class EnemyAIController;
 

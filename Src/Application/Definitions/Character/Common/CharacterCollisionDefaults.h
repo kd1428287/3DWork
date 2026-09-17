@@ -36,4 +36,23 @@ namespace CharacterCollisionDefaults
 	// および各キャラクターのBodyコライダー(Capsule/Box)の下端
 	// (対称配置の場合は上端も)の計算に使う。
 	constexpr float kFootOffset = 0.9f;
+
+	// 身長。足裏から頭頂までの全高(kFootOffsetのように「原点から
+	// 片側だけの距離」ではなく、キャラクター全体の高さそのもの)。
+	// Bodyコライダー(Capsule)の上端位置(=足裏 + kHeight で頭頂位置が
+	// 求まる)や、カメラの注視点オフセット等、体格に依存する複数箇所で
+	// 一致していなければならない値としてここに集約する。
+	constexpr float kHeight = 1.8f;
+
+	// 体格(横幅)。Bodyコライダーの半径(kBodyWidth * 0.5f)の基準として使う。
+	// kFootOffset/kHeightと同じ理由で、Factory側の当たり判定生成と
+	// 見た目のスケール感を一致させるためにここへ置く。
+	constexpr float kBodyWidth = 0.6f;
+
+	// 目線の高さ(足裏からの距離)。kHeight(頭頂)より低い値を想定。
+	// カメラの注視点オフセット(PlayerFactory::CameraTargetComponent等)や、
+	// ロックオン時にカメラが狙う高さの基準として使う。現状は
+	// PlayerFactory.cpp側にマジックナンバー(1.5f)で直書きされている値を
+	// ここへ一元化する想定。
+	constexpr float kEyeHeight = 1.6f;
 }

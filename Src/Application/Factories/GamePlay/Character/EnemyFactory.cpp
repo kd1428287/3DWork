@@ -7,9 +7,9 @@
 #include "Application/Components/GamePlay/Character/Enemy/Brute/BruteBehavior.h"
 #include "Application/Components/GamePlay/Character/Enemy/Warrock/WarrockBehavior.h"
 #include "Application/Components/GamePlay/Character/Enemy/LockOnTargetComponent.h"
-#include "Application/Components/GamePlay/Character/Combat/PostureComponent.h"
-#include "Application/Components/GamePlay/Character/Combat/HealthComponent.h"
-#include "Application/Components/GamePlay/Character/Combat/AttackSourceComponent.h"
+#include "Application/Components/GamePlay/Character/Common/PostureComponent.h"
+#include "Application/Components/GamePlay/Character/Common/HealthComponent.h"
+#include "Application/Components/GamePlay/Character/Common/AttackSourceComponent.h"
 
 #include "Application/Components/Core/AttachToSocketComponent.h"
 #include "Application/Components/Core/BoneSocketComponent.h"
@@ -22,7 +22,7 @@
 #include "Application/Components/Graphics/Animation/SkeletonComponent.h"
 #include "Application/Components/Graphics/Animation/ModelAnimatorComponent.h"
 #include "Application/Components/Graphics/Render/ModelRenderComponent.h"
-#include "Application/Components/Graphics/UI/Enemy/EnemyHPBarComponent.h"
+#include "Application/Components/Graphics/UI/GamePlay/EnemyWorldGaugeComponent.h"
 #include "Application/Components/Graphics/Animation/FacingDirectionComponent.h"
 #include "Application/Components/Graphics/Render/WireFrameComponent.h"
 
@@ -125,6 +125,18 @@ namespace
 		animator->SetRootMotionScale(0.01f * def.modelScale.x);
 	}
 
+	// --- 頭上ゲージUIの生成 --------------------------------------------
+	// Enemyとは別のGameObjectとして生成し、Handle<GameObject>経由で
+	// イベント購読する(GaugeWatcher/EnemyWorldGaugeComponent参照)。
+	void CreateWorldGauge(ObjectManager& objectManager, GameObject* enemy)
+	{
+		GameObject* gauge = objectManager.Instantiate("enemy_gauge");
+		if (!gauge) return;
+
+		gauge->AddFlag(ObjectFlags::UI);
+		//gauge->AddComponent<EnemyWorldGaugeComponent>()->SetTarget(Handle<GameObject>(enemy));
+	}
+
 	// --- 武器のソケット生成 --------------------------------------------
 	GameObject* CreateWeaponSocket(ObjectManager& objectManager, Handle<SkeletonComponent>& skeletonHandle) {
 		GameObject* socket = objectManager.Instantiate("enemy_weapon_socket");
@@ -207,6 +219,7 @@ GameObject* EnemyFactory::BuildEnemy(ObjectManager& objectManager, const EnemyDe
 	EnemyAIController* ai = CreateAIController(enemy, def);
 	CreateColliders(enemy, def);
 	CreatePhysicsComponents(enemy);
+	CreateWorldGauge(objectManager, enemy);
 
 	Handle<SkeletonComponent> skeletonHandle(skeleton);
 	AttachWeaponAndRegister(objectManager, enemy, ai, skeletonHandle);

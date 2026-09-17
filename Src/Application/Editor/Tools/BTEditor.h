@@ -1,7 +1,4 @@
 ﻿#pragma once
-
-// ※ ImGui は既存のPCH等で読み込まれている前提です。
-//    node-editor(imgui-node-editor)は本ファイルでのみ使うため明示的にインクルードします。
 #include "../ThirdParty/imgui-node-editor/imgui_node_editor.h"
 
 namespace ed = ax::NodeEditor;

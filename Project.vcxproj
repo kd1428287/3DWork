@@ -130,7 +130,7 @@
       <Optimization>Disabled</Optimization>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
       <AdditionalIncludeDirectories>.\;src;..\Library;..\Library\DirectXTK\Inc;..\Library\DirectXTex\DirectXTex;..\Library\tinygltf;..\Library\imgui;..\Library\Effekseer\Inc;src\Application\Editor\ThirdParty\imgui-node-editor;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;EDITOR_ENABLED;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -285,14 +285,14 @@
     <ClInclude Include="Src\Application\Components\GamePlay\Camera\CameraShakeComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Camera\CameraTargetComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Camera\CameraViewComponent.h" />
-    <ClInclude Include="Src\Application\Components\GamePlay\Character\Combat\AttackSourceComponent.h" />
-    <ClInclude Include="Src\Application\Components\GamePlay\Character\Combat\HealthComponent.h" />
-    <ClInclude Include="Src\Application\Components\GamePlay\Character\Combat\HitReactionComponent.h" />
-    <ClInclude Include="Src\Application\Components\GamePlay\Character\Combat\PostureComponent.h" />
-    <ClInclude Include="Src\Application\Components\GamePlay\Character\Combat\WeaponComponent.h" />
-    <ClInclude Include="Src\Application\Components\GamePlay\Character\Combat\WeaponSetComponent.h" />
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\AttackSourceComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\CharacterInputBufferComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\CharacterEvents.h" />
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\HealthComponent.h" />
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\HitReactionComponent.h" />
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\PostureComponent.h" />
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\WeaponComponent.h" />
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\WeaponSetComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Enemy\EnemyActions.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Enemy\EnemyAIController.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Enemy\LockOnTargetComponent.h" />
@@ -317,7 +317,6 @@
     <ClInclude Include="Src\Application\Components\Graphics\Animation\TwoBoneIKComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Effect\SlashTrailComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Effect\SlowEffectComponent.h" />
-    <ClInclude Include="Src\Application\Components\Graphics\Render\GaugeBarRenderer.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\ModelRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\Mod\ForceMaxDepthComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\Mod\SkyDomeEdgeFadeComponent.h" />
@@ -325,6 +324,10 @@
     <ClInclude Include="Src\Application\Components\Graphics\Render\SpriteRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\WireFrameComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Enemy\EnemyHPBarComponent.h" />
+    <ClInclude Include="Src\Application\Components\Graphics\UI\GamePlay\EnemyWorldGaugeComponent.h" />
+    <ClInclude Include="Src\Application\Components\Graphics\UI\GamePlay\GaugeBarRenderer.h" />
+    <ClInclude Include="Src\Application\Components\Graphics\UI\GamePlay\GaugeWatcher.h" />
+    <ClInclude Include="Src\Application\Components\Graphics\UI\GamePlay\PlayerHudGaugeComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Player\PlayerStatusUIComponent.h" />
     <ClInclude Include="Src\Application\Components\Physics\Collision\ColliderComponent.h" />
     <ClInclude Include="Src\Application\Components\Physics\Movement\DirectionTransformSource.h" />
@@ -356,7 +359,6 @@
     <ClInclude Include="Src\Application\Core\Math\PerlinNoise.h" />
     <ClInclude Include="Src\Application\Core\Scene\SceneManager.h" />
     <ClInclude Include="Src\Application\Core\Scene\SceneType.h" />
-    <ClInclude Include="Src\Application\Definitions\Character\Combat\CombatData.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\BTComposite.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\BTCondition.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\BTNodeStatus.h" />
@@ -365,19 +367,23 @@
     <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\IBTNode.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\CharacterCollisionDefaults.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\CharacterDefinitionCommon.h" />
+    <ClInclude Include="Src\Application\Definitions\Character\Common\CombatData.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\StateMachine\StateMachine.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Enemy\EnemyAIData.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Enemy\EnemyDefinition.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Enemy\IEnemyBehavior.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Enemy\Warrock\WarrockAIData.h" />
+    <ClInclude Include="Src\Application\Definitions\Character\Player\PlayerCombatBehaviorDefinition.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Player\PlayerCombatDataTable.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Player\PlayerCombatTypes.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Player\PlayerDefinition.h" />
     <ClInclude Include="Src\Application\Definitions\Effect\EffectParams.h" />
     <ClInclude Include="Src\Application\Definitions\Effect\SlashTrailParams.h" />
+    <ClInclude Include="Src\Application\Definitions\Loaders\AttackDataLoader.h" />
     <ClInclude Include="Src\Application\Definitions\Loaders\EffectDataLoader.h" />
     <ClInclude Include="Src\Application\Definitions\Loaders\JsonLoader.h" />
     <ClInclude Include="Src\Application\Definitions\Loaders\MapLoader.h" />
+    <ClInclude Include="Src\Application\Definitions\Loaders\PlayerAttackTableLoader.h" />
     <ClInclude Include="Src\Application\Definitions\Loaders\PlayerDefinitionLoader.h" />
     <ClInclude Include="Src\Application\Definitions\Map\ColliderCategoryNames.h" />
     <ClInclude Include="Src\Application\Definitions\Map\ComponentTypes.h" />
@@ -387,6 +393,7 @@
     <ClInclude Include="Src\Application\Definitions\Physics\ModelCollisionMeshBuilder.h" />
     <ClInclude Include="Src\Application\Definitions\Physics\TriangleMeshData.h" />
     <ClInclude Include="Src\Application\Editor\Common\EditorViewport.h" />
+    <ClInclude Include="Src\Application\Editor\Common\KdPreviewPostProcess.h" />
     <ClInclude Include="Src\Application\Editor\EditorHost.h" />
     <ClInclude Include="Src\Application\Editor\ThirdParty\imgui-node-editor\crude_json.h" />
     <ClInclude Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_bezier_math.h" />
@@ -486,7 +493,7 @@
     <ClCompile Include="..\Library\imgui\imgui_stdlib.cpp" />
     <ClCompile Include="..\Library\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\Library\imgui\imgui_widgets.cpp" />
-    <ClCompile Include="Src\Application\Components\GamePlay\Character\Combat\HitReactionComponent.cpp" />
+    <ClCompile Include="Src\Application\Components\GamePlay\Character\Common\HitReactionComponent.cpp" />
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Enemy\EnemyActions.cpp" />
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Enemy\EnemyAIController.cpp" />
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Enemy\Warrock\WarrockActions.cpp" />
@@ -497,23 +504,26 @@
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerMovementAnimationComponent.cpp" />
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerState.cpp" />
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerStatusController.cpp" />
-    <ClCompile Include="Src\Application\Components\Graphics\Render\GaugeBarRenderer.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\Render\ModelRenderComponent.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\Render\Mod\ForceMaxDepthComponent.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\Render\Mod\SkyDomeEdgeFadeComponent.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\Render\WireFrameComponent.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\UI\Enemy\EnemyHPBarComponent.cpp" />
+    <ClCompile Include="Src\Application\Components\Graphics\UI\GamePlay\GaugeBarRenderer.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\UI\Player\PlayerStatusUIComponent.cpp" />
     <ClCompile Include="Src\Application\Core\Scene\SceneManager.cpp" />
     <ClCompile Include="Src\Application\Definitions\Character\Player\PlayerCombatDataTable.cpp" />
     <ClCompile Include="Src\Application\Definitions\Effect\EffectParams.cpp" />
+    <ClCompile Include="Src\Application\Definitions\Loaders\AttackDataLoader.cpp" />
     <ClCompile Include="Src\Application\Definitions\Loaders\EffectDataLoader.cpp" />
     <ClCompile Include="Src\Application\Definitions\Loaders\JsonLoader.cpp" />
     <ClCompile Include="Src\Application\Definitions\Loaders\MapLoader.cpp" />
+    <ClCompile Include="Src\Application\Definitions\Loaders\PlayerAttackTableLoader.cpp" />
     <ClCompile Include="Src\Application\Definitions\Loaders\PlayerDefinitionLoader.cpp" />
     <ClCompile Include="Src\Application\Definitions\Map\ComponentRegistrations.cpp" />
     <ClCompile Include="Src\Application\Definitions\Map\MapData.cpp" />
     <ClCompile Include="Src\Application\Editor\Common\EditorViewport.cpp" />
+    <ClCompile Include="Src\Application\Editor\Common\KdPreviewPostProcess.cpp" />
     <ClCompile Include="Src\Application\Editor\EditorHost.cpp" />
     <ClCompile Include="Src\Application\Editor\ThirdParty\imgui-node-editor\crude_json.cpp" />
     <ClCompile Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_canvas.cpp" />

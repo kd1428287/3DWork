@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "Application/Core/EventBus/Events/PostureEvents.h"
 
 // HP(体力)とは別に「体幹」を管理する汎用コンポーネント
 
@@ -16,13 +17,16 @@ public:
 		}
 
 		if (current_ <= 0.0f) return;
+
 		current_ = std::max(0.0f, current_ - regenPerSecond_ * deltaTime);
+		PublishChanged();
 	}
 
 	void AddPostureDamage(float amount) {
 		if (amount <= 0.0f) return;
 		current_ = std::min(max_, current_ + amount);
 		regenDelayTimer_ = regenDelaySeconds_;
+		PublishChanged();
 	}
 
 	// 最大まで溜まっているか(=崩し発生条件)。
@@ -32,6 +36,7 @@ public:
 	void Reset() {
 		current_ = 0.0f;
 		regenDelayTimer_ = 0.0f;
+		PublishChanged();
 	}
 
 	float GetCurrent() const { return current_; }
@@ -42,6 +47,13 @@ public:
 	void SetRegenDelaySeconds(float value) { regenDelaySeconds_ = value; }
 
 private:
+	void PublishChanged() {
+		PostureChangedEvent e;
+		e.source = Handle<GameObject>(GetOwner());
+		e.ratio = GetRatio();
+		GetOwner()->GetContext()->eventBus->Publish(e);
+	}
+
 	float max_;
 	float current_;
 

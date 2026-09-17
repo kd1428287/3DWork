@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "Application/Definitions/Character/Player/PlayerCombatTypes.h"
+#include "Application/Definitions/Character/Player/PlayerCombatBehaviorDefinition.h" // PlayerMovementAnimationDefinition
 #include "../../../Graphics/Animation/ModelAnimatorComponent.h"
 
 // ============================================================
@@ -30,6 +31,16 @@ public:
 	explicit PlayerMovementAnimationComponent(GameObject* owner) : ComponentBase(owner) {}
 
 	void Awake() override;
+
+	// PlayerFactory構築時に、PlayerDefinition::movementAnimationsを
+	// 注入するためのセッター(SetWeapon/SetAttackTableと同じ位置づけ。
+	// AddComponentの戻り値に対してその場で呼ぶ想定)。
+	void SetMovementAnimations(const PlayerMovementAnimationDefinition& def)
+	{
+		walkAnimSet_ = def.walk;
+		runAnimSet_ = def.run;
+		turnAnimSet_ = def.turn;
+	}
 
 	// 毎フレーム、PlayerStatusController::HandleMovementInputから呼ばれる。
 	// inputDirectionは正規化されていなくてもよい(内部で正規化する)。
@@ -81,36 +92,16 @@ private:
 	float turnDuration_ = 0.2f;
 	MovementState pendingStateAfterTurn_ = MovementState::Walk;
 
-	WalkAnimationSet walkAnimSet_{
-		MovementPhaseClips{
-			"APose_Strafe_Walk_F_Start", 0.15f,
-			"APose_Strafe_Walk_F_Loop",
-			"APose_Strafe_Walk_F_End", 0.15f
-		},
-		WalkLockedAnimationSet{
-			"APose_Strafe_Walk_F_Loop",
-			"APose_Strafe_Walk_FR",
-			"APose_Strafe_Walk_R",
-			"APose_Strafe_Walk_BR",
-			"APose_Strafe_Walk_B",
-			"APose_Strafe_Walk_BL",
-			"APose_Strafe_Walk_L",
-			"APose_Strafe_Walk_FL",
-		}
-	};
-
-	MovementPhaseClips runAnimSet_{
-		"APose_Strafe_Run_F_Start", 0.15f,
-		"APose_Strafe_Run_F_Loop",
-		"APose_Strafe_Run_F_End", 0.15f
-	};
-
-	TurnAnimationSet turnAnimSet_{
-	MotionClipData{ 0.25f, "APose_TurnL90",  true, 0.1f },
-	MotionClipData{ 0.25f, "APose_TurnR90",  true, 0.1f },
-	MotionClipData{ 0.35f, "APose_TurnL180", true, 0.1f }, 
-	MotionClipData{ 0.35f, "APose_TurnR180", true, 0.1f },
-	};
+	// SetMovementAnimations()で注入されるまでは空(アニメーション名が
+	// 空文字列)のまま。PlayerCombatMovementComponent::walkSpeed_/runSpeed_
+	// と同じ理由で、中途半端な既定値をここに直書きしない
+	// (呼び忘れがあれば「アニメーションが再生されない」という分かりやすい
+	//  形で不具合に気付ける)。以前ここにあった具体的な値
+	// (APose_Strafe_Walk_*/APose_Strafe_Run_*/APose_TurnXxx)は
+	// PlayerCombatDataTable::CreateDebugPlayerMovementAnimations()へ移設した。
+	WalkAnimationSet walkAnimSet_;
+	MovementPhaseClips runAnimSet_;
+	TurnAnimationSet turnAnimSet_;
 
 	static constexpr const char* kIdleAnimation = "APose_Idle";
 	static constexpr float kBlendDuration = 0.15f;

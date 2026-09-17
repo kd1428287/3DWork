@@ -1,0 +1,226 @@
+{
+	"_comment": "全項目仮値。実際の手触り・アニメーションクリップを見ながら調整する前提の初期値。startFrame/endFrameはanimatorFPS(Player.json参照)基準の暫定値で、実クリップの長さが分かり次第調整すること。",
+
+	"attacks": [
+		{
+			"id": "APose_Attack02_1",
+			"entryCommand": "Attack",
+			"comboLinks": [
+				{ "requiredCommand": "Attack", "priority": 0, "nextAttackId": "APose_Attack02_2" }
+			],
+			"attack": {
+				"damageData": {
+					"damage": 10.0,
+					"knockbackPower": 6.0,
+					"hitStunSeconds": 0.4,
+					"postureDamage": 15.0,
+					"chipDamageRatio": 0.1,
+					"parryPostureDamage": 30.0
+				},
+				"moveData": {
+					"stepDistance": 2.0,
+					"stepDuration": 0.4,
+					"engageDistance": 1.2,
+					"stepDirection": [ 0.0, 0.0, 0.0 ],
+					"blendDuration": 0.12,
+					"useRootMotion": false
+				},
+				"phaseData": {
+					"animationName": "APose_Attack02_1",
+					"windup":   { "startFrame": 0, "endFrame": 3,  "targetDuration": 0.18 },
+					"active":   { "startFrame": 3, "endFrame": 8,  "targetDuration": 0.35 },
+					"recovery": { "startFrame": 8, "endFrame": 24, "targetDuration": 1.05 }
+				},
+				"cancelData": {
+					"recoveryMoveCancelStart": 0.15,
+					"recoveryEvadeCancelStart": 0.10,
+					"recoveryAttackCancelStart": 0.12,
+					"comboWindowAfterRecovery": 0.2
+				},
+				"weaponSlots": [ "Main" ]
+			}
+		},
+		{
+			"id": "APose_Attack02_2",
+			"comboLinks": [
+				{ "requiredCommand": "Attack", "priority": 0, "nextAttackId": "APose_Attack02_3" }
+			],
+			"attack": {
+				"damageData": {
+					"damage": 10.0,
+					"knockbackPower": 6.0,
+					"hitStunSeconds": 0.4,
+					"postureDamage": 15.0,
+					"chipDamageRatio": 0.1,
+					"parryPostureDamage": 30.0
+				},
+				"moveData": {
+					"stepDistance": 1.6,
+					"stepDuration": 0.4,
+					"engageDistance": 1.2,
+					"stepDirection": [ 0.0, 0.0, 0.0 ],
+					"blendDuration": 0.08,
+					"useRootMotion": false
+				},
+				"phaseData": {
+					"animationName": "APose_Attack02_2",
+					"windup":   { "startFrame": 0, "endFrame": 3,  "targetDuration": 0.18 },
+					"active":   { "startFrame": 3, "endFrame": 8,  "targetDuration": 0.35 },
+					"recovery": { "startFrame": 8, "endFrame": 24, "targetDuration": 1.05 }
+				},
+				"cancelData": {
+					"recoveryMoveCancelStart": 0.15,
+					"recoveryEvadeCancelStart": 0.15,
+					"recoveryAttackCancelStart": 0.18,
+					"comboWindowAfterRecovery": 0.2
+				},
+				"weaponSlots": [ "Main" ]
+			}
+		},
+		{
+			"id": "APose_Attack02_3",
+			"comboLinks": [
+				{ "requiredCommand": "Attack", "priority": 0, "nextAttackId": "APose_Attack02_4" }
+			],
+			"attack": {
+				"damageData": {
+					"damage": 12.0,
+					"knockbackPower": 7.0,
+					"hitStunSeconds": 0.45,
+					"postureDamage": 18.0,
+					"chipDamageRatio": 0.1,
+					"parryPostureDamage": 35.0
+				},
+				"moveData": {
+					"stepDistance": 1.6,
+					"stepDuration": 0.4,
+					"engageDistance": 1.3,
+					"stepDirection": [ 0.0, 0.0, 0.0 ],
+					"blendDuration": 0.08,
+					"useRootMotion": false
+				},
+				"phaseData": {
+					"animationName": "APose_Attack02_3",
+					"windup":   { "startFrame": 0, "endFrame": 3,  "targetDuration": 0.2 },
+					"active":   { "startFrame": 3, "endFrame": 5,  "targetDuration": 0.15 },
+					"recovery": { "startFrame": 5, "endFrame": 10, "targetDuration": 0.3 }
+				},
+				"cancelData": {
+					"recoveryMoveCancelStart": 0.15,
+					"recoveryEvadeCancelStart": 0.16,
+					"recoveryAttackCancelStart": 0.10,
+					"comboWindowAfterRecovery": 0.2
+				},
+				"weaponSlots": [ "Main" ]
+			}
+		},
+		{
+			"id": "APose_Attack02_4",
+			"comboLinks": [
+				{ "requiredCommand": "Attack", "priority": 0, "nextAttackId": "APose_Attack02_5" }
+			],
+			"attack": {
+				"damageData": {
+					"damage": 12.0,
+					"knockbackPower": 7.0,
+					"hitStunSeconds": 0.45,
+					"postureDamage": 18.0,
+					"chipDamageRatio": 0.1,
+					"parryPostureDamage": 35.0
+				},
+				"moveData": {
+					"stepDistance": 1.7,
+					"stepDuration": 0.4,
+					"engageDistance": 1.3,
+					"stepDirection": [ 0.0, 0.0, 0.0 ],
+					"blendDuration": 0.08,
+					"useRootMotion": false
+				},
+				"phaseData": {
+					"animationName": "APose_Attack02_4",
+					"windup":   { "startFrame": 0, "endFrame": 4,  "targetDuration": 0.25 },
+					"active":   { "startFrame": 4, "endFrame": 6,  "targetDuration": 0.15 },
+					"recovery": { "startFrame": 6, "endFrame": 11, "targetDuration": 0.35 }
+				},
+				"cancelData": {
+					"recoveryMoveCancelStart": 0.15,
+					"recoveryEvadeCancelStart": 0.18,
+					"recoveryAttackCancelStart": 0.22,
+					"comboWindowAfterRecovery": 0.2
+				},
+				"weaponSlots": [ "Main" ]
+			}
+		},
+		{
+			"id": "APose_Attack02_5",
+			"comboLinks": [
+				{ "requiredCommand": "Attack", "priority": 0, "nextAttackId": "APose_Attack02_6" }
+			],
+			"attack": {
+				"damageData": {
+					"damage": 14.0,
+					"knockbackPower": 8.0,
+					"hitStunSeconds": 0.5,
+					"postureDamage": 20.0,
+					"chipDamageRatio": 0.1,
+					"parryPostureDamage": 40.0
+				},
+				"moveData": {
+					"stepDistance": 2.4,
+					"stepDuration": 0.6,
+					"engageDistance": 1.2,
+					"stepDirection": [ 0.0, 0.0, 0.0 ],
+					"blendDuration": 0.1,
+					"useRootMotion": false
+				},
+				"phaseData": {
+					"animationName": "APose_Attack02_5",
+					"windup":   { "startFrame": 0, "endFrame": 4,  "targetDuration": 0.25 },
+					"active":   { "startFrame": 4, "endFrame": 7,  "targetDuration": 0.2 },
+					"recovery": { "startFrame": 7, "endFrame": 12, "targetDuration": 0.35 }
+				},
+				"cancelData": {
+					"recoveryMoveCancelStart": 0.15,
+					"recoveryEvadeCancelStart": 0.30,
+					"recoveryAttackCancelStart": 0.01,
+					"comboWindowAfterRecovery": 0.2
+				},
+				"weaponSlots": [ "Main" ]
+			}
+		},
+		{
+			"id": "APose_Attack02_6",
+			"attack": {
+				"damageData": {
+					"damage": 20.0,
+					"knockbackPower": 10.0,
+					"hitStunSeconds": 0.6,
+					"postureDamage": 25.0,
+					"chipDamageRatio": 0.1,
+					"parryPostureDamage": 50.0
+				},
+				"moveData": {
+					"stepDistance": 1.4,
+					"stepDuration": 0.6,
+					"engageDistance": 1.2,
+					"stepDirection": [ 0.0, 0.0, 0.0 ],
+					"blendDuration": 0.1,
+					"useRootMotion": false
+				},
+				"phaseData": {
+					"animationName": "APose_Attack02_6",
+					"windup":   { "startFrame": 0, "endFrame": 5,  "targetDuration": 0.3 },
+					"active":   { "startFrame": 5, "endFrame": 8,  "targetDuration": 0.2 },
+					"recovery": { "startFrame": 8, "endFrame": 16, "targetDuration": 0.5 }
+				},
+				"cancelData": {
+					"recoveryMoveCancelStart": 0.15,
+					"recoveryEvadeCancelStart": 0.30,
+					"recoveryAttackCancelStart": 0.50,
+					"comboWindowAfterRecovery": 0.2
+				},
+				"weaponSlots": [ "Main" ]
+			}
+		}
+	]
+}

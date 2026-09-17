@@ -1,4 +1,4 @@
-﻿#include "Framework/KdFramework.h"
+#include "Framework/KdFramework.h"
 
 #include "KdSpriteShader.h"
 
@@ -77,6 +77,10 @@ void KdSpriteShader::Begin(bool linear, bool disableZBuffer)
 	// 既にBeginしている
 	if (m_isBegin)return;
 	m_isBegin = true;
+
+	// 前回セットされたFillRatioが残っていると、ゲージ以外の
+	// 通常描画まで切り抜かれてしまうため、Begin時に必ずリセットしておく
+	m_cb0.Work().FillRatio = 1.0f;
 
 	//---------------------------------------
 	// 2D用正射影行列作成

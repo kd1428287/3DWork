@@ -4,6 +4,7 @@
 //    ImGuizmo は本ファイルでのみ使うため明示的にインクルードします。
 #include "../ThirdParty/ImGuizmo.h"
 #include "Application/Definitions/Map/MapData.h"
+#include "../Common/KdPreviewPostProcess.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // マップに配置する1オブジェクト分の、Editor側の実体。
@@ -233,6 +234,11 @@ private:
 
 	PreviewViewport	m_previewViewport;
 	PreviewCamera	m_previewCamera;
+
+	// プレビュー画面用の軽量ポストプロセス(現状カラーグレードのみ)。
+	// RenderPreviewViewport()の最後でm_previewViewport.Colorに対して適用し、
+	// DrawPreviewWindow()側はこちらの結果テクスチャを表示する
+	KdPreviewPostProcess	m_previewPostProcess;
 
 	// プレビューカメラの注視点キャッシュ。ギズモ操作中(ImGuizmo::IsUsing()中)は
 	// 選択オブジェクトの座標そのものを注視点にせず、操作開始時点の値のまま固定する。

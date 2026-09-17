@@ -177,16 +177,16 @@ void KdAnimator::AdvanceTime(std::vector<KdModelWork::Node>& rNodes, float speed
 	m_time += speed;
 
 	// アニメーションデータの最後のフレームを超えたら
-	if (m_time >= m_spAnimation->m_maxLength)
+	if (m_time >= m_endTime)
 	{
 		if (m_isLoop)
 		{
 			// アニメーションの最初に戻る（ループさせる
-			m_time = 0.0f;
+			m_time = m_startTime;
 		}
 		else
 		{
-			m_time = m_spAnimation->m_maxLength;
+			m_time = m_endTime;
 		}
 	}
 }

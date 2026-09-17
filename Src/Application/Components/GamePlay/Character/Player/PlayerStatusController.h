@@ -9,7 +9,7 @@
 #include "PlayerState.h"
 #include "../Common/CharacterInputBufferComponent.h"
 
-#include "../Combat/WeaponSetComponent.h"
+#include "../Common/WeaponSetComponent.h"
 #include "../../../Graphics/Animation/ModelAnimatorComponent.h"
 
 // ------------------------------------------------------------
@@ -116,6 +116,16 @@ public:
 	// 登録処理はPlayerFactory等、Stateの外から呼ばれるため引き続き
 	// Controllerのファサードとして残す)。
 	void SetWeapon(Handle<WeaponComponent> weapon);
+
+	// PlayerFactory構築時に、PlayerDefinition::combatBehaviorのEvade/Guard
+	// データを注入するためのセッター(SetWeaponと同じ位置づけ。
+	// AddComponentの戻り値に対してその場で呼ぶ想定。Awake()はこの後の
+	// 遅延タイミングで呼ばれるため間に合う)。
+	void SetEvadeAndGuardData(const EvadeData& evade, const GuardData& guard)
+	{
+		baseEvadeData_ = evade;
+		baseGuardData_ = guard;
+	}
 
 	// --- アニメーション再生(ModelAnimatorComponentへの薄い委譲) ---
 	void PlayAnimation(const std::string& name, bool loop = false, float targetDurationSeconds = -1.0f,

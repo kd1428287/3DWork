@@ -1,6 +1,7 @@
 ﻿#pragma once
-#include "../../Render/GaugeBarRenderer.h"
-#include "../../../GamePlay/Character/Combat/HealthComponent.h" // DiedEventの型を使うため
+#include "../GamePlay/GaugeBarRenderer.h"
+#include "../../../GamePlay/Character/Common/HealthComponent.h" 
+#include "Application/Core/EventBus/Events/HealthEvents.h"
 
 class TransformComponent;
 class PostureComponent;
@@ -42,7 +43,7 @@ public:
 	void SetPostureStyle(const GaugeBarStyle& style) { postureStyle_ = style; }
 
 private:
-	void OnDied(const HealthComponent::DiedEvent& e);
+	void OnDied(const HealthDiedEvent& e);
 
 	// HP/体幹共通の「ワールド座標→スクリーン座標変換→カメラ背後判定→
 	// 描画」の流れをまとめた内部ヘルパー。

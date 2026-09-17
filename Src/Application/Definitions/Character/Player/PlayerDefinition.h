@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "../Common/CharacterDefinitionCommon.h"
+#include "PlayerCombatBehaviorDefinition.h" // 戦闘の振る舞い(コンボ木/回避/ガード)・移動アニメーション定義
 // TODO 責務分離
 #include "Application/Components/Graphics/Animation/ModelAnimatorComponent.h" // RootMotionAxis
 
@@ -36,6 +37,15 @@ struct PlayerDefinition
 {
 	PlayerVisualDefinition visuals;
 	PlayerCombatStatsDefinition combatStats;
+
+	// 攻撃コンボ木・回避・ガードの中身(秒数・アニメーション名・
+	// キャンセル受付タイミング等)。PlayerCombatDataTable.h/.cppの
+	// CreateDebugXxx()系が担っていた「コード直書きデータ」の置き換え先。
+	PlayerCombatBehaviorDefinition combatBehavior;
+
+	// 歩行/走行/その場ターンのアニメーション定義。
+	PlayerMovementAnimationDefinition movementAnimations;
+
 	std::vector<CapsuleColliderDefinition> colliders;
 
 	float walkSpeed = 4.0f;

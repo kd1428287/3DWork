@@ -1,9 +1,11 @@
-﻿#include "PlayerDefinitionLoader.h"
+#include "PlayerDefinitionLoader.h"
 
 #include <unordered_map>
 #include <nlohmann/json.hpp>
 
 #include "JsonLoader.h"
+#include "Application/Definitions/Character/Player/PlayerCombatDataTable.h"
+#include "PlayerAttackTableLoader.h"
 
 namespace
 {
@@ -57,6 +59,115 @@ namespace
 			out.push_back(def);
 		}
 	}
+
+	// ------------------------------------------------------------
+	// 戦闘の振る舞い(コンボ木/回避/ガード)。PlayerCombatBehaviorDefinition
+	// (PlayerCombatBehaviorDefinition.h)を組み立てる。
+	//
+	// 【attackTableについて】
+	// 攻撃1技あたりのデータ量・技数が今後増えていく前提のため、
+	// PlayerAttackTable本体の読み込みはPlayerAttackTableLoaderへ分離した
+	// (PlayerAttackTableLoader.h参照)。ここではcombatBehavior.
+	// attackTablePathに書かれたパスをそちらへ委譲するだけにする。
+	// ------------------------------------------------------------
+
+	void ReadEvadeData(const json& j, EvadeData& out)
+	{
+		out.activeDuration = j.value("activeDuration", out.activeDuration);
+		out.recoveryDuration = j.value("recoveryDuration", out.recoveryDuration);
+		out.justWindowStart = j.value("justWindowStart", out.justWindowStart);
+		out.justWindowEnd = j.value("justWindowEnd", out.justWindowEnd);
+		out.evadeDistance = j.value("evadeDistance", out.evadeDistance);
+		out.useRootMotion = j.value("useRootMotion", out.useRootMotion);
+
+		out.animationNameForward = j.value("animationNameForward", out.animationNameForward);
+		out.animationNameBackward = j.value("animationNameBackward", out.animationNameBackward);
+		out.animationNameLeft = j.value("animationNameLeft", out.animationNameLeft);
+		out.animationNameRight = j.value("animationNameRight", out.animationNameRight);
+		// evadeDirectionは入力方向から毎回計算し直される値(PlayerStatusController::
+		// TryStartEvade参照)であり、データとして持たせる意味が無いため読まない。
+	}
+
+	void ReadGuardData(const json& j, GuardData& out)
+	{
+		out.justWindowDuration = j.value("justWindowDuration", out.justWindowDuration);
+		out.animationName = j.value("animationName", out.animationName);
+		out.startDuration = j.value("startDuration", out.startDuration);
+		out.loopAnimationName = j.value("loopAnimationName", out.loopAnimationName);
+		out.parrySuccessAnimationName = j.value("parrySuccessAnimationName", out.parrySuccessAnimationName);
+		out.parrySuccessDuration = j.value("parrySuccessDuration", out.parrySuccessDuration);
+		out.guardHitAnimationName = j.value("guardHitAnimationName", out.guardHitAnimationName);
+		out.guardHitDuration = j.value("guardHitDuration", out.guardHitDuration);
+	}
+
+	void ReadCombatBehavior(const json& j, PlayerCombatBehaviorDefinition& out)
+	{
+		// attackTablePathが指定されていれば専用ファイルから読む。読み込みに
+		// 失敗した場合(パス間違い・ファイル不備)は、outに既に入っている値
+		// (呼び出し元がCreateDebugPlayerCombatBehavior()で埋めておいたもの)
+		// をそのまま残す(コライダー等と違い、コンボ木が空になって
+		// 攻撃不能になるより、デバッグ値で動く方が実害が少ないため)。
+		if (j.contains("attackTablePath")) {
+			PlayerAttackTableLoader::LoadFromFile(j["attackTablePath"].get<std::string>(), out.attackTable);
+		}
+		if (j.contains("evade")) ReadEvadeData(j["evade"], out.evade);
+		if (j.contains("guard")) ReadGuardData(j["guard"], out.guard);
+	}
+
+	// ------------------------------------------------------------
+	// 移動(Walk/Run/ターン)のアニメーション定義。PlayerMovementAnimationDefinition
+	// (PlayerCombatBehaviorDefinition.h)を組み立てる。
+	// ------------------------------------------------------------
+
+	void ReadMotionClipData(const json& j, MotionClipData& out)
+	{
+		out.duration = j.value("duration", out.duration);
+		out.animationName = j.value("animationName", out.animationName);
+		out.useRootMotion = j.value("useRootMotion", out.useRootMotion);
+		out.blendDuration = j.value("blendDuration", out.blendDuration);
+	}
+
+	void ReadMovementPhaseClips(const json& j, MovementPhaseClips& out)
+	{
+		out.startAnimationName = j.value("startAnimationName", out.startAnimationName);
+		out.startDuration = j.value("startDuration", out.startDuration);
+		out.loopAnimationName = j.value("loopAnimationName", out.loopAnimationName);
+		out.endAnimationName = j.value("endAnimationName", out.endAnimationName);
+		out.endDuration = j.value("endDuration", out.endDuration);
+	}
+
+	void ReadWalkLockedAnimationSet(const json& j, WalkLockedAnimationSet& out)
+	{
+		out.forward = j.value("forward", out.forward);
+		out.forwardRight = j.value("forwardRight", out.forwardRight);
+		out.right = j.value("right", out.right);
+		out.backwardRight = j.value("backwardRight", out.backwardRight);
+		out.backward = j.value("backward", out.backward);
+		out.backwardLeft = j.value("backwardLeft", out.backwardLeft);
+		out.left = j.value("left", out.left);
+		out.forwardLeft = j.value("forwardLeft", out.forwardLeft);
+	}
+
+	void ReadWalkAnimationSet(const json& j, WalkAnimationSet& out)
+	{
+		if (j.contains("forward")) ReadMovementPhaseClips(j["forward"], out.forward);
+		if (j.contains("locked")) ReadWalkLockedAnimationSet(j["locked"], out.locked);
+	}
+
+	void ReadTurnAnimationSet(const json& j, TurnAnimationSet& out)
+	{
+		if (j.contains("left90")) ReadMotionClipData(j["left90"], out.left90);
+		if (j.contains("right90")) ReadMotionClipData(j["right90"], out.right90);
+		if (j.contains("left180")) ReadMotionClipData(j["left180"], out.left180);
+		if (j.contains("right180")) ReadMotionClipData(j["right180"], out.right180);
+	}
+
+	void ReadMovementAnimations(const json& j, PlayerMovementAnimationDefinition& out)
+	{
+		if (j.contains("walk")) ReadWalkAnimationSet(j["walk"], out.walk);
+		if (j.contains("run")) ReadMovementPhaseClips(j["run"], out.run);
+		if (j.contains("turn")) ReadTurnAnimationSet(j["turn"], out.turn);
+	}
 }
 
 bool PlayerDefinitionLoader::LoadFromFile(const std::string& path, PlayerDefinition& outDefinition)
@@ -78,11 +189,31 @@ bool PlayerDefinitionLoader::LoadFromFile(const std::string& path, PlayerDefinit
 	// --- 戦闘数値 ---
 	def.combatStats.maxHealth = root["combatStats"].value("maxHealth", 100.0f);
 
+	// --- 戦闘の振る舞い(コンボ木/回避/ガード) ---
+	// まずPlayerCombatDataTable::CreateDebugPlayerCombatBehavior()の
+	// デバッグ値で埋めておき、ファイル側にcombatBehaviorセクションが
+	// あればその内容で上書きする。ファイルが一部のキー(例:guardだけ)
+	// しか指定していなくても、残りはデバッグ値のまま動く
+	// (ReadCombatBehavior/ReadEvadeData/ReadGuardData等は「out(既定値)を
+	// 上書きする」方式で統一しているため)。
+	def.combatBehavior = CreateDebugPlayerCombatBehavior();
+	if (root.contains("combatBehavior")) {
+		ReadCombatBehavior(root["combatBehavior"], def.combatBehavior);
+	}
+
+	// --- 移動アニメーション ---
+	// 上と同じ方針で、デバッグ値をベースにファイル側の指定で上書きする。
+	def.movementAnimations = CreateDebugPlayerMovementAnimations();
+	if (root.contains("movementAnimations")) {
+		ReadMovementAnimations(root["movementAnimations"], def.movementAnimations);
+	}
+
 	// --- コライダー ---
 	if (root.contains("colliders")) ReadColliders(root["colliders"], def.colliders);
 
 	// --- 移動 ---
 	def.walkSpeed = root.value("walkSpeed", 2.0f);
+	def.runSpeed = root.value("runSpeed", def.runSpeed);
 
 	// --- ソケット ---
 	if (root.contains("auxiliarySocketBones")) {

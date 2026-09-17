@@ -56,14 +56,14 @@ void EditorViewport::Resize(int w, int h)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 3D描画の描画先をオフスクリーンに切り替える
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void EditorViewport::BeginSceneDraw()
+void EditorViewport::BeginSceneDraw(bool editorEnabled)
 {
 	ID3D11DeviceContext* context = KdDirect3D::Instance().WorkDevContext();
 
 	//-------------------------------------------------------
 	// エディタ無効時：オフスクリーンを経由せず、バックバッファへ直接フルスクリーン描画する
 	//-------------------------------------------------------
-	if (!m_enabled)
+	if (!editorEnabled)
 	{
 		KdDirect3D::Instance().ClearBackBuffer();
 
@@ -114,9 +114,9 @@ void EditorViewport::BeginSceneDraw()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // Sceneウィンドウの描画：中にオフスクリーンの絵をImGui::Imageで表示する
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void EditorViewport::DrawSceneWindow()
+void EditorViewport::DrawSceneWindow(bool editorEnabled)
 {
-	if (!m_enabled) return;
+	if (!editorEnabled) return;
 
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 	ImGui::Begin("Scene");

@@ -1,4 +1,4 @@
-﻿#include "Framework/KdFramework.h"
+#include "Framework/KdFramework.h"
 
 #include "GaugeBarRenderer.h"
 

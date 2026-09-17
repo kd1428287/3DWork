@@ -1,6 +1,6 @@
 ﻿#include "PlayerStatusController.h"
 #include "PlayerAttackSelector.h"
-#include "../Combat/WeaponSetComponent.h"
+#include "../Common/WeaponSetComponent.h"
 #include "../../../Physics/Movement/TweenMoveComponent.h"
 
 // =================================================================

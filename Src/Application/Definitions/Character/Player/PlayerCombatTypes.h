@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "../Combat/CombatData.h"
+#include "../Common/CombatData.h"
 #include "Application/Components/GamePlay/Character/Common/CharacterInputBufferComponent.h"
 
 // ============================================================

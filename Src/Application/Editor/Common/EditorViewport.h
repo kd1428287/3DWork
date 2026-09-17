@@ -4,26 +4,25 @@
 // ゲーム画面(3D描画結果)をオフスクリーンのテクスチャに描画し、
 // ImGuiの「Scene」ウィンドウの中に埋め込んで表示するためのクラス
 //
+// ※エディタ表示の有効/無効は自分では持たない。EditorHostが一元管理する状態を
+//   BeginSceneDraw()/DrawSceneWindow()の引数として毎回受け取る(状態の二重管理を避けるため)。
+//
 // 使い方：
-//	・3D描画の直前(Application::KdBeginDrawの先頭)で BeginSceneDraw() を呼ぶ
-//	・ImGui描画パスの中(KdDebugGUI::GuiProcess()内)で DrawSceneWindow() を呼ぶ
+//	・3D描画の直前(EditorHost::BeginSceneDraw()経由)で BeginSceneDraw(editorEnabled) を呼ぶ
+//	・ImGui描画パスの中(EditorHost::Draw()内)で DrawSceneWindow(editorEnabled) を呼ぶ
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 class EditorViewport
 {
 public:
 
 	// 3D描画パスの直前に呼ぶ：レンダーターゲットをオフスクリーンに切り替えてクリアする
-	// (無効時はバックバッファへ直接フルスクリーン描画する)
-	void BeginSceneDraw();
+	// editorEnabled … エディタ表示が有効かどうか(EditorHostが一元管理する状態をそのまま渡す)
+	//	falseの場合はオフスクリーンを経由せず、バックバッファへ直接フルスクリーン描画する
+	void BeginSceneDraw(bool editorEnabled);
 
 	// ImGui描画パスの中で呼ぶ：「Scene」ウィンドウを描画し、中にオフスクリーンの絵を表示する
-	// (無効時は何もしない)
-	void DrawSceneWindow();
-
-	// エディタ表示のON/OFF
-	void SetEnabled(bool enabled) { m_enabled = enabled; }
-	void ToggleEnabled() { m_enabled = !m_enabled; }
-	bool IsEnabled() const { return m_enabled; }
+	// editorEnabled … falseの場合は何もしない
+	void DrawSceneWindow(bool editorEnabled);
 
 	// 現在のオフスクリーンバッファのサイズ
 	int GetWidth()  const { return m_width; }
@@ -37,8 +36,6 @@ private:
 
 	// オフスクリーンバッファをサイズ変更(必要な時だけ作り直す)
 	void Resize(int w, int h);
-
-	bool	m_enabled = false;	// trueならエディタ(ドッキングUI + Sceneウィンドウ)を表示
 
 	std::shared_ptr<KdTexture>	m_sceneColor = nullptr;	// オフスクリーンのカラーバッファ
 	std::shared_ptr<KdTexture>	m_sceneDepth = nullptr;	// オフスクリーンのZバッファ

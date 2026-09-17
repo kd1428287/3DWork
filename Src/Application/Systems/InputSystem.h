@@ -13,10 +13,8 @@ public:
 	{
 		if (KdInputManager::Instance().IsPress("Editor")) 
 		{
-			// エディタ描画のON/OFFを切り替え
-			EditorViewport::Instance().ToggleEnabled();
-			
-			bool flg = EditorHost::Instance().IsViewportEnabled();
+			flg = !flg;
+
 			KdInputManager::Instance().SetAxisConfineToWindowCenter("Look", !flg);
 			
 			// エディタOFF中(プレイ中)はカーソルを隠し、ON中(編集中)は表示する
@@ -37,4 +35,6 @@ public:
 private:
 	EventBus& eventBus_;
 	uint64_t pauseID_ = 0;
+
+	bool flg = false;
 };

@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Application/Definitions/Character/Combat/CombatData.h"
+#include "Application/Definitions/Character/Common/CombatData.h"
 
 // ============================================================
 // AttackSourceComponent

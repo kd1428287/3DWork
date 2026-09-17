@@ -6,12 +6,12 @@
 #include "Application/Components/Core/AttachToSocketComponent.h"
 #include "Application/Components/Core/BoneSocketComponent.h"
 
-#include "Application/Components/GamePlay/Character/Combat/WeaponSetComponent.h"
-#include "Application/Components/GamePlay/Character/Combat/WeaponComponent.h"
-#include "Application/Components/GamePlay/Character/Combat/AttackSourceComponent.h"
-#include "Application/Components/GamePlay/Character/Combat/HitReactionComponent.h"
-#include "Application/Components/GamePlay/Character/Combat/PostureComponent.h"
-#include "Application/Components/GamePlay/Character/Combat/HealthComponent.h"
+#include "Application/Components/GamePlay/Character/Common/WeaponSetComponent.h"
+#include "Application/Components/GamePlay/Character/Common/WeaponComponent.h"
+#include "Application/Components/GamePlay/Character/Common/AttackSourceComponent.h"
+#include "Application/Components/GamePlay/Character/Common/HitReactionComponent.h"
+#include "Application/Components/GamePlay/Character/Common/PostureComponent.h"
+#include "Application/Components/GamePlay/Character/Common/HealthComponent.h"
 #include "Application/Components/GamePlay/Character/Player/PlayerInputComponent.h"
 #include "Application/Components/GamePlay/Character/Player/PlayerStatusController.h"
 #include "Application/Components/GamePlay/Character/Player/PlayerLockOnComponent.h"
@@ -68,13 +68,14 @@ namespace
 	// 過去にあった+Vector3(0,1,0)のオフセットやHurtBox側だけstartを無視する分岐は
 	// モデル原点をモデル中心と誤認していたデバッグ用の暫定対応だったため撤去済み)。
 	ColliderComponent* AttachPhysics(GameObject* player, const PlayerCombatStatsDefinition& combatStats,
-		const std::vector<CapsuleColliderDefinition>& colliderDefs, const IKChainDefinition& rightArmIK)
+		const std::vector<CapsuleColliderDefinition>& colliderDefs, const IKChainDefinition& rightArmIK,
+		const PlayerMovementAnimationDefinition& movementAnimations)
 	{
 		player->AddComponent<GravityComponent>();
 		player->AddComponent<VelocityComponent>(0.01f);
 		auto* collider = player->AddComponent<ColliderComponent>();
 		player->AddComponent<GroundSensorComponent>();
-		player->AddComponent<PlayerMovementAnimationComponent>();
+		player->AddComponent<PlayerMovementAnimationComponent>()->SetMovementAnimations(movementAnimations);
 		player->AddComponent<FacingDirectionComponent>();
 
 		// 体幹管理用
@@ -130,14 +131,16 @@ GameObject* PlayerFactory::CreatePlayer(ObjectManager& objectManager, const Play
 	if (!player) return nullptr;
 
 	SkeletonComponent* skeleton = AttachVisuals(player, definition.visuals);
-	AttachPhysics(player, definition.combatStats, definition.colliders, definition.rightArmIK);
+	AttachPhysics(player, definition.combatStats, definition.colliders, definition.rightArmIK,
+		definition.movementAnimations);
 	AttachMovement(player, definition.walkSpeed);
 
-	player->AddComponent<PlayerStatusController>();
-	player->AddComponent<CameraTargetComponent>()->SetOffset({ 0.f,1.5f,0.f });
+	player->AddComponent<PlayerStatusController>()->SetEvadeAndGuardData(
+		definition.combatBehavior.evade, definition.combatBehavior.guard);
+	player->AddComponent<CameraTargetComponent>()->SetOffset({ 0.f, CharacterCollisionDefaults::kEyeHeight, 0.f });
 	player->AddComponent<WireFrameComponent>();
-	player->AddComponent<PlayerCombatMovementComponent>()->SetMovementSpeeds(2.0f, 6.0f);
-	player->AddComponent<PlayerAttackSelector>();
+	player->AddComponent<PlayerCombatMovementComponent>()->SetMovementSpeeds(definition.walkSpeed, definition.runSpeed);
+	player->AddComponent<PlayerAttackSelector>()->SetAttackTable(definition.combatBehavior.attackTable);
 	player->AddComponent<PlayerFacingComponent>();
 
 	// --- 腕・武器のソケット生成 -----------------------------------------

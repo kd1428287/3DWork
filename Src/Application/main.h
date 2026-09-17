@@ -65,6 +65,9 @@ private:
 	// アプリケーション解放
 	void Release();
 
+	// エディタ表示ON/OFF(F1キー)のエッジ検出用。押した瞬間だけトグルするための前フレーム値
+	bool m_prevEditorToggleKeyDown = false;
+
 	// ゲームウィンドウクラス
 	KdWindow		m_window;
 

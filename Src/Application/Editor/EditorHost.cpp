@@ -9,7 +9,6 @@
 #include "Tools/EffectEditor.h"
 #include "Tools/ShaderTuningEditor.h"
 #include "Tools/BTEditor.h"
-#include "Application/KdDebugGUI.h"
 
 // DockBuilder系APIを使うために必要(公式にも初期配置構築の定番として使われる内部ヘッダ)
 // ※旧KdDebugGUI.cppから移設。ドッキングレイアウトはエディタ固有の関心事のためこちらに置く
@@ -53,18 +52,18 @@ void EditorHost::Init(int w, int h)
 	KdDebugGUI::Instance().GuiInit(w, h);
 }
 
-bool EditorHost::IsViewportEnabled() const
-{
-	return EditorViewport::Instance().IsEnabled();
-}
-
 void EditorHost::BeginSceneDraw()
 {
-	EditorViewport::Instance().BeginSceneDraw();
+	// EditorViewportは自分では有効/無効を持たない。EditorHostが一元管理するm_enabledを
+	// そのまま渡すことで、「今エディタ表示中かどうか」の情報源を一箇所に集約している
+	EditorViewport::Instance().BeginSceneDraw(m_enabled);
 }
 
 void EditorHost::RenderPreviewViewports()
 {
+	// 無効な間は、プレビュー描画のコストも払わない
+	if (!m_enabled) { return; }
+
 	// エフェクトプレビュー専用ビューポートへの描画
 	EffectEditor::Instance().RenderPreviewViewport();
 	// マッププレビュー
@@ -77,8 +76,8 @@ void EditorHost::Draw()
 	KdDebugGUI::Instance().BeginFrame();
 
 	// エディタ表示中のみ、ドッキングUI一式(Hierarchy/Inspector/Assets/Scene/Log)を描画する
-	// "Pause"入力でON/OFF切替(main.cpp の Execute() 内を参照)
-	if (IsViewportEnabled())
+	// (F1キーでのトグル。main.cpp Execute()内を参照)
+	if (m_enabled)
 	{
 		// 画面全体を覆うドックスペースの土台
 		ImGuiID dockspaceId = ImGui::GetID("MainDockSpace");
@@ -93,7 +92,7 @@ void EditorHost::Draw()
 		ImGui::DockSpaceOverViewport(dockspaceId, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
 		// ゲーム画面を表示するSceneウィンドウ(中身はオフスクリーンに描画されたゲーム画面)
-		EditorViewport::Instance().DrawSceneWindow();
+		EditorViewport::Instance().DrawSceneWindow(m_enabled);
 
 		// マップエディタ
 		MapEditor::Instance().Update();
@@ -114,7 +113,11 @@ void EditorHost::Draw()
 
 void EditorHost::Release()
 {
+	// BTEditor::Shutdown()は「ImGui本体が破棄される前に明示的に呼ぶこと」という制約があるため
+	// (BTEditor.h参照)、ImGuiコンテキストを破棄するKdDebugGUI::GuiRelease()より必ず先に呼ぶ
+	BTEditor::Instance().Shutdown();
+
 	KdDebugGUI::Instance().GuiRelease();
 }
 
-#endif // EDITOR_ENABLED
+#endif // KD_EDITOR_ENABLED

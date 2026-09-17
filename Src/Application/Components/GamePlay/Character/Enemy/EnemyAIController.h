@@ -9,9 +9,9 @@
 #include "Application/Definitions/Character/Common/BehaviorTree/BTComposite.h"
 #include "Application/Definitions/Character/Common/BehaviorTree/BTCondition.h"
 #include "Application/Definitions/Character/Common/BehaviorTree/BTOneShotAnimationAction.h"
-#include "../Combat/AttackSourceComponent.h"
-#include "../Combat/PostureComponent.h"
-#include "../Combat/HealthComponent.h"
+#include "../Common/AttackSourceComponent.h"
+#include "../Common/PostureComponent.h"
+#include "../Common/HealthComponent.h"
 
 #include "../../../Physics/Movement/MovementComponent.h"
 #include "../../../Physics/Collision/ColliderComponent.h"
@@ -21,6 +21,7 @@
 #include "Application/Systems/Collision/CollisionSystem.h"
 
 #include "../Player/PlayerStatusController.h"
+#include "Application/Core/EventBus/Events/HealthEvents.h"
 
 
 class EnemyAIController : public ComponentBase, public IMovementSource
@@ -51,8 +52,8 @@ public:
 		collisionSubscriber_ = ScopedSubscriber(&localBus, collisionId);
 
 		if (healthComponent_ != nullptr) {
-			const SubscriptionId diedId = localBus.Subscribe<HealthComponent::DiedEvent>(
-				[this](const HealthComponent::DiedEvent&) { OnDied(); });
+			const SubscriptionId diedId = localBus.Subscribe<HealthDiedEvent>(
+				[this](const HealthDiedEvent&) { OnDied(); });
 			diedSubscriber_ = ScopedSubscriber(&localBus, diedId);
 		}
 

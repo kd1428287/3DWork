@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Handle.h"
 
 class EventBus;
@@ -42,6 +42,12 @@ struct SceneContext {
 	// いう型を一切知らずに、ここを読むだけでロック対象を参照できる。
 	//Handle<LockOnTargetComponent> lockedTarget;
 	Handle<GameObject> lockedTarget;
+
+	// シーンに1つだけの「Player」への弱参照。lockedTargetと同じ考え方
+	// (このファイル冒頭のコメント参照)。書き込むのはPlayerFactory::
+	// CreatePlayer()が生成完了時に1回だけ行う。UI側(PlayerHudGauge
+	// Component等)がPlayerの具体クラスを知らずに参照するために使う。
+	Handle<GameObject> player;
 
 	// スケールされていない、フレームの生の経過時間。
 	// 個々のGameObjectのtimeScale_の影響を受けないため、

@@ -339,6 +339,42 @@ void KdPostProcessShader::ColorGradeProcess()
 	shaderMgr.UndoSamplerState();
 }
 
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// エディタプレビュー等、本編以外の任意サイズテクスチャに対してカラーグレードのみを適用する
+//	・本編のColorGradeProcess()と処理内容は同一だが、対象テクスチャを引数化したもの
+//	・m_depthOfFieldRTPack/m_colorGradeMaskRTPack/m_colorGradeRTPack(本編専用・固定サイズ)には
+//	  一切触れないため、本編のポストプロセスパイプラインへの影響は無い
+//	・DrawTexture()内部で自前のKdRenderTargetChangerを使って呼び出し前後のRT/ビューポートを
+//	  自動的に退避・復元するため、呼び出し側で特別な後始末は不要
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void KdPostProcessShader::ApplyColorGradeOnly(std::shared_ptr<KdTexture> srcColor, std::shared_ptr<KdTexture> srcMask,
+	std::shared_ptr<KdTexture> dstColor, D3D11_VIEWPORT* pVP)
+{
+	if (!srcColor || !srcMask || !dstColor) { return; }
+
+	ID3D11DeviceContext* DevCon = KdDirect3D::Instance().WorkDevContext();
+	if (!DevCon) { return; }
+
+	// 定数バッファ書き込み(本編と共通のカラーグレードパラメータをそのまま使う)
+	m_cb0_ColorGradeInfo.Write();
+	DevCon->PSSetConstantBuffers(0, 1, m_cb0_ColorGradeInfo.GetAddress());
+
+	KdShaderManager& shaderMgr = KdShaderManager::Instance();
+	if (shaderMgr.SetVertexShader(m_VS))
+	{
+		DevCon->IASetInputLayout(m_inputLayout);
+	}
+	shaderMgr.SetPixelShader(m_PS_ColorGrade);
+
+	shaderMgr.ChangeSamplerState(KdSamplerState::Linear_Clamp);
+
+	std::shared_ptr<KdTexture> srcTexList[2] = { srcColor, srcMask };
+
+	DrawTexture(srcTexList, 2, dstColor, pVP);
+
+	shaderMgr.UndoSamplerState();
+}
+
 void KdPostProcessShader::CreateBlurOffsetList(std::vector<Math::Vector3>& dstInfo, const std::shared_ptr<KdTexture>& spSrcTex, int samplingRadius, const Math::Vector2& dir)
 {
 	Math::Vector2 blurDir = dir;

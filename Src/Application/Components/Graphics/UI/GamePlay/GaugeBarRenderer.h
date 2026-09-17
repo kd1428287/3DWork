@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 // ゲージの見た目設定(背景/フィルのテクスチャ名)
 struct GaugeBarStyle

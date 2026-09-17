@@ -4,8 +4,7 @@
 #include "PlayerFacingComponent.h"
 #include "PlayerCombatMovementComponent.h"
 
-#include "Application/Definitions/Character/Player/PlayerCombatDataTable.h"
-#include "../Combat/HitReactionComponent.h"
+#include "../Common/HitReactionComponent.h"
 #include "../../../Physics/Collision/ColliderComponent.h"
 
 void PlayerStatusController::Awake()
@@ -23,10 +22,12 @@ void PlayerStatusController::Awake()
 	combatMovement_ = GetOwner()->GetComponent<PlayerCombatMovementComponent>();
 
 	// Evade/Guardは分岐を持たない単純な1件データのため、Attackのように
-	// 専用コンポーネントへ切り出さず、引き続きここでデバッグ用テーブルから
-	// 読み込む。
-	baseEvadeData_ = CreateDebugEvadeData();
-	baseGuardData_ = CreateDebugGuardData();
+	// 専用コンポーネントへ切り出さず、引き続きここでbaseEvadeData_/
+	// baseGuardData_として保持する。値自体はPlayerFactory構築時に
+	// SetEvadeAndGuardData()経由で既に注入済みである想定(SetWeaponと
+	// 同じ構図。旧CreateDebugEvadeData()/CreateDebugGuardData()の
+	// 直接呼び出しは撤去し、PlayerCombatDataTable::
+	// CreateDebugPlayerCombatBehavior()側へ移設した)。
 
 	// 被弾時のパリィ/ガード/通常被弾の分岐と、それに伴うダメージ/
 	// ノックバック/エフェクト処理はHitReactionComponentへ切り出し済み

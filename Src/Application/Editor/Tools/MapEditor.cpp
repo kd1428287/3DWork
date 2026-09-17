@@ -835,7 +835,14 @@ void MapEditor::RenderPreviewViewport()
 
 	KdShaderManager::Instance().WriteCBCamera(view.Invert(), proj);
 
-	KdShaderManager::Instance().WorkAmbientController().Draw();
+	// ※WorkAmbientController().Draw()はここでは呼ばない。
+	//   環境光・平行光のパラメータ自体は、このフレームの冒頭(Application::KdBeginDraw())で
+	//   既にcb9へ書き込み済みなのでここで送り直す必要は無い。
+	//   それどころか、Draw()内のWriteCBShadowArea()は無条件に呼ばれ、平行光の影生成エリアの
+	//   中心位置を「その時点のカメラ位置(cb7のCamPos)」から計算するため、直前で書き換えた
+	//   プレビュー用カメラの位置を基準に本編用のDirLight_mVPを上書きしてしまっていた
+	//   (cbCamera自体は関数末尾で退避・復元しているが、このDirLight_mVPは対象外だった)。
+	//   環境光・平行光の色などは既存の値をそのまま使えばよいため、このDraw()呼び出しごと削除する。
 
 	KdShaderManager::Instance().m_StandardShader.BeginGenerateDepthMapFromLight();
 	DrawObjects();
@@ -843,7 +850,7 @@ void MapEditor::RenderPreviewViewport()
 	KdShaderManager::Instance().m_StandardShader.BeginLit();
 	DrawObjects();
 	KdShaderManager::Instance().m_StandardShader.EndLit();
-	
+
 
 	KdShaderManager::Instance().WriteCBCamera(savedCamera.mView.Invert(), savedCamera.mProj);
 
@@ -852,6 +859,10 @@ void MapEditor::RenderPreviewViewport()
 	if (savedDSV) { savedDSV->Release(); }
 
 	context->RSSetViewports(savedVPNum, &savedVP);
+
+	// 通常描画パイプライン(このプレビュー分の描画)が完全に終わった後、カラーグレードを適用する。
+	// ※Apply()内部は自前のRT/ビューポート退避・復元を行うため、ここでの追加の後始末は不要
+	m_previewPostProcess.Apply(m_previewViewport.Color);
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -874,7 +885,12 @@ void MapEditor::DrawPreviewWindow()
 		m_previewViewport.ScreenPos = ImGui::GetCursorScreenPos();
 		m_previewViewport.ScreenSize = regionSize;
 
-		ImGui::Image((ImTextureID)m_previewViewport.Color->WorkSRView(), regionSize);
+		// カラーグレード適用後の結果を表示する。リサイズ直後で結果がまだ無い場合のみ、
+		// 生のプレビュー画像にフォールバックする(次フレームには結果が揃う)
+		const std::shared_ptr<KdTexture>& displayTex =
+			m_previewPostProcess.GetResultTexture() ? m_previewPostProcess.GetResultTexture() : m_previewViewport.Color;
+
+		ImGui::Image((ImTextureID)displayTex->WorkSRView(), regionSize);
 
 		if (ImGui::IsItemHovered())
 		{

@@ -265,6 +265,9 @@
     <Filter Include="Src\Application\Definitions\Character\Common\StateMachine">
       <UniqueIdentifier>{e6c53a1c-4883-49d0-a541-3a875c2e5054}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\Components\Graphics\UI\GamePlay">
+      <UniqueIdentifier>{e2a632af-c05a-4898-8128-4e51243db10f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -501,24 +504,6 @@
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\CharacterEvents.h">
       <Filter>Src\Application\Components\GamePlay\Character\Common</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\GamePlay\Character\Combat\AttackSourceComponent.h">
-      <Filter>Src\Application\Components\GamePlay\Character\Combat</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\GamePlay\Character\Combat\HealthComponent.h">
-      <Filter>Src\Application\Components\GamePlay\Character\Combat</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\GamePlay\Character\Combat\HitReactionComponent.h">
-      <Filter>Src\Application\Components\GamePlay\Character\Combat</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\GamePlay\Character\Combat\PostureComponent.h">
-      <Filter>Src\Application\Components\GamePlay\Character\Combat</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\GamePlay\Character\Combat\WeaponComponent.h">
-      <Filter>Src\Application\Components\GamePlay\Character\Combat</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\GamePlay\Character\Combat\WeaponSetComponent.h">
-      <Filter>Src\Application\Components\GamePlay\Character\Combat</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Enemy\Warrock\WarrockActions.h">
       <Filter>Src\Application\Components\GamePlay\Character\Enemy\Warrock</Filter>
     </ClInclude>
@@ -596,9 +581,6 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Graphics\Effect\SlowEffectComponent.h">
       <Filter>Src\Application\Components\Graphics\Effect</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\Graphics\Render\GaugeBarRenderer.h">
-      <Filter>Src\Application\Components\Graphics\Render</Filter>
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Graphics\Render\ModelRenderComponent.h">
       <Filter>Src\Application\Components\Graphics\Render</Filter>
@@ -843,9 +825,6 @@
     <ClInclude Include="Src\Application\Systems\GamePlay\GameInputSystem.h">
       <Filter>Src\Application\Systems\GamePlay</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Definitions\Character\Combat\CombatData.h">
-      <Filter>Src\Application\Definitions\Character\Combat</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Editor\ThirdParty\imgui-node-editor\crude_json.h">
       <Filter>Src\Application\Editor\ThirdParty\imgui-node-editor</Filter>
     </ClInclude>
@@ -917,6 +896,51 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Enemy\EnemyActions.h">
       <Filter>Src\Application\Components\GamePlay\Character\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Editor\Common\KdPreviewPostProcess.h">
+      <Filter>Src\Application\Editor\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Character\Player\PlayerCombatBehaviorDefinition.h">
+      <Filter>Src\Application\Definitions\Character\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Character\Common\CombatData.h">
+      <Filter>Src\Application\Definitions\Character\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\WeaponSetComponent.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\HealthComponent.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\PostureComponent.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\AttackSourceComponent.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\HitReactionComponent.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\WeaponComponent.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Graphics\UI\GamePlay\EnemyWorldGaugeComponent.h">
+      <Filter>Src\Application\Components\Graphics\UI\GamePlay</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Graphics\UI\GamePlay\GaugeBarRenderer.h">
+      <Filter>Src\Application\Components\Graphics\UI\GamePlay</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Graphics\UI\GamePlay\GaugeWatcher.h">
+      <Filter>Src\Application\Components\Graphics\UI\GamePlay</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Graphics\UI\GamePlay\PlayerHudGaugeComponent.h">
+      <Filter>Src\Application\Components\Graphics\UI\GamePlay</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Loaders\AttackDataLoader.h">
+      <Filter>Src\Application\Definitions\Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Loaders\PlayerAttackTableLoader.h">
+      <Filter>Src\Application\Definitions\Loaders</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1076,9 +1100,6 @@
     <ClCompile Include="Src\Framework\Shader\SlashTrailShader\SlashTrailShader.cpp">
       <Filter>Src\Framework\Shader\SlashTrailShader</Filter>
     </ClCompile>
-    <ClCompile Include="Src\Application\Components\GamePlay\Character\Combat\HitReactionComponent.cpp">
-      <Filter>Src\Application\Components\GamePlay\Character\Combat</Filter>
-    </ClCompile>
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Enemy\Warrock\WarrockActions.cpp">
       <Filter>Src\Application\Components\GamePlay\Character\Enemy\Warrock</Filter>
     </ClCompile>
@@ -1217,8 +1238,20 @@
     <ClCompile Include="Src\Application\Components\Graphics\Render\WireFrameComponent.cpp">
       <Filter>Src\Application\Components\Graphics\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Src\Application\Components\Graphics\Render\GaugeBarRenderer.cpp">
-      <Filter>Src\Application\Components\Graphics\Render</Filter>
+    <ClCompile Include="Src\Application\Editor\Common\KdPreviewPostProcess.cpp">
+      <Filter>Src\Application\Editor\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\GamePlay\Character\Common\HitReactionComponent.cpp">
+      <Filter>Src\Application\Components\GamePlay\Character\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\Graphics\UI\GamePlay\GaugeBarRenderer.cpp">
+      <Filter>Src\Application\Components\Graphics\UI\GamePlay</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Definitions\Loaders\PlayerAttackTableLoader.cpp">
+      <Filter>Src\Application\Definitions\Loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Definitions\Loaders\AttackDataLoader.cpp">
+      <Filter>Src\Application\Definitions\Loaders</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

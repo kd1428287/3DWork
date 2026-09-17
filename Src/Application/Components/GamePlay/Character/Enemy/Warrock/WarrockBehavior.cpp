@@ -5,7 +5,7 @@
 #include "Application/Definitions/Character/Common/BehaviorTree/BTCondition.h"
 #include "Application/Definitions/Character/Common/BehaviorTree/BTOneShotAnimationAction.h"
 #include "Application/Definitions/Character/Common/BehaviorTree/BTWeightedAttackAction.h"
-#include "../../Combat/AttackSourceComponent.h"
+#include "../../Common/AttackSourceComponent.h"
 
 namespace
 {

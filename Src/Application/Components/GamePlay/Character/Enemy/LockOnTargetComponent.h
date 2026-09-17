@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "../../../Core/BoneSocketComponent.h"
-#include "../Combat/HealthComponent.h"
+#include "Application/Core/EventBus/Events/HealthEvents.h"
+#include "../Common/HealthComponent.h"
 
 // ============================================================
 // 「ロックオン可能な対象である」ことを示すマーカー兼データコンポーネント。
@@ -15,30 +16,21 @@ public:
 	explicit LockOnTargetComponent(GameObject* owner) : ComponentBase(owner) {}
 
 	void Awake() override {
-		// ロック照準を合わせたい高さがあるならBoneSocketComponentを
-		// 併用する想定(無ければ足元のTransform原点にフォールバック)。
+		// ロック照準を合わせたい高さがあるならBoneSocketComponentを併用する
 		reticleSocket_ = GetOwner()->GetComponent<BoneSocketComponent>();
 
-		// HealthComponentのDiedEvent購読で死亡時に自動解除する。
-		// EnemyStatusController側に「死んだらロック解除して」という
-		// 依頼コードを書かせずに済む(HealthComponentはPlayer/Enemy共有のため
-		// この購読だけで両対応できる)。
-		if (HealthComponent* health = GetOwner()->GetComponent<HealthComponent>()) {
+		// HealthComponentのDiedEvent購読で死亡時に自動解除する
+		if (GetOwner()->HasComponent<HealthComponent>()) {
 			EventBus& localBus = GetOwner()->GetLocalEventBus();
-			const SubscriptionId id = localBus.Subscribe<HealthComponent::DiedEvent>(
-				[this](const HealthComponent::DiedEvent&) { isLockable_ = false; });
+			const SubscriptionId id = localBus.Subscribe<HealthDiedEvent>(
+				[this](const HealthDiedEvent&) { isLockable_ = false; });
 			subscriber_ = ScopedSubscriber(&localBus, id);
 		}
-
-		// ※ 自己登録用のレジストリは持たない。ObjectManager::FindComponents<T>()
-		// が呼ばれるたびに現存するものだけを拾ってくれるため不要
-		// (PlayerLockOnComponent::FindNearestToScreenCenter()参照)。
 	}
 
 	bool IsLockable() const { return isLockable_; }
 
-	// ロック時にカメラ/UIが狙う実座標。ソケットがあればそちらを優先し、
-	// 無ければTransform原点(足元)にフォールバックする。
+	// ロック時にカメラ/UIが狙う実座標
 	Math::Vector3 GetReticlePosition() const {
 		if (reticleSocket_ != nullptr) return reticleSocket_->GetPosition();
 		TransformComponent* transform = GetOwner()->GetComponent<TransformComponent>();

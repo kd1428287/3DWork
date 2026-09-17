@@ -41,6 +41,15 @@ public:
 
 	void PostEffectProcess();
 
+	// エディタプレビュー等、本編以外の任意サイズテクスチャに対してカラーグレードのみを適用する。
+	// 本編のColorGradeProcess()と同じVS/PS/定数バッファ(パラメータも共通)をそのまま使い回す。
+	//	・srcColor … グレーディング元のカラー(プレビュー用オフスクリーン等)
+	//	・srcMask  … カラーグレード除外マスク入力(t1)。本編と違いこの用途向けの専用マスクを
+	//	  持たない場合は、呼び出し側で1x1の黒ダミーテクスチャを用意して渡すこと(黒=グレーディング適用)
+	//	・dstColor … 結果の書き込み先。srcColorとは別のテクスチャであること(同一不可)
+	void ApplyColorGradeOnly(std::shared_ptr<KdTexture> srcColor, std::shared_ptr<KdTexture> srcMask,
+		std::shared_ptr<KdTexture> dstColor, D3D11_VIEWPORT* pVP);
+
 	void GenerateBlurTexture(std::shared_ptr<KdTexture>& spSrcTex, std::shared_ptr<KdTexture>& spDstTex, D3D11_VIEWPORT& VP, int blurRadius);
 
 private:

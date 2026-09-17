@@ -48,19 +48,22 @@ class KdAnimator
 {
 public:
 
-	inline void SetAnimation(const std::shared_ptr<KdAnimationData>& rData, bool isLoop = true)
+	inline void SetAnimation(const std::shared_ptr<KdAnimationData>& rData, bool isLoop = true, float start = 0.0f, float end = 0.0f)
 	{
 		m_spAnimation = rData;
 		m_isLoop = isLoop;
 
-		m_time = 0.0f;
+		m_startTime = start;
+		m_time = m_startTime;
+
+		m_endTime = end <= 0.0f ? m_spAnimation->m_maxLength : std::min(end, m_spAnimation->m_maxLength);
 	}
 
 	// アニメーションが終了してる？
 	bool IsAnimationEnd() const
 	{
 		if (m_spAnimation == nullptr) { return true; }
-		if (m_time >= m_spAnimation->m_maxLength) { return true; }
+		if (m_time >= m_endTime) { return true; }
 
 		return false;
 	}
@@ -78,6 +81,10 @@ private:
 	std::shared_ptr<KdAnimationData>	m_spAnimation = nullptr;	// 再生するアニメーションデータ
 
 	float m_time = 0.0f;
+
+	// 9/17 追加
+	float m_startTime = 0.0f;
+	float m_endTime = 0.0f;
 
 	bool m_isLoop = false;
 };

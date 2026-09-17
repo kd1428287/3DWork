@@ -1,5 +1,5 @@
 ﻿#include "EnemyHPBarComponent.h"
-#include "../../../GamePlay/Character/Combat/PostureComponent.h" // パスはプロジェクトに合わせて調整
+#include "../../../GamePlay/Character/Common/PostureComponent.h" // パスはプロジェクトに合わせて調整
 #include "../../../GamePlay/Camera/CameraComponent.h"
 
 void EnemyHPBarComponent::Awake()
@@ -13,13 +13,13 @@ void EnemyHPBarComponent::Awake()
 		// Subscribe()が返すSubscriptionIdとバスへのポインタをScopedSubscriberに
 		// まとめて渡すことで、このコンポーネントの破棄時に自動でUnsubscribeされる。
 		EventBus& bus = GetOwner()->GetLocalEventBus();
-		SubscriptionId id = bus.Subscribe<HealthComponent::DiedEvent>(
-			[this](const HealthComponent::DiedEvent& e) { OnDied(e); });
+		SubscriptionId id = bus.Subscribe<HealthDiedEvent>(
+			[this](const HealthDiedEvent& e) { OnDied(e); });
 		diedSubscriber_ = ScopedSubscriber(&bus, id);
 	}
 }
 
-void EnemyHPBarComponent::OnDied(const HealthComponent::DiedEvent& e)
+void EnemyHPBarComponent::OnDied(const HealthDiedEvent& e)
 {
 	(void)e;
 	isDead_ = true;

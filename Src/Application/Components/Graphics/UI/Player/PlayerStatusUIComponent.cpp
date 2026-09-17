@@ -1,6 +1,6 @@
 ﻿#include "PlayerStatusUIComponent.h"
-#include "../../../GamePlay/Character/Combat/HealthComponent.h"
-#include "../../../GamePlay/Character/Combat/PostureComponent.h"
+#include "../../../GamePlay/Character/Common/HealthComponent.h"
+#include "../../../GamePlay/Character/Common/PostureComponent.h"
 
 void PlayerStatusUIComponent::Awake()
 {

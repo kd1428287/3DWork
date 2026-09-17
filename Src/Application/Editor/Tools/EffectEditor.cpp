@@ -178,6 +178,10 @@ void EffectEditor::RenderPreviewViewport()
 	if (savedDSV) { savedDSV->Release(); }
 
 	context->RSSetViewports(savedVPNum, &savedVP);
+
+	// 通常描画パイプライン(このプレビュー分の描画)が完全に終わった後、カラーグレードを適用する。
+	// ※Apply()内部は自前のRT/ビューポート退避・復元を行うため、ここでの追加の後始末は不要
+	m_previewPostProcess.Apply(m_previewViewport.Color);
 }
 
 void EffectEditor::DrawMainMenu()
@@ -555,7 +559,12 @@ void EffectEditor::DrawPreviewWindow()
 		m_previewViewport.ScreenPos = ImGui::GetCursorScreenPos();
 		m_previewViewport.ScreenSize = regionSize;
 
-		ImGui::Image((ImTextureID)m_previewViewport.Color->WorkSRView(), regionSize);
+		// カラーグレード適用後の結果を表示する。リサイズ直後で結果がまだ無い場合のみ、
+		// 生のプレビュー画像にフォールバックする(次フレームには結果が揃う)
+		const std::shared_ptr<KdTexture>& displayTex =
+			m_previewPostProcess.GetResultTexture() ? m_previewPostProcess.GetResultTexture() : m_previewViewport.Color;
+
+		ImGui::Image((ImTextureID)displayTex->WorkSRView(), regionSize);
 
 		// 右ドラッグ：オービット回転、ホイール：ズーム
 		if (ImGui::IsItemHovered())

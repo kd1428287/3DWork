@@ -18,7 +18,7 @@ public:
 	// ・loop					… ループ再生するか
 	// ・targetDurationSeconds	… 指定した場合、クリップの実際の長さ(m_maxLength)に
 	//   関わらず、ちょうどこの秒数で再生し終わるよう再生速度を自動スケーリングする
-	void Play(std::string_view animName, bool loop = true, float targetDurationSeconds = -1.0f)
+	void Play(std::string_view animName, bool loop = true, float targetDurationSeconds = -1.0f, float startTime = 0.0f, float endTime = 0.0f)
 	{
 		if (!skeleton_) { return; }
 
@@ -45,7 +45,7 @@ public:
 		}
 
 		spNowPlaying_ = animData;
-		animator_.SetAnimation(animData, loop);
+		animator_.SetAnimation(animData, loop, startTime, endTime);
 
 		// ルートモーション抽出中に別アニメーションへ切り替わった場合、
 		// 旧アニメーションの最終位置と新アニメーションの先頭位置の差分を
@@ -70,7 +70,7 @@ public:
 		rootMotion_.PrepareFrame(skeleton_->WorkModel());
 
 		// targetSpeedOverride_が設定されていれば優先して速度を決める。
-		const float speed = (targetSpeedOverride_ > 0.0f) ? targetSpeedOverride_ : m_fps;
+		const float speed = (targetSpeedOverride_ > 0.0f) ? targetSpeedOverride_ : fps_;
 		const float timeBeforeAdvance = animator_.GetTime();
 		animator_.AdvanceTime(skeleton_->WorkModel().WorkNodes(), deltaTime * speed);
 		rootMotion_.FinalizeFrame(timeBeforeAdvance, animator_.GetTime());
@@ -90,7 +90,7 @@ public:
 	}
 
 	// 再生速度の基準fpsを設定(デフォルト60fps)
-	void SetFPS(float fps) { m_fps = fps; }
+	void SetFPS(float fps) { fps_ = fps; }
 
 	// クロスフェードの時間(秒)を設定する。技の種類によって
 	// 「素早く切り替えたい/じっくり繋ぎたい」が変わる場合はここを調整する。
@@ -151,7 +151,7 @@ private:
 	// 現在再生中のアニメーションデータ
 	std::shared_ptr<KdAnimationData>	spNowPlaying_ = nullptr;
 
-	float								m_fps = 60.0f;
+	float								fps_ = 60.0f;
 
 	// Play()にtargetDurationSecondsが渡された場合、m_fpsの代わりに使う
 	float								targetSpeedOverride_ = -1.0f;

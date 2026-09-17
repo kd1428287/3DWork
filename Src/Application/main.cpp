@@ -85,7 +85,7 @@ void Application::KdBeginDraw(bool usePostProcess)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void Application::KdPostDraw()
 {
-	if (EditorHost::Instance().IsViewportEnabled())
+	if (EditorHost::Instance().IsEnabled())
 	{
 		// バックバッファをクリアし、ImGui(ドッキングUI)用のレンダーターゲットに戻す
 		KdDirect3D::Instance().ClearBackBuffer();
@@ -192,7 +192,7 @@ bool Application::Init(int w, int h)
 	}
 
 	//===================================================================
-	// エディタ初期化(imgui含む。EDITOR_ENABLED未定義ビルドでは何もしない)
+	// エディタ初期化(imgui含む。KD_EDITOR_ENABLED未定義ビルドでは何もしない)
 	//===================================================================
 	EditorHost::Instance().Init(w, h);
 

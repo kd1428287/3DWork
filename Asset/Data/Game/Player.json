@@ -2,7 +2,7 @@
 	"visuals": {
 		"modelPath": "Asset/Models/Character/Kachujin2/kachujin.gltf",
 		"animatorFPS": 15,
-		"rootMotionBoneName": "root",
+		"rootMotionBoneName": "mixamorig_Hips",
 		"rootMotionAxis": "Y",
 		"rootMotionAxisSign": -1.0,
 		"rootMotionScale": 0.01
@@ -10,6 +10,71 @@
 
 	"combatStats": {
 		"maxHealth": 100.0
+	},
+
+	"combatBehavior": {
+		"attackTablePath": "Asset/Data/Player/PlayerAttackTable.json",
+
+		"evade": {
+			"activeDuration": 0.25,
+			"recoveryDuration": 0.15,
+			"justWindowStart": 0.05,
+			"justWindowEnd": 0.15,
+			"evadeDistance": 3.0,
+			"useRootMotion": true,
+			"animationNameForward": "APose_Slide_F",
+			"animationNameBackward": "APose_Slide_B",
+			"animationNameLeft": "APose_Slide_L",
+			"animationNameRight": "APose_Slide_R"
+		},
+
+		"guard": {
+			"justWindowDuration": 0.15,
+			"animationName": "APose2DefenseL",
+			"startDuration": 0.1,
+			"loopAnimationName": "DefenseL_Loop",
+			"parrySuccessAnimationName": "DefenseL_Parry01",
+			"parrySuccessDuration": 0.8,
+			"guardHitAnimationName": "DefenseL_Hit01",
+			"guardHitDuration": 0.9
+		}
+	},
+
+	"movementAnimations": {
+		"walk": {
+			"forward": {
+				"startAnimationName": "APose_Strafe_Walk_F_Start",
+				"startDuration": 0.15,
+				"loopAnimationName": "APose_Strafe_Walk_F_Loop",
+				"endAnimationName": "APose_Strafe_Walk_F_End",
+				"endDuration": 0.15
+			},
+			"locked": {
+				"forward": "APose_Strafe_Walk_F_Loop",
+				"forwardRight": "APose_Strafe_Walk_FR",
+				"right": "APose_Strafe_Walk_R",
+				"backwardRight": "APose_Strafe_Walk_BR",
+				"backward": "APose_Strafe_Walk_B",
+				"backwardLeft": "APose_Strafe_Walk_BL",
+				"left": "APose_Strafe_Walk_L",
+				"forwardLeft": "APose_Strafe_Walk_FL"
+			}
+		},
+
+		"run": {
+			"startAnimationName": "APose_Strafe_Run_F_Start",
+			"startDuration": 0.15,
+			"loopAnimationName": "APose_Strafe_Run_F_Loop",
+			"endAnimationName": "APose_Strafe_Run_F_End",
+			"endDuration": 0.15
+		},
+
+		"turn": {
+			"left90":   { "duration": 0.25, "animationName": "APose_TurnL90",  "useRootMotion": true, "blendDuration": 0.1 },
+			"right90":  { "duration": 0.25, "animationName": "APose_TurnR90",  "useRootMotion": true, "blendDuration": 0.1 },
+			"left180":  { "duration": 0.35, "animationName": "APose_TurnL180", "useRootMotion": true, "blendDuration": 0.1 },
+			"right180": { "duration": 0.35, "animationName": "APose_TurnR180", "useRootMotion": true, "blendDuration": 0.1 }
+		}
 	},
 
 	"colliders": [
@@ -32,6 +97,7 @@
 	],
 
 	"walkSpeed": 2.0,
+	"runSpeed": 6.0,
 
 	"auxiliarySocketBones": [
 		"mixamorig:LeftHand",

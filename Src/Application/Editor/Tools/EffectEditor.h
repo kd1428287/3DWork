@@ -4,6 +4,7 @@
 #include "Application/Definitions/Effect/EffectParams.h"
 #include "../../Effect/Particle/EffectInstance.h"
 #include "../../Effect/Common/KdAssetsTextureProvider.h"
+#include "../Common/KdPreviewPostProcess.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // マップに配置する1エフェクト分のデータ
@@ -194,6 +195,11 @@ private:
 
 	PreviewViewport	m_previewViewport;
 	PreviewCamera	m_previewCamera;
+
+	// プレビュー画面用の軽量ポストプロセス(現状カラーグレードのみ)。
+	// RenderPreviewViewport()の最後でm_previewViewport.Colorに対して適用し、
+	// DrawPreviewWindow()側はこちらの結果テクスチャを表示する
+	KdPreviewPostProcess	m_previewPostProcess;
 
 	//=====================================================
 	// シングルトンパターン

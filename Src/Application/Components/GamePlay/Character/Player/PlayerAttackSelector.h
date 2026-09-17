@@ -27,6 +27,12 @@ public:
 	// falseを返す(呼び出し側は何もしない=攻撃を開始しない)。
 	bool TryResolveNext(ActionCommand command);
 
+	// PlayerFactory構築時に、PlayerDefinition::combatBehavior.attackTableを
+	// 注入するためのセッター(SetWeapon/SetMovementSpeedsと同じ位置づけ。
+	// AddComponentの戻り値に対してその場で呼ぶ想定。Awake()での整合性
+	// チェックより前に必ず呼ばれる)。
+	void SetAttackTable(PlayerAttackTable table) { attackTable_ = std::move(table); }
+
 	// 現在選択されている技のAttackData。StateAttackが毎フレーム参照する。
 	const AttackData& GetCurrentAttackData() const { return currentAttack_.attack; }
 
