@@ -128,6 +128,10 @@ public:
 	}
 
 	// --- アニメーション再生(ModelAnimatorComponentへの薄い委譲) ---
+	void PlayAnimation(const std::string& name, bool loop, float targetDurationSeconds,
+		float startTime, float endTime,
+		bool useRootMotion, float blendDurationSeconds);
+
 	void PlayAnimation(const std::string& name, bool loop = false, float targetDurationSeconds = -1.0f,
 		bool useRootMotion = false, float blendDurationSeconds = kDefaultAnimationBlendDuration);
 

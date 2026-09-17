@@ -329,6 +329,19 @@ void Application::Execute()
 			}
 		}
 
+		// エディタの表示更新ON/OFF(F1キー。押した瞬間のみトグルするためエッジ検出する)
+		// KD_EDITOR_ENABLED未定義ビルドではEditorHost::ToggleEnabled()は何もしない
+		{
+			bool editorToggleKeyDown = (GetAsyncKeyState(VK_F1) & 0x8000) != 0;
+
+			if (editorToggleKeyDown && !m_prevEditorToggleKeyDown)
+			{
+				EditorHost::Instance().ToggleEnabled();
+			}
+
+			m_prevEditorToggleKeyDown = editorToggleKeyDown;
+		}
+
 		//=========================================
 		//
 		// アプリケーション更新処理

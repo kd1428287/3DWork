@@ -54,6 +54,7 @@ namespace
 
 		auto* animator = player->AddComponent<ModelAnimatorComponent>();
 		animator->SetFPS(visuals.animatorFPS);
+		animator->SetSpeedScale(0.25f);
 		animator->SetRootMotionBoneName(visuals.rootMotionBoneName);
 		animator->SetRootMotionForwardAxis(visuals.rootMotionAxis, visuals.rootMotionAxisSign);
 		animator->SetRootMotionScale(visuals.rootMotionScale);
@@ -91,10 +92,10 @@ namespace
 
 		for (const auto& def : colliderDefs) {
 			if (def.interactsWith != ColliderCategory::None) {
-				//collider->AddCapsule(def.name, def.radius, def.start, def.end, def.category, def.interactsWith);
+				collider->AddCapsule(def.name, def.radius, def.start, def.end, def.category, def.interactsWith);
 			}
 			else {
-				//collider->AddCapsule(def.name, def.radius, def.start, def.end, def.category);
+				collider->AddCapsule(def.name, def.radius, def.start, def.end, def.category);
 			}
 
 			if (def.isTrigger) {

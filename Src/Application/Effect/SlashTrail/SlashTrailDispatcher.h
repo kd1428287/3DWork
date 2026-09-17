@@ -82,6 +82,7 @@ private:
 	// InstanceKey → アクティブなトレイル本体。
 	//	EndRecording後もIsFinished()になるまでここに残り続ける(Update()が刈り取るまで)
 	std::unordered_map<std::string, SlashTrailInstance> activeTrails_;
+	std::vector<SlashTrailInstance> fadingTrails_;
 
 	// 購読の自動解除用(Release時にまとめて解除される)
 	std::vector<ScopedSubscriber> subscriptions_;

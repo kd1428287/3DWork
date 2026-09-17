@@ -2,6 +2,8 @@
 
 void PlayerAttackSelector::Awake()
 {
+	assert(attackTable_.attacks.size() != 0 && "What");
+
 	assert(attackTable_.Validate() && "PlayerAttackTable: id重複、またはcomboLinksの参照先不在があります");
 }
 
@@ -72,6 +74,6 @@ void PlayerAttackSelector::NotifyRecoveryFinishedNaturally(float comboWindowAfte
 
 void PlayerAttackSelector::ResetCombo()
 {
-	currentAttack_ = PlayerAttackDefinition{};
+	currentAttack_ = PlayerAttackDefinition();
 	comboWindowRemaining_ = 0.0f;
 }

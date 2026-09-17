@@ -36,10 +36,9 @@ void StateAttack::Enter(PlayerStatusController* controller) {
 	
 	// 攻撃全体(Windup+Active+Recovery)の秒数を目標としてアニメーション
 	// 速度を自動スケーリングする
-	const float targetDuration = data.phaseData.windup.targetDuration
-		+ data.phaseData.active.targetDuration
-		+ data.phaseData.recovery.targetDuration;
-	controller->PlayAnimation(data.phaseData.animationName, false, targetDuration,
+	const AnimationSegment& windup = data.phaseData.windup;
+	controller->PlayAnimation(data.phaseData.animationName, false, windup.targetDuration,
+		windup.startFrame, windup.endFrame, 
 		data.moveData.useRootMotion, data.moveData.blendDuration); // コンボ段数に応じたアニメーション
 }
 
@@ -50,32 +49,28 @@ void StateAttack::Update(PlayerStatusController* controller, float deltaTime) {
 	if (phase_ == CombatState::AttackWindup && elapsed_ >= data.phaseData.windup.targetDuration) {
 		phase_ = CombatState::AttackActive;
 		elapsed_ = 0.0f;
-
-		// 踏み込み移動はここ(Windupが終わった瞬間)から開始する。
-		// 移動時間はwindupDurationではなく専用のstepDurationを使う
-		// (以前はEnter()側でwindupDuration分だけ振りかぶり中に動かして
-		//  いたが、攻撃が実際に届き始めるタイミングと踏み込みを
-		//  合わせたいという理由でここへ移した)。
-		// useRootMotionがtrueの技(Attack5等)は、この決め打ち移動の
-		// 代わりにアニメーションのルートモーションで動くため呼ばない
-		// (PlayerStatusController::ApplyRootMotion参照)。
-		//
-		// 対象へずっと前進し続けるのではなく、engageDistance(技ごとの間合い)
-		// までしか詰めないようにする。対象が見つからない場合は
-		// 従来通りstepDirection/stepDistanceの決め打ち移動にフォールバックする
-		// (PlayerCombatMovementComponent::RequestStepMoveTowardsTarget参照)。
 		if (!data.moveData.useRootMotion) {
 			controller->RequestStepMoveTowardsTarget(data.moveData.stepDirection, data.moveData.stepDistance,
 				data.moveData.engageDistance, data.moveData.stepDuration);
 		}
 		weaponSet_->SetHitBoxEnabled(data.weaponSlots, true); // 攻撃判定が実際に発生する一瞬だけ有効化
 		weaponSet_->SetTrailEmitting(data.weaponSlots, true); // 武器の軌跡エフェクトもHitBoxと同じ窓で記録開始
+
+		const AnimationSegment& active = data.phaseData.active;
+		controller->PlayAnimation(data.phaseData.animationName, false, active.targetDuration,
+			active.startFrame, active.endFrame,
+			data.moveData.useRootMotion, data.moveData.blendDuration); 
 	}
 	else if (phase_ == CombatState::AttackActive && elapsed_ >= data.phaseData.active.targetDuration) {
 		phase_ = CombatState::AttackRecovery;
 		elapsed_ = 0.0f;
 		weaponSet_->SetHitBoxEnabled(data.weaponSlots, false); // 判定の発生窓を閉じる
 		weaponSet_->SetTrailEmitting(data.weaponSlots, false); // 軌跡エフェクトの記録も停止(既に生成済みの頂点はStopEmit後も自然に流れて消える)
+
+		const AnimationSegment& recovery = data.phaseData.recovery;
+		controller->PlayAnimation(data.phaseData.animationName, false, recovery.targetDuration,
+			recovery.startFrame, recovery.endFrame,
+			data.moveData.useRootMotion, data.moveData.blendDuration); 
 	}
 	else if (phase_ == CombatState::AttackRecovery && elapsed_ >= data.phaseData.recovery.targetDuration) {
 		// 自律的に終了し、ControllerにNoneへの復帰を要請する

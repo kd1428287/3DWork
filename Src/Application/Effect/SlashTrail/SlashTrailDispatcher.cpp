@@ -68,6 +68,15 @@ void SlashTrailDispatcher::Update(float deltaTime)
 			++it;
 		}
 	}
+
+	for (auto& trail : fadingTrails_)
+	{
+		trail.Update(deltaTime);
+	}
+
+	std::erase_if(fadingTrails_, [](const auto& trail) {
+		return trail.IsFinished();
+		});
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -78,6 +87,11 @@ void SlashTrailDispatcher::Draw(ParticleDrawPass pass)
 	for (auto& pair : activeTrails_)
 	{
 		pair.second.Draw(pass);
+	}
+
+	for (auto& trails : fadingTrails_)
+	{
+		trails.Draw(pass);
 	}
 }
 
@@ -121,4 +135,6 @@ void SlashTrailDispatcher::OnSlashTrailEnd(const Events::SlashTrail::SlashTrailE
 	if (it == activeTrails_.end()) { return; }
 
 	it->second.EndRecording();
+	fadingTrails_.push_back(it->second);
+
 }

@@ -21,7 +21,7 @@ struct KdAnimationData
 {
 	// アニメーション名
 	std::string		m_name;
-	// アニメの長さ
+	// アニメの60FPS換算されたフレーム数
 	float			m_maxLength = 0;
 
 	// １ノードのアニメーションデータ
@@ -48,15 +48,19 @@ class KdAnimator
 {
 public:
 
-	inline void SetAnimation(const std::shared_ptr<KdAnimationData>& rData, bool isLoop = true, float start = 0.0f, float end = 0.0f)
+	// SetAnimation: フレーム番号で受け取り、内部で秒に変換
+	inline void SetAnimation(const std::shared_ptr<KdAnimationData>& rData,
+		bool isLoop = true, int startFrame = 0, int endFrame = 0)
 	{
 		m_spAnimation = rData;
 		m_isLoop = isLoop;
 
-		m_startTime = start;
+		m_startTime = std::min((float)startFrame / m_fps * m_sampleFPS, m_spAnimation->m_maxLength);
 		m_time = m_startTime;
 
-		m_endTime = end <= 0.0f ? m_spAnimation->m_maxLength : std::min(end, m_spAnimation->m_maxLength);
+		m_endTime = endFrame <= 0
+			? m_spAnimation->m_maxLength
+			: std::min((float)endFrame / m_fps * m_sampleFPS, m_spAnimation->m_maxLength);
 	}
 
 	// アニメーションが終了してる？
@@ -71,6 +75,12 @@ public:
 	// アニメーションの更新
 	void AdvanceTime(std::vector<KdModelWork::Node>& rNodes, float speed = 1.0f);
 
+	void SetFPS(int fps) { m_fps = fps; }
+	
+	const float& GetDuration() {
+		return (m_endTime - m_startTime) / m_sampleFPS;
+	}
+
 	// 現在の再生時間(秒、またはSetFPS()の単位に依存)を取得する。
 	// ModelAnimatorComponent側でルートモーション抽出時のループ検知
 	// (AdvanceTime()の前後でこの値を比較し、巻き戻ったかどうかを見る)に使う。
@@ -81,10 +91,11 @@ private:
 	std::shared_ptr<KdAnimationData>	m_spAnimation = nullptr;	// 再生するアニメーションデータ
 
 	float m_time = 0.0f;
-
-	// 9/17 追加
 	float m_startTime = 0.0f;
 	float m_endTime = 0.0f;
+	
+	const int m_sampleFPS = 60;
+	int m_fps = 60;
 
 	bool m_isLoop = false;
 };

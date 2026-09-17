@@ -1,7 +1,7 @@
 {
 	"visuals": {
 		"modelPath": "Asset/Models/Character/Kachujin2/kachujin.gltf",
-		"animatorFPS": 15,
+		"animatorFPS": 120,
 		"rootMotionBoneName": "mixamorig_Hips",
 		"rootMotionAxis": "Y",
 		"rootMotionAxisSign": -1.0,
@@ -13,7 +13,7 @@
 	},
 
 	"combatBehavior": {
-		"attackTablePath": "Asset/Data/Player/PlayerAttackTable.json",
+		"attackTablePath": "Asset/Data/Game/PlayerAttackTable.json",
 
 		"evade": {
 			"activeDuration": 0.25,

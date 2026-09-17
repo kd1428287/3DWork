@@ -27,9 +27,9 @@
 				},
 				"phaseData": {
 					"animationName": "APose_Attack02_1",
-					"windup":   { "startFrame": 0, "endFrame": 3,  "targetDuration": 0.18 },
-					"active":   { "startFrame": 3, "endFrame": 8,  "targetDuration": 0.35 },
-					"recovery": { "startFrame": 8, "endFrame": 24, "targetDuration": 1.05 }
+					"windup":   { "startFrame": 0, "endFrame": 20,  "targetDuration": 0.18 },
+					"active":   { "startFrame": 20, "endFrame": 60,  "targetDuration": 0.35 },
+					"recovery": { "startFrame": 60, "endFrame": 180, "targetDuration": 1.05 }	
 				},
 				"cancelData": {
 					"recoveryMoveCancelStart": 0.15,
@@ -64,9 +64,9 @@
 				},
 				"phaseData": {
 					"animationName": "APose_Attack02_2",
-					"windup":   { "startFrame": 0, "endFrame": 3,  "targetDuration": 0.18 },
-					"active":   { "startFrame": 3, "endFrame": 8,  "targetDuration": 0.35 },
-					"recovery": { "startFrame": 8, "endFrame": 24, "targetDuration": 1.05 }
+					"windup":   { "startFrame": 0, "endFrame": 20,  "targetDuration": 0.18 },
+					"active":   { "startFrame": 20, "endFrame": 60,  "targetDuration": 0.35 },
+					"recovery": { "startFrame": 60, "endFrame": 180, "targetDuration": 1.05 }
 				},
 				"cancelData": {
 					"recoveryMoveCancelStart": 0.15,
@@ -101,9 +101,9 @@
 				},
 				"phaseData": {
 					"animationName": "APose_Attack02_3",
-					"windup":   { "startFrame": 0, "endFrame": 3,  "targetDuration": 0.2 },
-					"active":   { "startFrame": 3, "endFrame": 5,  "targetDuration": 0.15 },
-					"recovery": { "startFrame": 5, "endFrame": 10, "targetDuration": 0.3 }
+					"windup":   { "startFrame": 0, "endFrame": 40,  "targetDuration": 0.24 },
+					"active":   { "startFrame": 40, "endFrame": 70,  "targetDuration": 0.18 },
+					"recovery": { "startFrame": 70, "endFrame": 250, "targetDuration": 1.08 }
 				},
 				"cancelData": {
 					"recoveryMoveCancelStart": 0.15,
@@ -138,9 +138,9 @@
 				},
 				"phaseData": {
 					"animationName": "APose_Attack02_4",
-					"windup":   { "startFrame": 0, "endFrame": 4,  "targetDuration": 0.25 },
-					"active":   { "startFrame": 4, "endFrame": 6,  "targetDuration": 0.15 },
-					"recovery": { "startFrame": 6, "endFrame": 11, "targetDuration": 0.35 }
+					"windup":   { "startFrame": 0, "endFrame": 40,  "targetDuration": 0.24 },
+					"active":   { "startFrame": 40, "endFrame": 70,  "targetDuration": 0.18 },
+					"recovery": { "startFrame": 70, "endFrame": 250, "targetDuration": 1.08 }
 				},
 				"cancelData": {
 					"recoveryMoveCancelStart": 0.15,
@@ -175,9 +175,9 @@
 				},
 				"phaseData": {
 					"animationName": "APose_Attack02_5",
-					"windup":   { "startFrame": 0, "endFrame": 4,  "targetDuration": 0.25 },
-					"active":   { "startFrame": 4, "endFrame": 7,  "targetDuration": 0.2 },
-					"recovery": { "startFrame": 7, "endFrame": 12, "targetDuration": 0.35 }
+					"windup":   { "startFrame": 0, "endFrame": 30,  "targetDuration": 0.20 },
+					"active":   { "startFrame": 30, "endFrame": 65,  "targetDuration": 0.24 },
+					"recovery": { "startFrame": 65, "endFrame": 220, "targetDuration": 1.06 }	
 				},
 				"cancelData": {
 					"recoveryMoveCancelStart": 0.15,
@@ -209,9 +209,9 @@
 				},
 				"phaseData": {
 					"animationName": "APose_Attack02_6",
-					"windup":   { "startFrame": 0, "endFrame": 5,  "targetDuration": 0.3 },
-					"active":   { "startFrame": 5, "endFrame": 8,  "targetDuration": 0.2 },
-					"recovery": { "startFrame": 8, "endFrame": 16, "targetDuration": 0.5 }
+					"windup":   { "startFrame": 0, "endFrame": 30,  "targetDuration": 0.22 },
+					"active":   { "startFrame": 30, "endFrame": 90,  "targetDuration": 0.44 },
+					"recovery": { "startFrame": 90, "endFrame": 270, "targetDuration": 1.33 }	
 				},
 				"cancelData": {
 					"recoveryMoveCancelStart": 0.15,

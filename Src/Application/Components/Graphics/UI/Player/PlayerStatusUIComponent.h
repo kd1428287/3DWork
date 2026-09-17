@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "../../Render/GaugeBarRenderer.h"
+#include "../GamePlay/GaugeBarRenderer.h"
 
 class HealthComponent;
 class PostureComponent;

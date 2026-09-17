@@ -214,13 +214,18 @@ void PlayerStatusController::SetWeapon(Handle<WeaponComponent> weapon)
 	}
 }
 
-void PlayerStatusController::PlayAnimation(const std::string& name, bool loop, float targetDurationSeconds,
+void PlayerStatusController::PlayAnimation(const std::string& name, bool loop, float targetDurationSeconds, float startTime, float endTime,
 	bool useRootMotion, float blendDurationSeconds)
 {
 	if (modelAnimatorComponent_ == nullptr) return;
 	modelAnimatorComponent_->SetRootMotionBoneName(useRootMotion ? kRootMotionBoneName : "");
 	modelAnimatorComponent_->SetBlendDuration(blendDurationSeconds);
-	modelAnimatorComponent_->Play(name, loop, targetDurationSeconds);
+	modelAnimatorComponent_->Play(name, loop, targetDurationSeconds, startTime, endTime, true);
+}
+
+void PlayerStatusController::PlayAnimation(const std::string& name, bool loop, float targetDurationSeconds, bool useRootMotion, float blendDurationSeconds)
+{
+	PlayAnimation(name, loop, targetDurationSeconds, 0.0f, 0.0f, useRootMotion, blendDurationSeconds);
 }
 
 void PlayerStatusController::RefreshMovementAnimation()
