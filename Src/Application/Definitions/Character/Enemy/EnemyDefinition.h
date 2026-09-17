@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "EnemyAIData.h"
+#include "../Common/CharacterCollisionDefaults.h"
 
 // ============================================================
 // 敵1種類分のパラメータ。CSV/JSON等の外部データから読み込んで
@@ -19,6 +20,20 @@
 // EnemyTypeを復活させた。以前との違いは、継承ベースの実行クラスを
 // 出し分けるためではなく、EnemyFactory::CreateAIController()が
 // AddComponentする「型」を選ぶためだけに使う点(EnemyFactory.cpp参照)。
+//
+// 【moveSpeedの削除について】
+// 以前はEnemyAIData::patrolSpeed/chaseSpeedとは別にmoveSpeedを
+// 独立して持っていたが、実行層(EnemyActions.cpp/WarrockActions.cpp)の
+// どこからも参照されておらず、初期動作確認時の名残と判断して削除した。
+//
+// 【bodyRadius/modelScale→characterScaleについて】
+// 以前は「Hurtbox半径(bodyRadius)」と「見た目スケール(modelScale)」を
+// 独立した値として持っていたため、敵ごとに手打ちすると「見た目は
+// 大きいのに当たり判定はデフォルトのまま」のようなズレが起きえた。
+// CharacterCollisionDefaults.h冒頭コメントで予告されていた「将来、
+// 体格の異なる敵種が増えたらEnemyDefinition側に身長・footOffset相当の
+// フィールドを持たせる」という拡張を、単一の倍率(characterScale)から
+// 両方を算出する形で実現した。
 // ============================================================
 
 // EnemyFactory::CreateAIController()がこれを見てAddComponentする型を
@@ -26,7 +41,7 @@
 // ここに値を足し、CreateAIController()のswitchにケースを足すこと。
 enum class EnemyType
 {
-	Brute,   
+	Brute,
 	Warrock,
 };
 
@@ -42,13 +57,31 @@ struct EnemyDefinition
 	// 参照)。デフォルトは既存の汎用EnemyAIController。
 	EnemyType type = EnemyType::Brute;
 
-	float moveSpeed = 1.5f;
-	float bodyRadius = 0.5f; // 被弾判定(Hurtbox)の球半径
-	Math::Vector3 modelScale = { 1.f,1.f,1.f };
+	// CharacterCollisionDefaults(標準体格)からの倍率。Hurtbox半径
+	// (GetHurtboxRadius())・見た目スケール(GetModelScale())・
+	// (将来的な)Bodyコライダー寸法は、すべてこの1つの値から算出する
+	// (クラス冒頭コメント参照)。個別に見た目だけ・当たり判定だけを
+	// 変えたいケースが実際に出てきたら、その時点でこの一元化を
+	// 崩すかどうかを再検討すること。
+	float characterScale = 1.0f;
 
 	// 意思決定・攻撃パターン等、AIController向けのチューニング値。
 	// EnemyAIData型自体はどの敵種でも共用する「データの器」であり、
 	// これを解釈するロジック(BT)側の共有は意味しない
 	// (WarrockAIData.h冒頭コメント参照)。
 	EnemyAIData aiData;
+
+	// --- 体格関連の算出値 ---------------------------------------------
+	// Hurtbox(被弾判定)の球半径。標準体格の横幅(kBodyWidth)の半分に
+	// characterScaleを掛けて求める。
+	float GetHurtboxRadius() const {
+		return CharacterCollisionDefaults::kBodyWidth * 0.5f * characterScale;
+	}
+
+	// 見た目のモデルスケール。現状は等方スケールのみ想定(縦横で比率を
+	// 変えたい敵種が実際に出てきたら、その時にVector3で個別に持つ形へ
+	// 拡張すること)。
+	Math::Vector3 GetModelScale() const {
+		return Math::Vector3(characterScale, characterScale, characterScale);
+	}
 };
