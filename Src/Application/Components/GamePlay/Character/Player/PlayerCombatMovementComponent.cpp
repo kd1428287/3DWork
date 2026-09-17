@@ -1,4 +1,4 @@
-#include "PlayerCombatMovementComponent.h"
+﻿#include "PlayerCombatMovementComponent.h"
 
 #include "../../../Physics/Movement/MovementComponent.h"
 #include "../../../Physics/Movement/TweenMoveComponent.h"
@@ -6,6 +6,16 @@
 void PlayerCombatMovementComponent::Start()
 {
 	movementComponent_ = GetOwner()->GetComponent<MovementComponent>();
+
+	// 以前はRequestStepMove()の都度RequestAddComponentしていたが、
+	// 生成時に一度だけアタッチし、以降はenabled_フラグで使い回す方式に変更。
+	// ※ AddComponent<T>()がこの環境の「即時追加」APIである前提で書いている。
+	//   環境側のAPI名がRequestAddComponent<T>()しか無い(Start()時点でも
+	//   即時追加ができない)場合は、そちらに置き換えてください。
+	tweenMoveComponent_ = GetOwner()->GetComponent<TweenMoveComponent>();
+	if (tweenMoveComponent_ == nullptr) {
+		tweenMoveComponent_ = GetOwner()->AddComponent<TweenMoveComponent>();
+	}
 }
 
 void PlayerCombatMovementComponent::ApplyMovementState(MovementState state)
@@ -36,7 +46,7 @@ void PlayerCombatMovementComponent::RequestStepMove(const Math::Vector3& directi
 {
 	GameObject* owner = GetOwner();
 	TransformComponent* transform = owner->GetComponent<TransformComponent>();
-	if (transform == nullptr) return;
+	if (transform == nullptr || tweenMoveComponent_ == nullptr) return;
 
 	Math::Vector3 dir = direction;
 	if (dir.LengthSquared() <= kDirectionEpsilon) {
@@ -45,7 +55,7 @@ void PlayerCombatMovementComponent::RequestStepMove(const Math::Vector3& directi
 
 	const Math::Vector3 from = transform->GetPosition();
 	const Math::Vector3 to = from + dir * distance;
-	owner->RequestAddComponent<TweenMoveComponent>(from, to, duration);
+	tweenMoveComponent_->Play(from, to, duration);
 }
 
 void PlayerCombatMovementComponent::RequestStepMoveTowardsTarget(GameObject* target,
@@ -58,7 +68,7 @@ void PlayerCombatMovementComponent::RequestStepMoveTowardsTarget(GameObject* tar
 
 	TransformComponent* targetTransform = target->GetComponent<TransformComponent>();
 	TransformComponent* transform = GetOwner()->GetComponent<TransformComponent>();
-	if (targetTransform == nullptr || transform == nullptr) {
+	if (targetTransform == nullptr || transform == nullptr || tweenMoveComponent_ == nullptr) {
 		RequestStepMove(fallbackDirection, stepDistance, duration);
 		return;
 	}
@@ -83,10 +93,12 @@ void PlayerCombatMovementComponent::RequestStepMoveTowardsTarget(GameObject* tar
 
 	const Math::Vector3 from = transform->GetPosition();
 	const Math::Vector3 to = from + dir * closingDistance;
-	GetOwner()->RequestAddComponent<TweenMoveComponent>(from, to, duration);
+	tweenMoveComponent_->Play(from, to, duration);
 }
 
 void PlayerCombatMovementComponent::CancelStepMove()
 {
-	GetOwner()->RequestRemoveComponent<TweenMoveComponent>();
+	if (tweenMoveComponent_ != nullptr) {
+		tweenMoveComponent_->SetEnabled(false);
+	}
 }

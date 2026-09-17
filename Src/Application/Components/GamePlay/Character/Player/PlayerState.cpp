@@ -32,7 +32,7 @@ void StateAttack::Enter(PlayerStatusController* controller) {
 	controller->SetMovementEnabled(false);
 
 	const AttackData& data = attackSelector_->GetCurrentAttackData();
-	weaponSet_->SetAttackDamegeData(data.weaponSlots, data.damageData);
+	weaponSet_->SetAttackDamageData(data.weaponSlots, data.damageData);
 	
 	// 攻撃全体(Windup+Active+Recovery)の秒数を目標としてアニメーション
 	// 速度を自動スケーリングする

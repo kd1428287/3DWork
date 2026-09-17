@@ -2,10 +2,11 @@
 	"visuals": {
 		"modelPath": "Asset/Models/Character/Kachujin2/kachujin.gltf",
 		"animatorFPS": 120,
+		"animatorScale": 0.25,
 		"rootMotionBoneName": "mixamorig_Hips",
 		"rootMotionAxis": "Y",
 		"rootMotionAxisSign": -1.0,
-		"rootMotionScale": 0.01
+		"rootMotionScale": 1.0
 	},
 
 	"combatStats": {
@@ -16,8 +17,8 @@
 		"attackTablePath": "Asset/Data/Game/PlayerAttackTable.json",
 
 		"evade": {
-			"activeDuration": 0.25,
-			"recoveryDuration": 0.15,
+			"activeDuration": 0.35,
+			"recoveryDuration": 0.25,
 			"justWindowStart": 0.05,
 			"justWindowEnd": 0.15,
 			"evadeDistance": 3.0,
@@ -82,14 +83,14 @@
 			"name": "Body",
 			"radius": 0.4,
 			"start": [ 0.0, 0.4, 0.0 ],
-			"end": [ 0.0, 0.0, 0.0 ],
+			"end": [ 0.0, 1.6, 0.0 ],
 			"category": "Bump"
 		},
 		{
 			"name": "HurtBox",
 			"radius": 0.3,
 			"start": [ 0.0, 0.3, 0.0 ],
-			"end": [ 0.0, 0.0, 0.0 ],
+			"end": [ 0.0, 1.7, 0.0 ],
 			"category": "HurtBox",
 			"interactsWith": "HitBox",
 			"isTrigger": true

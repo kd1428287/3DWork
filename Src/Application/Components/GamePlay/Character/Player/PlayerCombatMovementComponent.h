@@ -2,6 +2,7 @@
 #include "Application/Definitions/Character/Player/PlayerCombatTypes.h"
 
 class MovementComponent;
+class TweenMoveComponent;
 
 // ============================================================
 // PlayerCombatMovementComponent
@@ -61,6 +62,11 @@ public:
 
 private:
 	MovementComponent* movementComponent_ = nullptr;
+
+	// TweenMoveComponentはStart()で一度だけアタッチし、以降は
+	// enabled_フラグ(TweenMoveComponent::SetEnabled/Cancel)で
+	// 動作可否を切り替える(アタッチ/デタッチの繰り返しはしない)。
+	TweenMoveComponent* tweenMoveComponent_ = nullptr;
 
 	// SetMovementSpeeds()で注入されるまでは0のまま
 	// (=呼び忘れがあれば「動かない」という分かりやすい形で不具合に気付ける。

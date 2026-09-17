@@ -14,21 +14,41 @@
 // 現在位置を公開する。以前はUpdate()内で直接SetPosition()していたが、
 // それだとMotionComposerのPostUpdateに毎フレーム上書きされて
 // Tweenが無効化されてしまう。
+//
+// 【所有方式】以前はRequestAddComponent/RequestRemoveComponentで
+// 使う瞬間だけアタッチ/デタッチしていたが、Owner側の生成時に一度だけ
+// アタッチし、以降はenabled_フラグで動作可否を切り替える方式に変更。
+// GetComponent<TweenMoveComponent>()が常に非nullを返すようになるため、
+// 「今アクティブなTweenがあるか」の判定は必ずIsActive()で行うこと
+// (存在チェックでは代用できない)。
+// 新しいTweenを開始したい側はPlay()を呼ぶ(from/to/durationを積み直し、
+// enabled_をtrueにする)。中断したい側はCancel()/SetEnabled(false)を呼ぶ。
 // ============================================================
 class TweenMoveComponent : public ComponentBase {
 public:
-	TweenMoveComponent(GameObject* owner, Math::Vector3 from, Math::Vector3 to, float duration)
-		: ComponentBase(owner), from_(from), to_(to), duration_(duration) {
-		currentPosition_ = from_;
-	}
+	explicit TweenMoveComponent(GameObject* owner) : ComponentBase(owner) {}
 
 	void Awake() override {
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
+	}
+
+	// 新しいTweenを開始する。呼び出した瞬間にTransformをfromへスナップし、
+	// enabled_をtrueにする。onCompleteを積みたい場合はPlay()の後に
+	// SetOnComplete()を呼ぶこと(Play()側でonComplete_はクリアされる)。
+	void Play(const Math::Vector3& from, const Math::Vector3& to, float duration) {
+		from_ = from;
+		to_ = to;
+		duration_ = duration;
+		elapsed_ = 0.0f;
+		currentPosition_ = from_;
+		onComplete_ = nullptr;
+		enabled_ = true;
+
 		if (transform_) transform_->SetPosition(from_);
 	}
 
 	void Advance(float deltaTime) {
-		if (finished_) return;
+		if (!enabled_) return;
 
 		elapsed_ += deltaTime;
 		const float t = (duration_ > 0.0f) ? std::min(elapsed_ / duration_, 1.0f) : 1.0f;
@@ -37,8 +57,10 @@ public:
 		currentPosition_ = Math::Vector3::Lerp(from_, to_, eased);
 
 		if (t >= 1.0f) {
-			finished_ = true;
-			if (onComplete_) onComplete_();
+			enabled_ = false;
+			auto onComplete = std::move(onComplete_);
+			onComplete_ = nullptr;
+			if (onComplete) onComplete();
 		}
 	}
 
@@ -46,9 +68,15 @@ public:
 		onComplete_ = std::move(callback);
 	}
 
+	// 外部からの明示的な中断。onComplete_は呼ばれない
+	// (以前のRequestRemoveComponent<TweenMoveComponent>()相当)。
+	void Cancel() { enabled_ = false; }
+
+	void SetEnabled(bool enabled) { enabled_ = enabled; }
+
 	// 動作中(=内力・外力に優越して位置を決めてよい状態)かどうか。
-	bool IsActive() const { return !finished_; }
-	bool IsFinished() const { return finished_; }
+	// コンポーネントの存在自体は常にtrueなので、稼働判定は必ずこちらを使う。
+	bool IsActive() const { return enabled_; }
 
 	// Advance()で算出された、このフレームの絶対位置。
 	const Math::Vector3& GetCurrentPosition() const { return currentPosition_; }
@@ -56,11 +84,11 @@ public:
 private:
 	static float EaseOutCubic(float t) { return 1.0f - std::pow(1.0f - t, 3.0f); }
 
-	Math::Vector3 from_;
-	Math::Vector3 to_;
-	float duration_;
+	Math::Vector3 from_ = Math::Vector3::Zero;
+	Math::Vector3 to_ = Math::Vector3::Zero;
+	float duration_ = 0.0f;
 	float elapsed_ = 0.0f;
-	bool finished_ = false;
+	bool enabled_ = false;
 	Math::Vector3 currentPosition_ = Math::Vector3::Zero;
 	TransformComponent* transform_ = nullptr;
 	std::function<void()> onComplete_;

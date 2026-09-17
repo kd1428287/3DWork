@@ -46,7 +46,7 @@ void HitReactionComponent::OnCollisionEnter(const Events::Collision::CollisionEn
 	attack->alreadyHit.insert(GetOwner());
 
 	GameObject* attacker = attack->ownerCharacter.Resolve();
-	const AttackDamegeData& attackData = attack->GetAttackDamageData();
+	const AttackDamageData& attackData = attack->GetAttackDamageData();
 
 	if (query_->IsInParryWindow()) {
 		// パリィ成立: 攻撃側の体幹を削り、パリィされた通知を送る。

@@ -61,10 +61,10 @@ public:
 	// 例: if (alreadyHit.contains(e.otherObject)) return;
 	std::unordered_set<GameObject*> alreadyHit;
 
-	void SetAttackDamegeData(AttackDamegeData data) { damageData_ = data; }
-	const AttackDamegeData& GetAttackDamageData() { return damageData_; }
+	void SetAttackDamageData(AttackDamageData data) { damageData_ = data; }
+	const AttackDamageData& GetAttackDamageData() { return damageData_; }
 
 private:
-	AttackDamegeData damageData_;
+	AttackDamageData damageData_;
 
 };

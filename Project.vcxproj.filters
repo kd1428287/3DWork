@@ -253,9 +253,6 @@
     <Filter Include="Src\Application\Core\Math">
       <UniqueIdentifier>{3f9cad13-59e7-4acd-b405-4865693c76ee}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Src\Application\Definitions\Character\Combat">
-      <UniqueIdentifier>{661f3a81-5f03-48b4-8a5b-723c16175ba7}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Src\Application\Editor\ThirdParty\imgui-node-editor">
       <UniqueIdentifier>{7e0336a7-0ccf-42db-b1bc-8d44df56f951}</UniqueIdentifier>
     </Filter>

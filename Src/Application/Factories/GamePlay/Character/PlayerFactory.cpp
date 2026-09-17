@@ -54,7 +54,7 @@ namespace
 
 		auto* animator = player->AddComponent<ModelAnimatorComponent>();
 		animator->SetFPS(visuals.animatorFPS);
-		animator->SetSpeedScale(0.25f);
+		animator->SetSpeedScale(visuals.animatorScale);
 		animator->SetRootMotionBoneName(visuals.rootMotionBoneName);
 		animator->SetRootMotionForwardAxis(visuals.rootMotionAxis, visuals.rootMotionAxisSign);
 		animator->SetRootMotionScale(visuals.rootMotionScale);

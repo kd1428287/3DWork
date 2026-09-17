@@ -32,11 +32,11 @@ public:
 		}
 	}
 
-	void SetAttackDamegeData(const std::vector<std::string>& slots, AttackDamegeData info)
+	void SetAttackDamageData(const std::vector<std::string>& slots, AttackDamageData info)
 	{
 		for (const auto& slot : slots) {
 			if (WeaponComponent* weapon = Resolve(slot)) {
-				weapon->SetAttackDamegeData(info);
+				weapon->SetAttackDamageData(info);
 			}
 		}
 	}

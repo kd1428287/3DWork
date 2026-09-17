@@ -1,4 +1,4 @@
-#include "AttackDataLoader.h"
+﻿#include "AttackDataLoader.h"
 
 namespace
 {
@@ -22,7 +22,7 @@ namespace
 		out.targetDuration = j.value("targetDuration", out.targetDuration);
 	}
 
-	void ReadAttackDamageData(const json& j, AttackDamegeData& out)
+	void ReadAttackDamageData(const json& j, AttackDamageData& out)
 	{
 		out.damage = j.value("damage", out.damage);
 		out.knockbackPower = j.value("knockbackPower", out.knockbackPower);

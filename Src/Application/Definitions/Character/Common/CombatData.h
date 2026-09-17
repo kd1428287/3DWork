@@ -2,7 +2,7 @@
 
 
 // 被弾側も得るデータ構造体
-struct AttackDamegeData
+struct AttackDamageData
 {
 	float damage = 10.0f;
 	float knockbackPower = 6.0f;
@@ -65,7 +65,7 @@ struct AttackCancelData
 // 攻撃行動全体のデータ構造体
 struct AttackData
 {
-	AttackDamegeData damageData;
+	AttackDamageData damageData;
 	AttackMoveData moveData;
 	AttackPhaseData phaseData;
 	AttackCancelData cancelData;

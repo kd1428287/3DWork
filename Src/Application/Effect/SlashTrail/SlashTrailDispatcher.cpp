@@ -135,6 +135,6 @@ void SlashTrailDispatcher::OnSlashTrailEnd(const Events::SlashTrail::SlashTrailE
 	if (it == activeTrails_.end()) { return; }
 
 	it->second.EndRecording();
-	fadingTrails_.push_back(it->second);
+	fadingTrails_.push_back(std::move(it->second));
 
 }

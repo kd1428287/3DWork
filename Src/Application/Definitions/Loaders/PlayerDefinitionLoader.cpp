@@ -1,4 +1,4 @@
-#include "PlayerDefinitionLoader.h"
+﻿#include "PlayerDefinitionLoader.h"
 
 #include <unordered_map>
 #include <nlohmann/json.hpp>
@@ -181,6 +181,7 @@ bool PlayerDefinitionLoader::LoadFromFile(const std::string& path, PlayerDefinit
 	const json& visuals = root["visuals"];
 	def.visuals.modelPath = visuals.value("modelPath", std::string());
 	def.visuals.animatorFPS = visuals.value("animatorFPS", 60);
+	def.visuals.animatorScale = visuals.value("animatorScale", 1.0f);
 	def.visuals.rootMotionBoneName = visuals.value("rootMotionBoneName", std::string());
 	def.visuals.rootMotionAxis = ToRootMotionAxis(visuals.value("rootMotionAxis", std::string("Y")));
 	def.visuals.rootMotionAxisSign = visuals.value("rootMotionAxisSign", -1.0f);

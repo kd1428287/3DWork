@@ -20,6 +20,7 @@ struct PlayerVisualDefinition
 	std::string modelPath;
 
 	int animatorFPS = 60;
+	float animatorScale = 1.0f;
 	std::string rootMotionBoneName;
 	RootMotionAxis rootMotionAxis = RootMotionAxis::Y;
 	float rootMotionAxisSign = -1.0f;
