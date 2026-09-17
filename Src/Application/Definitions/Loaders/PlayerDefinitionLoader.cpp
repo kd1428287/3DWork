@@ -1,10 +1,8 @@
 ﻿#include "PlayerDefinitionLoader.h"
 
-#include <unordered_map>
 #include <nlohmann/json.hpp>
-
 #include "JsonLoader.h"
-#include "Application/Definitions/Character/Player/PlayerCombatDataTable.h"
+#include "../Character/Common/CharacterDefinitionCommon.h"
 #include "PlayerAttackTableLoader.h"
 
 namespace
@@ -191,20 +189,13 @@ bool PlayerDefinitionLoader::LoadFromFile(const std::string& path, PlayerDefinit
 	def.combatStats.maxHealth = root["combatStats"].value("maxHealth", 100.0f);
 
 	// --- 戦闘の振る舞い(コンボ木/回避/ガード) ---
-	// まずPlayerCombatDataTable::CreateDebugPlayerCombatBehavior()の
-	// デバッグ値で埋めておき、ファイル側にcombatBehaviorセクションが
-	// あればその内容で上書きする。ファイルが一部のキー(例:guardだけ)
-	// しか指定していなくても、残りはデバッグ値のまま動く
-	// (ReadCombatBehavior/ReadEvadeData/ReadGuardData等は「out(既定値)を
-	// 上書きする」方式で統一しているため)。
-	def.combatBehavior = CreateDebugPlayerCombatBehavior();
+	def.combatBehavior = PlayerCombatBehaviorDefinition();
 	if (root.contains("combatBehavior")) {
 		ReadCombatBehavior(root["combatBehavior"], def.combatBehavior);
 	}
 
 	// --- 移動アニメーション ---
-	// 上と同じ方針で、デバッグ値をベースにファイル側の指定で上書きする。
-	def.movementAnimations = CreateDebugPlayerMovementAnimations();
+	def.movementAnimations = PlayerMovementAnimationDefinition();
 	if (root.contains("movementAnimations")) {
 		ReadMovementAnimations(root["movementAnimations"], def.movementAnimations);
 	}

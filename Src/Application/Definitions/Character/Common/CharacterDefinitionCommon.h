@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Application/Components/Physics/Collision/ColliderComponent.h" 
+#include "../../Physics/ColliderCategory.h"
 
 // ============================================================
 // Player/Enemy等、複数キャラクターのFactory/Definitionで共通して
@@ -9,6 +9,14 @@
 // 定義をここに集約し、PlayerDefinition/EnemyDefinition等はこれを
 // 部品として組み合わせる。
 // ============================================================
+
+struct MotionClipData
+{
+	std::string animationName;
+	float duration = 0.2f;
+	bool useRootMotion = false;
+	float blendDuration = 0.1f;
+};
 
 // カプセルコライダー1本分の定義（Body / HurtBox 等）
 struct CapsuleColliderDefinition

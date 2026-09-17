@@ -1,5 +1,6 @@
 ﻿#include "HitReactionComponent.h"
 #include "../Common/CharacterEvents.h"
+#include "WeaponComponent.h"
 
 void HitReactionComponent::Awake()
 {
@@ -124,10 +125,13 @@ void HitReactionComponent::SpawnWeaponClashEffect(GameObject* attackerWeaponObj,
 	TransformComponent* attackerWeaponTransform = attackerWeaponObj->GetComponent<TransformComponent>();
 	if (attackerWeaponTransform == nullptr) return;
 
-	ColliderComponent* myWeaponCollider = weaponCollider_.Resolve();
+	WeaponComponent* myWeapon = weapon_.Resolve();
+	if (myWeapon == nullptr) return;
+
+	ColliderComponent* myWeaponCollider = myWeapon->GetCollider();
 	if (myWeaponCollider == nullptr) return;
 
-	TransformComponent* myWeaponTransform = myWeaponCollider->GetOwner()->GetComponent<TransformComponent>();
+	TransformComponent* myWeaponTransform = myWeapon->GetTransform();
 	if (myWeaponTransform == nullptr) return;
 
 	SceneContext* context = GetOwner()->GetContext();

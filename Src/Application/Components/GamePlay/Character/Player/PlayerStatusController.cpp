@@ -1,4 +1,5 @@
-﻿#include "PlayerStatusController.h"
+﻿// PlayerStatusController.cpp
+#include "PlayerStatusController.h"
 
 #include "PlayerAttackSelector.h"
 #include "PlayerFacingComponent.h"
@@ -14,43 +15,21 @@ void PlayerStatusController::Awake()
 	movementAnimationComponent_ = GetOwner()->GetComponent<PlayerMovementAnimationComponent>();
 	modelAnimatorComponent_ = GetOwner()->GetComponent<ModelAnimatorComponent>();
 	weaponSet_ = GetOwner()->GetComponent<WeaponSetComponent>();
-
-	// 新設した兄弟コンポーネント群。各々が自分の担当データ(コンボ木・
-	// Transform・MovementComponent等)を自分のStart()内で解決する。
 	attackSelector_ = GetOwner()->GetComponent<PlayerAttackSelector>();
 	facing_ = GetOwner()->GetComponent<PlayerFacingComponent>();
 	combatMovement_ = GetOwner()->GetComponent<PlayerCombatMovementComponent>();
 
-	// Evade/Guardは分岐を持たない単純な1件データのため、Attackのように
-	// 専用コンポーネントへ切り出さず、引き続きここでbaseEvadeData_/
-	// baseGuardData_として保持する。値自体はPlayerFactory構築時に
-	// SetEvadeAndGuardData()経由で既に注入済みである想定(SetWeaponと
-	// 同じ構図。旧CreateDebugEvadeData()/CreateDebugGuardData()の
-	// 直接呼び出しは撤去し、PlayerCombatDataTable::
-	// CreateDebugPlayerCombatBehavior()側へ移設した)。
-
-	// 被弾時のパリィ/ガード/通常被弾の分岐と、それに伴うダメージ/
-	// ノックバック/エフェクト処理はHitReactionComponentへ切り出し済み
-	// (HurtBoxへのCollisionEnterEventの購読自体もHitReactionComponent側が
-	// 持つため、ここでは購読処理を書かない)。ここでは「今パリィ猶予中か/
-	// ガード中か/通常被弾でスタンへ入ってほしい」という問い合わせに
-	// 答えられるよう、自分自身をIHitReactionQueryとして登録するだけでよい。
+	// 自分自身をIHitReactionQueryとして登録
 	if (HitReactionComponent* hitReaction = GetOwner()->GetComponent<HitReactionComponent>()) {
 		hitReaction->SetQuerySource(this);
-		// メイン武器のColliderをHitReactionComponentへ渡す。装備
-		// (WeaponSetComponent::RegisterWeapon)がこのStart()より後に
-		// 行われる構成の場合はまだ未登録でnullptrになりうる点は
-		// 旧実装と同じ制約。
 		if (weaponSet_ != nullptr) {
 			if (WeaponComponent* mainWeapon = weaponSet_->GetWeapon(kMainWeaponSlot)) {
-				if (ColliderComponent* mainWeaponCollider = mainWeapon->GetCollider()) {
-					hitReaction->SetWeaponCollider(Handle<ColliderComponent>(mainWeaponCollider));
-				}
+				hitReaction->SetWeapon(Handle<WeaponComponent>(mainWeapon));
 			}
 		}
 	}
 
-	// 初期状態のセット。TransitionTo経由なのでEnterも呼ばれる。
+	// 初期状態のセット
 	TransitionTo(&stateNone_);
 }
 
@@ -61,8 +40,7 @@ void PlayerStatusController::Update(float deltaTime)
 		HandleActionInput(*inputComponent_);
 	}
 
-	// ロック中の向き固定・移動状態の更新は、いずれもCombatState::Noneの
-	// 間だけ行う(Attack/Evade/Guard/Stagger中は各Stateが専有するため)。
+	// ロック中の向き固定・移動状態の更新は、いずれもCombatState::Noneの間だけ行う
 	if (GetCombatState() == CombatState::None) {
 		if (facing_ != nullptr) {
 			facing_->UpdateLockOnFacing(movementState_ == MovementState::Run);
@@ -72,19 +50,22 @@ void PlayerStatusController::Update(float deltaTime)
 		}
 	}
 
-	// コンボ継続受付ウィンドウのカウントダウンはattackSelector_自身が持つ
-	// (PlayerAttackSelector::Update()参照)。ここでは呼び出さない
-	// (Update()はComponentBaseのライフサイクルとしてエンジン側から
-	//  自動的に呼ばれる。詳細はPlayerAttackSelector.h参照)。
-
 	// 戦闘状態の更新は共通StateMachineに丸投げ
 	stateMachine_.Update(this, deltaTime);
 }
 
 void PlayerStatusController::HandleMovementInput(const PlayerInputComponent& input, float deltaTime)
 {
-	if (GetCombatState() != CombatState::None) return;
 	const MovementState nextState = input.GetDesiredMovementState();
+
+	if (GetCombatState() != CombatState::None) {
+		// Attack Recovery中など、recoveryMoveCancelStart等を過ぎていて
+		// 実際に移動入力がある場合のみ、Evade/Attackキャンセルと同じ
+		// 考え方で通常移動(None)へキャンセルする。それ以外は従来通り
+		// 移動処理を行わない。
+		if (!CanStartMove() || nextState == MovementState::Stand) return;
+		ChangeStateToNone();
+	}
 
 	if (movementState_ != nextState) {
 		movementState_ = nextState;
@@ -174,7 +155,6 @@ void PlayerStatusController::ApplyStagger(bool isLarge, float duration)
 void PlayerStatusController::NotifyParrySuccess()
 {
 	// パリィはGuard中にしか成立し得ないため、Guard中でなければ何もしない
-	// (念のためのガード)。
 	if (GetCombatState() == CombatState::Guard) {
 		stateGuard_.NotifyParrySuccess(this);
 	}

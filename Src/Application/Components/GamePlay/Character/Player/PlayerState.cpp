@@ -1,4 +1,5 @@
-﻿#include "PlayerStatusController.h"
+﻿// PlayerState.cpp (StateAttackのCanStartXxx群のみ抜粋変更・他は元のまま)
+#include "PlayerStatusController.h"
 #include "PlayerAttackSelector.h"
 #include "../Common/WeaponSetComponent.h"
 #include "../../../Physics/Movement/TweenMoveComponent.h"
@@ -33,12 +34,12 @@ void StateAttack::Enter(PlayerStatusController* controller) {
 
 	const AttackData& data = attackSelector_->GetCurrentAttackData();
 	weaponSet_->SetAttackDamageData(data.weaponSlots, data.damageData);
-	
+
 	// 攻撃全体(Windup+Active+Recovery)の秒数を目標としてアニメーション
 	// 速度を自動スケーリングする
 	const AnimationSegment& windup = data.phaseData.windup;
 	controller->PlayAnimation(data.phaseData.animationName, false, windup.targetDuration,
-		windup.startFrame, windup.endFrame, 
+		windup.startFrame, windup.endFrame,
 		data.moveData.useRootMotion, data.moveData.blendDuration); // コンボ段数に応じたアニメーション
 }
 
@@ -59,7 +60,7 @@ void StateAttack::Update(PlayerStatusController* controller, float deltaTime) {
 		const AnimationSegment& active = data.phaseData.active;
 		controller->PlayAnimation(data.phaseData.animationName, false, active.targetDuration,
 			active.startFrame, active.endFrame,
-			data.moveData.useRootMotion, data.moveData.blendDuration); 
+			data.moveData.useRootMotion, data.moveData.blendDuration);
 	}
 	else if (phase_ == CombatState::AttackActive && elapsed_ >= data.phaseData.active.targetDuration) {
 		phase_ = CombatState::AttackRecovery;
@@ -70,7 +71,7 @@ void StateAttack::Update(PlayerStatusController* controller, float deltaTime) {
 		const AnimationSegment& recovery = data.phaseData.recovery;
 		controller->PlayAnimation(data.phaseData.animationName, false, recovery.targetDuration,
 			recovery.startFrame, recovery.endFrame,
-			data.moveData.useRootMotion, data.moveData.blendDuration); 
+			data.moveData.useRootMotion, data.moveData.blendDuration);
 	}
 	else if (phase_ == CombatState::AttackRecovery && elapsed_ >= data.phaseData.recovery.targetDuration) {
 		// 自律的に終了し、ControllerにNoneへの復帰を要請する
@@ -120,6 +121,15 @@ bool StateAttack::CanStartGuard(const PlayerStatusController* controller) const 
 	if (phase_ == CombatState::AttackRecovery) {
 		//return elapsed_ >= attackSelector_->GetCurrentAttackData().cancelData.recoveryEvadeCancelStart;
 		return true;
+	}
+	return false;
+}
+
+bool StateAttack::CanStartMove(const PlayerStatusController* controller) const {
+	// Recovery中の一定タイミングを過ぎたら、移動入力による通常移動への
+	// キャンセルを許可する。CanStartEvade/CanStartAttackと同じ考え方。
+	if (phase_ == CombatState::AttackRecovery) {
+		return elapsed_ >= attackSelector_->GetCurrentAttackData().cancelData.recoveryMoveCancelStart;
 	}
 	return false;
 }
@@ -304,7 +314,7 @@ void StateStagger::Enter(PlayerStatusController* controller) {
 	// アニメーション未実装のためコメントアウト。
 	// AttackData/GuardDataのような専用データ構造をStaggerは
 	// 持たないため、isLarge_で仮のアニメーション名を直接出し分ける想定だった。
-	controller->PlayAnimation(isLarge_ ? "APose_Hit_B" : "APose_Hit_B");
+	controller->PlayAnimation(isLarge_ ? "APose_Large_Hit" : "APose_Hit_B");
 }
 
 void StateStagger::Update(PlayerStatusController* controller, float deltaTime) {
@@ -315,4 +325,5 @@ void StateStagger::Update(PlayerStatusController* controller, float deltaTime) {
 }
 
 void StateStagger::Exit(PlayerStatusController* controller)
-{}
+{
+}

@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿// PlayerStatusController.h
+#pragma once
 #include "Application/Definitions/Character/Player/PlayerCombatTypes.h"
 #include "../../../Tags/IHitReactionQuery.h"
 #include "Application/Definitions/Character/Common/StateMachine/StateMachine.h"
@@ -12,42 +13,19 @@
 #include "../Common/WeaponSetComponent.h"
 #include "../../../Graphics/Animation/ModelAnimatorComponent.h"
 
-// ------------------------------------------------------------
-// 前方宣言: 今回の責務分割で新設する兄弟コンポーネント群。
-// PlayerStatusController自身はこれらの「公開インターフェース」だけを
-// 知っていればよく、内部でどう計算しているかは知らない(知る必要がない)。
-// 実体(.h本体・.cpp)は次のステップで個別に実装する。
-// ------------------------------------------------------------
-class PlayerAttackSelector;          // コンボ/技データの選択(PlayerAttackTable保持)
-class PlayerFacingComponent;         // 攻撃対象・ロック対象への向き制御
-class PlayerCombatMovementComponent; // 通常移動の速度適用＋攻撃/回避中の踏み込み移動
+class PlayerAttackSelector;
+class PlayerFacingComponent;
+class PlayerCombatMovementComponent;
 
-// ============================================================
 // PlayerStatusController(責務再構成版)
-//
+
 // 【責務(最小要件)】
 //  1. 戦闘State(IPlayerState)のFSMを保持し、遷移させること
 //  2. 入力を受けて「今何を開始できるか」をStateに問い合わせ、
 //     開始できるなら対応するCollaboratorへ実行を委譲すること
 //  3. Stateが具体的なコンポーネント(ModelAnimatorComponent等)を
 //     直接知らなくて済むよう、薄いファサードを提供すること
-//
-// 【今回のリファクタで外に出したもの】
-//  - コンボ/技データの選択・保持(旧comboIndex_/comboAttacks_等)
-//      → PlayerAttackSelector
-//  - 攻撃対象・ロック対象への向き制御(旧FaceAttackTarget/FaceTowards/
-//    UpdateLockOnFacing/currentAttackTarget_)
-//      → PlayerFacingComponent
-//  - 通常移動の速度適用＋攻撃/回避中の踏み込み移動(旧ApplyMovementState/
-//    RequestStepMove系/walkSpeed_・runSpeed_)
-//      → PlayerCombatMovementComponent
-//
-//  結果として、このController自身はTransformComponent/MovementComponent/
-//  FacingDirectionComponentを直接持たなくなった(いずれも上記の
-//  Collaborator側が内部で解決する)。Evade/Guardは分岐を持たない単純な
-//  1件データのままのため、引き続きこのControllerが基礎データ
-//  (baseEvadeData_/baseGuardData_)を保持する。
-// ============================================================
+
 class PlayerStatusController : public ComponentBase, public IHitReactionQuery
 {
 public:
@@ -78,12 +56,11 @@ public:
 	bool CanStartGuard() const { return stateMachine_.Current()->CanStartGuard(this); }
 	bool CanReleaseGuard() const { return stateMachine_.Current()->CanReleaseGuard(this); }
 
+	// Recovery中などに移動入力でキャンセルし、通常移動(None)へ復帰して
+	// よいか。HandleMovementInputから使う(CanStartAttack等と同じ位置づけ)。
+	bool CanStartMove() const { return stateMachine_.Current()->CanStartMove(this); }
+
 	// --- 現在実行中の技データ(Stateが毎フレーム参照する) ---
-	// AttackはStateAttack自身がattackSelector_を直接保持して参照するため、
-	// ここでの中継は行わない(WeaponSetComponentの操作も同様にStateAttackが
-	// 直接行う。理由はPlayerState.h::StateAttackのコメント参照)。
-	// Evade/Guardは複数Stateにまたがらない単純な1件データのため、
-	// 引き続きControllerが保持・中継する。
 	const EvadeData& GetCurrentEvadeData() const { return currentEvade_; }
 	const GuardData& GetCurrentGuardData() const { return currentGuard_; }
 
@@ -117,10 +94,7 @@ public:
 	// Controllerのファサードとして残す)。
 	void SetWeapon(Handle<WeaponComponent> weapon);
 
-	// PlayerFactory構築時に、PlayerDefinition::combatBehaviorのEvade/Guard
-	// データを注入するためのセッター(SetWeaponと同じ位置づけ。
-	// AddComponentの戻り値に対してその場で呼ぶ想定。Awake()はこの後の
-	// 遅延タイミングで呼ばれるため間に合う)。
+	// PlayerFactory構築時にEvade/Guardデータを注入するためのセッター
 	void SetEvadeAndGuardData(const EvadeData& evade, const GuardData& guard)
 	{
 		baseEvadeData_ = evade;
@@ -166,9 +140,6 @@ private:
 
 	MovementState movementState_ = MovementState::Stand;
 
-	// Evade/Guardは分岐を持たない単純な1件データのため、引き続き
-	// このControllerが基礎データ・現在値を保持する(Attackのように
-	// 専用のSelectorへ切り出すほどの選択ロジックが無いため)。
 	EvadeData baseEvadeData_;
 	EvadeData currentEvade_;
 	GuardData baseGuardData_;

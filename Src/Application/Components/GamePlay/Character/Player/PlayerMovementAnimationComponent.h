@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "Application/Definitions/Character/Common/CharacterDefinitionCommon.h"
 #include "Application/Definitions/Character/Player/PlayerCombatTypes.h"
 #include "Application/Definitions/Character/Player/PlayerCombatBehaviorDefinition.h" // PlayerMovementAnimationDefinition
 #include "../../../Graphics/Animation/ModelAnimatorComponent.h"

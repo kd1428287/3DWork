@@ -4,7 +4,9 @@
 #include "HealthComponent.h"
 #include "../../../Physics/Movement/VelocityComponent.h"
 #include "../../../Tags/IHitReactionQuery.h"
-#include "Application/Systems/Collision/CollisionSystem.h"
+#include "Application/Core/EventBus/Events/CollisionEvents.h"
+
+class WeaponComponent;
 
 class HitReactionComponent : public ComponentBase
 {
@@ -17,7 +19,7 @@ public:
 	void SetQuerySource(IHitReactionQuery* query) { query_ = query; }
 
 	// 被弾時、鍔迫り合いの火花エフェクトの発生元として使う自分の武器
-	void SetWeaponCollider(Handle<ColliderComponent> weaponCollider) { weaponCollider_ = weaponCollider; }
+	void SetWeapon(Handle<WeaponComponent> weapon) { weapon_ = weapon; }
 
 	// 体幹が壊れた(崩し発生)場合の大きい怯みの秒数
 	void SetLargeStaggerDuration(float seconds) { largeStaggerDuration_ = seconds; }
@@ -36,7 +38,7 @@ private:
 	VelocityComponent* velocityComponent_ = nullptr;
 	TransformComponent* transform_ = nullptr;
 	
-	Handle<ColliderComponent> weaponCollider_;
+	Handle<WeaponComponent> weapon_;
 
 	static constexpr float kGuardKnockbackPower = 2.0f;
 

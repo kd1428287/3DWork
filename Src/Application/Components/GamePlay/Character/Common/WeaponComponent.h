@@ -32,12 +32,7 @@ public:
 
 	void Awake() override
 	{
-		// Start()ではなくAwake()で解決する。武器はキャラクター(Player)とは
-		// 別のGameObjectであり、Start()の呼び出し順序はGameObjectをまたぐと
-		// 保証されない(PlayerStatusController::Start()の方が先に走る
-		// 構成だと、そちらからGetCollider()した時点でまだnullptrになりうる)。
-		// AwakeはHitReactionComponentの購読処理と同じく、AddComponent直後に
-		// 同期的に実行される想定のフックのため、こちらに寄せる。
+		transform_ = GetOwner()->GetComponent<TransformComponent>();
 		collider_ = GetOwner()->GetComponent<ColliderComponent>();
 		attackSource_ = GetOwner()->GetComponent<AttackSourceComponent>();
 		trail_ = GetOwner()->GetComponent<SlashTrailComponent>(); // 無い部位(素手等)もあるためnullptr許容
@@ -67,10 +62,12 @@ public:
 
 	void SetAttackDamageData(AttackDamageData info) { attackSource_->SetAttackDamageData(info); }
 
+	TransformComponent* GetTransform() const { return transform_; }
 	ColliderComponent* GetCollider() const { return collider_; }
 	AttackSourceComponent* GetAttackSource() const { return attackSource_; }
 
 private:
+	TransformComponent* transform_ = nullptr;
 	ColliderComponent* collider_ = nullptr;
 	AttackSourceComponent* attackSource_ = nullptr;
 	SlashTrailComponent* trail_ = nullptr; // 任意。無い部位も許容する

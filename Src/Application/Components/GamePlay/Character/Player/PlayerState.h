@@ -26,6 +26,7 @@ public:
 	virtual bool CanStartAttack(const PlayerStatusController* controller) const { return false; }
 	virtual bool CanStartEvade(const PlayerStatusController* controller) const { return false; }
 	virtual bool CanStartGuard(const PlayerStatusController* controller) const { return false; }
+	virtual bool CanStartMove(const PlayerStatusController* controller) const { return false; }
 
 	// ガードキーを離した際に即座に解除してよいか(デフォルトは常に許可)。
 	// StateGuardがパリィ成功演出中だけfalseを返し、演出を強制的に
@@ -68,6 +69,7 @@ public:
 	bool CanStartAttack(const PlayerStatusController* controller) const override;
 	bool CanStartEvade(const PlayerStatusController* controller) const override;
 	bool CanStartGuard(const PlayerStatusController* controller) const override;
+	bool CanStartMove(const PlayerStatusController* controller) const override;
 
 private:
 	// このAttack Stateでしか使わないコンポーネントは、Controllerの
