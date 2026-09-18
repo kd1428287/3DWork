@@ -62,6 +62,7 @@ private:
 		ed::LinkId	id;
 		ed::PinId	outputPin;	// 親側
 		ed::PinId	inputPin;	// 子側
+		int			order;
 	};
 
 	void DrawNode(EditorNode& node);
@@ -73,6 +74,10 @@ private:
 	EditorNode& AddNode(BTNodeType type, const std::string& name, bool hasOutput);
 	EditorNode* FindNodeById(ed::NodeId id);
 	EditorNode* FindNodeByPin(ed::PinId pin);
+	EditorLink* FindLinkByInputPin(ed::PinId inputPin);
+	std::vector<EditorLink*> GetSortedChildLinks(ed::PinId parentOutputPin);
+	void NormalizeChildOrder(ed::PinId parentOutputPin);
+	void MoveChildOrder(EditorNode& childNode, int direction); // -1:上へ, +1:下へ
 
 	const char* GetNodeTypeName(BTNodeType type) const;
 	ImColor GetNodeBorderColor(BTNodeType type) const;

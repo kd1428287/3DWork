@@ -359,10 +359,12 @@
     <ClInclude Include="Src\Application\Core\Math\PerlinNoise.h" />
     <ClInclude Include="Src\Application\Core\Scene\SceneManager.h" />
     <ClInclude Include="Src\Application\Core\Scene\SceneType.h" />
+    <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\Blackboard.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\BTComposite.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\BTCondition.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\BTNodeStatus.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\BTOneShotAnimationAction.h" />
+    <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\BTPendingReactionAction.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\BTWeightedAttackAction.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\IBTNode.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\CharacterCollisionDefaults.h" />
@@ -370,6 +372,7 @@
     <ClInclude Include="Src\Application\Definitions\Character\Common\CombatData.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\StateMachine\StateMachine.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Enemy\EnemyAIData.h" />
+    <ClInclude Include="Src\Application\Definitions\Character\Enemy\EnemyBlackboardKeys.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Enemy\EnemyDefinition.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Enemy\IEnemyBehavior.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Enemy\Warrock\WarrockAIData.h" />

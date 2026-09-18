@@ -939,6 +939,15 @@
     <ClInclude Include="Src\Application\Definitions\Loaders\PlayerAttackTableLoader.h">
       <Filter>Src\Application\Definitions\Loaders</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\Blackboard.h">
+      <Filter>Src\Application\Definitions\Character\Common\BehaviorTree</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\BTPendingReactionAction.h">
+      <Filter>Src\Application\Definitions\Character\Common\BehaviorTree</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Character\Enemy\EnemyBlackboardKeys.h">
+      <Filter>Src\Application\Definitions\Character\Enemy</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">

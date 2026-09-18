@@ -104,6 +104,17 @@ void BTEditor::DrawNode(EditorNode& node)
 		ed::EndPin();
 	}
 
+	EditorLink* incoming = FindLinkByInputPin(node.inputPin);
+	if (incoming)
+	{
+		ImGui::SameLine();
+		ImGui::Text("[%d]", incoming->order);
+		ImGui::SameLine();
+		if (ImGui::SmallButton("^")) { MoveChildOrder(node, -1); }
+		ImGui::SameLine();
+		if (ImGui::SmallButton("v")) { MoveChildOrder(node, +1); }
+	}
+
 	ImGui::PopID();
 	ed::EndNode();
 
@@ -185,7 +196,11 @@ void BTEditor::HandleCreateLink()
 			}
 			else if (ed::AcceptNewItem())
 			{
-				links_.push_back({ GetNextLinkId(), outputPin, inputPin });
+				// 既にこの出力ピンにぶら下がっている兄弟の数 = 新しいリンクの順番
+				int order = (int)std::count_if(links_.begin(), links_.end(),
+					[&](const EditorLink& l) { return l.outputPin == outputPin; });
+
+				links_.push_back({ GetNextLinkId(), outputPin, inputPin, order });
 			}
 		}
 	}
@@ -268,6 +283,53 @@ BTEditor::EditorNode* BTEditor::FindNodeByPin(ed::PinId pin)
 		if (node.hasOutput && node.outputPin == pin) return &node;
 	}
 	return nullptr;
+}
+
+BTEditor::EditorLink* BTEditor::FindLinkByInputPin(ed::PinId inputPin)
+{
+	for (auto& link : links_)
+	{
+		if (link.inputPin == inputPin) return &link;
+	}
+	return nullptr;
+}
+
+std::vector<BTEditor::EditorLink*> BTEditor::GetSortedChildLinks(ed::PinId parentOutputPin)
+{
+	std::vector<EditorLink*> result;
+	for (auto& link : links_)
+	{
+		if (link.outputPin == parentOutputPin) result.push_back(&link);
+	}
+	std::sort(result.begin(), result.end(),
+		[](const EditorLink* a, const EditorLink* b) { return a->order < b->order; });
+	return result;
+}
+
+void BTEditor::NormalizeChildOrder(ed::PinId parentOutputPin)
+{
+	auto children = GetSortedChildLinks(parentOutputPin);
+	for (int i = 0; i < (int)children.size(); ++i)
+	{
+		children[i]->order = i;
+	}
+}
+
+void BTEditor::MoveChildOrder(EditorNode& childNode, int direction)
+{
+	EditorLink* self = FindLinkByInputPin(childNode.inputPin);
+	if (!self) return;
+
+	int targetOrder = self->order + direction;
+
+	for (auto& link : links_)
+	{
+		if (link.outputPin == self->outputPin && link.order == targetOrder)
+		{
+			std::swap(link.order, self->order);
+			return;
+		}
+	}
 }
 
 const char* BTEditor::GetNodeTypeName(BTNodeType type) const
