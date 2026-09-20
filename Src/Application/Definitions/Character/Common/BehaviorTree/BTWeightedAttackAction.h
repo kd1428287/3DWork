@@ -1,11 +1,11 @@
-﻿#pragma once
+#pragma once
 #include "IBTNode.h"
 #include "../../Enemy/EnemyAIData.h"
 
 // ============================================================
 // 攻撃行動の共通「実行」部品(「判断」層とは独立)。
-// EnemyAIData::attacksから重み付き抽選で1つ選び、
-// Windup→Active→Recoveryの3フェーズで実行する。
+// どのプールから選ぶか(ChooseAttack/ChooseGapCloserAttack)はコンストラクタで
+// 注入し、重み付き抽選で1つ選んでWindup→Active→Recoveryで実行する。
 //
 // 【この部品を作った経緯・改善案2】
 // 旧EnemyActionAttack/WarrockActionAttackは、Windup/Active/Recoveryの
@@ -17,12 +17,12 @@
 // Tには継承を要求しない(ダックタイピング)。以下のメンバ関数を
 // 持ってさえいれば、EnemyAIController/WarrockAIController/将来の
 // 敵種のいずれでもそのまま使い回せる:
-//   const EnemyAttackDefinition* ChooseAttack() const
 //   void StopMovement()
 //   Math::Vector3 GetTargetPositionOrSelf() const
 //   void FaceHorizontalTarget(const Math::Vector3&)
 //   void PlayAnimation(const std::string&, bool, float, bool)
-//   void SetWeaponHitBoxEnabled(bool)
+//   void SetWeaponHitBoxEnabled(const std::vector<std::string>&, bool)
+//   void SetWeaponTrailEmitting(const std::vector<std::string>&, bool)
 //   void NotifyAttackCompleted()
 //
 // 【IBTNode::Reset()の制約について】
@@ -39,6 +39,18 @@
 // 開始させる。中断(Reset()経由)された場合はこの通知を行わない
 // (攻撃をやり切っていない以上、インターバルを課す理由が無いため)。
 //
+// 【フェーズ遷移が実データを読むようになった経緯(修正)】
+// 以前はWindup/Active/Recoveryの遷移条件が全て「elapsed_ >= 0」という
+// ハードコードのままだった(EnemyAttackDefinition::attackData.phaseData
+// 自体はWarrockAIData.h側で実際の秒数が設定済みだったが、この
+// Tick()側がまだそれを読んでいなかった)。elapsed_は0からdeltaTime分
+// しか進んでいない最初のTickで既に「0以上」を満たしてしまうため、
+// Windup→Active→Recoveryが実質同じフレームで連鎖的に完了し、
+// 「HitBoxが有効化された直後に無効化される」「アニメーションが
+// 最後まで再生される前に攻撃自体が終わる」といった不具合の原因に
+// なっていた。実際にphaseData.windup/active/recovery.targetDurationを
+// 読むよう修正した。
+//
 // 【今後の展望・改善案3】
 // もし「攻撃の形そのもの」(例: JumpAttackだけ移動を伴う突進にする等)
 // がWarrock固有に崩れてきたら、この共通化は足かせになる可能性がある。
@@ -50,12 +62,18 @@ template <typename T>
 class BTWeightedAttackAction : public IBTNode<T>
 {
 public:
+	// どのプールから選ぶか(ChooseAttack/ChooseGapCloserAttack等)を
+	// 呼び出し側が注入する。
+	using ChooseFn = std::function<const EnemyAttackDefinition* (T*)>;
+
+	explicit BTWeightedAttackAction(ChooseFn chooseAttack) : chooseAttack_(std::move(chooseAttack)) {}
+
 	BTNodeStatus Tick(T* context, float deltaTime) override
 	{
 		lastContext_ = context; // Reset()からの後始末用にキャッシュ(クラスコメント参照)
 
 		if (phase_ == Phase::NotStarted) {
-			current_ = context->ChooseAttack();
+			current_ = chooseAttack_(context);
 			if (current_ == nullptr) return BTNodeStatus::Failure;
 
 			phase_ = Phase::Windup;
@@ -66,31 +84,41 @@ public:
 
 			// 攻撃全体(Windup+Active+Recovery)の秒数を目標としてアニメーション
 			// 速度を自動スケーリングする(Player/EnemyのPlayAnimationと同じ考え方)。
-			const float totalDuration = 2;//current_->windupDuration + current_->activeDuration + current_->recoveryDuration;
-			context->PlayAnimation(current_->attackData.phaseData.animationName, false, totalDuration, current_->attackData.moveData.useRootMotion);
+			const AttackPhaseData& phaseData = current_->attackData.phaseData;
+			const float totalDuration = phaseData.windup.targetDuration
+				+ phaseData.active.targetDuration
+				+ phaseData.recovery.targetDuration;
+			context->PlayAnimation(phaseData.animationName, false, totalDuration, current_->attackData.moveData.useRootMotion);
 		}
 
 		elapsed_ += deltaTime;
 
+		const AttackPhaseData& phaseData = current_->attackData.phaseData;
 		switch (phase_) {
 		case Phase::Windup:
-			if (elapsed_ >= 0/*current_->windupDuration*/) {
+			if (elapsed_ >= phaseData.windup.targetDuration) {
 				phase_ = Phase::Active;
 				elapsed_ = 0.0f;
-				context->SetWeaponHitBoxEnabled(true); // 攻撃判定が実際に発生する一瞬だけ有効化
+				// 攻撃判定が実際に発生する一瞬だけ有効化(Player同様
+				// AttackData::weaponSlotsで対象スロットを指定する。
+				// BTWeightedAttackAction冒頭コメントのダックタイピング
+				// 一覧を参照)。
+				context->SetWeaponHitBoxEnabled(current_->attackData.weaponSlots, true);
+				context->SetWeaponTrailEmitting(current_->attackData.weaponSlots, true);
 			}
 			break;
 
 		case Phase::Active:
-			if (elapsed_ >= 0/*current_->activeDuration*/) {
+			if (elapsed_ >= phaseData.active.targetDuration) {
 				phase_ = Phase::Recovery;
 				elapsed_ = 0.0f;
-				context->SetWeaponHitBoxEnabled(false); // 判定の発生窓を閉じる
+				context->SetWeaponHitBoxEnabled(current_->attackData.weaponSlots, false); // 判定の発生窓を閉じる
+				context->SetWeaponTrailEmitting(current_->attackData.weaponSlots, false);
 			}
 			break;
 
 		case Phase::Recovery:
-			if (elapsed_ >= 0/*current_->recoveryDuration*/) {
+			if (elapsed_ >= phaseData.recovery.targetDuration) {
 				// 攻撃1回分をやり切った時だけ、次の攻撃までのインターバルを
 				// 開始させる(クラス冒頭コメント参照)。
 				context->NotifyAttackCompleted();
@@ -110,8 +138,9 @@ public:
 	{
 		// Active中(HitBoxが有効な最中)に中断された場合は、有効なまま
 		// 残らないよう明示的に閉じておく(クラスコメント参照)。
-		if (phase_ == Phase::Active && lastContext_ != nullptr) {
-			lastContext_->SetWeaponHitBoxEnabled(false);
+		if (phase_ == Phase::Active && lastContext_ != nullptr && current_ != nullptr) {
+			lastContext_->SetWeaponHitBoxEnabled(current_->attackData.weaponSlots, false);
+			lastContext_->SetWeaponTrailEmitting(current_->attackData.weaponSlots, false);
 		}
 
 		phase_ = Phase::NotStarted;
@@ -127,4 +156,6 @@ private:
 
 	// Reset()がcontextを受け取れない制約への回避策(クラス冒頭コメント参照)。
 	T* lastContext_ = nullptr;
+
+	ChooseFn chooseAttack_;
 };

@@ -48,6 +48,8 @@ bool SlashTrailRenderer::CreateVertexBuffer(UINT maxVertexCount)
 //	・ピクセルシェーダーはAdd用(KdGPUParticle_PS.hlsl)/Alpha用
 //	  (KdGPUParticle_PS_Masked.hlsl)の2種類をそのまま流用する。Alpha用は
 //	  カラーグレード除外マスク(SV_Target1)を追加で出力する点だけがAdd用と異なる
+//	・Add(芯)用は、DoFブラー除外マスクを書き込む為にSlashTrail_PS_AddMasked.hlsl
+//	  (トレイル専用の新規ファイル)を追加で生成する
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 bool SlashTrailRenderer::CreateShaders()
 {
@@ -81,7 +83,7 @@ bool SlashTrailRenderer::CreateShaders()
 		}
 	}
 
-	// ピクセルシェーダー(Add用)：KdGPUParticle_PS.hlslをそのまま流用
+	// ピクセルシェーダー(Add用)：KdGPUParticle_PS.hlslをそのまま流用(現在未使用。将来の非マスクAdd用に残置)
 	{
 #include "../GPUParticle/KdGPUParticle_PS.shaderInc"
 
@@ -103,6 +105,17 @@ bool SlashTrailRenderer::CreateShaders()
 		}
 	}
 
+	// ピクセルシェーダー(Add[芯]用)：SlashTrail_PS_AddMasked.hlsl(新規、DoFブラー除外マスク書き込み対応)
+	{
+#include "SlashTrail_PS_AddMasked.shaderInc"
+
+		if (FAILED(Dev->CreatePixelShader(compiledBuffer, sizeof(compiledBuffer), nullptr, &m_PS_AddMasked)))
+		{
+			assert(0 && "SlashTrailRenderer：ピクセルシェーダー作成失敗(SlashTrail_PS_AddMasked)");
+			return false;
+		}
+	}
+
 	return true;
 }
 
@@ -114,6 +127,7 @@ void SlashTrailRenderer::Release()
 	KdSafeRelease(m_VS);
 	KdSafeRelease(m_PS);
 	KdSafeRelease(m_PS_Masked);
+	KdSafeRelease(m_PS_AddMasked);
 	KdSafeRelease(m_inputLayout);
 	KdSafeRelease(m_vertexBuffer);
 
@@ -126,7 +140,7 @@ void SlashTrailRenderer::Release()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void SlashTrailRenderer::Draw(const std::vector<Vertex>& vertices, KdParticleBlendMode blendMode)
 {
-	
+
 
 	if (!m_initialized) { return; }
 
@@ -159,8 +173,9 @@ void SlashTrailRenderer::Draw(const std::vector<Vertex>& vertices, KdParticleBle
 	shaderMgr.SetVertexShader(m_VS);
 	DevCon->IASetInputLayout(m_inputLayout);
 
-	// Alphaブレンド時のみ、カラーグレード除外マスクを書き込むPSへ切り替える
-	shaderMgr.SetPixelShader(blendMode == KdParticleBlendMode::Alpha ? m_PS_Masked : m_PS);
+	// Alpha/Addいずれの場合も、DoFブラー除外マスク(カラーグレード除外マスクと共用)を
+	// 書き込むPSへ切り替える(遠景の深度に引きずられて背景ブラーがかかるのを防ぐ為)
+	shaderMgr.SetPixelShader(blendMode == KdParticleBlendMode::Alpha ? m_PS_Masked : m_PS_AddMasked);
 
 	// TODO: SlashTrailParams::TexturePathからの解決が未実装の為、暫定で白テクスチャを割り当てる
 	//	(ITextureProviderと同じ仕組みをSlashTrailInstance/Dispatcher側に用意すれば差し替えられる)
@@ -175,7 +190,10 @@ void SlashTrailRenderer::Draw(const std::vector<Vertex>& vertices, KdParticleBle
 	shaderMgr.ChangeRasterizerState(KdRasterizerState::CullNone);
 
 	// ブレンドモードの切り替え・Z書き込み無効(KdGPUParticle::Drawと同じ要領)
-	const KdBlendState blendState = (blendMode == KdParticleBlendMode::Alpha) ? KdBlendState::Alpha : KdBlendState::Add;
+	// ※Alpha側はマスク(SV_Target1)への書き込みを許可する KdBlendState::AlphaMasked を使う事。
+	//   通常の KdBlendState::Alpha ではMRTスロット1への書き込みが無効化されており、
+	//   PS側がマスクを出力しても反映されない
+	const KdBlendState blendState = (blendMode == KdParticleBlendMode::Alpha) ? KdBlendState::AlphaMasked : KdBlendState::Add;
 	shaderMgr.ChangeBlendState(blendState);
 	shaderMgr.ChangeDepthStencilState(KdDepthStencilState::ZWriteDisable);
 

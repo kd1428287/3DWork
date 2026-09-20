@@ -17,6 +17,8 @@
 //    UnlitなPSが、トレイルの要件と完全に一致する為、新規に書く必要が無かった。
 //    Alpha時のみカラーグレード除外マスクの書き込みが必要なので、
 //    KdGPUParticleと同じくPSを2種類使い分ける)
+// ・Add(芯)側も、DoFブラー除外マスク書き込みの為にSlashTrail_PS_AddMasked.hlsl
+//   (トレイル専用の新規ファイル)を使用する
 //
 // 【使い方】
 //   SlashTrailRenderer renderer;
@@ -55,7 +57,7 @@ public:
 	// verticesを頂点バッファへ書き込み、三角形ストリップとして描画する。
 	//	verticesが4頂点(2サンプル)未満の場合は何もしない。
 	//	blendModeでKdBlendStateを切り替える(KdGPUParticle::Drawと同じ要領)。
-	//	Alpha指定時のみ、カラーグレード除外マスクを書き込むPSへ切り替わる。
+	//	Alpha/Addいずれの場合もDoFブラー除外マスクを書き込むPSへ切り替わる。
 	// ※事前にShaderManager::WriteCBCamera等でカメラ情報の転送が済んでいる事
 	// ※テクスチャは未対応(TODO)。現状は白テクスチャを割り当て、頂点カラーのみで描画する
 	void Draw(const std::vector<Vertex>& vertices, KdParticleBlendMode blendMode);
@@ -69,8 +71,9 @@ private:
 	UINT	m_maxVertexCount = 0;
 
 	ID3D11VertexShader* m_VS = nullptr;			// 新規(SlashTrail_VS.hlsl)
-	ID3D11PixelShader* m_PS = nullptr;			// Add用：KdGPUParticle_PS.hlslを流用
+	ID3D11PixelShader* m_PS = nullptr;			// Add用：KdGPUParticle_PS.hlslを流用(現在未使用。将来の非マスクAdd用に残置)
 	ID3D11PixelShader* m_PS_Masked = nullptr;	// Alpha用：KdGPUParticle_PS_Masked.hlslを流用
+	ID3D11PixelShader* m_PS_AddMasked = nullptr;	// Add(芯)用：SlashTrail_PS_AddMasked.hlsl(新規、DoFブラー除外マスク書き込み対応)
 	ID3D11InputLayout* m_inputLayout = nullptr;
 
 	ID3D11Buffer* m_vertexBuffer = nullptr;	// D3D11_USAGE_DYNAMIC。毎フレームMap/Unmapで書き換える

@@ -360,6 +360,7 @@
     <ClInclude Include="Src\Application\Core\Scene\SceneManager.h" />
     <ClInclude Include="Src\Application\Core\Scene\SceneType.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\Blackboard.h" />
+    <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\BTBlackboardConditions.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\BTComposite.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\BTCondition.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\BTNodeStatus.h" />
@@ -368,6 +369,7 @@
     <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\BTWeightedAttackAction.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\IBTNode.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\CharacterCollisionDefaults.h" />
+    <ClInclude Include="Src\Application\Definitions\Character\Common\CharacterConfigs.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\CharacterDefinitionCommon.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\CombatData.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\StateMachine\StateMachine.h" />
@@ -383,6 +385,7 @@
     <ClInclude Include="Src\Application\Definitions\Effect\EffectParams.h" />
     <ClInclude Include="Src\Application\Definitions\Effect\SlashTrailParams.h" />
     <ClInclude Include="Src\Application\Definitions\Loaders\AttackDataLoader.h" />
+    <ClInclude Include="Src\Application\Definitions\Loaders\DefinitionJson.h" />
     <ClInclude Include="Src\Application\Definitions\Loaders\EffectDataLoader.h" />
     <ClInclude Include="Src\Application\Definitions\Loaders\JsonLoader.h" />
     <ClInclude Include="Src\Application\Definitions\Loaders\MapLoader.h" />
@@ -661,6 +664,9 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\SlashTrailShader\SlashTrail_PS_AddMasked.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\SlashTrailShader\SlashTrail_VS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>

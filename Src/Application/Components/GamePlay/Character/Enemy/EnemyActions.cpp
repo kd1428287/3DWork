@@ -35,8 +35,15 @@ BTNodeStatus EnemyActionPatrol::Tick(EnemyAIController* context, float /*deltaTi
 		return BTNodeStatus::Success;
 	}
 
+	// 【修正】MovementComponentはSetDesiredVelocity()に正規化済みの
+	// 方向のみを受け取り、大きさは自身のspeed_(SetMovementSpeed()で
+	// 設定)を掛けて決める契約(MovementComponent.h参照)。以前は
+	// toTarget*patrolSpeedのように大きさ込みで渡しており、
+	// MovementComponent::speed_(旧EnemyDefinition::moveSpeed)と二重に
+	// 速度が掛かっていた。
 	toTarget.Normalize();
-	context->SetDesiredVelocity(toTarget * context->GetData().patrolSpeed);
+	context->SetMovementSpeed(context->GetData().patrolSpeed);
+	context->SetDesiredVelocity(toTarget);
 	context->PlayAnimationIfChanged("Walk", true);
 	return BTNodeStatus::Running;
 }
@@ -55,7 +62,8 @@ BTNodeStatus EnemyActionChase::Tick(EnemyAIController* context, float /*deltaTim
 	}
 
 	toTarget.Normalize();
-	context->SetDesiredVelocity(toTarget * context->GetData().chaseSpeed);
+	context->SetMovementSpeed(context->GetData().chaseSpeed);
+	context->SetDesiredVelocity(toTarget);
 	context->PlayAnimationIfChanged("Run", true);
 	return BTNodeStatus::Running;
 }
@@ -79,7 +87,8 @@ BTNodeStatus EnemyActionMaintainDistance::Tick(EnemyAIController* context, float
 	}
 
 	toTarget.Normalize();
-	context->SetDesiredVelocity(toTarget * context->GetData().chaseSpeed);
+	context->SetMovementSpeed(context->GetData().chaseSpeed);
+	context->SetDesiredVelocity(toTarget);
 	context->PlayAnimationIfChanged("Run", true);
 	return BTNodeStatus::Running;
 }

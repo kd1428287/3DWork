@@ -408,16 +408,18 @@ void SlashTrailInstance::RebuildVertices()
 			const Vector3 tipCore = Vector3::Lerp(center, center + coreHalfWidth, taper);
 			const Vector3 baseCore = Vector3::Lerp(center, center - coreHalfWidth, taper);
 
+			const float fade = std::sqrt(2.0f * fadeRate - fadeRate * fadeRate);
+
 			SlashTrailVertex vTipCore;
 			vTipCore.Position = tipCore;
 			vTipCore.UV = { u, 0.0f };
-			vTipCore.Color = { params_.CoreColor.x, params_.CoreColor.y, params_.CoreColor.z, fadeRate };
+			vTipCore.Color = { params_.CoreColor.x, params_.CoreColor.y, params_.CoreColor.z, fade - 0.15f };
 			coreVertices_.push_back(vTipCore);
 
 			SlashTrailVertex vBaseCore;
 			vBaseCore.Position = baseCore;
 			vBaseCore.UV = { u, 1.0f };
-			vBaseCore.Color = { params_.CoreColor.x, params_.CoreColor.y, params_.CoreColor.z, fadeRate };
+			vBaseCore.Color = { params_.CoreColor.x, params_.CoreColor.y, params_.CoreColor.z, fade - 0.15f };
 			coreVertices_.push_back(vBaseCore);
 		}
 	}

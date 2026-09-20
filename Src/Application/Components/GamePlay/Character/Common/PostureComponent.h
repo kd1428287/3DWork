@@ -1,8 +1,7 @@
 ﻿#pragma once
 #include "Application/Core/EventBus/Events/PostureEvents.h"
 
-// HP(体力)とは別に「体幹」を管理する汎用コンポーネント
-
+// 体幹を管理
 class PostureComponent : public ComponentBase {
 public:
 	explicit PostureComponent(GameObject* owner, float maxPosture = 100.0f)
@@ -43,8 +42,9 @@ public:
 	float GetMax() const { return max_; }
 	float GetRatio() const { return max_ > 0.0f ? current_ / max_ : 0.0f; }
 
-	void SetRegenPerSecond(float value) { regenPerSecond_ = value; }
-	void SetRegenDelaySeconds(float value) { regenDelaySeconds_ = value; }
+	void SetLowerLimit(float lowerLimit) { lowerLimit_ = lowerLimit; }
+	void SetRegenPerSecond(float regenPerSecond) { regenPerSecond_ = regenPerSecond; }
+	void SetRegenDelaySeconds(float regenDelaySeconds) { regenDelaySeconds_ = regenDelaySeconds; }
 
 private:
 	void PublishChanged() {
@@ -57,10 +57,13 @@ private:
 	float max_;
 	float current_;
 
-	// 1秒あたりの自然回復量。
+	// 回復できる下限
+	float lowerLimit_ = 0.0f;
+
+	// 1秒あたりの自然回復量
 	float regenPerSecond_ = 10.0f;
 
-	// AddPostureDamage()を受けてから回復を再開するまでの秒数。
+	// AddPostureDamage()を受けてから回復を再開するまでの秒数
 	float regenDelaySeconds_ = 1.0f;
 	float regenDelayTimer_ = 0.0f;
 };

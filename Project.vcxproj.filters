@@ -948,6 +948,15 @@
     <ClInclude Include="Src\Application\Definitions\Character\Enemy\EnemyBlackboardKeys.h">
       <Filter>Src\Application\Definitions\Character\Enemy</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\BTBlackboardConditions.h">
+      <Filter>Src\Application\Definitions\Character\Common\BehaviorTree</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Character\Common\CharacterConfigs.h">
+      <Filter>Src\Application\Definitions\Character\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Loaders\DefinitionJson.h">
+      <Filter>Src\Application\Definitions\Loaders</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -1355,6 +1364,9 @@
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle_PS_Masked.hlsl">
       <Filter>Src\Framework\Shader\GPUParticle</Filter>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\SlashTrailShader\SlashTrail_PS_AddMasked.hlsl">
+      <Filter>Src\Framework\Shader\SlashTrailShader</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

@@ -13,6 +13,10 @@
 		"maxHealth": 100.0
 	},
 
+	"components": [
+		{ "type": "HitReaction" }
+	],
+
 	"combatBehavior": {
 		"attackTablePath": "Asset/Data/Game/PlayerAttackTable.json",
 

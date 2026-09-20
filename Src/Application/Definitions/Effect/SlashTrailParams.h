@@ -27,7 +27,7 @@ struct SlashTrailSample
 struct SlashTrailParams
 {
 	// 記録されてからこの秒数でフェードアウトし切る(サンプル1個分の生存時間)
-	float	FadeLength = 0.75f;
+	float	FadeLength = 0.85f;
 
 	// 直前に記録したTip座標からこの距離以上動いたら新規サンプルを記録する
 	float	MinSampleDistance = 0.005f;
@@ -52,7 +52,7 @@ struct SlashTrailParams
 	bool	BleedEnabled = true;
 	float	BleedPeakTime = 0.05f;
 	float	BleedStartScale = 0.75f;
-	float	BleedPeakScale = 1.35f;
+	float	BleedPeakScale = 1.75f;
 
 	// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 	// UVマッピング方式(テクスチャの非等幅な形状が伸び縮みして見える「電動ノコギリ」対策)
@@ -60,7 +60,7 @@ struct SlashTrailParams
 	//	  mod 1.0でタイリングする
 	// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 	bool	UseDistanceBasedUV = true;
-	float	UVTileLength = 1.2f;
+	float	UVTileLength = 1.f;
 
 	// 距離ベースUVにおける「直近に記録されたサンプルから、現在の実際の剣先までの延長距離
 	// (tipOffset)」の平滑化係数(0より大きく1以下)。

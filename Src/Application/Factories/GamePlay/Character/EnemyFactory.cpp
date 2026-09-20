@@ -10,21 +10,25 @@
 #include "Application/Components/GamePlay/Character/Common/PostureComponent.h"
 #include "Application/Components/GamePlay/Character/Common/HealthComponent.h"
 #include "Application/Components/GamePlay/Character/Common/AttackSourceComponent.h"
+#include "Application/Components/GamePlay/Character/Common/WeaponSetComponent.h"
+#include "Application/Components/GamePlay/Character/Common/WeaponComponent.h"
+#include "Application/Components/GamePlay/Character/Common/HitReactionComponent.h"
 
 #include "Application/Components/Core/AttachToSocketComponent.h"
 #include "Application/Components/Core/BoneSocketComponent.h"
 
 #include "Application/Components/Physics/Movement/MovementComponent.h"
-#include "Application/Components/Physics/Collision/ColliderComponent.h"
+#include "Application/Components/Physics/Movement/MovementResolverComponent.h"
 #include "Application/Components/Physics/Movement/GravityComponent.h"
+#include "Application/Components/Physics/Collision/ColliderComponent.h"
 #include "Application/Components/Physics/Sensors/GroundSensorComponent.h"
 
 #include "Application/Components/Graphics/Animation/SkeletonComponent.h"
+#include "Application/Components/Graphics/Animation/FacingDirectionComponent.h"
 #include "Application/Components/Graphics/Animation/ModelAnimatorComponent.h"
 #include "Application/Components/Graphics/Render/ModelRenderComponent.h"
-#include "Application/Components/Graphics/UI/GamePlay/EnemyWorldGaugeComponent.h"
-#include "Application/Components/Graphics/Animation/FacingDirectionComponent.h"
 #include "Application/Components/Graphics/Render/WireFrameComponent.h"
+#include "Application/Components/Graphics/UI/GamePlay/EnemyWorldGaugeComponent.h"
 
 namespace
 {
@@ -40,8 +44,9 @@ namespace
 	{
 		TransformComponent* transform = enemy->AddComponent<TransformComponent>();
 		transform->SetPosition(position);
-		transform->SetScale(def.modelScale);
-		enemy->AddComponent<MovementComponent>(def.moveSpeed);
+		transform->SetScale(def.GetModelScale());
+
+		enemy->AddComponent<MovementComponent>();
 	}
 
 	// --- 見た目(スケルトン+モデル描画) --------------------------------
@@ -56,11 +61,6 @@ namespace
 	}
 
 	// --- 意思決定・実行(EnemyAIController + IEnemyBehavior) --------------
-	// コンポーネント自体はEnemyAIController1種類に統合されているため、
-	// def.type(EnemyType)を見て切り替えるのは中へ渡すIEnemyBehaviorの
-	// 実装だけになる(EnemyAIController.h冒頭コメント参照)。以前は
-	// IEnemyAIController経由でEnemyAIController/WarrockAIControllerという
-	// 別々のコンポーネント型を出し分けていたが、その必要が無くなった。
 	EnemyAIController* CreateAIController(GameObject* enemy, const EnemyDefinition& def)
 	{
 		std::unique_ptr<IEnemyBehavior> behavior;
@@ -79,20 +79,20 @@ namespace
 	// --- 当たり判定(HurtBox+Body) -------------------------------------
 	void CreateColliders(GameObject* enemy, const EnemyDefinition& def)
 	{
+		const float colliderRadius = def.GetColliderRadius();
+
 		ColliderComponent* collider = enemy->AddComponent<ColliderComponent>();
-		CollisionShapeEntry& hurtBox = collider->AddCapsule("HurtBox", def.bodyRadius,
-			Math::Vector3(0.0f, def.bodyRadius, 0.0f),
-			Math::Vector3(0.0f, (CharacterCollisionDefaults::kFootOffset * 2) - def.bodyRadius, 0.0f),
+		CollisionShapeEntry& hurtBox = collider->AddCapsule("HurtBox", colliderRadius,
+			Math::Vector3(0.0f, colliderRadius, 0.0f),
+			Math::Vector3(0.0f, (CharacterCollisionDefaults::kFootOffset * 2) - colliderRadius, 0.0f),
 			ColliderCategory::HurtBox, ColliderCategory::HitBox);
 		hurtBox.isTrigger = true;
 
 		using CharacterCollisionDefaults::kFootOffset;
-		collider->AddCapsule("Body", def.bodyRadius,
-			Math::Vector3(0.0f, kFootOffset - def.bodyRadius, 0.0f),
-			Math::Vector3(0.0f, kFootOffset + def.bodyRadius, 0.0f),
+		collider->AddCapsule("Body", colliderRadius,
+			Math::Vector3(0.0f, kFootOffset - colliderRadius, 0.0f),
+			Math::Vector3(0.0f, kFootOffset + colliderRadius, 0.0f),
 			ColliderCategory::Bump);
-
-		//enemy->AddComponent<WireFrameComponent>();
 	}
 
 	// --- 物理(重力・速度・接地判定) -----------------------------------
@@ -100,6 +100,8 @@ namespace
 	{
 		enemy->AddComponent<GravityComponent>();
 		enemy->AddComponent<VelocityComponent>();
+		enemy->AddComponent<TweenMoveComponent>();
+		enemy->AddComponent<MovementResolverComponent>();
 		enemy->AddComponent<GroundSensorComponent>();
 	}
 
@@ -109,20 +111,25 @@ namespace
 		auto* facing = enemy->AddComponent<FacingDirectionComponent>();
 		facing->SetRotationSpeed(3.f);
 
-		// 体幹(パリィ/ガードの削り合い)管理用。全敵種に一律で付けている
-		// (使うかどうかはBehavior::OnHit()側の判断。BruteBehavior::
-		// OnHit()参照)。
-		enemy->AddComponent<PostureComponent>();
+		auto* posture = enemy->AddComponent<PostureComponent>(100);
+	/*	posture->SetLowerLimit();
+		posture->SetRegenPerSecond();
+		posture->SetRegenDelaySeconds();*/
 
 		auto* health = enemy->AddComponent<HealthComponent>();
 		health->SetMax(1000.f, true);
 		enemy->AddComponent<LockOnTargetComponent>();
 
+		
+		enemy->AddComponent<WeaponSetComponent>();
+		auto* hitReaction = enemy->AddComponent<HitReactionComponent>();
+		hitReaction->SetConfig(def.hitReactionConfig);
+
 		auto* animator = enemy->AddComponent<ModelAnimatorComponent>();
 		animator->SetFPS(60);
 		animator->SetRootMotionBoneName("mixamorig:Hips");
 		animator->SetRootMotionForwardAxis(RootMotionAxis::Y, -1.0f);
-		animator->SetRootMotionScale(0.01f * def.modelScale.x);
+		animator->SetRootMotionScale(0.01f * def.GetModelScale().x);
 	}
 
 	// --- 頭上ゲージUIの生成 --------------------------------------------
@@ -165,15 +172,16 @@ namespace
 		auto* attackSource = weapon->AddComponent<AttackSourceComponent>();
 		attackSource->ownerCharacter = Handle<GameObject>(enemy);
 
+	
+		weapon->AddComponent<WeaponComponent>();
+
+		// デバッグ用判定可視化コンポーネント
 		weapon->AddComponent<WireFrameComponent>();
 
 		return weapon;
 	}
 
 	// --- 武器の生成・取り付け・道連れ登録 ------------------------------
-	// 以前はIEnemyAIController経由で扱っていたが、コンポーネント自体が
-	// EnemyAIController1種類に統合されたため、直接EnemyAIController*を
-	// 受け取る形に戻せる(EnemyAIController.h参照)。
 	void AttachWeaponAndRegister(ObjectManager& objectManager, GameObject* enemy,
 		EnemyAIController* ai, Handle<SkeletonComponent>& skeletonHandle)
 	{
@@ -182,9 +190,7 @@ namespace
 
 		GameObject* weapon = CreateWeapon(objectManager, enemy, weaponAttachPoint);
 		if (weapon != nullptr) {
-			ai->SetWeapon(
-				Handle<ColliderComponent>(weapon->GetComponent<ColliderComponent>()),
-				Handle<AttackSourceComponent>(weapon->GetComponent<AttackSourceComponent>()));
+			ai->SetWeapon(Handle<WeaponComponent>(weapon->GetComponent<WeaponComponent>()));
 		}
 
 		ai->RegisterOwnedObject(Handle<GameObject>(weaponSocket));
@@ -210,10 +216,6 @@ GameObject* EnemyFactory::BuildEnemy(ObjectManager& objectManager, const EnemyDe
 	CreateTransformAndMovement(enemy, def, position);
 	SkeletonComponent* skeleton = AttachVisuals(enemy, def);
 
-	// 【順序が重要】CreateCombatSupportComponents()(ModelAnimatorComponentを
-	// 追加する)は、EnemyAIController(ルートモーション消費のため
-	// ModelAnimatorComponent::Update()が自分より先に走っている前提。
-	// EnemyAIController.h::ApplyRootMotion()コメント参照)より前に呼ぶ。
 	CreateCombatSupportComponents(enemy, def);
 
 	EnemyAIController* ai = CreateAIController(enemy, def);

@@ -1,27 +1,35 @@
-﻿#include "EnemyAIController.h"
-#include "../Common/CharacterEvents.h"
+#include "EnemyAIController.h"
 
 void EnemyAIController::UpdateTargetAcquisition()
 {
 	targetTransform_ = FindPlayerTransform();
 	if (targetTransform_ == nullptr || transform_ == nullptr) {
-		hasTarget_ = false;
+		blackboard_.SetBool(EnemyBlackboardKeys::HasTarget, false);
+		blackboard_.SetFloat(EnemyBlackboardKeys::DistanceToTarget, FLT_MAX);
 		return;
 	}
 
 	const float distSq = (targetTransform_->GetPosition() - transform_->GetPosition()).LengthSquared();
-	if (hasTarget_) {
+
+	// 現在Blackboardに乗っている値を読み、ヒステリシス込みで更新する
+	// (以前はhasTarget_という専用メンバで同じことをしていた。
+	// EnemyAIController.h冒頭コメント参照)。
+	bool hasTarget = blackboard_.GetBoolOr(EnemyBlackboardKeys::HasTarget, false);
+	if (hasTarget) {
 		// 既に捕捉中: loseTargetRangeより離れたら見失う。
 		if (distSq > data_.loseTargetRange * data_.loseTargetRange) {
-			hasTarget_ = false;
+			hasTarget = false;
 		}
 	}
 	else {
 		// 未捕捉: detectionRange以内に入ったら新規に捕捉する。
 		if (distSq <= data_.detectionRange * data_.detectionRange) {
-			hasTarget_ = true;
+			hasTarget = true;
 		}
 	}
+
+	blackboard_.SetBool(EnemyBlackboardKeys::HasTarget, hasTarget);
+	blackboard_.SetFloat(EnemyBlackboardKeys::DistanceToTarget, std::sqrt(distSq));
 }
 
 TransformComponent* EnemyAIController::FindPlayerTransform() const
@@ -37,30 +45,42 @@ TransformComponent* EnemyAIController::FindPlayerTransform() const
 	return nullptr;
 }
 
+namespace
+{
+	// pool内から間合い[minRange,maxRange]に入る技を重み付き抽選する。
+	const EnemyAttackDefinition* ChooseFrom(const std::vector<EnemyAttackDefinition>& pool, float dist)
+	{
+		float totalWeight = 0.0f;
+		for (const auto& atk : pool) {
+			if (dist >= atk.minRange && dist <= atk.maxRange) totalWeight += atk.weight;
+		}
+		if (totalWeight <= 0.0f) return nullptr;
+
+		// 【要確認】std::rand()を使った簡易な重み付き抽選
+		float roll = (static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX)) * totalWeight;
+		for (const auto& atk : pool) {
+			if (dist < atk.minRange || dist > atk.maxRange) continue;
+			roll -= atk.weight;
+			if (roll <= 0.0f) return &atk;
+		}
+
+		for (const auto& atk : pool) {
+			if (dist >= atk.minRange && dist <= atk.maxRange) return &atk;
+		}
+		return nullptr;
+	}
+}
+
 const EnemyAttackDefinition* EnemyAIController::ChooseAttack() const
 {
 	if (!HasTarget()) return nullptr;
-	const float dist = DistanceToTarget();
+	return ChooseFrom(data_.attacks, DistanceToTarget());
+}
 
-	float totalWeight = 0.0f;
-	for (const auto& atk : data_.attacks) {
-		if (dist <= atk.maxRange) totalWeight += atk.weight;
-	}
-	if (totalWeight <= 0.0f) return nullptr;
-
-	// 【要確認】std::rand()を使った簡易な重み付き抽選
-	float roll = (static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX)) * totalWeight;
-	for (const auto& atk : data_.attacks) {
-		if (dist > atk.maxRange) continue;
-		roll -= atk.weight;
-		if (roll <= 0.0f) return &atk;
-	}
-
-	// 浮動小数の誤差でここまで抜けてきた場合のフォールバック。
-	for (const auto& atk : data_.attacks) {
-		if (dist <= atk.maxRange) return &atk;
-	}
-	return nullptr;
+const EnemyAttackDefinition* EnemyAIController::ChooseGapCloserAttack() const
+{
+	if (!HasTarget()) return nullptr;
+	return ChooseFrom(data_.gapCloserAttacks, DistanceToTarget());
 }
 
 void EnemyAIController::FaceHorizontalTarget(const Math::Vector3& targetPosition)
@@ -77,32 +97,6 @@ void EnemyAIController::FaceHorizontalTarget(const Math::Vector3& targetPosition
 	transform_->SetRotation(Math::Quaternion::CreateFromAxisAngle(Math::Vector3::Up, yaw));
 }
 
-// --- 被弾処理 -----------------------------------------------------------
-void EnemyAIController::OnCollisionEnter(const Events::Collision::CollisionEnterEvent& e)
-{
-	if (isDead_) return;
-	if (e.selfShapeName != "HurtBox") return;
-
-	AttackSourceComponent* attack = e.otherObject->GetComponent<AttackSourceComponent>();
-	if (attack == nullptr) return;
-
-	// 多段ヒット防止
-	if (attack->alreadyHit.count(GetOwner()) > 0) return;
-	attack->alreadyHit.insert(GetOwner());
-
-	//RequestHitStopEvent(*GetOwner()->GetContext()->eventBus, 0.f, 0.15f);
-
-	PublishGenericEffect(*GetOwner()->GetContext()->eventBus, "BloodSplatter", transform_->GetPosition());
-
-	if (healthComponent_ != nullptr) {
-		healthComponent_->TakeDamage(attack->GetAttackDamageData().damage);
-	}
-
-	if (behavior_) {
-		behavior_->OnHit(this, *attack);
-	}
-}
-
 // --- 被パリィ処理 ---------------------------------------------------------
 void EnemyAIController::OnParried(const AttackSourceComponent::ParriedEvent& e)
 {
@@ -116,7 +110,7 @@ void EnemyAIController::OnDied()
 {
 	if (isDead_) return;
 	isDead_ = true;
-	despawnTimer_ = behavior_ ? behavior_->GetDespawnDelay() : 1.5f;
+	despawnTimer_ = behavior_ ? behavior_->GetDespawnDelay(this) : 1.5f;
 
 	StopMovement();
 	if (movementComponent_ != nullptr) movementComponent_->SetEnabled(false);

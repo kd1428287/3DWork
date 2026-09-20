@@ -57,14 +57,18 @@ void HitReactionComponent::OnCollisionEnter(const Events::Collision::CollisionEn
 			}
 			attacker->GetLocalEventBus().Publish(AttackSourceComponent::ParriedEvent{});
 		}
-		SpawnWeaponClashEffect(e.otherObject, /*isParry=*/true);
+		if (HasFlag(config_.effectFlags, HitReactionFlags::WeaponClashFx)) {
+			SpawnWeaponClashEffect(e.otherObject, /*isParry=*/true);
+		}
 
 		// 自分自身(パリィした側)にも成立を通知
 		query_->NotifyParrySuccess();
 	}
 	else if (query_->IsGuarding()) {
 		// 通常ブロック: 自分の体幹を削り、HPにも軽減済みのチップダメージを与える。
-		SpawnWeaponClashEffect(e.otherObject, /*isParry=*/false);
+		if (HasFlag(config_.effectFlags, HitReactionFlags::WeaponClashFx)) {
+			SpawnWeaponClashEffect(e.otherObject, /*isParry=*/false);
+		}
 
 		if (postureComponent_ != nullptr) {
 			postureComponent_->AddPostureDamage(attackData.postureDamage);
@@ -77,7 +81,7 @@ void HitReactionComponent::OnCollisionEnter(const Events::Collision::CollisionEn
 		}
 		// ガード時でもノックバックする。
 		if (velocityComponent_ != nullptr) {
-			velocityComponent_->AddImpulse(ComputeKnockbackDirection(attacker) * kGuardKnockbackPower);
+			velocityComponent_->AddImpulse(ComputeKnockbackDirection(attacker) * config_.guardKnockbackPower);
 		}
 
 		query_->NotifyGuardHit();
@@ -111,10 +115,14 @@ void HitReactionComponent::OnCollisionEnter(const Events::Collision::CollisionEn
 			}
 		}
 
-		PublishHitStop(*GetOwner()->GetContext()->eventBus, 0.f, 0.1f);
-		PublishCameraShake(*GetOwner()->GetContext()->eventBus, 0.75f);
+		if (HasFlag(config_.effectFlags, HitReactionFlags::HitStop)) {
+			PublishHitStop(*GetOwner()->GetContext()->eventBus, config_.hitStopDelaySeconds, config_.hitStopDurationSeconds);
+		}
+		if (HasFlag(config_.effectFlags, HitReactionFlags::CameraShake)) {
+			PublishCameraShake(*GetOwner()->GetContext()->eventBus, config_.cameraShakeIntensity);
+		}
 
-		query_->EnterStagger(postureBroken, postureBroken ? largeStaggerDuration_ : attackData.hitStunSeconds);
+		query_->EnterStagger(postureBroken, postureBroken ? config_.largeStaggerDuration : attackData.hitStunSeconds);
 	}
 }
 
@@ -160,5 +168,5 @@ void HitReactionComponent::SpawnDamageEffect(GameObject* self, GameObject* attac
 	const Math::Vector3 clashPos =
 		(attackerWeaponTransform->GetPosition() + myTransform->GetPosition()) * 0.5f;
 
-	PublishGenericEffect(*context->eventBus, "BloodSplatter", clashPos);
+	PublishGenericEffect(*context->eventBus, config_.damageEffectName, clashPos);
 }

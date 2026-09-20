@@ -235,7 +235,6 @@ void KdPostProcessShader::PostEffectProcess()
 	DepthOfFieldProcess();
 	ColorGradeProcess();
 
-	//KdShaderManager::Instance().m_spriteShader.DrawTex(m_depthOfFieldRTPack.m_RTTexture.get(), 0, 0);
 	KdShaderManager::Instance().m_spriteShader.DrawTex(m_colorGradeRTPack.m_RTTexture.get(), 0, 0);
 }
 
@@ -295,15 +294,16 @@ void KdPostProcessShader::DepthOfFieldProcess()
 {
 	SetDoFToDevice();
 
-	std::shared_ptr<KdTexture> srcTexList[4] =
+	std::shared_ptr<KdTexture> srcTexList[5] =
 	{
 		m_postEffectRTPack.m_RTTexture,
 		m_blurRTPack.m_RTTexture,
 		m_strongBlurRTPack.m_RTTexture,
-		m_postEffectRTPack.m_ZBuffer
+		m_postEffectRTPack.m_ZBuffer,
+		m_colorGradeMaskRTPack.m_RTTexture		// 追加：DoFブラー除外マスク(カラーグレード除外マスクを共用)
 	};
 
-	DrawTexture(srcTexList, 4, m_depthOfFieldRTPack.m_RTTexture, &m_depthOfFieldRTPack.m_viewPort);
+	DrawTexture(srcTexList, 5, m_depthOfFieldRTPack.m_RTTexture, &m_depthOfFieldRTPack.m_viewPort);
 }
 
 void KdPostProcessShader::ColorGradeProcess()

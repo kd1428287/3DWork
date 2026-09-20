@@ -62,7 +62,7 @@ public:
 	std::unordered_set<GameObject*> alreadyHit;
 
 	void SetAttackDamageData(AttackDamageData data) { damageData_ = data; }
-	const AttackDamageData& GetAttackDamageData() { return damageData_; }
+	const AttackDamageData& GetAttackDamageData() const { return damageData_; }
 
 private:
 	AttackDamageData damageData_;

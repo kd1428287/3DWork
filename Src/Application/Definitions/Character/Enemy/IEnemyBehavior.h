@@ -28,6 +28,19 @@ class EnemyAIController;
 // Warrock側の要件を基準にこのインターフェースの形を決めている。
 // 汎用敵(BruteBehavior)側の実装は現時点でこの形に追従できていない
 // 部分がある(各Behaviorのファイル冒頭コメント参照)。
+//
+// 【GetDespawnDelay()にownerを渡す変更について】
+// 死亡演出の尺(Dyingアニメーションの尺+余白)はEnemyAIData::
+// oneShotAnimations["Dying"].duration/postDeathLingerSecondsという
+// データ側の値になったため、算出にはowner->GetData()へのアクセスが
+// 要る。他のフック(OnHit/OnParried/OnDied等)は軒並みownerを受け取って
+// いるのに、このフックだけownerを受け取らない仕様は元々不自然だった
+// ため、これを機にシグネチャをownerを取る形へ揃えた。
+// 【影響範囲】この変更に伴い、IEnemyBehaviorを実装する全クラス
+// (WarrockBehavior等)のGetDespawnDelay()、およびEnemyAIController::
+// OnDied()内の呼び出し箇所(behavior_->GetDespawnDelay()→
+// behavior_->GetDespawnDelay(this))の追従が必要(BT実行層の
+// リファクタリングで対応する)。
 // ============================================================
 class IEnemyBehavior
 {
@@ -46,11 +59,19 @@ public:
 	// 実装(何もしない)のままでよい。
 	virtual void OnSpawned(EnemyAIController* owner) {}
 
-	// HurtBoxへの被弾が確定し、EnemyAIController側でHealthComponentへ
-	// ダメージを適用した直後に呼ばれるフック。体幹削り・被弾リアクション
-	// 要求など、敵種ごとに異なる反応はここで行う(EnemyAIController自体は
-	// ダメージ適用と多段ヒット防止だけを行い、その先の解釈はしない)。
-	virtual void OnHit(EnemyAIController* owner, const AttackSourceComponent& attack) {}
+	// HitReactionComponentが通常被弾(パリィ/ガードのどちらでもない被弾)を
+	// 処理した直後、EnemyAIController::EnterStagger()(IHitReactionQuery
+	// 実装)経由で呼ばれるフック。ダメージ適用・ノックバック・体幹ダメージ・
+	// 体幹崩壊判定はHitReactionComponent側(Player/Enemy共通)が既に終えて
+	// おり、isLargeにその結果(体幹が壊れたか)が入っている。敵種側は
+	// これを見てどの割り込み演出(通常反応/大スタン)を要求するかだけを
+	// 判断すればよい(WarrockBehavior::OnStaggered()参照)。
+	//
+	// 【durationについて】HitReactionComponent側が攻撃データ
+	// (AttackDamageData::hitStunSeconds)から計算した怯み秒数だが、
+	// Enemyの実際の演出尺はEnemyAIData::oneShotAnimationsを唯一の実体と
+	// する設計のため、多くの実装ではこの引数を無視してよい。
+	virtual void OnStaggered(EnemyAIController* owner, bool isLarge, float duration) {}
 
 	// 自分自身の攻撃(そのHitBoxを持つ武器のAttackSourceComponent::
 	// ownerCharacterが自分自身を指している攻撃)がパリィされた時に呼ばれる
@@ -68,5 +89,7 @@ public:
 
 	// 死亡確定から消滅(RequestDespawn)までの猶予秒数。敵種ごとに死亡
 	// 演出の長さが変わりうるため、Behavior側の値を使う。
-	virtual float GetDespawnDelay() const { return 1.5f; }
+	// ownerを受け取るのはEnemyAIData(owner->GetData())側のDying尺+
+	// postDeathLingerSecondsから算出するため(クラス冒頭コメント参照)。
+	virtual float GetDespawnDelay(const EnemyAIController* owner) const { return 1.5f; }
 };

@@ -38,9 +38,20 @@ namespace EnemyBlackboardKeys
 	// 毎フレーム書き込む。
 	constexpr const char* IsAttackOnCooldown = "IsAttackOnCooldown";
 
-	// 【今後の追加候補】
-	// IsTargetInAttackRange(bool): 現状はEnemyAIController::
-	// IsTargetInAttackRange()がdata_.attacksを都度走査して計算している。
-	// attackSeqのConditionをBTCompareBoolCondition化する際に、ここへ
-	// 追加してEnemyAIController::Update()から書き込む形にする。
+	// bool。現在のターゲットが、いずれかの攻撃(EnemyAIData::attacks)の
+	// maxRange以内にいるか。EnemyAIController::Update()が
+	// (EnemyAIController::IsTargetInAttackRange()の計算結果を)毎フレーム
+	// 書き込む。
+	constexpr const char* IsTargetInAttackRange = "IsTargetInAttackRange";
+
+	// bool。ターゲットがgapCloserAttacksのいずれかの間合い内にいるか。
+	constexpr const char* IsTargetInGapCloserRange = "IsTargetInGapCloserRange";
+
+	// bool。各IEnemyBehavior実装が「今何らかの割り込み演出(被弾
+	// リアクション/大スタン/パリィ/咆哮等)を要求中か」を書き込むための
+	// 汎用キー。具体的にどの演出かという詳細(WarrockBehavior::pending_
+	// 相当)まではBlackboardへは公開せず、Behavior側の内部実装に留める
+	// (BTPendingReactionAction<T>はこの詳細をBehaviorへ問い合わせる
+	// 専用のラムダ経由で読むため、Blackboard越しにする必要が無い)。
+	constexpr const char* HasPendingReaction = "HasPendingReaction";
 }

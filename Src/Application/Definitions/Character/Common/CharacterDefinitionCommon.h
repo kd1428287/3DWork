@@ -1,6 +1,7 @@
 ﻿#pragma once
 
-#include "../../Physics/ColliderCategory.h"
+#include "Application/Components/Physics/Collision/ColliderComponent.h" 
+#include "CharacterConfigs.h"
 
 // ============================================================
 // Player/Enemy等、複数キャラクターのFactory/Definitionで共通して
@@ -9,14 +10,6 @@
 // 定義をここに集約し、PlayerDefinition/EnemyDefinition等はこれを
 // 部品として組み合わせる。
 // ============================================================
-
-struct MotionClipData
-{
-	std::string animationName;
-	float duration = 0.2f;
-	bool useRootMotion = false;
-	float blendDuration = 0.1f;
-};
 
 // カプセルコライダー1本分の定義（Body / HurtBox 等）
 struct CapsuleColliderDefinition
@@ -63,3 +56,22 @@ struct WeaponDefinition
 
 	WeaponColliderDefinition hitBox;
 };
+
+// 単発アニメーション1本分の再生設定。「windup/active/recoveryのような
+// 複数フェーズへの分割は持たず、1つのクリップをどう再生するか」だけを
+// 表す最小単位。Player(ターン/回避後リアクション等)・Enemy(被弾リアクション/
+// 咆哮/死亡等)の双方で同じ形が必要になったため、AttackDataをCombatData.hへ
+// 統合した時と同じ考え方でここへ集約する(旧PlayerCombatTypes.h::MotionClipData)。
+struct MotionClipData
+{
+	std::string animationName;
+	float duration = 0.2f;
+	bool useRootMotion = false;
+	float blendDuration = 0.1f;
+};
+
+// ============================================================
+// HitReactionComponent(Player/Enemy共通)が被弾処理の中で発生させる
+// 副作用のうち、キャラクターごとに変えたい値をまとめた設定。
+// ============================================================
+

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "../EnemyAIData.h"
 
 // ============================================================
@@ -14,6 +14,14 @@
 // この関数は「EnemyAIDataという共通の器に、Warrock用の値を詰めて返す」
 // だけの、CreateDebugBruteAIData()/CreateDebugBossAIData()
 // (EnemyAIData.h参照)と同じ形のプリセット関数として実装する。
+//
+// 【oneShotAnimations/movementAnimationsについて】
+// 以前はWarrockBehavior.cpp内の匿名namespace定数(kHitReactionDuration等)や
+// アニメーション名のリテラル直書きとして持っていたが、攻撃データと
+// 同じくデータ駆動に揃えるためこちらへ移した。実行層(WarrockBehavior.cpp)
+// を実際にこのデータへ配線する作業は、BT実行層の大規模リファクタリングで
+// 行う(現時点ではデータとして持たせるところまで。BTWeightedAttackAction
+// がwindup/active/recoveryをまだ読んでいないのと同じ位置づけ)。
 // ============================================================
 inline EnemyAIData CreateDebugWarrockAIData()
 {
@@ -32,9 +40,7 @@ inline EnemyAIData CreateDebugWarrockAIData()
 
 	data.maintainDistance = 3.0f;
 
-	// 現在実装済みの攻撃アニメーションはPunch/Kick/Swipning/JumpAttackの
-	// 4種。Punchが最も軽く高頻度、JumpAttackが最も重く低頻度になるよう
-	// windup/recoveryとweightを調整している。
+	// Punch/Kick/Swipeは近接プール、JumpAttackは間合い詰め専用プール。
 
 	EnemyAttackDefinition punch;
 	punch.name = "Punch";
@@ -72,10 +78,33 @@ inline EnemyAIData CreateDebugWarrockAIData()
 	jumpAttack.attackData.phaseData.windup.targetDuration = 0.9f;
 	jumpAttack.attackData.phaseData.active.targetDuration = 0.4f;
 	jumpAttack.attackData.phaseData.recovery.targetDuration = 1.8f;
-	jumpAttack.maxRange = 5.0f;
-	jumpAttack.weight = 0.6f; // 隙の大きい大技は選ばれる比率を下げる
+	// 間合い詰め専用。近接プールの外側(遠距離)でのみ選ばれる【暫定値】。
+	jumpAttack.minRange = 5.0f;
+	jumpAttack.maxRange = 9.0f;
+	jumpAttack.weight = 1.0f;
 	jumpAttack.attackData.moveData.useRootMotion = true;
-	data.attacks.push_back(jumpAttack);
+	data.gapCloserAttacks.push_back(jumpAttack);
+
+	// 移動アニメーション名。現状はデフォルトと同じ値だが、Warrock固有の
+	// データであることを明示するためここで明示的に設定しておく。
+	data.movementAnimations = { "Idle", "Walk", "Run" };
+
+	// 単発の割り込み演出。旧WarrockBehavior.cpp内の匿名namespace定数
+	// (kHitReactionDuration/kRoarDuration/kBigStaggerDuration等)は
+	// ここへ移した。
+	// BigStaggerは専用アニメーションが未実装のため、尺だけ変えて
+	// HitReactionと同じ"SmallReaction"を暫定的に使い回す(旧コメントの
+	// 経緯を引き継ぐ。専用アニメーションが用意でき次第差し替えること)。
+	data.oneShotAnimations["HitReaction"] = { "SmallReaction", 0.4f };
+	data.oneShotAnimations["BigStagger"]  = { "SmallReaction", 3.0f };
+	data.oneShotAnimations["Parried"]     = { "SmallReaction", 0.4f };
+	data.oneShotAnimations["Roar"]        = { "Roaring", 1.5f };
+	data.oneShotAnimations["Dying"]       = { "Dying", 2.0f };
+
+	// Dying演出(2.0秒)が終わってから、さらに1.0秒の余白を置いてから
+	// 消滅させる(旧WarrockBehavior::GetDespawnDelay()の
+	// kDyingDuration+kPostDeathLingerSecondsに相当)。
+	data.postDeathLingerSeconds = 1.0f;
 
 	return data;
 }

@@ -1,5 +1,6 @@
 ﻿#include "PlayerFactory.h"
 #include "Application/Definitions/Loaders/PlayerDefinitionLoader.h"
+#include "Application/Definitions/Loaders/ComponentRegistry.h"
 #include "CharacterFactoryUtil.h"
 
 #include "Application/Components/Core/TransformComponent.h"
@@ -87,7 +88,6 @@ namespace
 		health->SetMax(combatStats.maxHealth, true);
 
 		player->AddComponent<PlayerLockOnComponent>();
-		player->AddComponent<HitReactionComponent>();
 		player->AddComponent<WeaponSetComponent>();
 
 		for (const auto& def : colliderDefs) {
@@ -143,6 +143,11 @@ GameObject* PlayerFactory::CreatePlayer(ObjectManager& objectManager, const Play
 	player->AddComponent<PlayerCombatMovementComponent>()->SetMovementSpeeds(definition.walkSpeed, definition.runSpeed);
 	player->AddComponent<PlayerAttackSelector>()->SetAttackTable(definition.combatBehavior.attackTable);
 	player->AddComponent<PlayerFacingComponent>();
+
+	// Prefab形式のコンポーネント(移行済みの分)。失敗したエントリはログに出る。
+	const bool prefabOk = ComponentRegistry::Get().AddComponents(player, definition.components);
+	assert(prefabOk && "Player.jsonのcomponentsに不正なエントリがあります");
+	(void)prefabOk;
 
 	// --- 腕・武器のソケット生成 -----------------------------------------
 	Handle<SkeletonComponent> skeletonHandle(skeleton);
@@ -204,7 +209,7 @@ GameObject* PlayerFactory::CreateWeapon(ObjectManager& objectManager, GameObject
 
 	auto* trail = weapon->AddComponent<SlashTrailComponent>("Sword");
 	trail->SetBaseTip(Math::Vector3{ 0,0,-0.75 }, Math::Vector3{ 0,0,-2.25 });
-	trail->SetBaseTip(Math::Vector3{ 0,0,-0.5 }, Math::Vector3{ 0,0,-1.5f });
+	trail->SetBaseTip(Math::Vector3{ 0,0,-1.0f }, Math::Vector3{ 0,0,-1.75f });
 	trail->SetKey("Sword_Player");
 	trail->StartEmit();
 

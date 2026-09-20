@@ -1,158 +1,109 @@
-﻿#include "WarrockBehavior.h"
+#include "WarrockBehavior.h"
 #include "../EnemyAIController.h"
 #include "../EnemyActions.h"
+#include "Application/Definitions/Character/Enemy/EnemyBlackboardKeys.h"
 #include "Application/Definitions/Character/Common/BehaviorTree/BTComposite.h"
-#include "Application/Definitions/Character/Common/BehaviorTree/BTCondition.h"
-#include "Application/Definitions/Character/Common/BehaviorTree/BTOneShotAnimationAction.h"
+#include "Application/Definitions/Character/Common/BehaviorTree/BTBlackboardConditions.h"
+#include "Application/Definitions/Character/Common/BehaviorTree/BTPendingReactionAction.h"
 #include "Application/Definitions/Character/Common/BehaviorTree/BTWeightedAttackAction.h"
 #include "../../Common/AttackSourceComponent.h"
 
-namespace
-{
-	// 各種割り込み/死亡演出の再生尺。実アニメーションの尺に合わせて
-	// 調整すること(【要確認】、値自体はまだ未検証)。
-	constexpr float kHitReactionDuration = 0.4f;
-	constexpr float kRoarDuration = 1.5f;
-	constexpr float kDyingDuration = 2.0f;
-
-	// 体幹崩壊時の大スタン再生尺。専用アニメーションが未実装のため、
-	// 小スタンと同じ"miniStun"クリップを暫定的に使い回す
-	// (PlayerStatusController::StateStagger::Enter()と同じ考え方)。
-	// 尺だけ小スタン(kHitReactionDuration)より長くして「大きく怯んで
-	// いる」ことを表現する。【要確認】専用アニメーションが用意でき
-	// 次第差し替えること。
-	constexpr float kBigStaggerDuration = 3.f;
-
-	// Dyingアニメーション終了後、さらに少し間を置いてから消滅させる
-	// (ボスの死亡演出として唐突に消えないようにするための余白)。
-	constexpr float kPostDeathLingerSeconds = 1.0f;
-}
-
 std::unique_ptr<IBTNode<EnemyAIController>> WarrockBehavior::BuildTree(EnemyAIController* /*owner*/)
 {
-	// 被弾リアクション/咆哮は「要求フラグが立ったら1本再生して消費する」
-	// という同じ形の割り込み行動のため、汎用BTOneShotAnimationAction<T>
-	// (BTOneShotAnimationAction.h参照)をラムダで用途ごとに使い分ける形
-	// にしている。フラグ自体はこのWarrockBehaviorインスタンスのメンバ
-	// (クラス冒頭コメント参照)。
-	// 「大スタン」: 体幹が尽きた(崩し発生、OnHit()参照)瞬間に、他の
-	// どの行動中でも割り込んで発生させたいため、Selectorの最優先
-	// (先頭)に置く。reactiveなSelectorが毎フレーム先頭から評価し直す
-	// ため、被弾リアクション/咆哮/攻撃/追跡/待機のどれを実行中でも
-	// 次フレームには必ずこちらへ切り替わる(攻撃Windup/Active中だった
-	// 場合はSelectorがBTWeightedAttackAction<T>::Reset()を呼ぶため、
-	// Active中に割り込んでもHitBoxは正しく閉じられる)。
-	// 専用アニメーションは未実装のため、暫定的に小スタンと同じ
-	// "miniStun"を尺だけ変えて再生する(namespace内コメント参照)。
-	auto bigStaggerSeq = std::make_unique<BTSequence<EnemyAIController>>();
-	bigStaggerSeq->AddChild(std::make_unique<BTCondition<EnemyAIController>>(
-		[this](EnemyAIController*) { return bigStaggerPending_; }));
-	bigStaggerSeq->AddChild(std::make_unique<BTOneShotAnimationAction<EnemyAIController>>(
-		[this](EnemyAIController* c) {
-			c->StopMovement();
-			c->PlayAnimation("SmallReaction", false, kBigStaggerDuration);
-			// 大スタンが優先されるため、同時に立っていたかもしれない
-			// 小スタン(被弾リアクション)の要求は消費せず破棄する
-			// (大スタンの後にさらに小スタンへ入り直す二重反応を防ぐ)。
-			hitReactionPending_ = false;
+	// 被弾リアクション/大スタン/パリィされた時のリアクション/咆哮は、
+	// 「今どの演出が要求されているか」をpending_という単一の状態として
+	// 持ち、BTPendingReactionAction<T>1本でまとめて処理する
+	// (WarrockBehavior.hクラス冒頭コメント参照)。優先度の解決は
+	// RequestReaction()側で済んでいるため、ここではBlackboard
+	// (EnemyBlackboardKeys::HasPendingReaction)の有無だけを条件に
+	// 見ればよい。
+	//
+	// 【変更】以前は「[this](EnemyAIController*){ return
+	// !pending_.oneShotAnimationKey.empty(); }」というWarrockBehavior
+	// 内部の状態を直接見るラムダ条件だったが、ノードグラフエディタが
+	// 組む条件はC++の型やメンバを知らない「キー名の一致」だけで
+	// 表現できる必要があるため、BTCompareBoolCondition<T>へ置き換えた。
+	// pending_自体はBTPendingReactionActionのresolveClipラムダ
+	// (以前と同じく[this]でWarrockBehaviorを直接参照)が引き続き読む。
+	auto reactionSeq = std::make_unique<BTSequence<EnemyAIController>>();
+	reactionSeq->AddChild(std::make_unique<BTCompareBoolCondition<EnemyAIController>>(
+		EnemyBlackboardKeys::HasPendingReaction, true));
+	reactionSeq->AddChild(std::make_unique<BTPendingReactionAction<EnemyAIController>>(
+		[this](EnemyAIController* c) -> const MotionClipData* {
+			if (pending_.oneShotAnimationKey.empty()) return nullptr;
+			const auto& table = c->GetData().oneShotAnimations;
+			const auto it = table.find(pending_.oneShotAnimationKey);
+			return (it != table.end()) ? &it->second : nullptr;
 		},
-		kBigStaggerDuration,
 		[this](EnemyAIController* c) {
-			bigStaggerPending_ = false;
-			// 崩し状態を演出し終えたので体幹をリセットし、次の削り合いに
-			// 備える(PostureComponent::Reset()参照。ここで呼ばないと
-			// IsBroken()==trueのまま残り、毎フレーム大スタンへ入り直そう
-			// としてしまう)。
-			if (PostureComponent* posture = c->GetPostureComponent()) {
-				posture->Reset();
-			}
+			pending_ = PendingReaction();
+			c->GetBlackboard().SetBool(EnemyBlackboardKeys::HasPendingReaction, false);
 		}));
 
-	auto parriedSeq = std::make_unique<BTSequence<EnemyAIController>>();
-	parriedSeq->AddChild(std::make_unique<BTCondition<EnemyAIController>>(
-		[this](EnemyAIController*) {return parriedPending_; }));
-	parriedSeq->AddChild(std::make_unique<BTOneShotAnimationAction<EnemyAIController>>(
-		[this](EnemyAIController* c) {
-			c->StopMovement();
-			c->PlayAnimation("SmallReaction", false, kHitReactionDuration);
-		},
-		kHitReactionDuration,
-		[this](EnemyAIController*) {parriedPending_ = false; }));
-
-	auto reactionSeq = std::make_unique<BTSequence<EnemyAIController>>();
-	reactionSeq->AddChild(std::make_unique<BTCondition<EnemyAIController>>(
-		[this](EnemyAIController*) { return hitReactionPending_; }));
-	reactionSeq->AddChild(std::make_unique<BTOneShotAnimationAction<EnemyAIController>>(
-		[](EnemyAIController* c) {
-			c->StopMovement();
-			c->PlayAnimation("SmallReaction", false, kHitReactionDuration);
-		},
-		kHitReactionDuration,
-		[this](EnemyAIController*) { hitReactionPending_ = false; }));
-
-	auto roarSeq = std::make_unique<BTSequence<EnemyAIController>>();
-	roarSeq->AddChild(std::make_unique<BTCondition<EnemyAIController>>(
-		[this](EnemyAIController*) { return roarPending_; }));
-	roarSeq->AddChild(std::make_unique<BTOneShotAnimationAction<EnemyAIController>>(
-		[](EnemyAIController* c) {
-			c->StopMovement();
-			c->PlayAnimation("Roaring", false, kRoarDuration);
-		},
-		kRoarDuration,
-		[this](EnemyAIController*) { roarPending_ = false; }));
-
+	// 【変更】以前は「c->IsTargetInAttackRange() && !c->IsAttackOnCooldown()」
+	// という2つの条件をまとめた1本のラムダだったが、BTSequenceは
+	// 「子が全員Successして初めてこのSequence自身もSuccess」という
+	// AND相当の意味を元々持っているため、複合条件を1本のノードに
+	// まとめる必要は無い。単純にCondition2本を並べるだけでAND条件を
+	// 表現できる(専用のANDノードを新設する必要も無かった)。
+	// 間合い詰め専用。近接プール外(遠距離)でのみ発火する。
+	auto gapCloserSeq = std::make_unique<BTSequence<EnemyAIController>>();
+	gapCloserSeq->AddChild(std::make_unique<BTCompareBoolCondition<EnemyAIController>>(
+		EnemyBlackboardKeys::IsTargetInGapCloserRange, true));
+	gapCloserSeq->AddChild(std::make_unique<BTCompareBoolCondition<EnemyAIController>>(
+		EnemyBlackboardKeys::IsAttackOnCooldown, false));
+	gapCloserSeq->AddChild(std::make_unique<BTWeightedAttackAction<EnemyAIController>>(
+		[](EnemyAIController* c) { return c->ChooseGapCloserAttack(); }));
 
 	auto attackSeq = std::make_unique<BTSequence<EnemyAIController>>();
-	attackSeq->AddChild(std::make_unique<BTCondition<EnemyAIController>>(
-		[](EnemyAIController* c) { return c->IsTargetInAttackRange() && !c->IsAttackOnCooldown(); }));
-	attackSeq->AddChild(std::make_unique<BTWeightedAttackAction<EnemyAIController>>());
+	attackSeq->AddChild(std::make_unique<BTCompareBoolCondition<EnemyAIController>>(
+		EnemyBlackboardKeys::IsTargetInAttackRange, true));
+	attackSeq->AddChild(std::make_unique<BTCompareBoolCondition<EnemyAIController>>(
+		EnemyBlackboardKeys::IsAttackOnCooldown, false));
+	attackSeq->AddChild(std::make_unique<BTWeightedAttackAction<EnemyAIController>>(
+		[](EnemyAIController* c) { return c->ChooseAttack(); }));
 
 	auto chaseSeq = std::make_unique<BTSequence<EnemyAIController>>();
-	chaseSeq->AddChild(std::make_unique<BTCondition<EnemyAIController>>(
-		[](EnemyAIController* c) { return c->HasTarget(); }));
+	chaseSeq->AddChild(std::make_unique<BTCompareBoolCondition<EnemyAIController>>(
+		EnemyBlackboardKeys::HasTarget, true));
 	chaseSeq->AddChild(std::make_unique<EnemyActionMaintainDistance>());
 
-	// 優先度順
+	// 優先度順。
 	auto selector = std::make_unique<BTSelector<EnemyAIController>>();
-	selector->AddChild(std::move(bigStaggerSeq));
-	selector->AddChild(std::move(parriedSeq));
 	selector->AddChild(std::move(reactionSeq));
-	selector->AddChild(std::move(roarSeq));
+	selector->AddChild(std::move(gapCloserSeq));
 	selector->AddChild(std::move(attackSeq));
 	selector->AddChild(std::move(chaseSeq));
-	selector->AddChild(std::make_unique<WarrockActionIdle>());
+	selector->AddChild(std::make_unique<EnemyActionIdle>());
 
 	return selector;
 }
 
-void WarrockBehavior::OnSpawned(EnemyAIController* /*owner*/)
+void WarrockBehavior::OnSpawned(EnemyAIController* owner)
 {
-	roarPending_ = true;
+	RequestReaction(owner, "Roar", ReactionPriority::Roar);
 }
 
-void WarrockBehavior::OnHit(EnemyAIController* owner, const AttackSourceComponent& attack)
+void WarrockBehavior::OnStaggered(EnemyAIController* owner, bool isLarge, float /*duration*/)
 {
-	hitReactionPending_ = true;
-
-	if (PostureComponent* posture = owner->GetPostureComponent()) {
-		//posture->AddPostureDamage(attack.GetAttackDamageData().damage);
-
-		// 体幹が尽きた(=崩し発生)。実際に大スタンとして割り込ませる
-		if (posture->IsBroken()) {
-			bigStaggerPending_ = true;
-		}
-	}
+	// 体幹ダメージの適用・体幹崩壊判定はHitReactionComponent(Player/Enemy
+	// 共通)側で既に完了しており、isLargeにその結果が入っている
+	// (IEnemyBehavior.h::OnStaggered()コメント参照)。以前ここにあった
+	// PostureComponent::AddPostureDamage()/IsBroken()の呼び出しは、
+	// HitReactionComponentへの統合に伴い重複になるため削除した。
+	RequestReaction(owner, isLarge ? "BigStagger" : "HitReaction",
+		isLarge ? ReactionPriority::BigStagger : ReactionPriority::HitReaction);
 }
 
 // --- 被パリィ処理 ---------------------------------------------------------
 void WarrockBehavior::OnParried(EnemyAIController* owner, const AttackSourceComponent::ParriedEvent& event)
 {
-	parriedPending_ = true;
+	RequestReaction(owner, "Parried", ReactionPriority::Parried);
 
 	if (PostureComponent* posture = owner->GetPostureComponent()) {
 		posture->AddPostureDamage(event.parryPostureDamage);
 		if (posture->IsBroken()) {
-			bigStaggerPending_ = true;
+			RequestReaction(owner, "BigStagger", ReactionPriority::BigStagger);
 		}
 	}
 }
@@ -160,10 +111,28 @@ void WarrockBehavior::OnParried(EnemyAIController* owner, const AttackSourceComp
 void WarrockBehavior::OnDied(EnemyAIController* owner)
 {
 	owner->StopMovement();
-	owner->PlayAnimation("Dying", false, kDyingDuration);
+
+	const auto& table = owner->GetData().oneShotAnimations;
+	const auto it = table.find("Dying");
+	if (it != table.end()) {
+		owner->PlayAnimation(it->second.animationName, false, it->second.duration, it->second.useRootMotion);
+	}
 }
 
-float WarrockBehavior::GetDespawnDelay() const
+float WarrockBehavior::GetDespawnDelay(const EnemyAIController* owner) const
 {
-	return kDyingDuration + kPostDeathLingerSeconds;
+	const auto& data = owner->GetData();
+	const auto it = data.oneShotAnimations.find("Dying");
+	const float dyingDuration = (it != data.oneShotAnimations.end()) ? it->second.duration : 0.0f;
+	return dyingDuration + data.postDeathLingerSeconds;
+}
+
+void WarrockBehavior::RequestReaction(EnemyAIController* owner, const std::string& oneShotAnimationKey, ReactionPriority priority)
+{
+	if (pending_.oneShotAnimationKey.empty() || priority < pending_.priority) {
+		pending_ = { oneShotAnimationKey, priority };
+		if (owner != nullptr) {
+			owner->GetBlackboard().SetBool(EnemyBlackboardKeys::HasPendingReaction, true);
+		}
+	}
 }

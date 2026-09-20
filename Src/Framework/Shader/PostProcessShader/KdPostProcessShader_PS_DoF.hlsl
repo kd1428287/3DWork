@@ -1,10 +1,11 @@
 #include "../inc_KdCommon.hlsli"
 #include "inc_KdPostProcessShader.hlsli"
 
-Texture2D g_inputTex	: register(t0);
-Texture2D g_blurTex		: register(t1);
+Texture2D g_inputTex : register(t0);
+Texture2D g_blurTex : register(t1);
 Texture2D g_strongBlurTex : register(t2);
-Texture2D g_depthTex	: register(t3);
+Texture2D g_depthTex : register(t3);
+Texture2D g_dofExcludeMaskTex : register(t4); // 追加：DoFブラー除外マスク(カラーグレード除外マスクを共用)
 
 SamplerState g_ss : register(s0);
 
@@ -23,9 +24,9 @@ float4 main(VSOutput In) : SV_Target0
 {
 	float3 color = 0;
 	
-	float4 depthPixel = g_depthTex.Sample( g_ss, In.UV );
+	float4 depthPixel = g_depthTex.Sample(g_ss, In.UV);
 	float2 projXY = (In.UV * 2 - 1) * float2(1, -1);
-	depthPixel =  mul(float4(projXY, depthPixel.r, 1), g_mProjInv );
+	depthPixel = mul(float4(projXY, depthPixel.r, 1), g_mProjInv);
 	depthPixel.xyz /= depthPixel.w;
 	float depth = saturate((depthPixel.z - g_nearClipDist) / (g_farClipDist - g_nearClipDist));
 	
@@ -34,13 +35,22 @@ float4 main(VSOutput In) : SV_Target0
 	
 	focusGap = abs(focusGap);
 	
-	float defaultPow = max( 1.0f - pow( focusGap / focusRange, 2 ), 0.0f );
-	float strongBlurPow = saturate( focusGap / focusRange - 1.0f );
-	float blurPow = saturate( 1.0f - defaultPow - strongBlurPow );
+	float defaultPow = max(1.0f - pow(focusGap / focusRange, 2), 0.0f);
+	float strongBlurPow = saturate(focusGap / focusRange - 1.0f);
+	float blurPow = saturate(1.0f - defaultPow - strongBlurPow);
 	
-	color += g_inputTex.Sample( g_ss, In.UV ).rgb * defaultPow;
+	float3 sharpColor = g_inputTex.Sample(g_ss, In.UV).rgb;
+
+	color += sharpColor * defaultPow;
 	color += g_blurTex.Sample(g_ss, In.UV).rgb * blurPow;
 	color += g_strongBlurTex.Sample(g_ss, In.UV).rgb * strongBlurPow;
+
+	// 深度を書き込まない近距離エフェクト(斬撃トレイル等)は、奥にある背景の深度が
+	// そのままZバッファに残る為、本来ピントが合っているはずのピクセルまで
+	// ブラー対象として扱われてしまう。除外マスクが立っている割合だけ、
+	// 強制的に元のシャープな色へ戻す(マスクは既存のカラーグレード除外マスクを共用)
+	float excludeMask = g_dofExcludeMaskTex.Sample(g_ss, In.UV).r;
+	color = lerp(color, sharpColor, excludeMask);
 
 	return float4(color, 1);
 }

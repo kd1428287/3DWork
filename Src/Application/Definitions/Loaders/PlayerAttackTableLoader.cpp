@@ -1,70 +1,48 @@
-#include "PlayerAttackTableLoader.h"
+﻿#include "PlayerAttackTableLoader.h"
 
 #include <nlohmann/json.hpp>
 
 #include "JsonLoader.h"
-#include "AttackDataLoader.h"
+#include "DefinitionJson.h"
 
-namespace
+// 未知のコマンド名は先頭のAttackになる。
+NLOHMANN_JSON_SERIALIZE_ENUM(ActionCommand, {
+	{ ActionCommand::Attack, "Attack" },
+	{ ActionCommand::Evade,  "Evade" },
+	})
+
+	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(ComboLink, requiredCommand, priority, nextAttackId)
+
+	// entryCommandはキー無し/nullを「コンボ中継専用(nullopt)」として読む。structの既定値(Attack)と異なるためマクロにしない。
+	static void from_json(const nlohmann::json& j, PlayerAttackDefinition& def)
 {
-	using json = nlohmann::json;
+	def.id = j.value("id", std::string());
+	def.attack = j.value("attack", AttackData());
+	def.comboLinks = j.value("comboLinks", std::vector<ComboLink>());
 
-	ActionCommand ToActionCommand(const std::string& name)
-	{
-		if (name == "Evade") return ActionCommand::Evade;
-		return ActionCommand::Attack;
-	}
-
-	void ReadComboLinks(const json& arr, std::vector<ComboLink>& out)
-	{
-		for (const auto& l : arr) {
-			ComboLink link;
-			link.requiredCommand = ToActionCommand(l.value("requiredCommand", std::string("Attack")));
-			link.priority = l.value("priority", 0);
-			link.nextAttackId = l.value("nextAttackId", std::string());
-			out.push_back(link);
-		}
-	}
-
-	PlayerAttackDefinition ReadPlayerAttackDefinition(const json& j)
-	{
-		PlayerAttackDefinition def;
-		def.id = j.value("id", std::string());
-
-		// AttackData本体(ダメージ/移動/フェーズ/キャンセル/武器スロット)は
-		// Player/Enemy共通のため、AttackDataLoaderへ委譲する
-		// (このファイルが持つのは、コンボ木/entryCommandというPlayer固有の
-		// ラッパー部分の読み方だけにする)。
-		if (j.contains("attack")) AttackDataLoader::ReadAttackData(j["attack"], def.attack);
-		if (j.contains("comboLinks")) ReadComboLinks(j["comboLinks"], def.comboLinks);
-
-		// entryCommandは「キー自体が無い/null」ならコンボ中継専用の技として
-		// 明示的にnulloptにする(PlayerAttackDefinitionのデフォルト値
-		// ActionCommand::Attackのまま残すと、全ての技がIdleから出せる
-		// 攻撃として扱われてしまうため)。
-		if (j.contains("entryCommand") && !j["entryCommand"].is_null()) {
-			def.entryCommand = ToActionCommand(j["entryCommand"].get<std::string>());
-		}
-		else {
-			def.entryCommand = std::nullopt;
-		}
-
-		return def;
+	def.entryCommand = std::nullopt;
+	if (j.contains("entryCommand") && !j["entryCommand"].is_null()) {
+		def.entryCommand = j["entryCommand"].get<ActionCommand>();
 	}
 }
 
 bool PlayerAttackTableLoader::LoadFromFile(const std::string& path, PlayerAttackTable& outTable)
 {
-	json root;
+	nlohmann::json root;
 	if (!JsonLoader::Load(path, root)) return false;
 
 	if (!root.contains("attacks")) return false;
 
-	PlayerAttackTable table;
-	for (const auto& a : root["attacks"]) {
-		table.attacks.push_back(ReadPlayerAttackDefinition(a));
-	}
+	// 型不一致等は例外になるため、失敗(false)として扱う。
+	try {
+		PlayerAttackTable table;
+		table.attacks = root["attacks"].get<std::vector<PlayerAttackDefinition>>();
 
-	outTable = std::move(table);
-	return true;
+		outTable = std::move(table);
+		return true;
+	}
+	catch (const std::exception& e) {
+		OutputDebugStringA(("PlayerAttackTableLoader: " + path + ": " + e.what() + "\n").c_str());
+		return false;
+	}
 }
