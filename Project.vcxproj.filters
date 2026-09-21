@@ -139,9 +139,6 @@
     <Filter Include="Src\Application\Components\GamePlay\Character\Common">
       <UniqueIdentifier>{494645c4-4ce2-4a4c-9fe6-91cdb88573e5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Src\Application\Components\GamePlay\Character\Combat">
-      <UniqueIdentifier>{2cd2abe6-4360-43c1-a7fd-f85d142ffbd8}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Src\Application\Components\GamePlay\Character\Player">
       <UniqueIdentifier>{396e0ed1-5cbb-4316-a25c-2d1793b1a2c7}</UniqueIdentifier>
     </Filter>
@@ -264,6 +261,9 @@
     </Filter>
     <Filter Include="Src\Application\Components\Graphics\UI\GamePlay">
       <UniqueIdentifier>{e2a632af-c05a-4898-8128-4e51243db10f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Definitions\Prefab">
+      <UniqueIdentifier>{75faf62a-6738-42b4-8183-8876fbec466b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -678,13 +678,7 @@
     <ClInclude Include="Src\Application\Factories\GamePlay\Map\TerrainFactory.h">
       <Filter>Src\Application\Factories\GamePlay\Map</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Definitions\Character\Player\PlayerCombatDataTable.h">
-      <Filter>Src\Application\Definitions\Character\Player</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Definitions\Character\Player\PlayerCombatTypes.h">
-      <Filter>Src\Application\Definitions\Character\Player</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Definitions\Character\Player\PlayerDefinition.h">
       <Filter>Src\Application\Definitions\Character\Player</Filter>
     </ClInclude>
     <ClInclude Include="Src\Application\Definitions\Character\Common\CharacterCollisionDefaults.h">
@@ -713,15 +707,6 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Definitions\Loaders\JsonLoader.h">
       <Filter>Src\Application\Definitions\Loaders</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Definitions\Loaders\PlayerDefinitionLoader.h">
-      <Filter>Src\Application\Definitions\Loaders</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Definitions\Map\ColliderCategoryNames.h">
-      <Filter>Src\Application\Definitions\Map</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Definitions\Map\ComponentTypes.h">
-      <Filter>Src\Application\Definitions\Map</Filter>
     </ClInclude>
     <ClInclude Include="Src\Application\Definitions\Map\MapData.h">
       <Filter>Src\Application\Definitions\Map</Filter>
@@ -957,6 +942,21 @@
     <ClInclude Include="Src\Application\Definitions\Loaders\DefinitionJson.h">
       <Filter>Src\Application\Definitions\Loaders</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Prefab\Prefab.h">
+      <Filter>Src\Application\Definitions\Prefab</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Factories\PrefabFactory.h">
+      <Filter>Src\Application\Factories</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Factories\ComponentRegistry.h">
+      <Filter>Src\Application\Factories\GamePlay</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Physics\ColliderCategoryNames.h">
+      <Filter>Src\Application\Definitions\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Character\Enemy\EnemyAIDataJson.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Enemy</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -1169,9 +1169,6 @@
     <ClCompile Include="Src\Application\Factories\GamePlay\Map\TerrainFactory.cpp">
       <Filter>Src\Application\Factories\GamePlay\Map</Filter>
     </ClCompile>
-    <ClCompile Include="Src\Application\Definitions\Character\Player\PlayerCombatDataTable.cpp">
-      <Filter>Src\Application\Definitions\Character\Player</Filter>
-    </ClCompile>
     <ClCompile Include="Src\Application\Definitions\Effect\EffectParams.cpp">
       <Filter>Src\Application\Definitions\Effect</Filter>
     </ClCompile>
@@ -1183,12 +1180,6 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Definitions\Loaders\JsonLoader.cpp">
       <Filter>Src\Application\Definitions\Loaders</Filter>
-    </ClCompile>
-    <ClCompile Include="Src\Application\Definitions\Loaders\PlayerDefinitionLoader.cpp">
-      <Filter>Src\Application\Definitions\Loaders</Filter>
-    </ClCompile>
-    <ClCompile Include="Src\Application\Definitions\Map\ComponentRegistrations.cpp">
-      <Filter>Src\Application\Definitions\Map</Filter>
     </ClCompile>
     <ClCompile Include="Src\Application\Definitions\Map\MapData.cpp">
       <Filter>Src\Application\Definitions\Map</Filter>
@@ -1267,6 +1258,15 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Definitions\Loaders\AttackDataLoader.cpp">
       <Filter>Src\Application\Definitions\Loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Factories\PrefabFactory.cpp">
+      <Filter>Src\Application\Factories</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Factories\ComponentRegistrations.cpp">
+      <Filter>Src\Application\Factories\GamePlay</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Factories\ComponentRegistry.cpp">
+      <Filter>Src\Application\Factories\GamePlay</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

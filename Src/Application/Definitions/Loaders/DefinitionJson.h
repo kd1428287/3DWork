@@ -26,18 +26,23 @@ namespace nlohmann
 
 		static void to_json(json& j, const Math::Vector3& v) { j = json::array({ v.x, v.y, v.z }); }
 	};
+
+	// Quaternionは[x, y, z, w]の配列で表す。要素数が4でなければ例外にする。
+	template<>
+	struct adl_serializer<Math::Quaternion>
+	{
+		static void from_json(const json& j, Math::Quaternion& q)
+		{
+			if (!j.is_array() || j.size() != 4) throw std::runtime_error("Quaternion must be [x, y, z, w]");
+			q = Math::Quaternion(j[0].get<float>(), j[1].get<float>(), j[2].get<float>(), j[3].get<float>());
+		}
+
+		static void to_json(json& j, const Math::Quaternion& q) { j = json::array({ q.x, q.y, q.z, q.w }); }
+	};
 }
 
-// 未知のカテゴリ名は先頭のNone(衝突なし)になる。
-NLOHMANN_JSON_SERIALIZE_ENUM(ColliderCategory, {
-	{ ColliderCategory::None,    "None" },
-	{ ColliderCategory::Bump,    "Bump" },
-	{ ColliderCategory::HitBox,  "HitBox" },
-	{ ColliderCategory::HurtBox, "HurtBox" },
-	})
-
-	// HitReactionFlagsは名前の配列で表す(例: ["CameraShake", "HitStop"])。未知の名前は例外にする。
-	namespace DefinitionJsonDetail
+// HitReactionFlagsは名前の配列で表す(例: ["CameraShake", "HitStop"])。未知の名前は例外にする。
+namespace DefinitionJsonDetail
 {
 	inline const std::pair<const char*, HitReactionFlags> kHitReactionFlagNames[] = {
 		{ "CameraShake",   HitReactionFlags::CameraShake },
@@ -76,32 +81,21 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(HitReactionConfig,
 	effectFlags, damageEffectName, cameraShakeIntensity, hitStopDelaySeconds,
 	hitStopDurationSeconds, guardKnockbackPower, largeStaggerDuration)
 
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(MotionClipData,
-		animationName, duration, useRootMotion, blendDuration)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(MotionClipData,
+	animationName, duration, useRootMotion, blendDuration)
 
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(CapsuleColliderDefinition,
-		name, radius, start, end, category, interactsWith, isTrigger)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(AttackDamageData,
+	damage, knockbackPower, hitStunSeconds, postureDamage, chipDamageRatio, parryPostureDamage)
 
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(IKChainDefinition,
-		rootBone, midBone, tipParentBone, tipBone)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(AnimationSegment, startFrame, endFrame, targetDuration)
 
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(WeaponColliderDefinition, halfExtents, offset)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(AttackPhaseData, animationName, windup, active, recovery)
 
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(WeaponDefinition,
-		modelPath, socketLocalPosition, socketLocalEulerRotationDeg, hitBox)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(AttackMoveData,
+	stepDistance, stepDuration, engageDistance, stepDirection, blendDuration, useRootMotion)
 
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(AttackDamageData,
-		damage, knockbackPower, hitStunSeconds, postureDamage, chipDamageRatio, parryPostureDamage)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(AttackCancelData,
+	recoveryMoveCancelStart, recoveryEvadeCancelStart, recoveryAttackCancelStart, comboWindowAfterRecovery)
 
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(AnimationSegment, startFrame, endFrame, targetDuration)
-
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(AttackPhaseData, animationName, windup, active, recovery)
-
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(AttackMoveData,
-		stepDistance, stepDuration, engageDistance, stepDirection, blendDuration, useRootMotion)
-
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(AttackCancelData,
-		recoveryMoveCancelStart, recoveryEvadeCancelStart, recoveryAttackCancelStart, comboWindowAfterRecovery)
-
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(AttackData,
-		damageData, moveData, phaseData, cancelData, weaponSlots)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(AttackData,
+	damageData, moveData, phaseData, cancelData, weaponSlots)

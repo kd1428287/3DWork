@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Application/Definitions/Character/Enemy/EnemyAIData.h"
 #include "Application/Definitions/Character/Enemy/EnemyBlackboardKeys.h"
 #include "../../../Tags/IMovementSource.h"
@@ -48,7 +48,8 @@ class EnemyAIController : public ComponentBase, public IMovementSource, public I
 {
 public:
 	EnemyAIController(GameObject* owner, const EnemyAIData& data, std::unique_ptr<IEnemyBehavior> behavior)
-		: ComponentBase(owner), data_(data), behavior_(std::move(behavior)) {}
+		: ComponentBase(owner), data_(data), behavior_(std::move(behavior)) {
+	}
 
 	void Awake() override
 	{
@@ -316,6 +317,9 @@ private:
 	float attackCooldownTimer_ = 0.0f;
 
 	size_t patrolIndex_ = 0;
+	// 直前に選ばれた技。同じ技の連続選択を避けるためChooseAttack()/
+	// ChooseGapCloserAttack()が更新する(const関数内で更新するためmutable)。
+	mutable const EnemyAttackDefinition* lastAttack_ = nullptr;
 	// targetTransform_はBlackboardの対応する値型(bool/float/string)が無く、
 	// BTノードから直接参照される想定でもない内部実装詳細のキャッシュの
 	// ため、メンバとして持つ(HasTarget()はBlackboard経由。クラス冒頭の

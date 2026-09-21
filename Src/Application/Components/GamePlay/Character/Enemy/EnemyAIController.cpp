@@ -1,4 +1,4 @@
-#include "EnemyAIController.h"
+﻿#include "EnemyAIController.h"
 
 void EnemyAIController::UpdateTargetAcquisition()
 {
@@ -47,40 +47,53 @@ TransformComponent* EnemyAIController::FindPlayerTransform() const
 
 namespace
 {
-	// pool内から間合い[minRange,maxRange]に入る技を重み付き抽選する。
-	const EnemyAttackDefinition* ChooseFrom(const std::vector<EnemyAttackDefinition>& pool, float dist)
+	// pool内からpredを満たす技を重み付き抽選する。
+	template <typename Predicate>
+	const EnemyAttackDefinition* WeightedPick(const std::vector<EnemyAttackDefinition>& pool, Predicate pred)
 	{
 		float totalWeight = 0.0f;
-		for (const auto& atk : pool) {
-			if (dist >= atk.minRange && dist <= atk.maxRange) totalWeight += atk.weight;
-		}
+		for (const auto& atk : pool) if (pred(atk)) totalWeight += atk.weight;
 		if (totalWeight <= 0.0f) return nullptr;
 
 		// 【要確認】std::rand()を使った簡易な重み付き抽選
 		float roll = (static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX)) * totalWeight;
 		for (const auto& atk : pool) {
-			if (dist < atk.minRange || dist > atk.maxRange) continue;
+			if (!pred(atk)) continue;
 			roll -= atk.weight;
 			if (roll <= 0.0f) return &atk;
 		}
-
-		for (const auto& atk : pool) {
-			if (dist >= atk.minRange && dist <= atk.maxRange) return &atk;
-		}
+		for (const auto& atk : pool) if (pred(atk)) return &atk;
 		return nullptr;
+	}
+
+	// 直前の技(exclude)を除いて抽選。除外すると候補が無くなるなら除外しない。
+	const EnemyAttackDefinition* ChooseFrom(const std::vector<EnemyAttackDefinition>& pool, float dist,
+		const EnemyAttackDefinition* exclude)
+	{
+		auto inRange = [dist](const EnemyAttackDefinition& atk) {
+			return dist >= atk.minRange && dist <= atk.maxRange;
+			};
+
+		if (const EnemyAttackDefinition* picked = WeightedPick(pool,
+			[&](const EnemyAttackDefinition& atk) { return inRange(atk) && &atk != exclude; })) {
+			return picked;
+		}
+		return WeightedPick(pool, inRange);
 	}
 }
 
 const EnemyAttackDefinition* EnemyAIController::ChooseAttack() const
 {
 	if (!HasTarget()) return nullptr;
-	return ChooseFrom(data_.attacks, DistanceToTarget());
+	lastAttack_ = ChooseFrom(data_.attacks, DistanceToTarget(), lastAttack_);
+	return lastAttack_;
 }
 
 const EnemyAttackDefinition* EnemyAIController::ChooseGapCloserAttack() const
 {
 	if (!HasTarget()) return nullptr;
-	return ChooseFrom(data_.gapCloserAttacks, DistanceToTarget());
+	lastAttack_ = ChooseFrom(data_.gapCloserAttacks, DistanceToTarget(), lastAttack_);
+	return lastAttack_;
 }
 
 void EnemyAIController::FaceHorizontalTarget(const Math::Vector3& targetPosition)

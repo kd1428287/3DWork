@@ -98,9 +98,9 @@ private:
 	// Inspector内、選択中オブジェクトのコンポーネント一覧(追加/削除/パラメータ編集)
 	void DrawComponentList(MapObject& obj);
 
-	// ComponentTypeInfo::schemaに従ってparamsのフィールドを自動描画する(v1の汎用UI)。
+	// paramsのフィールドを、型の初期値(ComponentRegistry::FindDefaultParams)のJSON型に従って自動描画する汎用UI。
 	// 戻り値は「このフレームで何か編集されたか」
-	bool DrawComponentParamsGeneric(nlohmann::json& params, const ComponentTypeInfo& info);
+	bool DrawComponentParamsGeneric(nlohmann::json& params, const nlohmann::json& defaults);
 
 	// 選択中オブジェクトを注視点とするプレビュー専用ウィンドウ(RenderPreviewViewport()が描いた絵を表示する)
 	void DrawPreviewWindow();

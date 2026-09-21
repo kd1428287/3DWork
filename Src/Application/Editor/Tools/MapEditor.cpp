@@ -2,7 +2,8 @@
 
 #include "MapEditor.h"
 #include "../Common/EditorViewport.h"
-#include "Application/Definitions/Map/ColliderCategoryNames.h"
+#include "Application/Definitions/Physics/ColliderCategoryNames.h"
+#include "Application/Factories/ComponentRegistry.h"
 
 #include "Application/Core/EventBus/Events/SceneEvents.h"
 
@@ -249,60 +250,149 @@ void MapEditor::DrawHierarchy()
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// コンポーネント1個ぶんのパラメータを、ComponentTypeInfo::schemaに従って自動描画する(v1の汎用UI)
+// コンポーネント1個ぶんのparamsを、型の初期値(defaults)のJSON型に従って自動描画する汎用UI。
+//	bool→チェックボックス / 数値→ドラッグ / [x,y,z]→3要素ドラッグ / 文字列→入力欄 /
+//	文字列の配列→リスト / オブジェクト→折りたたみ(再帰)。それ以外はJSONの直接編集に任せる。
+//	戻り値は「このフレームで何か編集されたか」(文字列は入力の確定時のみtrue)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-bool MapEditor::DrawComponentParamsGeneric(nlohmann::json& params, const ComponentTypeInfo& info)
+static bool IsNumberArray(const nlohmann::json& j, size_t count)
 {
+	if (!j.is_array() || j.size() != count) return false;
+	for (const auto& v : j) { if (!v.is_number()) return false; }
+	return true;
+}
+
+static bool IsStringArray(const nlohmann::json& j)
+{
+	if (!j.is_array()) return false;
+	for (const auto& v : j) { if (!v.is_string()) return false; }
+	return true;
+}
+
+static bool DrawParamsJson(nlohmann::json& params, const nlohmann::json& defaults, const std::function<void()>& pushUndo)
+{
+	using nlohmann::json;
+
+	if (!defaults.is_object()) return false;
+	if (!params.is_object()) params = json::object();
+
 	bool edited = false;
 
-	for (auto& field : info.schema)
+	for (auto it = defaults.begin(); it != defaults.end(); ++it)
 	{
-		ImGui::PushID(field.key.c_str());
+		const std::string& key = it.key();
+		const json& def = it.value();
+		const json current = params.contains(key) ? params[key] : def;
 
-		switch (field.type)
+		ImGui::PushID(key.c_str());
+
+		if (def.is_boolean())
 		{
-		case ParamType::Float:
-		{
-			float v = params.value(field.key, 0.0f);
-			ImGui::DragFloat(field.label.c_str(), &v, 0.1f);
-			if (ImGui::IsItemActivated()) { PushUndo(); }
-			if (ImGui::IsItemEdited()) { params[field.key] = v; edited = true; }
-			break;
+			bool b = current.is_boolean() ? current.get<bool>() : def.get<bool>();
+			ImGui::Checkbox(key.c_str(), &b);
+			if (ImGui::IsItemActivated()) { pushUndo(); }
+			if (ImGui::IsItemEdited()) { params[key] = b; edited = true; }
 		}
-		case ParamType::Vector3:
+		else if (def.is_number_integer())
 		{
-			auto arr = params.value(field.key, std::vector<float>{0.0f, 0.0f, 0.0f});
-			while (arr.size() < 3) { arr.push_back(0.0f); }
-			float v[3] = { arr[0], arr[1], arr[2] };
-			ImGui::DragFloat3(field.label.c_str(), v, 0.1f);
-			if (ImGui::IsItemActivated()) { PushUndo(); }
-			if (ImGui::IsItemEdited()) { params[field.key] = { v[0], v[1], v[2] }; edited = true; }
-			break;
+			int v = current.is_number() ? current.get<int>() : def.get<int>();
+			ImGui::DragInt(key.c_str(), &v);
+			if (ImGui::IsItemActivated()) { pushUndo(); }
+			if (ImGui::IsItemEdited()) { params[key] = v; edited = true; }
 		}
-		case ParamType::String:
+		else if (def.is_number())
 		{
-			std::string s = params.value(field.key, std::string());
+			float v = current.is_number() ? current.get<float>() : def.get<float>();
+			ImGui::DragFloat(key.c_str(), &v, 0.1f);
+			if (ImGui::IsItemActivated()) { pushUndo(); }
+			if (ImGui::IsItemEdited()) { params[key] = v; edited = true; }
+		}
+		else if (def.is_string())
+		{
+			const std::string s = current.is_string() ? current.get<std::string>() : def.get<std::string>();
 			char buf[256];
-			strcpy_s(buf, s.c_str());
-			ImGui::InputText(field.label.c_str(), buf, sizeof(buf));
-			if (ImGui::IsItemActivated()) { PushUndo(); }
-			if (ImGui::IsItemEdited()) { params[field.key] = std::string(buf); edited = true; }
-			break;
+			strncpy_s(buf, s.c_str(), _TRUNCATE);
+			ImGui::InputText(key.c_str(), buf, sizeof(buf));
+			if (ImGui::IsItemActivated()) { pushUndo(); }
+			if (ImGui::IsItemEdited()) { params[key] = std::string(buf); }
+			// モデルの再読み込み等を入力のたびに走らせないよう、確定時にだけ「編集された」とする
+			if (ImGui::IsItemDeactivatedAfterEdit()) { edited = true; }
 		}
-		case ParamType::Bool:
+		else if (IsNumberArray(def, 3))
 		{
-			bool b = params.value(field.key, false);
-			ImGui::Checkbox(field.label.c_str(), &b);
-			if (ImGui::IsItemActivated()) { PushUndo(); }
-			if (ImGui::IsItemEdited()) { params[field.key] = b; edited = true; }
-			break;
+			const json& src = IsNumberArray(current, 3) ? current : def;
+			float v[3] = { src[0].get<float>(), src[1].get<float>(), src[2].get<float>() };
+			ImGui::DragFloat3(key.c_str(), v, 0.1f);
+			if (ImGui::IsItemActivated()) { pushUndo(); }
+			if (ImGui::IsItemEdited()) { params[key] = json::array({ v[0], v[1], v[2] }); edited = true; }
 		}
+		else if (IsStringArray(def) && (!params.contains(key) || IsStringArray(params[key])))
+		{
+			// 空の配列も文字列のリストとして扱う
+			if (ImGui::TreeNodeEx(key.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				json list = params.contains(key) ? params[key] : def;
+				const json before = list;
+				int removeIndex = -1;
+
+				for (int i = 0; i < (int)list.size(); i++)
+				{
+					ImGui::PushID(i);
+					const std::string s = list[i].get<std::string>();
+					char buf[256];
+					strncpy_s(buf, s.c_str(), _TRUNCATE);
+					ImGui::InputText("##item", buf, sizeof(buf));
+					if (ImGui::IsItemActivated()) { pushUndo(); }
+					if (ImGui::IsItemEdited()) { list[i] = std::string(buf); }
+					ImGui::SameLine();
+					if (ImGui::SmallButton("-")) { removeIndex = i; }
+					ImGui::PopID();
+				}
+
+				if (removeIndex >= 0) { pushUndo(); list.erase(list.begin() + removeIndex); }
+				if (ImGui::SmallButton("+ Add")) { pushUndo(); list.push_back(std::string()); }
+
+				if (list != before) { params[key] = list; edited = true; }
+				ImGui::TreePop();
+			}
+		}
+		else if (def.is_object())
+		{
+			if (ImGui::TreeNodeEx(key.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				json child = params.contains(key) ? params[key] : json::object();
+				const json before = child;
+				const bool childEdited = DrawParamsJson(child, def, pushUndo);
+				if (child != before) { params[key] = child; }
+				edited = edited || childEdited;
+				ImGui::TreePop();
+			}
+		}
+		else
+		{
+			ImGui::TextDisabled("%s: (JSONを直接編集)", key.c_str());
 		}
 
 		ImGui::PopID();
 	}
 
 	return edited;
+}
+
+bool MapEditor::DrawComponentParamsGeneric(nlohmann::json& params, const nlohmann::json& defaults)
+{
+	return DrawParamsJson(params, defaults, [this]() { PushUndo(); });
+}
+
+// schemaでは表現できない構造(Colliderの形状リスト等)を持つ種類にだけ用意する専用Inspector
+static bool DrawColliderInspector(nlohmann::json& params, const std::function<void()>& requestUndoCheckpoint);
+
+using CustomInspectorFn = bool (*)(nlohmann::json&, const std::function<void()>&);
+
+static CustomInspectorFn FindCustomInspector(const std::string& type)
+{
+	if (type == "Collider") return DrawColliderInspector;
+	return nullptr;
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -331,20 +421,20 @@ void MapEditor::DrawComponentList(MapObject& obj)
 			if (ImGui::SmallButton("Remove Component")) { removeIndex = i; }
 			ImGui::Separator();
 
-			const ComponentTypeInfo* info = ComponentRegistry::Instance().Find(entry.type);
-			if (info)
+			const nlohmann::json* defaults = ComponentRegistry::Instance().FindDefaultParams(entry.type);
+			if (defaults)
 			{
 				bool edited = false;
 
-				if (info->drawCustomInspector)
+				if (CustomInspectorFn custom = FindCustomInspector(entry.type))
 				{
-					// schemaでは表現できない構造(Colliderの形状リスト等)を持つコンポーネント。
+					// 汎用UIでは表現できない構造(Colliderの形状リスト等)を持つコンポーネント。
 					// requestUndoCheckpointは中でIsItemActivated()等と組み合わせて呼ばれる想定
-					edited = info->drawCustomInspector(entry.params, [this]() { PushUndo(); });
+					edited = custom(entry.params, [this]() { PushUndo(); });
 				}
 				else
 				{
-					edited = DrawComponentParamsGeneric(entry.params, *info);
+					edited = DrawComponentParamsGeneric(entry.params, *defaults);
 				}
 
 				if (edited && entry.type == "ModelRender")
@@ -378,11 +468,8 @@ void MapEditor::DrawComponentList(MapObject& obj)
 
 	if (ImGui::BeginPopup("AddComponentPopup"))
 	{
-		for (auto& kv : ComponentRegistry::Instance().All())
+		for (const std::string& typeName : ComponentRegistry::Instance().GetTypeNames())
 		{
-			const std::string& typeName = kv.first;
-			const ComponentTypeInfo& info = kv.second;
-
 			if (obj.HasComponent(typeName)) continue;
 
 			if (ImGui::Selectable(typeName.c_str()))
@@ -391,7 +478,10 @@ void MapEditor::DrawComponentList(MapObject& obj)
 
 				ComponentEntry entry;
 				entry.type = typeName;
-				entry.params = info.defaultParams;
+				if (const nlohmann::json* defaults = ComponentRegistry::Instance().FindDefaultParams(typeName))
+				{
+					entry.params = *defaults;
+				}
 				obj.data.components.push_back(std::move(entry));
 
 				if (typeName == "ModelRender") { obj.SyncPreviewModel(); }
@@ -609,9 +699,9 @@ void MapEditor::DrawAssetPicker()
 				{
 					ComponentEntry entry;
 					entry.type = "ModelRender";
-					if (auto* info = ComponentRegistry::Instance().Find("ModelRender"))
+					if (const nlohmann::json* defaults = ComponentRegistry::Instance().FindDefaultParams("ModelRender"))
 					{
-						entry.params = info->defaultParams;
+						entry.params = *defaults;
 					}
 					target->data.components.push_back(std::move(entry));
 					modelRender = &target->data.components.back();
@@ -1121,11 +1211,19 @@ void MapEditor::Load(const std::string& path)
 // Collider専用のInspector UI。
 //	実際のColliderComponentは「名前付きの複数形状(Sphere/Box/Capsule)」を持てる設計のため、
 //	他のコンポーネントのような汎用UI(DrawComponentParamsGeneric)では表現できない。
-//	ComponentRegistry::SetCustomInspector()経由でCollider種類にだけ後付けする(コンストラクタ参照)
+//	FindCustomInspector()経由でCollider種類にだけ使う
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 static bool DrawColliderInspector(nlohmann::json& params, const std::function<void()>& requestUndoCheckpoint)
 {
 	bool edited = false;
+
+	{
+		// wireFrameがtrueなら、デバッグ用のWireFrameも一緒に付く
+		bool wireFrame = params.value("wireFrame", true);
+		ImGui::Checkbox("Wire Frame", &wireFrame);
+		if (ImGui::IsItemActivated()) { requestUndoCheckpoint(); }
+		if (ImGui::IsItemEdited()) { params["wireFrame"] = wireFrame; edited = true; }
+	}
 
 	if (!params.contains("shapes") || !params["shapes"].is_array())
 	{
@@ -1210,6 +1308,11 @@ static bool DrawColliderInspector(nlohmann::json& params, const std::function<vo
 				if (ImGui::IsItemActivated()) { requestUndoCheckpoint(); }
 				if (ImGui::IsItemEdited()) { shape["halfExtents"] = { he[0], he[1], he[2] }; edited = true; }
 			}
+
+			bool enabled = shape.value("enabled", true);
+			ImGui::Checkbox("Enabled", &enabled);
+			if (ImGui::IsItemActivated()) { requestUndoCheckpoint(); }
+			if (ImGui::IsItemEdited()) { shape["enabled"] = enabled; edited = true; }
 
 			bool isTrigger = shape.value("isTrigger", false);
 			ImGui::Checkbox("Is Trigger", &isTrigger);
@@ -1334,12 +1437,6 @@ static bool DrawColliderInspector(nlohmann::json& params, const std::function<vo
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 MapEditor::MapEditor()
 {
-	RegisterMapComponentTypes();
-
-	// Colliderだけは形状リストを持つため専用UIを後付けする(ComponentRegistrations.cppは
-	// ImGuiに依存させたくないので、UIの中身はこちら側に置いている)
-	ComponentRegistry::Instance().SetCustomInspector("Collider", DrawColliderInspector);
-
 	Load(m_filePathBuf);
 	LoadModelRegistry(m_registryPathBuf);
 }

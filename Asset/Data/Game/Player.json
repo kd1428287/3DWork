@@ -1,131 +1,193 @@
 {
-	"visuals": {
-		"modelPath": "Asset/Models/Character/Kachujin2/kachujin.gltf",
-		"animatorFPS": 120,
-		"animatorScale": 0.25,
-		"rootMotionBoneName": "mixamorig_Hips",
-		"rootMotionAxis": "Y",
-		"rootMotionAxisSign": -1.0,
-		"rootMotionScale": 1.0
-	},
-
-	"combatStats": {
-		"maxHealth": 100.0
-	},
-
+	"name": "player",
 	"components": [
-		{ "type": "HitReaction" }
-	],
-
-	"combatBehavior": {
-		"attackTablePath": "Asset/Data/Game/PlayerAttackTable.json",
-
-		"evade": {
-			"activeDuration": 0.35,
-			"recoveryDuration": 0.25,
-			"justWindowStart": 0.05,
-			"justWindowEnd": 0.15,
-			"evadeDistance": 3.0,
-			"useRootMotion": true,
-			"animationNameForward": "APose_Slide_F",
-			"animationNameBackward": "APose_Slide_B",
-			"animationNameLeft": "APose_Slide_L",
-			"animationNameRight": "APose_Slide_R"
+		{
+			"type": "ModelRender",
+			"params": { "model": "Asset/Models/Character/Kachujin2/kachujin.gltf" }
 		},
-
-		"guard": {
-			"justWindowDuration": 0.15,
-			"animationName": "APose2DefenseL",
-			"startDuration": 0.1,
-			"loopAnimationName": "DefenseL_Loop",
-			"parrySuccessAnimationName": "DefenseL_Parry01",
-			"parrySuccessDuration": 0.8,
-			"guardHitAnimationName": "DefenseL_Hit01",
-			"guardHitDuration": 0.9
-		}
-	},
-
-	"movementAnimations": {
-		"walk": {
-			"forward": {
-				"startAnimationName": "APose_Strafe_Walk_F_Start",
-				"startDuration": 0.15,
-				"loopAnimationName": "APose_Strafe_Walk_F_Loop",
-				"endAnimationName": "APose_Strafe_Walk_F_End",
-				"endDuration": 0.15
-			},
-			"locked": {
-				"forward": "APose_Strafe_Walk_F_Loop",
-				"forwardRight": "APose_Strafe_Walk_FR",
-				"right": "APose_Strafe_Walk_R",
-				"backwardRight": "APose_Strafe_Walk_BR",
-				"backward": "APose_Strafe_Walk_B",
-				"backwardLeft": "APose_Strafe_Walk_BL",
-				"left": "APose_Strafe_Walk_L",
-				"forwardLeft": "APose_Strafe_Walk_FL"
+		{
+			"type": "ModelAnimator",
+			"params": {
+				"fps": 120,
+				"speedScale": 0.25,
+				"rootMotionBone": "mixamorig_Hips",
+				"rootMotionAxis": "Y",
+				"rootMotionAxisSign": -1.0,
+				"rootMotionScale": 1.0
 			}
 		},
-
-		"run": {
-			"startAnimationName": "APose_Strafe_Run_F_Start",
-			"startDuration": 0.15,
-			"loopAnimationName": "APose_Strafe_Run_F_Loop",
-			"endAnimationName": "APose_Strafe_Run_F_End",
-			"endDuration": 0.15
-		},
-
-		"turn": {
-			"left90":   { "duration": 0.25, "animationName": "APose_TurnL90",  "useRootMotion": true, "blendDuration": 0.1 },
-			"right90":  { "duration": 0.25, "animationName": "APose_TurnR90",  "useRootMotion": true, "blendDuration": 0.1 },
-			"left180":  { "duration": 0.35, "animationName": "APose_TurnL180", "useRootMotion": true, "blendDuration": 0.1 },
-			"right180": { "duration": 0.35, "animationName": "APose_TurnR180", "useRootMotion": true, "blendDuration": 0.1 }
-		}
-	},
-
-	"colliders": [
+		{ "type": "RootMotionApplier" },
+		{ "type": "Gravity" },
 		{
-			"name": "Body",
-			"radius": 0.4,
-			"start": [ 0.0, 0.4, 0.0 ],
-			"end": [ 0.0, 1.6, 0.0 ],
-			"category": "Bump"
+			"type": "Velocity",
+			"params": { "dampingPerSecond": 0.01 }
 		},
 		{
-			"name": "HurtBox",
-			"radius": 0.3,
-			"start": [ 0.0, 0.3, 0.0 ],
-			"end": [ 0.0, 1.7, 0.0 ],
-			"category": "HurtBox",
-			"interactsWith": "HitBox",
-			"isTrigger": true
+			"type": "Collider",
+			"params": {
+				"shapes": [
+					{
+						"name": "Body",
+						"shape": "Capsule",
+						"radius": 0.4,
+						"offset": [0.0, 0.4, 0.0],
+						"capsuleEnd": [0.0, 1.6, 0.0],
+						"categoryMask": ["Bump"]
+					},
+					{
+						"name": "HurtBox",
+						"shape": "Capsule",
+						"radius": 0.3,
+						"offset": [0.0, 0.3, 0.0],
+						"capsuleEnd": [0.0, 1.7, 0.0],
+						"categoryMask": ["HurtBox"],
+						"useDefaultCollideMask": false,
+						"collideMask": ["HitBox"],
+						"isTrigger": true
+					}
+				]
+			}
+		},
+		{ "type": "GroundSensor" },
+		{
+			"type": "PlayerMovementAnimation",
+			"params": {
+				"walk": {
+					"forward": {
+						"startAnimationName": "APose_Strafe_Walk_F_Start",
+						"startDuration": 0.15,
+						"loopAnimationName": "APose_Strafe_Walk_F_Loop",
+						"endAnimationName": "APose_Strafe_Walk_F_End",
+						"endDuration": 0.15
+					},
+					"locked": {
+						"forward": "APose_Strafe_Walk_F_Loop",
+						"forwardRight": "APose_Strafe_Walk_FR",
+						"right": "APose_Strafe_Walk_R",
+						"backwardRight": "APose_Strafe_Walk_BR",
+						"backward": "APose_Strafe_Walk_B",
+						"backwardLeft": "APose_Strafe_Walk_BL",
+						"left": "APose_Strafe_Walk_L",
+						"forwardLeft": "APose_Strafe_Walk_FL"
+					}
+				},
+				"run": {
+					"startAnimationName": "APose_Strafe_Run_F_Start",
+					"startDuration": 0.15,
+					"loopAnimationName": "APose_Strafe_Run_F_Loop",
+					"endAnimationName": "APose_Strafe_Run_F_End",
+					"endDuration": 0.15
+				},
+				"turn": {
+					"left90": { "duration": 0.25, "animationName": "APose_TurnL90", "useRootMotion": true, "blendDuration": 0.1 },
+					"right90": { "duration": 0.25, "animationName": "APose_TurnR90", "useRootMotion": true, "blendDuration": 0.1 },
+					"left180": { "duration": 0.35, "animationName": "APose_TurnL180", "useRootMotion": true, "blendDuration": 0.1 },
+					"right180": { "duration": 0.35, "animationName": "APose_TurnR180", "useRootMotion": true, "blendDuration": 0.1 }
+				}
+			}
+		},
+		{ "type": "FacingDirection" },
+		{ "type": "Posture" },
+		{
+			"type": "Health",
+			"params": { "max": 100.0 }
+		},
+		{ "type": "PlayerLockOn" },
+		{ "type": "HitReaction" },
+		{ "type": "WeaponSet" },
+		{ "type": "PlayerInput" },
+		{
+			"type": "Movement",
+			"params": { "speed": 2.0 }
+		},
+		{ "type": "MovementResolver" },
+		{
+			"type": "PlayerStatusController",
+			"params": {
+				"evade": {
+					"activeDuration": 0.35,
+					"recoveryDuration": 0.25,
+					"justWindowStart": 0.05,
+					"justWindowEnd": 0.15,
+					"evadeDistance": 3.0,
+					"useRootMotion": true,
+					"animationNameForward": "APose_Slide_F",
+					"animationNameBackward": "APose_Slide_B",
+					"animationNameLeft": "APose_Slide_L",
+					"animationNameRight": "APose_Slide_R"
+				},
+				"guard": {
+					"justWindowDuration": 0.15,
+					"animationName": "APose2DefenseL",
+					"startDuration": 0.1,
+					"loopAnimationName": "DefenseL_Loop",
+					"parrySuccessAnimationName": "DefenseL_Parry01",
+					"parrySuccessDuration": 0.8,
+					"guardHitAnimationName": "DefenseL_Hit01",
+					"guardHitDuration": 0.9
+				}
+			}
+		},
+		{ "type": "CameraTarget" },
+		{
+			"type": "PlayerCombatMovement",
+			"params": { "walkSpeed": 2.0, "runSpeed": 6.0 }
+		},
+		{
+			"type": "PlayerAttackSelector",
+			"params": { "attackTablePath": "Asset/Data/Game/PlayerAttackTable.json" }
+		},
+		{ "type": "PlayerFacing" },
+		{
+			"type": "BoneSockets",
+			"params": { "bones": ["mixamorig:LeftHand", "mixamorig:LeftForeArm", "mixamorig:LeftArm", "mixamorig:LeftShoulder"] }
 		}
 	],
-
-	"walkSpeed": 2.0,
-	"runSpeed": 6.0,
-
-	"auxiliarySocketBones": [
-		"mixamorig:LeftHand",
-		"mixamorig:LeftForeArm",
-		"mixamorig:LeftArm",
-		"mixamorig:LeftShoulder"
-	],
-	"weaponSocketBone": "katana_r",
-
-	"rightArmIK": {
-		"rootBone": "mixamorig:RightShoulder",
-		"midBone": "mixamorig:RightArm",
-		"tipParentBone": "mixamorig:RightForeArm",
-		"tipBone": "mixamorig:RightHand"
-	},
-
-	"weapon": {
-		"modelPath": "Asset/Models/Character/GhostSamurai/Katana.gltf",
-		"socketLocalPosition": [ 0.0, 0.0, 0.0  ],
-		"socketLocalEulerRotationDeg": [ 0, 0, -90 ],
-		"hitBox": {
-			"halfExtents": [ 0.3, 0.3, 1.0 ],
-			"offset": [ 0.0, 0.0, -0.75 ]
+	"children": [
+		{
+			"name": "weapon",
+			"components": [
+				{
+					"type": "AttachToBone",
+					"params": { "bone": "katana_r", "position": [0.0, 0.0, 0.0], "rotationEulerDeg": [0, 0, -90] }
+				},
+				{
+					"type": "ModelRender",
+					"params": { "model": "Asset/Models/Character/GhostSamurai/Katana.gltf" }
+				},
+				{
+					"type": "Collider",
+					"params": {
+						"ignoreParent": true,
+						"shapes": [
+							{
+								"name": "HitBox",
+								"shape": "Box",
+								"halfExtents": [0.3, 0.3, 1.0],
+								"offset": [0.0, 0.0, -0.75],
+								"categoryMask": ["HitBox"],
+								"enabled": false,
+								"isTrigger": true
+							}
+						]
+					}
+				},
+				{ "type": "AttackSource" },
+				{
+					"type": "TwoBoneIK",
+					"params": {
+						"rootBone": "mixamorig:RightShoulder",
+						"midBone": "mixamorig:RightArm",
+						"tipParentBone": "mixamorig:RightForeArm",
+						"tipBone": "mixamorig:RightHand"
+					}
+				},
+				{
+					"type": "SlashTrail",
+					"params": { "name": "Sword", "base": [0, 0, -1.0], "tip": [0, 0, -1.75], "key": "Sword_Player" }
+				},
+				{ "type": "Weapon" }
+			]
 		}
-	}
+	]
 }

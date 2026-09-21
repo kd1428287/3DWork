@@ -26,7 +26,9 @@
 // ============================================================
 class TweenMoveComponent : public ComponentBase {
 public:
-	explicit TweenMoveComponent(GameObject* owner) : ComponentBase(owner) {}
+	explicit TweenMoveComponent(GameObject* owner) : ComponentBase(owner) {
+		SetEnabled(false);
+	}
 
 	void Awake() override {
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
@@ -42,13 +44,13 @@ public:
 		elapsed_ = 0.0f;
 		currentPosition_ = from_;
 		onComplete_ = nullptr;
-		enabled_ = true;
+		SetEnabled(true);
 
 		if (transform_) transform_->SetPosition(from_);
 	}
 
 	void Advance(float deltaTime) {
-		if (!enabled_) return;
+		if (!IsEnabled()) return;
 
 		elapsed_ += deltaTime;
 		const float t = (duration_ > 0.0f) ? std::min(elapsed_ / duration_, 1.0f) : 1.0f;
@@ -57,7 +59,7 @@ public:
 		currentPosition_ = Math::Vector3::Lerp(from_, to_, eased);
 
 		if (t >= 1.0f) {
-			enabled_ = false;
+			SetEnabled(false);
 			auto onComplete = std::move(onComplete_);
 			onComplete_ = nullptr;
 			if (onComplete) onComplete();
@@ -70,13 +72,11 @@ public:
 
 	// 外部からの明示的な中断。onComplete_は呼ばれない
 	// (以前のRequestRemoveComponent<TweenMoveComponent>()相当)。
-	void Cancel() { enabled_ = false; }
-
-	void SetEnabled(bool enabled) { enabled_ = enabled; }
+	void Cancel() { SetEnabled(false); }
 
 	// 動作中(=内力・外力に優越して位置を決めてよい状態)かどうか。
 	// コンポーネントの存在自体は常にtrueなので、稼働判定は必ずこちらを使う。
-	bool IsActive() const { return enabled_; }
+	bool IsActive() const { return IsEnabled(); }
 
 	// Advance()で算出された、このフレームの絶対位置。
 	const Math::Vector3& GetCurrentPosition() const { return currentPosition_; }
@@ -88,7 +88,6 @@ private:
 	Math::Vector3 to_ = Math::Vector3::Zero;
 	float duration_ = 0.0f;
 	float elapsed_ = 0.0f;
-	bool enabled_ = false;
 	Math::Vector3 currentPosition_ = Math::Vector3::Zero;
 	TransformComponent* transform_ = nullptr;
 	std::function<void()> onComplete_;

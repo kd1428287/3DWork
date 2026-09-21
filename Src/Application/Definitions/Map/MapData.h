@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "ComponentTypes.h"
+#include "../Prefab/Prefab.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // マップ上の1エンティティを表す、唯一の正となるスキーマ。
@@ -15,17 +15,10 @@
 using ObjectId = uint64_t;
 constexpr ObjectId kInvalidObjectId = 0;
 
-struct MapEntity
+// 位置・回転・スケール・componentsはPrefabDefinitionと共通で、マップ内の識別用にidだけを足している。
+struct MapEntity : PrefabDefinition
 {
-	ObjectId		id = kInvalidObjectId;	// マップ内で一意。保存され、Undo/Redoや将来の
-	// オブジェクト参照(トリガー等)の安定した拠り所になる
-	std::string		name = "Object";
-
-	Math::Vector3		pos = { 0.0f, 0.0f, 0.0f };
-	Math::Quaternion	rotation = Math::Quaternion::Identity;
-	Math::Vector3		scale = { 1.0f, 1.0f, 1.0f };
-
-	std::vector<ComponentEntry>	components;
+	ObjectId id = kInvalidObjectId;	// マップ内で一意。保存され、Undo/Redoや将来のオブジェクト参照の拠り所になる
 };
 
 // 読み込んだマップ全体。nextIdは「これから新規追加するオブジェクトに使うべきID」を、

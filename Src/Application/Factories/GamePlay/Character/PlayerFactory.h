@@ -1,12 +1,11 @@
 ﻿#pragma once
 
-#include "Application/Definitions/Character/Player/PlayerDefinition.h"
+#include <string>
 
 class GameObject;
 class ObjectManager;
-class SkeletonComponent;
-class BoneSocketComponent;
 
+// Player生成の窓口。中身はPrefab(JSON)からの生成で、呼び出し側がPrefabFactoryへ移行するまでの橋渡し。
 class PlayerFactory {
 public:
 	PlayerFactory() = default;
@@ -16,8 +15,6 @@ public:
 	PlayerFactory(const PlayerFactory&) = delete;
 	PlayerFactory& operator=(const PlayerFactory&) = delete;
 
+	// definitionPathのPrefabからプレイヤーを生成する。読み込みに失敗した場合はnullptr。
 	GameObject* CreatePlayer(ObjectManager& objectManager, const std::string& definitionPath);
-	GameObject* CreatePlayer(ObjectManager& objectManager, const PlayerDefinition& definition);
-
-	GameObject* CreateWeapon(ObjectManager& objectManager, GameObject* player, Handle<TransformComponent>& handle, const WeaponDefinition& weaponDefinition, const IKChainDefinition& ikChain);
 };

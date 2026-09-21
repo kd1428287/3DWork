@@ -1,5 +1,5 @@
 ﻿#include "TerrainFactory.h"
-#include "Application/Definitions/Map/ComponentTypes.h"
+#include "../../PrefabFactory.h"
 
 #include "Application/Components/Graphics/Render/ModelRenderComponent.h"
 #include "Application/Components/Graphics/Render/Mod/ForceMaxDepthComponent.h"
@@ -9,12 +9,7 @@
 #include "Application/Components/Physics/Collision/ColliderComponent.h"
 #include "Application/Components/Physics/Movement/FollowCameraComponent.h"
 
-TerrainFactory::TerrainFactory()
-{
-	// MapEditorを経由せずゲームを直接起動した場合でもComponentRegistryが
-	// 空にならないよう、ここでも登録を試みる(2重登録は内部でガードされる)
-	RegisterMapComponentTypes();
-}
+TerrainFactory::TerrainFactory() = default;
 
 GameObject* TerrainFactory::CreateTerrain(ObjectManager& objectManager, int ownerTerrainId)
 {
@@ -48,39 +43,8 @@ GameObject* TerrainFactory::CreateSkydome(ObjectManager& objectManager, int owne
 	return skydome;
 }
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// MapEditorが保存したエンティティ1件からGameObjectを組み立てる。
-//	コンポーネントの種類ごとの分岐は一切持たず、ComponentRegistryに登録された
-//	create関数を呼ぶだけ。新しいコンポーネント種類を追加してもこの関数は無改修でよい。
-//	回転はMapEntity側で既にQuaternionなので、Euler変換は一切不要になった
-//	(以前あったCreateFromYawPitchRoll経由の変換と、それに伴う合成順序の不一致リスクは消えた)
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// MapEditorが保存したエンティティ1件からGameObjectを組み立てる(実体はPrefabFactory)。
 GameObject* TerrainFactory::CreateFromData(ObjectManager& objectManager, const MapEntity& data)
 {
-	auto* obj = objectManager.Instantiate(data.name);
-	auto* transform = obj->AddComponent<TransformComponent>();
-
-	transform->SetPosition(data.pos);
-	transform->SetRotation(data.rotation);
-	transform->SetScale(data.scale);
-
-	// TODO: GameObject自体はMapEntity::idを知らない。将来「特定の配置オブジェクトを
-	// スクリプト/トリガーから参照したい」需要が出てきたら、data.idを持たせる
-	// 専用コンポーネント(例: MapEntityIdComponent)を追加するか、GameObjectFactory<int>
-	// (registry_)経由の登録を検討すること
-
-	for (const auto& entry : data.components)
-	{
-		const ComponentTypeInfo* info = ComponentRegistry::Instance().Find(entry.type);
-		if (!info)
-		{
-			std::cerr << "[TerrainFactory] Unknown component type: " << entry.type
-				<< " (entity: " << data.name << ")" << std::endl;
-			continue;
-		}
-
-		info->create(*obj, entry.params);
-	}
-
-	return obj;
+	return PrefabFactory::Create(objectManager, data);
 }

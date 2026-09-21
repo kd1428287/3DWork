@@ -105,6 +105,6 @@ private:
 	TurnAnimationSet turnAnimSet_;
 
 	static constexpr const char* kIdleAnimation = "APose_Idle";
-	static constexpr float kBlendDuration = 0.15f;
+	static constexpr float kBlendDuration = 0.35f;
 	static constexpr const char* kRootMotionBoneName = "mixamorig_Hips";
 };

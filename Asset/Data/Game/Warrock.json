@@ -1,0 +1,165 @@
+{
+	"name": "enemy_warrock",
+	"scale": [1.0, 1.0, 1.0],
+	"components": [
+		{
+			"type": "ModelRender",
+			"params": { "model": "Asset/Models/Character/Warrock/Warrock.gltf" }
+		},
+		{
+			"type": "ModelAnimator",
+			"params": {
+				"fps": 60,
+				"rootMotionBone": "mixamorig:Hips",
+				"rootMotionAxis": "Y",
+				"rootMotionAxisSign": -1.0,
+				"rootMotionScale": 0.01
+			}
+		},
+		{ "type": "FacingDirection", "params": { "rotationSpeed": 3.0 } },
+		{ "type": "Posture", "params": { "max": 100.0 } },
+		{ "type": "Health", "params": { "max": 1000.0 } },
+		{ "type": "LockOnTarget" },
+		{ "type": "WeaponSet" },
+		{ "type": "HitReaction" },
+		{
+			"type": "Collider",
+			"params": {
+				"wireFrame": false,
+				"shapes": [
+					{
+						"name": "HurtBox",
+						"shape": "Capsule",
+						"radius": 0.5,
+						"offset": [0.0, 0.5, 0.0],
+						"capsuleEnd": [0.0, 1.5, 0.0],
+						"categoryMask": ["HurtBox"],
+						"useDefaultCollideMask": false,
+						"collideMask": ["HitBox"],
+						"isTrigger": true
+					},
+					{
+						"name": "Body",
+						"shape": "Capsule",
+						"radius": 0.5,
+						"offset": [0.0, 0.5, 0.0],
+						"capsuleEnd": [0.0, 1.5, 0.0],
+						"categoryMask": ["Bump"]
+					}
+				]
+			}
+		},
+		{ "type": "Gravity" },
+		{ "type": "Velocity" },
+		{ "type": "MovementResolver" },
+		{ "type": "GroundSensor" },
+		{
+			"type": "EnemyAI",
+			"params": {
+				"behavior": "Warrock",
+				"aiData": {
+					"chaseSpeed": 2.0,
+					"detectionRange": 10.0,
+					"loseTargetRange": 14.0,
+					"attackIntervalDuration": 0.5,
+					"maintainDistance": 3.0,
+					"attacks": [
+						{
+							"name": "Punch",
+							"maxRange": 3.0,
+							"weight": 2.0,
+							"attackData": {
+								"phaseData": {
+									"animationName": "Punch",
+									"windup": { "targetDuration": 0.5 },
+									"active": { "targetDuration": 0.4 },
+									"recovery": { "targetDuration": 0.7 }
+								}
+							}
+						},
+						{
+							"name": "Kick",
+							"maxRange": 3.5,
+							"weight": 1.5,
+							"attackData": {
+								"phaseData": {
+									"animationName": "Kick",
+									"windup": { "targetDuration": 0.5 },
+									"active": { "targetDuration": 0.3 },
+									"recovery": { "targetDuration": 0.6 }
+								}
+							}
+						},
+						{
+							"name": "Swipe",
+							"maxRange": 4.5,
+							"weight": 1.0,
+							"attackData": {
+								"phaseData": {
+									"animationName": "Swipning",
+									"windup": { "targetDuration": 0.7 },
+									"active": { "targetDuration": 0.5 },
+									"recovery": { "targetDuration": 0.9 }
+								}
+							}
+						}
+					],
+					"gapCloserAttacks": [
+						{
+							"name": "JumpAttack",
+							"minRange": 5.0,
+							"maxRange": 9.0,
+							"weight": 1.0,
+							"attackData": {
+								"phaseData": {
+									"animationName": "JumpAttack",
+									"windup": { "targetDuration": 0.9 },
+									"active": { "targetDuration": 0.4 },
+									"recovery": { "targetDuration": 1.8 }
+								},
+								"moveData": { "useRootMotion": true }
+							}
+						}
+					],
+					"movementAnimations": { "idle": "Idle", "walk": "Walk", "run": "Run" },
+					"oneShotAnimations": {
+						"HitReaction": { "animationName": "SmallReaction", "duration": 0.4 },
+						"BigStagger": { "animationName": "SmallReaction", "duration": 3.0 },
+						"Parried": { "animationName": "SmallReaction", "duration": 0.4 },
+						"Roar": { "animationName": "Roaring", "duration": 1.5 },
+						"Dying": { "animationName": "Dying", "duration": 2.0 }
+					},
+					"postDeathLingerSeconds": 1.0
+				}
+			}
+		}
+	],
+	"children": [
+		{
+			"name": "enemy_weapon",
+			"scale": [0.5, 0.5, 0.5],
+			"components": [
+				{ "type": "AttachToBone", "params": { "bone": "mixamorig:RightHand" } },
+				{
+					"type": "Collider",
+					"params": {
+						"ignoreParent": true,
+						"shapes": [
+							{
+								"name": "HitBox",
+								"shape": "Box",
+								"halfExtents": [5.0, 5.0, 5.1],
+								"offset": [1.0, 1.0, 0.0],
+								"categoryMask": ["HitBox"],
+								"enabled": false,
+								"isTrigger": true
+							}
+						]
+					}
+				},
+				{ "type": "AttackSource" },
+				{ "type": "Weapon" }
+			]
+		}
+	]
+}

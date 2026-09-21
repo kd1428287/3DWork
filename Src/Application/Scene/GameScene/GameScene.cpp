@@ -18,7 +18,6 @@
 
 
 // definitions
-#include "Application/Definitions/Loaders/PlayerDefinitionLoader.h"
 #include "Application/Definitions/Loaders/MapLoader.h"
 #include "Application/Definitions/Character/Enemy/EnemyDefinition.h"
 #include "Application/Definitions/Character/Enemy/Warrock/WarrockAIData.h"
@@ -74,30 +73,17 @@ void GameScene::Init()
 	SlashTrailParams params;
 	slashTrailDispatcher_->RegisterDefinition("Sword", params);
 
-	std::unordered_map<std::string, EnemyDefinition> map;
-	EnemyDefinition def;
-	def.name = "Brute";
-	//def.aiData = CreateDebugBruteAIData();
-	map.emplace("Brute", def);
-	def = {};
-	def.name = "Warrock";
-	def.type = EnemyType::Warrock;
-	def.modelPath = "Asset/Models/Character/Warrock/Warrock.gltf";
-	def.aiData = CreateDebugWarrockAIData();
-	map.emplace("Warrock", def);
+	std::unordered_map<std::string, std::string> map;
+	map["Warrock"] = "Asset/Data/Game/Warrock.json";
 	enemyFactory_ = std::make_unique<EnemyFactory>(map);
 
-	//for (int i = 0; i < 100; i++)
-	//{
-	//	enemyFactory_->CreateEnemy(*objManager_, "Warrock", Math::Vector3(10, 0, i * 0.01f));
-	//}
-
-	enemyFactory_->CreateEnemy(*objManager_, "Warrock", Math::Vector3(10, 0, 5.f));
+	if (enemyFactory_->IsKnownEnemy("Warrock"))
+	{
+		enemyFactory_->CreateEnemy(*objManager_, "Warrock", Math::Vector3(10, 0, 5.f));
+	}
 
 	playerFactory_ = std::make_unique<PlayerFactory>();
-	PlayerDefinition pDef;
-	PlayerDefinitionLoader::LoadFromFile("Asset/Data/Game/Player.json", pDef);
-	auto* player = playerFactory_->CreatePlayer(*objManager_, pDef);
+	auto* player = playerFactory_->CreatePlayer(*objManager_, "Asset/Data/Game/Player.json");
 
 	cameraFactory_ = std::make_unique<CameraFactory>();
 	auto* camera = cameraFactory_->CreateCamera(*objManager_, player);
