@@ -15,11 +15,15 @@ namespace
 		return Math::Vector3(j[0].get<float>(), j[1].get<float>(), j[2].get<float>());
 	}
 
-	void ReadAnimationSegment(const json& j, AnimationSegment& out)
+	void ReadMotionClipData(const json& j, MotionClipData& out)
 	{
+		out.animationName = j.value("animationName", out.animationName);
+		out.duration = j.value("duration", out.duration);
+		out.loop = j.value("loop", out.loop);
+		out.blendDuration = j.value("blendDuration", out.blendDuration);
+		out.useRootMotion = j.value("useRootMotion", out.useRootMotion);
 		out.startFrame = j.value("startFrame", out.startFrame);
 		out.endFrame = j.value("endFrame", out.endFrame);
-		out.targetDuration = j.value("targetDuration", out.targetDuration);
 	}
 
 	void ReadAttackDamageData(const json& j, AttackDamageData& out)
@@ -38,16 +42,13 @@ namespace
 		out.stepDuration = j.value("stepDuration", out.stepDuration);
 		out.engageDistance = j.value("engageDistance", out.engageDistance);
 		if (j.contains("stepDirection")) out.stepDirection = ReadVector3(j["stepDirection"], out.stepDirection);
-		out.blendDuration = j.value("blendDuration", out.blendDuration);
-		out.useRootMotion = j.value("useRootMotion", out.useRootMotion);
 	}
 
 	void ReadAttackPhaseData(const json& j, AttackPhaseData& out)
 	{
-		out.animationName = j.value("animationName", out.animationName);
-		if (j.contains("windup")) ReadAnimationSegment(j["windup"], out.windup);
-		if (j.contains("active")) ReadAnimationSegment(j["active"], out.active);
-		if (j.contains("recovery")) ReadAnimationSegment(j["recovery"], out.recovery);
+		if (j.contains("windup")) ReadMotionClipData(j["windup"], out.windup);
+		if (j.contains("active")) ReadMotionClipData(j["active"], out.active);
+		if (j.contains("recovery")) ReadMotionClipData(j["recovery"], out.recovery);
 	}
 
 	void ReadAttackCancelData(const json& j, AttackCancelData& out)

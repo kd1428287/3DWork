@@ -690,9 +690,6 @@
     <ClInclude Include="Src\Application\Definitions\Character\Enemy\EnemyAIData.h">
       <Filter>Src\Application\Definitions\Character\Enemy</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Definitions\Character\Enemy\EnemyDefinition.h">
-      <Filter>Src\Application\Definitions\Character\Enemy</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Definitions\Effect\EffectParams.h">
       <Filter>Src\Application\Definitions\Effect</Filter>
     </ClInclude>
@@ -785,9 +782,6 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Definitions\Character\Enemy\Warrock\WarrockAIData.h">
       <Filter>Src\Application\Definitions\Character\Enemy\Warrock</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Factories\GamePlay\Character\CharacterFactoryUtil.h">
-      <Filter>Src\Application\Factories\GamePlay\Character</Filter>
     </ClInclude>
     <ClInclude Include="Src\Application\Core\EventBus\Events\CollisionEvents.h">
       <Filter>Src\Application\Core\EventBus\Events</Filter>
@@ -948,17 +942,20 @@
     <ClInclude Include="Src\Application\Factories\PrefabFactory.h">
       <Filter>Src\Application\Factories</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Factories\ComponentRegistry.h">
-      <Filter>Src\Application\Factories\GamePlay</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Definitions\Physics\ColliderCategoryNames.h">
       <Filter>Src\Application\Definitions\Physics</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Definitions\Character\Enemy\EnemyAIDataJson.h">
-      <Filter>Src\Application\Components\GamePlay\Character\Enemy</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Framework\Shader\GPUParticle\GPUParticleShader.h">
       <Filter>Src\Framework\Shader\GPUParticle</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Character\Player\PlayerDefinitionJson.h">
+      <Filter>Src\Application\Definitions\Character\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Factories\ComponentRegistry.h">
+      <Filter>Src\Application\Factories</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Character\Enemy\EnemyAIDataJson.h">
+      <Filter>Src\Application\Definitions\Character\Enemy</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1211,9 +1208,6 @@
     <ClCompile Include="Src\Application\Effect\Particle\EffectInstance.cpp">
       <Filter>Src\Application\Effect\Particle</Filter>
     </ClCompile>
-    <ClCompile Include="Src\Application\Factories\GamePlay\Character\CharacterFactoryUtil.cpp">
-      <Filter>Src\Application\Factories\GamePlay\Character</Filter>
-    </ClCompile>
     <ClCompile Include="Src\Application\Editor\ThirdParty\imgui-node-editor\crude_json.cpp">
       <Filter>Src\Application\Editor\ThirdParty\imgui-node-editor</Filter>
     </ClCompile>
@@ -1265,14 +1259,14 @@
     <ClCompile Include="Src\Application\Factories\PrefabFactory.cpp">
       <Filter>Src\Application\Factories</Filter>
     </ClCompile>
-    <ClCompile Include="Src\Application\Factories\ComponentRegistrations.cpp">
-      <Filter>Src\Application\Factories\GamePlay</Filter>
-    </ClCompile>
-    <ClCompile Include="Src\Application\Factories\ComponentRegistry.cpp">
-      <Filter>Src\Application\Factories\GamePlay</Filter>
-    </ClCompile>
     <ClCompile Include="Src\Framework\Shader\GPUParticle\GPUParticleShader.cpp">
       <Filter>Src\Framework\Shader\GPUParticle</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Factories\ComponentRegistrations.cpp">
+      <Filter>Src\Application\Factories</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Factories\ComponentRegistry.cpp">
+      <Filter>Src\Application\Factories</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

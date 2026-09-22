@@ -1,5 +1,5 @@
 ﻿#pragma once
-
+#include "CharacterDefinitionCommon.h"
 
 // 被弾側も得るデータ構造体
 struct AttackDamageData
@@ -23,21 +23,12 @@ struct AttackDamageData
 	float parryPostureDamage = 40.0f;
 };
 
-struct AnimationSegment
-{
-	float startFrame = 0.0f;     // 切り出し開始フレーム
-	float endFrame = 0.0f;       // 切り出し終了フレーム
-	float targetDuration = 0.0f; // この区間を何秒で再生しきりたいか（デザイナーの意図するテンポ）
-};
-
 // 攻撃フェーズ管理データ
 struct AttackPhaseData
 {
-	std::string animationName = "APose_Attack02_1"; // 元となるアニメーションクリップ名
-
-	AnimationSegment windup;   // 予備動作の区間と目標秒数
-	AnimationSegment active;   // 判定持続の区間と目標秒数
-	AnimationSegment recovery; // 硬直の区間と目標秒数
+	MotionClipData windup;   // 予備動作の区間と目標秒数
+	MotionClipData active;   // 判定持続の区間と目標秒数
+	MotionClipData recovery; // 硬直の区間と目標秒数
 };
 
 // モーション制御用データ
@@ -48,8 +39,6 @@ struct AttackMoveData
 	float engageDistance = 1.2f;
 
 	Math::Vector3 stepDirection = Math::Vector3::Zero;
-	float blendDuration = 0.1f;
-	bool useRootMotion = false;
 };
 
 // キャンセル制御用データ

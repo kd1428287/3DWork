@@ -57,17 +57,16 @@ struct WeaponDefinition
 	WeaponColliderDefinition hitBox;
 };
 
-// 単発アニメーション1本分の再生設定。「windup/active/recoveryのような
-// 複数フェーズへの分割は持たず、1つのクリップをどう再生するか」だけを
-// 表す最小単位。Player(ターン/回避後リアクション等)・Enemy(被弾リアクション/
-// 咆哮/死亡等)の双方で同じ形が必要になったため、AttackDataをCombatData.hへ
-// 統合した時と同じ考え方でここへ集約する(旧PlayerCombatTypes.h::MotionClipData)。
+// アニメーション1本分の再生設定
 struct MotionClipData
 {
 	std::string animationName;
-	float duration = 0.2f;
-	bool useRootMotion = false;
-	float blendDuration = 0.1f;
+	float		duration		= -1.0f;
+	bool		loop			= false;
+	bool		useRootMotion	= false;
+	float		blendDuration	= 0.1f;
+	int			startFrame		= 0;
+	int			endFrame		= 0;
 };
 
 // ============================================================

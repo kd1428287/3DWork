@@ -117,15 +117,22 @@ public:
 	// パリィ成功演出中はガードキーを離しても解除させない(強制的に見せ切る)。
 	bool CanReleaseGuard(const PlayerStatusController* controller) const override;
 
-	// パリィ成功演出中だけ、反撃キャンセルとして次の攻撃を許可する。
 	bool CanStartAttack(const PlayerStatusController* controller) const override;
-
-	//bool CanStartEvade(const PlayerStatusController* controller) const override { return true; }
+	bool CanStartEvade(const PlayerStatusController* controller) const override;
+	bool CanStartGuard(const PlayerStatusController* controller) const override;
+	bool CanStartMove(const PlayerStatusController* controller) const override;
 
 	// HitReactionComponent(IHitReactionQuery経由、PlayerStatusController::
 	// NotifyParrySuccess/NotifyGuardHit)から呼ばれる通知。
 	void NotifyParrySuccess(PlayerStatusController* controller);
 	void NotifyGuardHit(PlayerStatusController* controller);
+
+	// ガードキー解放時にPlayerStatusController::HandleActionInputから
+	// 呼ばれる解除要求。ここではまだNoneへ遷移せず、終了アニメーション
+	// (endAnimationName)の再生を開始するだけ。endDuration経過後、
+	// Update()側が自律的にChangeStateToNone()する(StateAttackの
+	// Recovery終了と同じ考え方)。
+	void RequestRelease(PlayerStatusController* controller);
 
 private:
 	// パリィ判定はGuard内部のサブフェーズとして扱う。
@@ -133,7 +140,7 @@ private:
 	// 開始し、parrySuccessDuration秒経過で自動的にNormalBlockへ戻る
 	// (GetGuardPhase()参照。CombatStateやControllerには手を入れず
 	//  Guard内部だけで完結させる、という元々の方針を踏襲)。
-	enum class GuardPhase { JustWindow, NormalBlock, ParrySuccess };
+	enum class GuardPhase { JustWindow, NormalBlock, ParrySuccess, Release };
 	GuardPhase GetGuardPhase(const PlayerStatusController* controller) const;
 
 	// パリィ成功/ガードヒットの単発リアクション再生が終わった後、
@@ -153,6 +160,12 @@ private:
 	// には影響させない、ガードヒットのアニメーション再生専用のフラグ。
 	bool isReactingToGuardHit_ = false;
 	float guardHitElapsed_ = 0.0f;
+
+	// ガード解除要求を受けてから、終了アニメーション(endAnimationName)を
+	// 再生し終えるまでの間だけtrue。この間はStart/Loop/各リアクションの
+	// 更新を止め、endDuration経過を待つだけの状態になる。
+	bool isReleasing_ = false;
+	float releaseElapsed_ = 0.0f;
 };
 
 

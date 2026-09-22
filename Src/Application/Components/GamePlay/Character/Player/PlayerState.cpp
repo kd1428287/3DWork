@@ -18,86 +18,54 @@ void StateAttack::Enter(PlayerStatusController* controller) {
 	phase_ = CombatState::AttackWindup;
 	elapsed_ = 0.0f;
 
-	// WeaponSetComponent/PlayerAttackSelectorはこのStateでしか使わないため、
-	// Controllerのファサードを経由せずここで直接解決する
-	// (PlayerCombatMovementComponent/PlayerFacingComponent/
-	//  ModelAnimatorComponentはStateEvade等とも共有するため、
-	//  引き続きControllerのファサード経由で呼ぶ)。
 	weaponSet_ = controller->GetOwner()->GetComponent<WeaponSetComponent>();
 	attackSelector_ = controller->GetOwner()->GetComponent<PlayerAttackSelector>();
 
 	// ロック中ならロック対象へ、未ロックなら画面中心に最も近い敵へ正対する。
-	// facingDirectionComponent_はAttack中無効化されているため、
-	// ここで明示的に向きを合わせておく必要がある。
-	controller->FaceAttackTarget();
-	controller->SetMovementEnabled(false);
+	//controller->FaceAttackTarget();
+	//controller->SetMovementEnabled(false);
 
 	const AttackData& data = attackSelector_->GetCurrentAttackData();
 	weaponSet_->SetAttackDamageData(data.weaponSlots, data.damageData);
 
-	// 攻撃全体(Windup+Active+Recovery)の秒数を目標としてアニメーション
-	// 速度を自動スケーリングする
-	const AnimationSegment& windup = data.phaseData.windup;
-	controller->PlayAnimation(data.phaseData.animationName, false, windup.targetDuration,
-		windup.startFrame, windup.endFrame,
-		data.moveData.useRootMotion, data.moveData.blendDuration); // コンボ段数に応じたアニメーション
+	controller->PlayAnimation(data.phaseData.windup); 
 }
 
 void StateAttack::Update(PlayerStatusController* controller, float deltaTime) {
 	elapsed_ += deltaTime;
 	const AttackData& data = attackSelector_->GetCurrentAttackData();
 
-	if (phase_ == CombatState::AttackWindup && elapsed_ >= data.phaseData.windup.targetDuration) {
+	if (phase_ == CombatState::AttackWindup && elapsed_ >= data.phaseData.windup.duration) {
 		phase_ = CombatState::AttackActive;
 		elapsed_ = 0.0f;
-		if (!data.moveData.useRootMotion) {
-			/*controller->RequestStepMoveTowardsTarget(data.moveData.stepDirection, data.moveData.stepDistance,
-				data.moveData.engageDistance, data.moveData.stepDuration);*/
-		}
+		controller->RequestStepMoveTowardsTarget(data.moveData.stepDirection, data.moveData.stepDistance,
+			data.moveData.engageDistance, data.moveData.stepDuration);
 		weaponSet_->SetHitBoxEnabled(data.weaponSlots, true); // 攻撃判定が実際に発生する一瞬だけ有効化
 		weaponSet_->SetTrailEmitting(data.weaponSlots, true); // 武器の軌跡エフェクトもHitBoxと同じ窓で記録開始
 
-		const AnimationSegment& active = data.phaseData.active;
-		controller->PlayAnimation(data.phaseData.animationName, false, active.targetDuration,
-			active.startFrame, active.endFrame,
-			data.moveData.useRootMotion, data.moveData.blendDuration);
+		controller->PlayAnimation(data.phaseData.active); 
 	}
-	else if (phase_ == CombatState::AttackActive && elapsed_ >= data.phaseData.active.targetDuration) {
+	else if (phase_ == CombatState::AttackActive && elapsed_ >= data.phaseData.active.duration) {
 		phase_ = CombatState::AttackRecovery;
 		elapsed_ = 0.0f;
 		weaponSet_->SetHitBoxEnabled(data.weaponSlots, false); // 判定の発生窓を閉じる
 		weaponSet_->SetTrailEmitting(data.weaponSlots, false); // 軌跡エフェクトの記録も停止(既に生成済みの頂点はStopEmit後も自然に流れて消える)
 
-		const AnimationSegment& recovery = data.phaseData.recovery;
-		controller->PlayAnimation(data.phaseData.animationName, false, recovery.targetDuration,
-			recovery.startFrame, recovery.endFrame,
-			data.moveData.useRootMotion, data.moveData.blendDuration);
+		controller->PlayAnimation(data.phaseData.recovery); 
 	}
-	else if (phase_ == CombatState::AttackRecovery && elapsed_ >= data.phaseData.recovery.targetDuration) {
+	else if (phase_ == CombatState::AttackRecovery && elapsed_ >= data.phaseData.recovery.duration) {
 		// 自律的に終了し、ControllerにNoneへの復帰を要請する
 		controller->ChangeStateToNone();
 	}
 }
 
 void StateAttack::Exit(PlayerStatusController* controller) {
-	// Windup中にStagger等で強制的に割り込まれた場合など、通常のUpdateの
-	// 遷移では回収できないタイミングでもステップ移動が残らないよう、
-	// Exitで必ず後始末する(Evadeと同じ考え方)。
+	// 強制中断された場合のガード
 	controller->CancelStepMove();
 	controller->SetMovementEnabled(true);
 
-
 	const AttackData& data = attackSelector_->GetCurrentAttackData();
-
-	// AttackActive中に割り込まれた場合、HitBoxが有効なまま次のStateへ
-	// 遷移してしまうと、以後の状態(Stagger中など)でも攻撃判定が
-	// 生き続けてしまう。通常のUpdate側の遷移(Active→Recovery)で
-	// 既に無効化済みのケースがほとんどだが、その経路を通らない
-	// 中断にも安全に対応できるよう、Exitで無条件に無効化しておく。
 	weaponSet_->SetHitBoxEnabled(data.weaponSlots, false);
-
-	// HitBoxと同じ理由で、AttackActive中に割り込まれた場合でも
-	// トレイルの記録が停止せずに残ってしまわないよう、無条件で止める。
 	weaponSet_->SetTrailEmitting(data.weaponSlots, false);
 }
 
@@ -109,8 +77,7 @@ bool StateAttack::CanStartEvade(const PlayerStatusController* controller) const 
 }
 
 bool StateAttack::CanStartAttack(const PlayerStatusController* controller) const {
-	// Recovery中の一定タイミングを過ぎたら、次の攻撃(コンボ)への
-	// キャンセルを許可する。CanStartEvadeと同じ考え方。
+	// Recovery中の一定タイミングを過ぎたら、次の攻撃(コンボ)へのキャンセルを許可する
 	if (phase_ == CombatState::AttackRecovery) {
 		return elapsed_ >= attackSelector_->GetCurrentAttackData().cancelData.recoveryAttackCancelStart;
 	}
@@ -206,29 +173,39 @@ void StateGuard::Enter(PlayerStatusController* controller) {
 	parrySuccessElapsed_ = 0.0f;
 	isReactingToGuardHit_ = false;
 	guardHitElapsed_ = 0.0f;
-	KdDebugGUI::Instance().AddLog("Guard");
+	isReleasing_ = false;
+	releaseElapsed_ = 0.0f;
 
-	// 構え動作を単発再生する。以前はこれを最終フレームで止めることで
-	// 継続姿勢を表現していたが、ガードヒット等の別アニメーションを一度
-	// 挟むと「既に同じアニメーションが設定済み」と判定され再生されなく
-	// なる問題があったため、継続姿勢は専用のLoopアニメーションに変更した
-	// (startDuration経過後、Update()側でloopAnimationNameへ切り替える)。
-	controller->PlayAnimation(controller->GetCurrentGuardData().animationName, false, controller->GetCurrentGuardData().startDuration);
+	// 構え動作を単発再生する
+	const auto& data = controller->GetCurrentGuardData().start;
+	controller->PlayAnimation(data);
 }
 
 void StateGuard::Update(PlayerStatusController* controller, float deltaTime) {
 	elapsed_ += deltaTime;
+
+	// 解除要求後は終了アニメーションの再生完了を待つだけの状態。
+	// endDuration経過した時点で、ここで初めて自律的にNoneへ戻る
+	// (StateAttackのRecovery終了/StateEvadeのEvadeRecovery終了と同じ考え方)。
+	if (isReleasing_) {
+		releaseElapsed_ += deltaTime;
+		if (releaseElapsed_ >= controller->GetCurrentGuardData().end.duration) {
+			controller->ChangeStateToNone();
+		}
+		return;
+	}
+
 	// Guardは継続状態なので、時間経過による自動終了はない
 
 	// 構え動作(単発)が終わったら、継続姿勢のLoopへ切り替える。
-	if (!hasEnteredLoop_ && elapsed_ >= controller->GetCurrentGuardData().startDuration) {
+	if (!hasEnteredLoop_ && elapsed_ >= controller->GetCurrentGuardData().start.duration) {
 		hasEnteredLoop_ = true;
-		controller->PlayAnimation(controller->GetCurrentGuardData().loopAnimationName, true);
+		controller->PlayAnimation(controller->GetCurrentGuardData().loopAnimationName, true, -1.0f, true);
 	}
 
 	if (parrySucceeded_) {
 		parrySuccessElapsed_ += deltaTime;
-		if (parrySuccessElapsed_ >= controller->GetCurrentGuardData().parrySuccessDuration) {
+		if (parrySuccessElapsed_ >= controller->GetCurrentGuardData().parry.duration) {
 			// 演出終了。NormalBlockへ復帰する(ガードキーが既に離されていれば
 			// 次フレームのCanReleaseGuard()判定でHandleActionInput側が解除する)。
 			parrySucceeded_ = false;
@@ -237,7 +214,7 @@ void StateGuard::Update(PlayerStatusController* controller, float deltaTime) {
 	}
 	else if (isReactingToGuardHit_) {
 		guardHitElapsed_ += deltaTime;
-		if (guardHitElapsed_ >= controller->GetCurrentGuardData().guardHitDuration) {
+		if (guardHitElapsed_ >= controller->GetCurrentGuardData().hit.duration) {
 			isReactingToGuardHit_ = false;
 			ResumeLoopAnimation(controller);
 		}
@@ -249,13 +226,45 @@ bool StateGuard::IsInParryWindow(const PlayerStatusController* controller) const
 }
 
 bool StateGuard::CanReleaseGuard(const PlayerStatusController* controller) const {
-	// パリィ成功演出中は強制的に見せ切る(ガードキーを離しても解除しない)。
-	return true;
+	// パリィ成功演出中だけ解除を保留し、演出を強制的に見せ切る。
+	return !parrySucceeded_;
+}
+
+void StateGuard::RequestRelease(PlayerStatusController* controller) {
+	if (isReleasing_) return; // 多重要求防止(HandleActionInputは毎フレーム呼んでくる)
+
+	isReleasing_ = true;
+	releaseElapsed_ = 0.0f;
+
+	// パリィ成功/ガードヒットの単発リアクション演出と解除演出が競合しないよう、
+	// 解除開始時点でそれらは終了させておく(CanReleaseGuard()がパリィ成功中は
+	// falseを返す設計上、通常はここに来ないが念のため明示的に処理する)。
+	parrySucceeded_ = false;
+	isReactingToGuardHit_ = false;
+	hasEnteredLoop_ = true; // Startへ戻す必要はもう無い
+
+	const auto& data = controller->GetCurrentGuardData().end;
+	controller->PlayAnimation(data);
 }
 
 bool StateGuard::CanStartAttack(const PlayerStatusController* controller) const {
-	// パリィ成功演出中のみ、反撃キャンセルとして次の攻撃を許可する。
-	return parrySucceeded_;
+	// パリィ時の反撃はGuardStateと組み合わせる
+	return parrySucceeded_ || isReleasing_;
+}
+
+bool StateGuard::CanStartEvade(const PlayerStatusController* controller) const
+{
+	return isReleasing_;
+}
+
+bool StateGuard::CanStartGuard(const PlayerStatusController* controller) const
+{
+	return isReleasing_;
+}
+
+bool StateGuard::CanStartMove(const PlayerStatusController* controller) const
+{
+	return isReleasing_;
 }
 
 void StateGuard::NotifyParrySuccess(PlayerStatusController* controller) {
@@ -264,41 +273,33 @@ void StateGuard::NotifyParrySuccess(PlayerStatusController* controller) {
 	parrySuccessElapsed_ = 0.0f;
 	isReactingToGuardHit_ = false; // ガードヒット演出より優先して上書きする
 
-	// Start(構え動作)がまだ終わっていないタイミングでパリィが成立しても、
-	// Update()側のStart→Loop自動切り替えがこの直後に発火して再生したばかりの
-	// パリィ成功アニメーションを上書きしてしまわないよう、ここで先に
-	// 切り替え済み扱いにしておく(以後、構え動作へ戻る必要はもう無いため
-	// 意味的にも正しい)。
 	hasEnteredLoop_ = true;
 
-	controller->PlayAnimation(controller->GetCurrentGuardData().parrySuccessAnimationName, false, controller->GetCurrentGuardData().parrySuccessDuration);
+	const auto& data = controller->GetCurrentGuardData().parry;
+	controller->PlayAnimation(data);
 }
 
 void StateGuard::NotifyGuardHit(PlayerStatusController* controller) {
 	// パリィ成功演出中はそちらを優先し、上書きしない。
 	if (parrySucceeded_) return;
 
-	// 単発リアクションを都度再生し直す(前回と同じ名前でもStart/Loopの
-	// 切り替えを挟んでいるため、Play()側が「既に同じアニメーション」と
-	// 誤認して再生を無視することはない)。
+	// 単発リアクションを都度再生し直す
 	isReactingToGuardHit_ = true;
 	guardHitElapsed_ = 0.0f;
 
-	// NotifyParrySuccess()と同じ理由で、Start→Loop自動切り替えによる
-	// 上書きを防ぐため先に切り替え済み扱いにしておく。
 	hasEnteredLoop_ = true;
 
-	controller->PlayAnimation(controller->GetCurrentGuardData().guardHitAnimationName, false, controller->GetCurrentGuardData().guardHitDuration);
+	const auto& data = controller->GetCurrentGuardData().hit;
+	controller->PlayAnimation(data);
 }
 
 void StateGuard::ResumeLoopAnimation(PlayerStatusController* controller) {
-	// リアクション再生中にまだ構え動作(Start)の途中だった場合でも、
-	// Startへ戻す意味は無いためLoopへ確定させる。
 	hasEnteredLoop_ = true;
-	controller->PlayAnimation(controller->GetCurrentGuardData().loopAnimationName, true);
+	controller->PlayAnimation(controller->GetCurrentGuardData().loopAnimationName, true, -1.0f, true);
 }
 
 StateGuard::GuardPhase StateGuard::GetGuardPhase(const PlayerStatusController* controller) const {
+	if (isReleasing_) return GuardPhase::Release;
 	if (parrySucceeded_) return GuardPhase::ParrySuccess;
 	return elapsed_ <= controller->GetCurrentGuardData().justWindowDuration
 		? GuardPhase::JustWindow

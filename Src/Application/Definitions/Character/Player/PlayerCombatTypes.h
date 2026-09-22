@@ -7,15 +7,6 @@
 // ============================================================
 // PlayerStatusController / PlayerInputComponent 双方から参照される
 // 型をまとめた共有ヘッダ。
-//
-// 【AttackData(CombatData.h)への統合について】
-// 以前はここにPlayer専用のAttackMoveData(windup/active/recoveryの秒数、
-// ステップ移動、キャンセル受付、武器スロット等を1つに束ねたもの)を
-// 独自定義していたが、Enemy側のEnemyAttackDefinition(EnemyAIData.h)と
-// 概念が重複していたため、汎用のAttackData(CombatData.h)へ統合した。
-// Player用の1技分のデータは以降AttackData型そのものを使う
-// (info/moveData/phaseData/cancelData/weaponSlotsの構成はCombatData.h
-// 参照)。
 // ============================================================
 
 enum class MovementState
@@ -262,9 +253,11 @@ struct MovementPhaseClips
 {
 	std::string startAnimationName;
 	float startDuration = 0.15f;
+	bool startUseRootMotion = true;
 	std::string loopAnimationName;
 	std::string endAnimationName;
 	float endDuration = 0.15f;
+	bool endUseRootMotion = true;
 };
 
 // ロックオン中のWalk(歩行)8方向分の、Loopのみのクリップ名。
@@ -319,36 +312,16 @@ struct TurnAnimationSet
 };
 
 // --- ガード1回分のデータ全体 -----------------------------------------
-// (旧名GuardMoveData。ガード自体はその場に留まる行動で移動を伴わない
-// ため、「Move」という名前が実態と合っていなかった。AttackData/
-// EvadeDataと同じ「〜Data」の命名に揃えた。)
 struct GuardData
 {
 	float justWindowDuration = 0.55f;
 
-	// ガードへ入る際に一度だけ再生する構え動作。この秒数(startDuration)が
-	// 経過したらloopAnimationNameへ切り替える(StateGuard参照)。
-	std::string animationName = "APose2DefenseL";
-	float startDuration = 0.2f;
+	std::string loopAnimationName = "DefenseL_Loop_Root";
 
-	// ガード継続姿勢。以前は構え動作(animationName)の単発再生を最終フレームで
-	// 止めることで継続姿勢を表現していたが、その方式だと別の単発アニメーション
-	// (ガードヒット等)を一度挟んだ後、同じ構え動作を再度指定しても
-	// 「既に同じアニメーションが設定済み」と判定され再生されなくなる問題が
-	// あった。そのため継続姿勢は専用のLoopアニメーションとして持たせ、
-	// 構え動作終了後・各種リアクション終了後は常にこちらへ明示的に
-	// 再生し直す。
-	std::string loopAnimationName = "DefenseL_Loop";
-
-	// パリィ成立時に再生する専用モーションと、その再生を強制する秒数
-	// (この間はガードキーを離しても解除されない。StateGuard参照)。
-	std::string parrySuccessAnimationName = "DefenseL_Parry01";
-	float parrySuccessDuration = 0.8f;
-
-	// 通常ブロックで被弾する都度再生するヒットリアクションモーション。
-	// パリィ成功と異なり、ガード解除や反撃キャンセルの可否には影響しない。
-	std::string guardHitAnimationName = "DefenseL_Hit01";
-	float guardHitDuration = 0.9f;
+	MotionClipData start;
+	MotionClipData parry;
+	MotionClipData hit;
+	MotionClipData end;
 };
 
 // 以前は配列サイズ(コンボ段数の上限)そのものを表す定数だったが、

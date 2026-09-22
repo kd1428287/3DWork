@@ -376,11 +376,11 @@
     <ClInclude Include="Src\Application\Definitions\Character\Enemy\EnemyAIData.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Enemy\EnemyAIDataJson.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Enemy\EnemyBlackboardKeys.h" />
-    <ClInclude Include="Src\Application\Definitions\Character\Enemy\EnemyDefinition.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Enemy\IEnemyBehavior.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Enemy\Warrock\WarrockAIData.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Player\PlayerCombatBehaviorDefinition.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Player\PlayerCombatTypes.h" />
+    <ClInclude Include="Src\Application\Definitions\Character\Player\PlayerDefinitionJson.h" />
     <ClInclude Include="Src\Application\Definitions\Effect\EffectParams.h" />
     <ClInclude Include="Src\Application\Definitions\Effect\SlashTrailParams.h" />
     <ClInclude Include="Src\Application\Definitions\Loaders\AttackDataLoader.h" />
@@ -426,7 +426,6 @@
     <ClInclude Include="Src\Application\Factories\Common\CameraFactory.h" />
     <ClInclude Include="Src\Application\Factories\ComponentRegistry.h" />
     <ClInclude Include="Src\Application\Factories\GameObjectFactory.h" />
-    <ClInclude Include="Src\Application\Factories\GamePlay\Character\CharacterFactoryUtil.h" />
     <ClInclude Include="Src\Application\Factories\GamePlay\Character\EnemyFactory.h" />
     <ClInclude Include="Src\Application\Factories\GamePlay\Character\PlayerFactory.h" />
     <ClInclude Include="Src\Application\Factories\GamePlay\Map\TerrainFactory.h" />
@@ -547,7 +546,6 @@
     <ClCompile Include="Src\Application\Factories\Common\CameraFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\ComponentRegistrations.cpp" />
     <ClCompile Include="Src\Application\Factories\ComponentRegistry.cpp" />
-    <ClCompile Include="Src\Application\Factories\GamePlay\Character\CharacterFactoryUtil.cpp" />
     <ClCompile Include="Src\Application\Factories\GamePlay\Character\EnemyFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\GamePlay\Character\PlayerFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\GamePlay\Map\TerrainFactory.cpp" />

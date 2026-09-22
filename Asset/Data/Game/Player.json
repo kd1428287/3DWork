@@ -4,7 +4,7 @@
 		{
 			"type": "ModelRender",
 			"params": {
-				"model": "Asset/Models/Character/Player2/kachujin.gltf",
+				"model": "Asset/Models/Character/Kachujin/kachujin.gltf",
 				"animations": "Asset/Animations/Character"
 			}
 		},
@@ -40,25 +40,31 @@
 						"name": "Body",
 						"shape": "Capsule",
 						"radius": 0.4,
-						"offset": [0.0, 0.4, 0.0],
-						"capsuleEnd": [0.0, 1.6, 0.0],
-						"categoryMask": ["Bump"]
+						"offset": [ 0.0, 0.465, 0.0 ],
+						"capsuleEnd": [ 0.0, 1.6, 0.0 ],
+						"categoryMask": [ "Bump" ]
 					},
 					{
 						"name": "HurtBox",
 						"shape": "Capsule",
 						"radius": 0.3,
-						"offset": [0.0, 0.3, 0.0],
-						"capsuleEnd": [0.0, 1.7, 0.0],
-						"categoryMask": ["HurtBox"],
+						"offset": [ 0.0, 0.365, 0.0 ],
+						"capsuleEnd": [ 0.0, 1.7, 0.0 ],
+						"categoryMask": [ "HurtBox" ],
 						"useDefaultCollideMask": false,
-						"collideMask": ["HitBox"],
+						"collideMask": [ "HitBox" ],
 						"isTrigger": true
 					}
-				]
+				],
+				"wireFrame": false
 			}
 		},
-		{ "type": "GroundSensor" },
+		{
+			"type": "GroundSensor",
+			"params": {
+				"footOffset": -0.65
+			}
+		},
 		{
 			"type": "PlayerMovementAnimation",
 			"params": {
@@ -129,13 +135,11 @@
 				},
 				"guard": {
 					"justWindowDuration": 0.15,
-					"animationName": "APose2DefenseL_Root",
-					"startDuration": 0.1,
-					"loopAnimationName": "DefenseL_Loop_Inplace",
-					"parrySuccessAnimationName": "DefenseL_Parry01_Root",
-					"parrySuccessDuration": 0.8,
-					"guardHitAnimationName": "DefenseL_Hit01_Root",
-					"guardHitDuration": 0.9
+					"loopAnimationName": "DefenseL_Loop_Root",
+					"start":{ "duration": 0.75, "animationName": "APose2DefenseL_Root",		"useRootMotion": true, "blendDuration": 0.1 },
+					"parry":{ "duration": 0.75, "animationName": "DefenseL_Parry01_Root",	"useRootMotion": true, "blendDuration": 0.1 },
+					"hit":	{ "duration": 0.75, "animationName": "DefenseL_Hit01_Root",		"useRootMotion": true, "blendDuration": 0.1 },
+					"end":	{ "duration": 0.75, "animationName": "DefenseL2APose_Root",		"useRootMotion": true, "blendDuration": 0.1 }
 				}
 			}
 		},
@@ -170,6 +174,7 @@
 					"type": "Collider",
 					"params": {
 						"ignoreParent": true,
+						"wireFrame": true,
 						"shapes": [
 							{
 								"name": "HitBox",

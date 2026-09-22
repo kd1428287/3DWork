@@ -9,20 +9,6 @@
 // キャンセル受付タイミング等)をここに集約する。PlayerDefinitionが
 // このデータをまとめて保持し、PlayerFactory経由でPlayerAttackSelector/
 // PlayerStatusControllerへ配る。
-//
-// 【PlayerCombatDataTable.h/.cppとの関係】
-// 旧PlayerCombatDataTable.h/.cppのCreateDebugEvadeData()/
-// CreateDebugGuardData()が担っていた「コード上に直書きしたデバッグ用
-// データ」の役目はこの構造体(のデフォルト値)へ統合する。
-// CreateDebugComboAttackTable()は、コンボが固定長配列(ComboAttackTable=
-// std::array<AttackData,1>)だった頃の名残でコメントアウトされたまま
-// 残っており、コンボ木(PlayerAttackTable)への移行後は概念自体が
-// attackTableに置き換わっている。
-// この構造体をPlayerDefinitionLoaderで読み込む形に置き換えたら、
-// PlayerCombatDataTable.h/.cppおよびPlayerStatusController::Awake()内の
-// CreateDebugEvadeData()/CreateDebugGuardData()呼び出しは削除してよい
-// (代わりにPlayerFactory経由で渡されたPlayerDefinition::combatBehaviorを
-// 使う)。
 // ============================================================
 struct PlayerCombatBehaviorDefinition
 {
@@ -50,9 +36,6 @@ struct PlayerMovementAnimationDefinition
 {
 	WalkAnimationSet walk;
 	TurnAnimationSet turn;
-
-	// Run(常に入力方向へ正対して移動)のStart/Loop/End。
-	// WalkAnimationSet::forwardと同じMovementPhaseClips構造を流用する。
 	MovementPhaseClips run;
 
 	std::string idle;

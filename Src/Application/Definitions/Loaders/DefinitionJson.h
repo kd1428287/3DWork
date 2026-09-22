@@ -82,17 +82,15 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(HitReactionConfig,
 	hitStopDurationSeconds, guardKnockbackPower, largeStaggerDuration)
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(MotionClipData,
-	animationName, duration, useRootMotion, blendDuration)
+	animationName, loop, duration, useRootMotion, blendDuration, startFrame, endFrame)
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(AttackDamageData,
 	damage, knockbackPower, hitStunSeconds, postureDamage, chipDamageRatio, parryPostureDamage)
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(AnimationSegment, startFrame, endFrame, targetDuration)
-
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(AttackPhaseData, animationName, windup, active, recovery)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(AttackPhaseData, windup, active, recovery)
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(AttackMoveData,
-	stepDistance, stepDuration, engageDistance, stepDirection, blendDuration, useRootMotion)
+	stepDistance, stepDuration, engageDistance, stepDirection)
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(AttackCancelData,
 	recoveryMoveCancelStart, recoveryEvadeCancelStart, recoveryAttackCancelStart, comboWindowAfterRecovery)

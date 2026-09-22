@@ -102,7 +102,8 @@ void PlayerStatusController::HandleActionInput(PlayerInputComponent& input)
 		TryStartGuard();
 	}
 	else if (GetCombatState() == CombatState::Guard && CanReleaseGuard()) {
-		ChangeStateToNone(); // ガードキーを離したら解除(パリィ成功演出中はCanReleaseGuard()がfalseになり保留される)
+		// ガードキーを離したら解除要求を出す
+		RequestGuardRelease();
 	}
 
 	if (input.HasCommand(ActionCommand::Evade) && CanStartEvade()) {
@@ -167,6 +168,13 @@ void PlayerStatusController::NotifyGuardHit()
 	}
 }
 
+void PlayerStatusController::RequestGuardRelease()
+{
+	if (GetCombatState() == CombatState::Guard) {
+		stateGuard_.RequestRelease(this);
+	}
+}
+
 void PlayerStatusController::TryLockOn()
 {
 	if (lockOnComponent_ != nullptr) lockOnComponent_->TryLockOn();
@@ -207,6 +215,12 @@ void PlayerStatusController::PlayAnimation(const std::string& name, bool loop, f
 void PlayerStatusController::PlayAnimation(const std::string& name, bool loop, float targetDurationSeconds, bool useRootMotion, float blendDurationSeconds)
 {
 	PlayAnimation(name, loop, targetDurationSeconds, 0.0f, 0.0f, useRootMotion, blendDurationSeconds);
+}
+
+void PlayerStatusController::PlayAnimation(const MotionClipData& clip)
+{
+	if (modelAnimatorComponent_ == nullptr) return;
+	modelAnimatorComponent_->Play(clip);
 }
 
 void PlayerStatusController::RefreshMovementAnimation()

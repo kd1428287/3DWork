@@ -155,7 +155,7 @@ void EffectDispatcher::OnGenericEffectSpawn(const Events::Effect::GenericEffectS
 	// 対応表に無いstd::stringは無視(JSON未定義、または呼び出し側のミス)
 	if (it == simpleEffects_.end()) { return; }
 
-	it->second.Emit(e.Position);
+	it->second.Emit(e.Position, e.Direction);
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////

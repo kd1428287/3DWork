@@ -85,7 +85,7 @@ bool SlashTrailRenderer::CreateShaders()
 
 	// ピクセルシェーダー(Add用)：KdGPUParticle_PS.hlslをそのまま流用(現在未使用。将来の非マスクAdd用に残置)
 	{
-#include "../GPUParticle/KdGPUParticle_PS.shaderInc"
+#include "../GPUParticle/GPUParticle_PS.shaderInc"
 
 		if (FAILED(Dev->CreatePixelShader(compiledBuffer, sizeof(compiledBuffer), nullptr, &m_PS)))
 		{
@@ -96,7 +96,7 @@ bool SlashTrailRenderer::CreateShaders()
 
 	// ピクセルシェーダー(Alpha用)：KdGPUParticle_PS_Masked.hlslをそのまま流用
 	{
-#include "../GPUParticle/KdGPUParticle_PS_Masked.shaderInc"
+#include "../GPUParticle/GPUParticle_PS_Masked.shaderInc"
 
 		if (FAILED(Dev->CreatePixelShader(compiledBuffer, sizeof(compiledBuffer), nullptr, &m_PS_Masked)))
 		{

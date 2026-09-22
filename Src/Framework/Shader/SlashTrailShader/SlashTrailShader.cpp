@@ -44,7 +44,7 @@ bool SlashTrailShader::Init()
 
 	// ピクセルシェーダー：KdGPUParticle_PS.hlslをそのまま流用
 	{
-#include "../GPUParticle/KdGPUParticle_PS.shaderInc"
+#include "../GPUParticle/GPUParticle_PS.shaderInc"
 
 		if (FAILED(Dev->CreatePixelShader(compiledBuffer, sizeof(compiledBuffer), nullptr, &m_PS)))
 		{

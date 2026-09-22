@@ -252,6 +252,11 @@ public:
 		}
 	}
 
+	void PlayAnimation(const MotionClipData& clip) {
+		if (modelAnimatorComponent_ == nullptr) return;
+		modelAnimatorComponent_->Play(clip);
+	}
+
 	// --- 武器の攻撃判定 --------------------------------------------------
 	// 【変更】以前はweaponCollider_/weaponAttackSource_という生の2Handleを
 	// 自前で持っていたが、Player同様WeaponSetComponentへ委譲する形にした

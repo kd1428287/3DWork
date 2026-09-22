@@ -65,7 +65,7 @@ VSOutput main(uint vertID : SV_VertexID, uint instID : SV_InstanceID)
 	float quadWidthLen = size;
 	float quadHeightLen = size;
 
-	// BillboardMode > 0.5 は Stretch(KdParticleBillboardMode::Stretch相当)
+	// BillboardMode > 0.5 は Stretch(ParticleBillboardMode::Stretch相当)
 	if (p.BillboardMode > 0.5f)
 	{
 		// 速度をスクリーン(camRight/camUp)平面へ投影する。

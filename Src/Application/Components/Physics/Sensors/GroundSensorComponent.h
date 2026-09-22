@@ -2,7 +2,7 @@
 #include <cstdio>
 
 #include "../Collision/ColliderComponent.h"
-#include "Application/Definitions/Character/Common/CharacterCollisionDefaults.h"
+//#include "Application/Definitions/Character/Common/CharacterCollisionDefaults.h"
 
 // 初期設定(Prefab/JSONから渡す値)。意味は下のメンバ参照。
 struct GroundSensorConfig

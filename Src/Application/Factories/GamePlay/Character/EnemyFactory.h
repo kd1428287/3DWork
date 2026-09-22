@@ -1,7 +1,4 @@
-#pragma once
-
-#include <string>
-#include <unordered_map>
+﻿#pragma once
 
 #include "Application/Definitions/Prefab/Prefab.h"
 
@@ -22,7 +19,6 @@ class ObjectManager;
 class EnemyFactory {
 public:
 	// definitionPathsは enemyId → Prefab JSONファイルパス の対応表。
-	// 読み込みに失敗したエントリはスキップされ、ログに出力される。
 	explicit EnemyFactory(const std::unordered_map<std::string, std::string>& definitionPaths);
 	~EnemyFactory() = default;
 

@@ -82,6 +82,18 @@ public:
 		}
 	}
 
+	// 開始座標(区間ロック時のボーンローカル位置)を原点とした、現在までの累積移動量
+	Math::Vector3 GetPositionFromStart() const {
+		if (node_ == nullptr || !positionLocked_) { return Math::Vector3::Zero; }
+
+		const Math::Vector3 raw = node_->m_localTransform.Translation();
+		const float forward =
+			(GetAxis(raw, config_.forwardAxis) - GetAxis(startLocalPos_, config_.forwardAxis)) * config_.forwardSign;
+		const float right =
+			(GetAxis(raw, config_.rightAxis) - GetAxis(startLocalPos_, config_.rightAxis)) * config_.rightSign;
+		return Math::Vector3(right, 0.0f, forward) * config_.unitScale;
+	}
+
 	// 蓄積された移動量(ボーンのローカル基準)を取り出す。呼ぶと0に戻る。
 	Math::Vector3 ConsumeDelta() {
 		const Math::Vector3 d = delta_;
@@ -111,6 +123,7 @@ private:
 		const Math::Vector3 raw = node_->m_localTransform.Translation();
 
 		if (!positionLocked_) {
+			startLocalPos_ = raw; // この区間の原点(開始座標)として記録
 			lockedLocalPos_ = raw;
 			positionLocked_ = true;
 		}
@@ -181,6 +194,9 @@ private:
 	bool				active_ = true;
 	bool				boneResolved_ = false;
 	FrameKind			pendingKind_ = FrameKind::Normal; // 次のFinalizeFrameで行う取り直し
+
+	Math::Vector3		startLocalPos_{};
+	Math::Vector3		startLocalRot_{};
 
 	// 並進: 直前フレームの生の位置 / 固定する位置 / 蓄積された移動量
 	Math::Vector3		lastLocalPos_{};

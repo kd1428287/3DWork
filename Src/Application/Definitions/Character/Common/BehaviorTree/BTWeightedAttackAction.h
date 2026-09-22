@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "IBTNode.h"
 #include "../../Enemy/EnemyAIData.h"
 
@@ -81,14 +81,7 @@ public:
 
 			context->StopMovement();
 			context->FaceHorizontalTarget(context->GetTargetPositionOrSelf());
-
-			// 攻撃全体(Windup+Active+Recovery)の秒数を目標としてアニメーション
-			// 速度を自動スケーリングする(Player/EnemyのPlayAnimationと同じ考え方)。
-			const AttackPhaseData& phaseData = current_->attackData.phaseData;
-			const float totalDuration = phaseData.windup.targetDuration
-				+ phaseData.active.targetDuration
-				+ phaseData.recovery.targetDuration;
-			context->PlayAnimation(phaseData.animationName, false, totalDuration, current_->attackData.moveData.useRootMotion);
+			context->PlayAnimation(current_->attackData.phaseData.windup);
 		}
 
 		elapsed_ += deltaTime;
@@ -96,7 +89,7 @@ public:
 		const AttackPhaseData& phaseData = current_->attackData.phaseData;
 		switch (phase_) {
 		case Phase::Windup:
-			if (elapsed_ >= phaseData.windup.targetDuration) {
+			if (elapsed_ >= phaseData.windup.duration) {
 				phase_ = Phase::Active;
 				elapsed_ = 0.0f;
 				// 攻撃判定が実際に発生する一瞬だけ有効化(Player同様
@@ -105,20 +98,22 @@ public:
 				// 一覧を参照)。
 				context->SetWeaponHitBoxEnabled(current_->attackData.weaponSlots, true);
 				context->SetWeaponTrailEmitting(current_->attackData.weaponSlots, true);
+				context->PlayAnimation(current_->attackData.phaseData.active);
 			}
 			break;
 
 		case Phase::Active:
-			if (elapsed_ >= phaseData.active.targetDuration) {
+			if (elapsed_ >= phaseData.active.duration) {
 				phase_ = Phase::Recovery;
 				elapsed_ = 0.0f;
 				context->SetWeaponHitBoxEnabled(current_->attackData.weaponSlots, false); // 判定の発生窓を閉じる
 				context->SetWeaponTrailEmitting(current_->attackData.weaponSlots, false);
+				context->PlayAnimation(current_->attackData.phaseData.recovery);
 			}
 			break;
 
 		case Phase::Recovery:
-			if (elapsed_ >= phaseData.recovery.targetDuration) {
+			if (elapsed_ >= phaseData.recovery.duration) {
 				// 攻撃1回分をやり切った時だけ、次の攻撃までのインターバルを
 				// 開始させる(クラス冒頭コメント参照)。
 				context->NotifyAttackCompleted();

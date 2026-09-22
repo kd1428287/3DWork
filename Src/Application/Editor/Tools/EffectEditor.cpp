@@ -327,13 +327,13 @@ void EffectEditor::DrawInspector()
 			ImGui::Separator();
 			{
 				const char* billboardLabels[] = { "Normal", "Stretch" };
-				int billboardIdx = (layer.BillboardMode == KdParticleBillboardMode::Stretch) ? 1 : 0;
+				int billboardIdx = (layer.BillboardMode == ParticleBillboardMode::Stretch) ? 1 : 0;
 				if (ImGui::Combo("Billboard Mode", &billboardIdx, billboardLabels, IM_ARRAYSIZE(billboardLabels)))
 				{
-					layer.BillboardMode = (billboardIdx == 1) ? KdParticleBillboardMode::Stretch : KdParticleBillboardMode::Normal;
+					layer.BillboardMode = (billboardIdx == 1) ? ParticleBillboardMode::Stretch : ParticleBillboardMode::Normal;
 				}
 
-				if (layer.BillboardMode == KdParticleBillboardMode::Stretch)
+				if (layer.BillboardMode == ParticleBillboardMode::Stretch)
 				{
 					ImGui::DragFloat("Stretch Scale", &layer.StretchScale, 0.01f, 0.0f, 10.0f);
 					ImGui::TextDisabled("速度が速いパーティクルほど進行方向へ伸びる(HitSpark/WeaponClash等の速い表現向け)");

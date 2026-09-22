@@ -11,6 +11,7 @@ namespace Events
 		{
 			std::string		Id;
 			Math::Vector3	Position;
+			Math::Vector3	Direction;
 		};
 
 		// 鍔迫り合いの火花(武器vs武器)
@@ -65,11 +66,14 @@ namespace Events
 }
 
 // Publishヘルパー
-inline void PublishGenericEffect(EventBus& bus, const std::string& id, const Math::Vector3& pos)
+inline void PublishGenericEffect(EventBus& bus, const std::string& id, const Math::Vector3& pos, const Math::Vector3& dir = Math::Vector3::Zero)
 {
 	Events::Effect::GenericEffectSpawnEvent e;
 	e.Id = id;
 	e.Position = pos;
+	e.Direction = dir;
+	// 念のため正規化
+	e.Direction.Normalize();
 
 	bus.Publish(e);
 }

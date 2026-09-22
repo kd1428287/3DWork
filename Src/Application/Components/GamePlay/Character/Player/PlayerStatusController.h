@@ -90,6 +90,11 @@ public:
 	void NotifyParrySuccess() override;
 	void NotifyGuardHit() override;
 
+	// ガードキーが離された際にHandleActionInputから呼ばれる。即座にNoneへは
+	// 戻らず、StateGuardに終了アニメーションの再生を開始させるだけ
+	// (完了後はStateGuard::Update()が自律的にChangeStateToNone()する)。
+	void RequestGuardRelease();
+
 	// --- ロックオン(PlayerLockOnComponentへの薄い委譲) ---
 	void TryLockOn();
 	void ClearLockOn();
@@ -119,6 +124,8 @@ public:
 
 	void PlayAnimation(const std::string& name, bool loop = false, float targetDurationSeconds = -1.0f,
 		bool useRootMotion = false, float blendDurationSeconds = kDefaultAnimationBlendDuration);
+
+	void PlayAnimation(const MotionClipData& clip);
 
 	// 戦闘行動からNoneへ復帰した直後、現在の入力状態に合わせて
 	// Idle/Walk/Runへアニメーション・向きを同期し直す(StateNone::Enter参照)。

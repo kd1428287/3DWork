@@ -32,6 +32,14 @@ public:
 		skeleton_ = GetOwner()->GetComponent<SkeletonComponent>();
 	}
 
+	void Play(const MotionClipData& clip)
+	{
+		SetRootMotionEnabled(clip.useRootMotion);
+		SetBlendDuration(clip.blendDuration);
+		Play(clip.animationName, clip.loop, clip.duration, clip.startFrame, clip.endFrame, (clip.startFrame != 0 && clip.endFrame != 0));
+		//Play(clip.animationName, clip.loop, clip.duration, clip.startFrame, clip.endFrame, true);
+	}
+
 	// アニメーション名を指定して再生開始
 	// ・animName				… アニメーション名
 	// ・loop					… ループ再生するか

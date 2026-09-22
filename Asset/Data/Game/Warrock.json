@@ -10,13 +10,21 @@
 			"type": "ModelAnimator",
 			"params": {
 				"fps": 60,
-				"animationDirectory": "Asset/Animations/Character",
-				"rootMotionBone": "mixamorig:Hips",
-				"rootMotionAxis": "Y",
-				"rootMotionAxisSign": -1.0,
-				"rootMotionScale": 0.01
+				"speedScale":1.0,
+				"blendDuration": 0.15,
+				"rootMotion": {
+					"boneName": "mixamorig:Hips",
+					"unitScale": 1.0,
+					"forwardAxis": "Y",
+					"forwardSign": -1.0,
+					"rightAxis": "X",
+					"rightSign": 1.0,
+					"extractRotation": false,
+					"yawSign": 1.0
+				}
 			}
 		},
+		{ "type": "RootMotionApplier" },
 		{ "type": "FacingDirection", "params": { "rotationSpeed": 3.0 } },
 		{ "type": "Posture", "params": { "max": 100.0 } },
 		{ "type": "Health", "params": { "max": 1000.0 } },

@@ -1,7 +1,5 @@
 ﻿#pragma once
 
-// ※ ImGui / DirectXTK(SimpleMath) は既存のPCH等で読み込まれている前提です。
-//    ImGuizmo は本ファイルでのみ使うため明示的にインクルードします。
 #include "../ThirdParty/ImGuizmo.h"
 #include "Application/Definitions/Map/MapData.h"
 #include "../Common/KdPreviewPostProcess.h"
@@ -19,7 +17,7 @@ struct MapObject
 	KdModelWork	modelWork;		// プレビュー表示専用。data.componentsの"ModelRender"から同期する
 
 	// data.pos/rotation/scale から4x4行列を生成
-	DirectX::SimpleMath::Matrix GetMatrix() const;
+	Math::Matrix GetMatrix() const;
 
 	// 指定した種類のコンポーネントを持っているか
 	bool HasComponent(const std::string& type) const
@@ -110,7 +108,7 @@ private:
 
 	// プレビュー用カメラの注視点(選択中オブジェクトがあればその位置、無ければ配置済み全体の重心)
 	//	RenderPreviewViewport()・DrawGizmo()の両方で同じ注視点を使うための共通処理
-	DirectX::SimpleMath::Vector3 GetPreviewTarget() const;
+	Math::Vector3 GetPreviewTarget() const;
 
 	// m_objects内をIdで探す(見つからなければnullptr)。生indexでm_objectsへ触れる箇所を
 	// ここに集約し、Undo/Redoやホットリロードでindexがズレても壊れないようにする
