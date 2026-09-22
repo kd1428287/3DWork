@@ -19,9 +19,6 @@
 
 // definitions
 #include "Application/Definitions/Loaders/MapLoader.h"
-#include "Application/Definitions/Character/Enemy/EnemyDefinition.h"
-#include "Application/Definitions/Character/Enemy/Warrock/WarrockAIData.h"
-#include "Application/Definitions/Character/Enemy/EnemyDefinition.h"
 
 // component
 #include "Application/Components/GamePlay/Camera/CameraTargetComponent.h"

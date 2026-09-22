@@ -319,6 +319,7 @@ struct GuardData
 	std::string loopAnimationName = "DefenseL_Loop_Root";
 
 	MotionClipData start;
+	MotionClipData loop;
 	MotionClipData parry;
 	MotionClipData hit;
 	MotionClipData end;

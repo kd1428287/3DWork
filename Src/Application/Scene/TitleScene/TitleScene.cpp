@@ -1,7 +1,6 @@
 ﻿#include "TitleScene.h"
 #include "Application/main.h"
 
-#include "Application/Components/Graphics/Render/SpriteRenderComponent.h"
 #include "Application/Components/Core/TransformComponent.h"
 
 #include "Application/Core/EventBus/Events/SceneEvents.h"
@@ -12,7 +11,6 @@ void TitleScene::Init()
 
 	GameObject* logo = objManager_->Instantiate("TitleLogo");
 	logo->AddComponent<TransformComponent>()->SetScale({ 1.4f,1.4f,1.4f });
-	auto* sprite = logo->AddComponent<SpriteRenderComponent>("Asset/Textures/Title/Title.png");
 
 	systemManager_->SetExecutionOrder(
 		[this](float dt) { objManager_->PreUpdate(dt); },

@@ -57,7 +57,7 @@ void HitReactionComponent::OnCollisionEnter(const Events::Collision::CollisionEn
 			}
 			attacker->GetLocalEventBus().Publish(AttackSourceComponent::ParriedEvent{});
 		}
-		if (HasFlag(config_.effectFlags, HitReactionFlags::WeaponClashFx)) {
+		if (config_.effectFlags.has(HitReactionFlags::WeaponClashFx)) {
 			SpawnWeaponClashEffect(e.otherObject, /*isParry=*/true);
 		}
 
@@ -66,7 +66,7 @@ void HitReactionComponent::OnCollisionEnter(const Events::Collision::CollisionEn
 	}
 	else if (query_->IsGuarding()) {
 		// 通常ブロック: 自分の体幹を削り、HPにも軽減済みのチップダメージを与える。
-		if (HasFlag(config_.effectFlags, HitReactionFlags::WeaponClashFx)) {
+		if (config_.effectFlags.has(HitReactionFlags::WeaponClashFx)) {
 			SpawnWeaponClashEffect(e.otherObject, /*isParry=*/false);
 		}
 
@@ -115,10 +115,10 @@ void HitReactionComponent::OnCollisionEnter(const Events::Collision::CollisionEn
 			}
 		}
 
-		if (HasFlag(config_.effectFlags, HitReactionFlags::HitStop)) {
+		if (config_.effectFlags.has(HitReactionFlags::HitStop)) {
 			PublishHitStop(*GetOwner()->GetContext()->eventBus, config_.hitStopDelaySeconds, config_.hitStopDurationSeconds);
 		}
-		if (HasFlag(config_.effectFlags, HitReactionFlags::CameraShake)) {
+		if (config_.effectFlags.has(HitReactionFlags::CameraShake)) {
 			PublishCameraShake(*GetOwner()->GetContext()->eventBus, config_.cameraShakeIntensity);
 		}
 
@@ -148,8 +148,19 @@ void HitReactionComponent::SpawnWeaponClashEffect(GameObject* attackerWeaponObj,
 	const Math::Vector3 clashPos =
 		(attackerWeaponTransform->GetPosition() + myWeaponTransform->GetPosition()) * 0.5f;
 
-	PublishWeaponClashEffect(*context->eventBus, clashPos,
-		myWeaponTransform->GetForward(), attackerWeaponTransform->GetForward(), isParry);
+	// 両武器の進行方向の差分を、火花が飛び散る基準方向として採用する簡易実装
+	// (正確な反射方向の計算はせず、それっぽく見える近似で済ませている。以前はEffectDispatcher::
+	//  OnWeaponClash()側にあった計算だが、鍔迫り合いの火花も通常のGenericEffectSpawnEventの
+	//  1つとして扱うことにしたため、Publish側であるここに移した)
+	Math::Vector3 baseDir = myWeaponTransform->GetForward() - attackerWeaponTransform->GetForward();
+	if (baseDir.LengthSquared() < 0.0001f) {
+		// 方向が定まらない(ほぼ同じ向き)場合は上向きにフォールバック
+		baseDir = Math::Vector3(0.0f, 1.0f, 0.0f);
+	}
+	baseDir.Normalize();
+
+	const std::string id = isParry ? config_.parryEffectName : config_.blockEffectName;
+	PublishGenericEffect(*context->eventBus, id, clashPos, baseDir);
 }
 
 void HitReactionComponent::SpawnDamageEffect(GameObject* self, GameObject* attackerWeaponObj)

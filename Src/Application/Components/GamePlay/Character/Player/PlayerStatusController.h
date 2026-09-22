@@ -172,6 +172,6 @@ private:
 
 	StateMachine<PlayerStatusController, IPlayerState> stateMachine_;
 
-	static constexpr float kDefaultAnimationBlendDuration = 0.15f;
+	static constexpr float kDefaultAnimationBlendDuration = 0.35f;
 	static constexpr const char* kMainWeaponSlot = "Main";
 };

@@ -36,13 +36,13 @@
                 "wantsStayEvent": false
               }
             ],
-            "wireFrame": true
+            "wireFrame": false
           },
           "type": "Collider"
         }
       ],
       "id": 1,
-      "name": "Object1",
+      "name": "Ground",
       "pos": [
         0.0,
         0.0,
@@ -52,6 +52,151 @@
         0.0,
         0.0,
         0.0,
+        1.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "components": [
+        {
+          "params": {
+            "animations": "",
+            "model": "Asset/Models/Terrains/CherryBlossum/Cherry_Blossom_Tree_c.gltf"
+          },
+          "type": "ModelRender"
+        },
+        {
+          "params": {
+            "ignoreParent": false,
+            "shapes": [
+              {
+                "categoryMask": [
+                  "HitBox"
+                ],
+                "collideMask": [
+                  "HurtBox"
+                ],
+                "halfExtents": [
+                  0.5,
+                  0.5,
+                  0.5
+                ],
+                "isStatic": false,
+                "isTrigger": false,
+                "name": "shape0",
+                "offset": [
+                  0.0,
+                  0.5,
+                  0.0
+                ],
+                "shape": "Box",
+                "useDefaultCollideMask": false,
+                "wantsStayEvent": false
+              }
+            ],
+            "wireFrame": true
+          },
+          "type": "Collider"
+        },
+        {
+          "params": {},
+          "type": "AttackSource"
+        }
+      ],
+      "id": 2,
+      "name": "Sakura",
+      "pos": [
+        0.0,
+        0.0,
+        -4.979094982147217
+      ],
+      "rotation": [
+        -0.0,
+        0.0,
+        -0.0,
+        1.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "components": [
+        {
+          "params": {
+            "animations": "",
+            "model": "Asset/Models/Terrains/CherryBlossum/Cherry_Blossom_Tree_b.gltf"
+          },
+          "type": "ModelRender"
+        },
+        {
+          "params": {
+            "ignoreParent": false,
+            "shapes": [
+              {
+                "categoryMask": [
+                  "HurtBox"
+                ],
+                "collideMask": [
+                  "HitBox"
+                ],
+                "halfExtents": [
+                  0.5,
+                  0.5,
+                  0.5
+                ],
+                "isStatic": false,
+                "isTrigger": false,
+                "name": "HurtBox",
+                "offset": [
+                  0.0,
+                  0.5,
+                  0.0
+                ],
+                "shape": "Box",
+                "useDefaultCollideMask": false,
+                "wantsStayEvent": false
+              }
+            ],
+            "wireFrame": true
+          },
+          "type": "Collider"
+        },
+        {
+          "params": {
+            "blockEffectName": "WeaponClashBlock",
+            "cameraShakeIntensity": 0.75,
+            "damageEffectName": "BloodSplatter",
+            "effectFlags": [
+              "CameraShake",
+              "WeaponClashFx"
+            ],
+            "guardKnockbackPower": 2.0,
+            "hitStopDelaySeconds": 0.0,
+            "hitStopDurationSeconds": 0.10000000149011612,
+            "largeStaggerDuration": 0.6000000238418579,
+            "parryEffectName": "WeaponClashParry"
+          },
+          "type": "HitReaction"
+        }
+      ],
+      "id": 3,
+      "name": "Object3",
+      "pos": [
+        5.766284942626953,
+        0.0,
+        0.0
+      ],
+      "rotation": [
+        -0.0,
+        0.0,
+        -0.0,
         1.0
       ],
       "scale": [

@@ -5,7 +5,7 @@
 #include "../../../Physics/Movement/VelocityComponent.h"
 #include "../../../Tags/IHitReactionQuery.h"
 #include "Application/Core/EventBus/Events/CollisionEvents.h"
-#include "Application/Definitions/Character/Common/CharacterDefinitionCommon.h" // HitReactionConfig
+#include "Application/Definitions/Prefab/BitFlags.h" 
 
 class WeaponComponent;
 
@@ -20,10 +20,46 @@ class WeaponComponent;
 // デフォルト値は導入前のPlayer側の挙動をそのまま踏襲しているため、
 // Player側は何も変更しなくても従来通り動作する。
 // ============================================================
+
+enum class HitReactionFlags : uint32_t
+{
+	None = 0,
+	CameraShake = 1u << 0, // 通常被弾時にカメラシェイクを発生させるか
+	HitStop = 1u << 1, // 通常被弾時にヒットストップを発生させるか
+	WeaponClashFx = 1u << 2, // ガード/パリィ時に鍔迫り合いエフェクトを出すか
+};
+
+template <>
+struct EnumFlagStringMap<HitReactionFlags> {
+	static constexpr std::pair<const char*, HitReactionFlags> entries[] = {
+		{ "CameraShake",   HitReactionFlags::CameraShake },
+		{ "HitStop",       HitReactionFlags::HitStop },
+		{ "WeaponClashFx", HitReactionFlags::WeaponClashFx },
+	};
+};
+
+struct HitReactionConfig
+{
+	BitFlags<HitReactionFlags> effectFlags;
+
+	std::string damageEffectName	= "BloodSplatter";
+	std::string parryEffectName		= "WeaponClashParry";
+	std::string blockEffectName		= "WeaponClashBlock";
+
+	float cameraShakeIntensity		= 0.75f;
+	float hitStopDelaySeconds		= 0.0f;
+	float hitStopDurationSeconds	= 0.1f;
+	float guardKnockbackPower		= 2.0f;
+	float largeStaggerDuration		= 0.6f;
+};
+
 class HitReactionComponent : public ComponentBase
 {
 public:
 	explicit HitReactionComponent(GameObject* owner) : ComponentBase(owner) {}
+
+	using Config = HitReactionConfig;
+	void SetConfig(const Config& config) { config_ = config; }
 
 	void Awake() override;
 
@@ -32,11 +68,6 @@ public:
 
 	// 被弾時、鍔迫り合いの火花エフェクトの発生元として使う自分の武器
 	void SetWeapon(Handle<WeaponComponent> weapon) { weapon_ = weapon; }
-
-	using Config = HitReactionConfig;
-
-	// 副作用まわりのチューニング値を一括で設定する(クラス冒頭コメント参照)。
-	void SetConfig(const Config& config) { config_ = config; }
 
 private:
 	void OnCollisionEnter(const Events::Collision::CollisionEnterEvent& e);

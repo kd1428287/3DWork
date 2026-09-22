@@ -585,9 +585,6 @@
     <ClInclude Include="Src\Application\Components\Graphics\Render\PolygonRenderComponent.h">
       <Filter>Src\Application\Components\Graphics\Render</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\Graphics\Render\SpriteRenderComponent.h">
-      <Filter>Src\Application\Components\Graphics\Render</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Components\Graphics\Render\Mod\ForceMaxDepthComponent.h">
       <Filter>Src\Application\Components\Graphics\Render\Mod</Filter>
     </ClInclude>
@@ -780,9 +777,6 @@
     <ClInclude Include="Src\Application\Effect\Particle\EffectInstance.h">
       <Filter>Src\Application\Effect\Particle</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Definitions\Character\Enemy\Warrock\WarrockAIData.h">
-      <Filter>Src\Application\Definitions\Character\Enemy\Warrock</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Core\EventBus\Events\CollisionEvents.h">
       <Filter>Src\Application\Core\EventBus\Events</Filter>
     </ClInclude>
@@ -930,9 +924,6 @@
     <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\BTBlackboardConditions.h">
       <Filter>Src\Application\Definitions\Character\Common\BehaviorTree</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Definitions\Character\Common\CharacterConfigs.h">
-      <Filter>Src\Application\Definitions\Character\Common</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Definitions\Loaders\DefinitionJson.h">
       <Filter>Src\Application\Definitions\Loaders</Filter>
     </ClInclude>
@@ -956,6 +947,12 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Definitions\Character\Enemy\EnemyAIDataJson.h">
       <Filter>Src\Application\Definitions\Character\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Prefab\BitFlags.h">
+      <Filter>Src\Application\Definitions\Prefab</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Editor\Common\ComponentInspector.h">
+      <Filter>Src\Application\Editor\Common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1267,6 +1264,9 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Factories\ComponentRegistry.cpp">
       <Filter>Src\Application\Factories</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Editor\Common\ComponentInspector.cpp">
+      <Filter>Src\Application\Editor\Common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

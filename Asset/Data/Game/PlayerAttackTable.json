@@ -342,7 +342,7 @@
 					}
 				},
 				"cancelData": {
-					"recoveryMoveCancelStart": 0.15,
+					"recoveryMoveCancelStart": 0.35,
 					"recoveryEvadeCancelStart": 0.30,
 					"recoveryAttackCancelStart": 0.50,
 					"comboWindowAfterRecovery": 0.2

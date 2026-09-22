@@ -1,10 +1,5 @@
 ﻿#pragma once
 
-#include <stdexcept>
-#include <string>
-#include <utility>
-#include <vector>
-
 #include "nlohmann/json.hpp"
 #include "../Character/Common/CharacterDefinitionCommon.h"
 #include "../Character/Common/CombatData.h"
@@ -40,46 +35,6 @@ namespace nlohmann
 		static void to_json(json& j, const Math::Quaternion& q) { j = json::array({ q.x, q.y, q.z, q.w }); }
 	};
 }
-
-// HitReactionFlagsは名前の配列で表す(例: ["CameraShake", "HitStop"])。未知の名前は例外にする。
-namespace DefinitionJsonDetail
-{
-	inline const std::pair<const char*, HitReactionFlags> kHitReactionFlagNames[] = {
-		{ "CameraShake",   HitReactionFlags::CameraShake },
-		{ "HitStop",       HitReactionFlags::HitStop },
-		{ "WeaponClashFx", HitReactionFlags::WeaponClashFx },
-	};
-}
-
-template<typename BasicJsonType>
-inline void from_json(const BasicJsonType& j, HitReactionFlags& flags)
-{
-	flags = HitReactionFlags::None;
-	for (const std::string& name : j.template get<std::vector<std::string>>()) {
-		bool found = false;
-		for (const auto& entry : DefinitionJsonDetail::kHitReactionFlagNames) {
-			if (name == entry.first) {
-				flags |= entry.second;
-				found = true;
-				break;
-			}
-		}
-		if (!found) throw std::runtime_error("Unknown HitReactionFlags: " + name);
-	}
-}
-
-template<typename BasicJsonType>
-inline void to_json(BasicJsonType& j, const HitReactionFlags& flags)
-{
-	j = BasicJsonType::array();
-	for (const auto& entry : DefinitionJsonDetail::kHitReactionFlagNames) {
-		if (HasFlag(flags, entry.second)) j.push_back(entry.first);
-	}
-}
-
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(HitReactionConfig,
-	effectFlags, damageEffectName, cameraShakeIntensity, hitStopDelaySeconds,
-	hitStopDurationSeconds, guardKnockbackPower, largeStaggerDuration)
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(MotionClipData,
 	animationName, loop, duration, useRootMotion, blendDuration, startFrame, endFrame)

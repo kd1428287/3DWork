@@ -56,7 +56,7 @@
 						"isTrigger": true
 					}
 				],
-				"wireFrame": false
+				"wireFrame": true
 			}
 		},
 		{
@@ -110,7 +110,24 @@
 			"params": { "max": 100.0 }
 		},
 		{ "type": "PlayerLockOn" },
-		{ "type": "HitReaction" },
+		{
+			"type": "HitReaction",
+			"params": {
+				"effectFrags": [
+					"CameraShake",
+					"HitStop",
+					"WeaponClashFx"
+				],
+				"damageEffectName": "BloodSplatter",
+				"parryEffectName": "WeaponClashParry",
+				"blockEffectName": "WeaponClashBlock",
+				"cameraShakeIntensity": 0.75,
+				"hitStopDelaySeconds": 0.0,
+				"hitStopDurationSeconds": 0.1,
+				"guardKnockbackPower": 2.0,
+				"largeStaggerDuration": 0.6
+			}
+		},
 		{ "type": "WeaponSet" },
 		{ "type": "PlayerInput" },
 		{
@@ -135,11 +152,11 @@
 				},
 				"guard": {
 					"justWindowDuration": 0.15,
-					"loopAnimationName": "DefenseL_Loop_Root",
-					"start":{ "duration": 0.75, "animationName": "APose2DefenseL_Root",		"useRootMotion": true, "blendDuration": 0.1 },
-					"parry":{ "duration": 0.75, "animationName": "DefenseL_Parry01_Root",	"useRootMotion": true, "blendDuration": 0.1 },
-					"hit":	{ "duration": 0.75, "animationName": "DefenseL_Hit01_Root",		"useRootMotion": true, "blendDuration": 0.1 },
-					"end":	{ "duration": 0.75, "animationName": "DefenseL2APose_Root",		"useRootMotion": true, "blendDuration": 0.1 }
+					"start":{ "duration": 0.35, "animationName": "APose2DefenseL_Root",  "useRootMotion": true, "blendDuration": 0.1 },
+					"loop": { "duration": -1.0, "animationName": "DefenseL_Loop_Root",	 "useRootMotion": true, "blendDuration": 0.1, "loop": true },
+					"parry":{ "duration": -1.0, "animationName": "DefenseL_Parry01_Root","useRootMotion": true, "blendDuration": 0.1 },
+					"hit":	{ "duration": -1.0, "animationName": "DefenseL_Hit01_Root",	 "useRootMotion": true, "blendDuration": 0.1 },
+					"end":	{ "duration": 0.35, "animationName": "DefenseL2APose_Root",	 "useRootMotion": true, "blendDuration": 0.1 }
 				}
 			}
 		},

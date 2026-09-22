@@ -1,12 +1,5 @@
 ﻿#pragma once
 
-#include <functional>
-#include <stdexcept>
-#include <string>
-#include <type_traits>
-#include <typeinfo>
-#include <unordered_map>
-#include <vector>
 
 #include "Application/Definitions/Prefab/Prefab.h"
 
@@ -17,8 +10,8 @@ class ObjectManager;
 struct BuildContext
 {
 	ObjectManager& objectManager;
-	GameObject&    self;
-	GameObject*    parent = nullptr;
+	GameObject& self;
+	GameObject* parent = nullptr;
 
 	// コンポーネントを追加する。同じ型が既にある場合は例外にする(登録では必ずこれを使う)。
 	template<typename T, typename G = GameObject, typename... Args>
@@ -53,7 +46,7 @@ public:
 			Register(type, [](auto& ctx, const nlohmann::json& params) {
 				const Config config = params.get<Config>();
 				ctx.template Add<T>()->SetConfig(config);
-			}, nlohmann::json(Config{}));
+				}, nlohmann::ordered_json(Config{}));
 		}
 		else {
 			Register(type, [](auto& ctx, const nlohmann::json&) { ctx.template Add<T>(); });
@@ -66,11 +59,11 @@ public:
 	{
 		Register(type, [build](BuildContext& ctx, const nlohmann::json& params) {
 			build(ctx, params.get<Params>());
-		}, nlohmann::json(Params{}));
+			}, nlohmann::ordered_json(Params{}));
 	}
 
 	// paramsを直接扱う登録。関数ポインタに限定して、型付きラムダの取り違えをコンパイルエラーにする。
-	void AddRaw(const std::string& type, RawFunction function, nlohmann::json defaultParams = nlohmann::json::object())
+	void AddRaw(const std::string& type, RawFunction function, nlohmann::ordered_json defaultParams = nlohmann::ordered_json::object())
 	{
 		Register(type, function, std::move(defaultParams));
 	}
@@ -83,18 +76,21 @@ public:
 	std::vector<std::string> GetTypeNames() const;
 
 	// 型のparamsの初期値。未登録ならnullptr。
-	const nlohmann::json* FindDefaultParams(const std::string& type) const;
+	//	表示順(挿入順)を保持したいのでordered_jsonで持つ(entry.params自体は
+	//	従来通りnlohmann::jsonのままでよい。詳細はComponentRegistrations.cppの
+	//	COMPONENT_PARAMS_DEFINE_TYPEマクロのコメントを参照)
+	const nlohmann::ordered_json* FindDefaultParams(const std::string& type) const;
 
 private:
-	void Register(const std::string& type, Factory factory, nlohmann::json defaultParams = nlohmann::json::object())
+	void Register(const std::string& type, Factory factory, nlohmann::ordered_json defaultParams = nlohmann::ordered_json::object())
 	{
 		types_[type] = { std::move(factory), std::move(defaultParams) };
 	}
 
 	struct TypeInfo
 	{
-		Factory        factory;
-		nlohmann::json defaultParams;
+		Factory                factory;
+		nlohmann::ordered_json defaultParams;
 	};
 
 	std::unordered_map<std::string, TypeInfo> types_;

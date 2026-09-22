@@ -321,7 +321,6 @@
     <ClInclude Include="Src\Application\Components\Graphics\Render\Mod\ForceMaxDepthComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\Mod\SkyDomeEdgeFadeComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\PolygonRenderComponent.h" />
-    <ClInclude Include="Src\Application\Components\Graphics\Render\SpriteRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\WireFrameComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Enemy\EnemyHPBarComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\GamePlay\EnemyWorldGaugeComponent.h" />
@@ -369,7 +368,6 @@
     <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\BTWeightedAttackAction.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\IBTNode.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\CharacterCollisionDefaults.h" />
-    <ClInclude Include="Src\Application\Definitions\Character\Common\CharacterConfigs.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\CharacterDefinitionCommon.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\CombatData.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\StateMachine\StateMachine.h" />
@@ -377,7 +375,6 @@
     <ClInclude Include="Src\Application\Definitions\Character\Enemy\EnemyAIDataJson.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Enemy\EnemyBlackboardKeys.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Enemy\IEnemyBehavior.h" />
-    <ClInclude Include="Src\Application\Definitions\Character\Enemy\Warrock\WarrockAIData.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Player\PlayerCombatBehaviorDefinition.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Player\PlayerCombatTypes.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Player\PlayerDefinitionJson.h" />
@@ -395,7 +392,9 @@
     <ClInclude Include="Src\Application\Definitions\Physics\ColliderLayerMatrix.h" />
     <ClInclude Include="Src\Application\Definitions\Physics\ModelCollisionMeshBuilder.h" />
     <ClInclude Include="Src\Application\Definitions\Physics\TriangleMeshData.h" />
+    <ClInclude Include="Src\Application\Definitions\Prefab\BitFlags.h" />
     <ClInclude Include="Src\Application\Definitions\Prefab\Prefab.h" />
+    <ClInclude Include="Src\Application\Editor\Common\ComponentInspector.h" />
     <ClInclude Include="Src\Application\Editor\Common\EditorViewport.h" />
     <ClInclude Include="Src\Application\Editor\Common\KdPreviewPostProcess.h" />
     <ClInclude Include="Src\Application\Editor\EditorHost.h" />
@@ -525,6 +524,7 @@
     <ClCompile Include="Src\Application\Definitions\Loaders\MapLoader.cpp" />
     <ClCompile Include="Src\Application\Definitions\Loaders\PlayerAttackTableLoader.cpp" />
     <ClCompile Include="Src\Application\Definitions\Map\MapData.cpp" />
+    <ClCompile Include="Src\Application\Editor\Common\ComponentInspector.cpp" />
     <ClCompile Include="Src\Application\Editor\Common\EditorViewport.cpp" />
     <ClCompile Include="Src\Application\Editor\Common\KdPreviewPostProcess.cpp" />
     <ClCompile Include="Src\Application\Editor\EditorHost.cpp" />

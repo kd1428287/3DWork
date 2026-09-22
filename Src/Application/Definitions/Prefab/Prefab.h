@@ -1,11 +1,7 @@
 ﻿#pragma once
-
-#include <string>
-#include <vector>
-
 #include "nlohmann/json.hpp"
 
-// コンポーネント1個分のデータ。paramsの意味はtypeごとに変わる。
+// コンポーネント1個分のデータ paramsの意味はtypeごとに変わる
 struct ComponentEntry
 {
 	std::string    type;
@@ -23,8 +19,8 @@ inline void to_json(nlohmann::json& j, const ComponentEntry& e)
 	j = { { "type", e.type }, { "params", e.params } };
 }
 
-// GameObject1個分の定義。マップ上の1エンティティもキャラクターもこの形で表す。
-// childrenは同時に生成される別オブジェクトで、コンポーネント側からは親を参照できる(BuildContext::parent)。
+// GameObject1個分の定義
+// childrenは同時に生成される別オブジェクトで、コンポーネント側からは親を参照できる(BuildContext::parent)
 struct PrefabDefinition
 {
 	std::string name = "GameObject";

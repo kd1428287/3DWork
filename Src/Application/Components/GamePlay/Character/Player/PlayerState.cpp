@@ -177,8 +177,7 @@ void StateGuard::Enter(PlayerStatusController* controller) {
 	releaseElapsed_ = 0.0f;
 
 	// 構え動作を単発再生する
-	const auto& data = controller->GetCurrentGuardData().start;
-	controller->PlayAnimation(data);
+	controller->PlayAnimation(controller->GetCurrentGuardData().start);
 }
 
 void StateGuard::Update(PlayerStatusController* controller, float deltaTime) {
@@ -200,7 +199,7 @@ void StateGuard::Update(PlayerStatusController* controller, float deltaTime) {
 	// 構え動作(単発)が終わったら、継続姿勢のLoopへ切り替える。
 	if (!hasEnteredLoop_ && elapsed_ >= controller->GetCurrentGuardData().start.duration) {
 		hasEnteredLoop_ = true;
-		controller->PlayAnimation(controller->GetCurrentGuardData().loopAnimationName, true, -1.0f, true);
+		controller->PlayAnimation(controller->GetCurrentGuardData().loop);
 	}
 
 	if (parrySucceeded_) {
@@ -243,8 +242,7 @@ void StateGuard::RequestRelease(PlayerStatusController* controller) {
 	isReactingToGuardHit_ = false;
 	hasEnteredLoop_ = true; // Startへ戻す必要はもう無い
 
-	const auto& data = controller->GetCurrentGuardData().end;
-	controller->PlayAnimation(data);
+	controller->PlayAnimation(controller->GetCurrentGuardData().end);
 }
 
 bool StateGuard::CanStartAttack(const PlayerStatusController* controller) const {
@@ -272,11 +270,9 @@ void StateGuard::NotifyParrySuccess(PlayerStatusController* controller) {
 	parrySucceeded_ = true;
 	parrySuccessElapsed_ = 0.0f;
 	isReactingToGuardHit_ = false; // ガードヒット演出より優先して上書きする
-
 	hasEnteredLoop_ = true;
 
-	const auto& data = controller->GetCurrentGuardData().parry;
-	controller->PlayAnimation(data);
+	controller->PlayAnimation(controller->GetCurrentGuardData().parry);
 }
 
 void StateGuard::NotifyGuardHit(PlayerStatusController* controller) {
@@ -286,16 +282,14 @@ void StateGuard::NotifyGuardHit(PlayerStatusController* controller) {
 	// 単発リアクションを都度再生し直す
 	isReactingToGuardHit_ = true;
 	guardHitElapsed_ = 0.0f;
-
 	hasEnteredLoop_ = true;
 
-	const auto& data = controller->GetCurrentGuardData().hit;
-	controller->PlayAnimation(data);
+	controller->PlayAnimation(controller->GetCurrentGuardData().hit);
 }
 
 void StateGuard::ResumeLoopAnimation(PlayerStatusController* controller) {
 	hasEnteredLoop_ = true;
-	controller->PlayAnimation(controller->GetCurrentGuardData().loopAnimationName, true, -1.0f, true);
+	controller->PlayAnimation(controller->GetCurrentGuardData().loop);
 }
 
 StateGuard::GuardPhase StateGuard::GetGuardPhase(const PlayerStatusController* controller) const {

@@ -1,6 +1,8 @@
 ﻿#pragma once
 
-// 描画用インターフェース。
+// 描画用インターフェース
+
+// どのレイヤーで描画するかのビットフラグ
 namespace RenderLayer
 {
 	constexpr uint8_t PreDraw					= 1u << 0; 

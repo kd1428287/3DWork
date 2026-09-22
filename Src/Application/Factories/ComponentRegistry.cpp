@@ -8,7 +8,7 @@ ComponentRegistry& ComponentRegistry::Instance()
 		ComponentRegistry r;
 		RegisterAllComponents(r);
 		return r;
-	}();
+		}();
 	return registry;
 }
 
@@ -28,7 +28,7 @@ std::vector<std::string> ComponentRegistry::GetTypeNames() const
 	return names;
 }
 
-const nlohmann::json* ComponentRegistry::FindDefaultParams(const std::string& type) const
+const nlohmann::ordered_json* ComponentRegistry::FindDefaultParams(const std::string& type) const
 {
 	const auto it = types_.find(type);
 	return it != types_.end() ? &it->second.defaultParams : nullptr;

@@ -1,9 +1,10 @@
 ﻿#include "ComponentRegistry.h"
+#include "Application/Definitions/Prefab/BitFlags.h"
 #include "Application/Definitions/Physics/ColliderCategoryNames.h"
 #include "Application/Definitions/Loaders/DefinitionJson.h"
-#include "Application/Definitions/Character/Player/PlayerDefinitionJson.h"
 #include "Application/Definitions/Loaders/PlayerAttackTableLoader.h"
 #include "Application/Definitions/Character/Common/CharacterCollisionDefaults.h"
+#include "Application/Definitions/Character/Player/PlayerDefinitionJson.h"
 
 // ここでのみ実際のコンポーネントクラスに依存する。
 #include "Application/Components/Core/TransformComponent.h"
@@ -45,7 +46,23 @@
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // コンポーネントのConfigのJSON変換。キー名はメンバ名と同じで、未指定のキーは初期値になる。
 // (Configの構造体は各コンポーネントのヘッダにある)
+//
+//	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULTはnlohmann::json専用に固定されており、
+//	生成されるto_json()がメンバを宣言順に書き込んでも、書き込み先(nlohmann::json)自体が
+//	std::mapベースのため最終的にキー名のアルファベット順で格納されてしまう。
+//	これがComponentRegistry::FindDefaultParams()の結果(Inspector側の表示順)がA→Zに
+//	なってしまっていた原因。
+//
+//	ComponentRegistryのdefaultParamsだけを挿入順を保持するnlohmann::ordered_jsonで
+//	持たせることにしたので、そちらへ書き込むto_json(ordered_json&, const T&)も追加で
+//	生成する。nlohmann本体のマクロ部品(NLOHMANN_JSON_EXPAND/PASTE/TO)を流用しているだけで、
+//	実行時にparamsを読む方のfrom_json(nlohmann::json)は元のマクロのままなので、
+//	セーブ/ロードや実行時のBuild()の挙動には影響しない
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+#define COMPONENT_PARAMS_DEFINE_TYPE(Type, ...)                                                \
+	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(Type, __VA_ARGS__)                          \
+	inline void to_json(nlohmann::ordered_json& nlohmann_json_j, const Type& nlohmann_json_t)   \
+	{ NLOHMANN_JSON_EXPAND(NLOHMANN_JSON_PASTE(NLOHMANN_JSON_TO, __VA_ARGS__)) }
 
 // 未知の軸名は先頭のYになる。
 NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
@@ -54,22 +71,24 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 	{ RootMotionAxis::Z, "Z" },
 	})
 
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(SkeletonConfig, model, animations)
+	COMPONENT_PARAMS_DEFINE_TYPE(SkeletonConfig, model, animations)
 
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(RootMotionConfig,
+	COMPONENT_PARAMS_DEFINE_TYPE(RootMotionConfig,
 		boneName, unitScale, forwardAxis, forwardSign, rightAxis, rightSign, extractRotation, yawSign)
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(ModelAnimatorConfig, fps, speedScale, blendDuration, rootMotion)
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(FollowCameraConfig, offset, followPosition, followRotation)
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(CameraTargetConfig, offset)
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(SlashTrailConfig, trailName, base, tip, key, emitOnStart)
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(VelocityConfig, dampingPerSecond)
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(MovementConfig, speed)
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(FacingDirectionConfig, rotationSpeed, moveThreshold)
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(GroundSensorConfig, footOffset, checkDistance)
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(PostureConfig, max, lowerLimit, regenPerSecond, regenDelaySeconds)
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(HealthConfig, max)
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(PlayerCombatMovementConfig, walkSpeed, runSpeed)
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(PlayerStatusControllerConfig, evade, guard)
+	COMPONENT_PARAMS_DEFINE_TYPE(ModelAnimatorConfig, fps, speedScale, blendDuration, rootMotion)
+	COMPONENT_PARAMS_DEFINE_TYPE(FollowCameraConfig, offset, followPosition, followRotation)
+	COMPONENT_PARAMS_DEFINE_TYPE(CameraTargetConfig, offset)
+	COMPONENT_PARAMS_DEFINE_TYPE(SlashTrailConfig, trailName, base, tip, key, emitOnStart)
+	COMPONENT_PARAMS_DEFINE_TYPE(VelocityConfig, dampingPerSecond)
+	COMPONENT_PARAMS_DEFINE_TYPE(MovementConfig, speed)
+	COMPONENT_PARAMS_DEFINE_TYPE(FacingDirectionConfig, rotationSpeed, moveThreshold)
+	COMPONENT_PARAMS_DEFINE_TYPE(GroundSensorConfig, footOffset, checkDistance)
+	COMPONENT_PARAMS_DEFINE_TYPE(PostureConfig, max, lowerLimit, regenPerSecond, regenDelaySeconds)
+	COMPONENT_PARAMS_DEFINE_TYPE(HealthConfig, max)
+	COMPONENT_PARAMS_DEFINE_TYPE(HitReactionConfig, effectFlags, damageEffectName, parryEffectName, blockEffectName,
+		cameraShakeIntensity, hitStopDelaySeconds, hitStopDurationSeconds, guardKnockbackPower, largeStaggerDuration)
+	COMPONENT_PARAMS_DEFINE_TYPE(PlayerCombatMovementConfig, walkSpeed, runSpeed)
+	COMPONENT_PARAMS_DEFINE_TYPE(PlayerStatusControllerConfig, evade, guard)
 
 	// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 	// 他のコンポーネントとの接続やファイル読み込みを伴う型のparams。
@@ -99,7 +118,7 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 		bool isStatic = false;
 		bool wantsStayEvent = false;
 	};
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(ColliderShapeParams,
+	COMPONENT_PARAMS_DEFINE_TYPE(ColliderShapeParams,
 		name, shape, offset, radius, capsuleEnd, halfExtents,
 		categoryMask, useDefaultCollideMask, collideMask, enabled, isTrigger, isStatic, wantsStayEvent)
 
@@ -111,20 +130,20 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 		bool                             wireFrame = true;
 		bool                             ignoreParent = false;
 	};
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(ColliderParams, shapes, wireFrame, ignoreParent)
+	COMPONENT_PARAMS_DEFINE_TYPE(ColliderParams, shapes, wireFrame, ignoreParent)
 
 		struct PlayerAttackSelectorParams
 	{
 		std::string attackTablePath;
 	};
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(PlayerAttackSelectorParams, attackTablePath)
+	COMPONENT_PARAMS_DEFINE_TYPE(PlayerAttackSelectorParams, attackTablePath)
 
 		// 親のボーンに追従するソケット用オブジェクトを、boneごとに生成する。
 		struct BoneSocketsParams
 	{
 		std::vector<std::string> bones;
 	};
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(BoneSocketsParams, bones)
+	COMPONENT_PARAMS_DEFINE_TYPE(BoneSocketsParams, bones)
 
 		// rotationEulerDegのx/y/zは、それぞれYaw/Pitch/Rollとして渡す(既存の挙動)。
 		struct AttachToBoneParams
@@ -133,7 +152,7 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 		Math::Vector3 position = { 0.0f, 0.0f, 0.0f };
 		Math::Vector3 rotationEulerDeg = { 0.0f, 0.0f, 0.0f };
 	};
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(AttachToBoneParams, bone, position, rotationEulerDeg)
+	COMPONENT_PARAMS_DEFINE_TYPE(AttachToBoneParams, bone, position, rotationEulerDeg)
 
 		struct TwoBoneIKParams
 	{
@@ -142,7 +161,7 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 		std::string tipParentBone;
 		std::string tipBone;
 	};
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(TwoBoneIKParams, rootBone, midBone, tipParentBone, tipBone)
+	COMPONENT_PARAMS_DEFINE_TYPE(TwoBoneIKParams, rootBone, midBone, tipParentBone, tipBone)
 
 		GameObject* RequireParent(BuildContext& ctx, const char* who)
 	{

@@ -6,21 +6,15 @@ namespace Events
 {
 	namespace Effect
 	{
-		// 座標だけで表現できる単純なエフェクトの汎用発生イベント(一撃だけ、その場で発生)
+		// 座標＋方向で表現できる汎用エフェクトの発生イベント(一撃だけ、その場で発生)
+		//	Directionは方向を使わないエフェクト(HitSpark等)では{0,0,0}のまま(≒未指定)でよく、
+		//	鍔迫り合いの火花のような「特定方向へ勢いよく飛ぶ」エフェクトもこの1つの型で表現する
+		//	(GPUParticleLayer::Shape.DirScale/Offsetがbasedir={0,0,0}でも成立する設計のため)
 		struct GenericEffectSpawnEvent : public Event
 		{
 			std::string		Id;
 			Math::Vector3	Position;
 			Math::Vector3	Direction;
-		};
-
-		// 鍔迫り合いの火花(武器vs武器)
-		struct WeaponClashEffectEvent : public Event
-		{
-			Math::Vector3	Position;			// 衝突位置(近似で良い)
-			Math::Vector3	SelfWeaponDir;		// 自分側武器の進行方向(正規化済み想定)
-			Math::Vector3	OtherWeaponDir;		// 相手側武器の進行方向(正規化済み想定)
-			bool			IsParry = true;		// true:ジャストタイミングの弾き返し／false:通常ガードのブロック
 		};
 
 		// 継続再生(Continuous、または再発生ありのBurst)を、動く発生源に追従させて再生するための3点セット
@@ -74,18 +68,6 @@ inline void PublishGenericEffect(EventBus& bus, const std::string& id, const Mat
 	e.Direction = dir;
 	// 念のため正規化
 	e.Direction.Normalize();
-
-	bus.Publish(e);
-}
-
-inline void PublishWeaponClashEffect(EventBus& bus, const Math::Vector3& pos,
-	const Math::Vector3& selfWeaponDir, const Math::Vector3& otherWeaponDir, bool isParry = true)
-{
-	Events::Effect::WeaponClashEffectEvent e;
-	e.Position = pos;
-	e.SelfWeaponDir = selfWeaponDir;
-	e.OtherWeaponDir = otherWeaponDir;
-	e.IsParry = isParry;
 
 	bus.Publish(e);
 }

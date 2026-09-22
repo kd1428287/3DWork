@@ -110,5 +110,5 @@ private:
 	TurnAnimationSet turnAnimSet_;
 
 	std::string idleAnim_ = "Idle";
-	static constexpr float kBlendDuration = 0.15f;
+	static constexpr float kBlendDuration = 0.25f;
 };

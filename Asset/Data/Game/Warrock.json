@@ -34,7 +34,7 @@
 		{
 			"type": "Collider",
 			"params": {
-				"wireFrame": false,
+				"wireFrame": true,
 				"shapes": [
 					{
 						"name": "HurtBox",

@@ -1,7 +1,6 @@
 ﻿#pragma once
 
 #include "Application/Components/Physics/Collision/ColliderComponent.h" 
-#include "CharacterConfigs.h"
 
 // ============================================================
 // Player/Enemy等、複数キャラクターのFactory/Definitionで共通して
@@ -68,9 +67,3 @@ struct MotionClipData
 	int			startFrame		= 0;
 	int			endFrame		= 0;
 };
-
-// ============================================================
-// HitReactionComponent(Player/Enemy共通)が被弾処理の中で発生させる
-// 副作用のうち、キャラクターごとに変えたい値をまとめた設定。
-// ============================================================
-

@@ -1,8 +1,11 @@
 ﻿#pragma once
 
+// ※ ImGui / DirectXTK(SimpleMath) は既存のPCH等で読み込まれている前提です。
+//    ImGuizmo は本ファイルでのみ使うため明示的にインクルードします。
 #include "../ThirdParty/ImGuizmo.h"
 #include "Application/Definitions/Map/MapData.h"
 #include "../Common/KdPreviewPostProcess.h"
+#include "../Common/ComponentInspector.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // マップに配置する1オブジェクト分の、Editor側の実体。
@@ -17,7 +20,7 @@ struct MapObject
 	KdModelWork	modelWork;		// プレビュー表示専用。data.componentsの"ModelRender"から同期する
 
 	// data.pos/rotation/scale から4x4行列を生成
-	Math::Matrix GetMatrix() const;
+	DirectX::SimpleMath::Matrix GetMatrix() const;
 
 	// 指定した種類のコンポーネントを持っているか
 	bool HasComponent(const std::string& type) const
@@ -93,13 +96,6 @@ private:
 	void DrawGizmo();
 	void DrawAssetPicker();
 
-	// Inspector内、選択中オブジェクトのコンポーネント一覧(追加/削除/パラメータ編集)
-	void DrawComponentList(MapObject& obj);
-
-	// paramsのフィールドを、型の初期値(ComponentRegistry::FindDefaultParams)のJSON型に従って自動描画する汎用UI。
-	// 戻り値は「このフレームで何か編集されたか」
-	bool DrawComponentParamsGeneric(nlohmann::json& params, const nlohmann::json& defaults);
-
 	// 選択中オブジェクトを注視点とするプレビュー専用ウィンドウ(RenderPreviewViewport()が描いた絵を表示する)
 	void DrawPreviewWindow();
 
@@ -108,7 +104,7 @@ private:
 
 	// プレビュー用カメラの注視点(選択中オブジェクトがあればその位置、無ければ配置済み全体の重心)
 	//	RenderPreviewViewport()・DrawGizmo()の両方で同じ注視点を使うための共通処理
-	Math::Vector3 GetPreviewTarget() const;
+	DirectX::SimpleMath::Vector3 GetPreviewTarget() const;
 
 	// m_objects内をIdで探す(見つからなければnullptr)。生indexでm_objectsへ触れる箇所を
 	// ここに集約し、Undo/Redoやホットリロードでindexがズレても壊れないようにする

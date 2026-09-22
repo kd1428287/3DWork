@@ -9,7 +9,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(EvadeData,
 	animationNameForward, animationNameBackward, animationNameLeft, animationNameRight)
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(GuardData,
-	justWindowDuration, loopAnimationName, start, parry, hit, end)
+	justWindowDuration, start, loop, parry, hit, end)
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(MovementPhaseClips,
 	startAnimationName, startDuration, loopAnimationName, endAnimationName, endDuration)
