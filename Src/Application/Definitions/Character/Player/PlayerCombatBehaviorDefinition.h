@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "PlayerCombatTypes.h"
 
 // ============================================================
@@ -54,4 +54,7 @@ struct PlayerMovementAnimationDefinition
 	// Run(常に入力方向へ正対して移動)のStart/Loop/End。
 	// WalkAnimationSet::forwardと同じMovementPhaseClips構造を流用する。
 	MovementPhaseClips run;
+
+	std::string idle;
 };
+

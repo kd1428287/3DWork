@@ -3,17 +3,27 @@
 	"components": [
 		{
 			"type": "ModelRender",
-			"params": { "model": "Asset/Models/Character/Kachujin2/kachujin.gltf" }
+			"params": {
+				"model": "Asset/Models/Character/Player2/kachujin.gltf",
+				"animations": "Asset/Animations/Character"
+			}
 		},
 		{
 			"type": "ModelAnimator",
 			"params": {
 				"fps": 120,
 				"speedScale": 0.25,
-				"rootMotionBone": "mixamorig_Hips",
-				"rootMotionAxis": "Y",
-				"rootMotionAxisSign": -1.0,
-				"rootMotionScale": 1.0
+				"blendDuration": 0.15,
+				"rootMotion": {
+					"boneName": "mixamorig:Hips",
+					"unitScale": 1.0,
+					"forwardAxis": "Y",
+					"forwardSign": -1.0,
+					"rightAxis": "X",
+					"rightSign": 1.0,
+					"extractRotation": false,
+					"yawSign": 1.0
+				}
 			}
 		},
 		{ "type": "RootMotionApplier" },
@@ -54,36 +64,37 @@
 			"params": {
 				"walk": {
 					"forward": {
-						"startAnimationName": "APose_Strafe_Walk_F_Start",
-						"startDuration": 0.15,
-						"loopAnimationName": "APose_Strafe_Walk_F_Loop",
-						"endAnimationName": "APose_Strafe_Walk_F_End",
-						"endDuration": 0.15
+						"startAnimationName": "Strafe_Walk_F_Start_Root",
+						"startDuration": -1.0,
+						"loopAnimationName": "Strafe_Walk_F_Loop_Inplace",
+						"endAnimationName": "Strafe_Walk_F_End_Root",
+						"endDuration": -1.0
 					},
 					"locked": {
-						"forward": "APose_Strafe_Walk_F_Loop",
-						"forwardRight": "APose_Strafe_Walk_FR",
-						"right": "APose_Strafe_Walk_R",
-						"backwardRight": "APose_Strafe_Walk_BR",
-						"backward": "APose_Strafe_Walk_B",
-						"backwardLeft": "APose_Strafe_Walk_BL",
-						"left": "APose_Strafe_Walk_L",
-						"forwardLeft": "APose_Strafe_Walk_FL"
+						"forward": "Strafe_Walk_F_Loop_Inplace",
+						"forwardRight": "Strafe_Walk_FR_Inplace",
+						"right": "Strafe_Walk_R_Inplace",
+						"backwardRight": "Strafe_Walk_BR_Inplace",
+						"backward": "Strafe_Walk_B_Inplace",
+						"backwardLeft": "Strafe_Walk_BL_Inplace",
+						"left": "Strafe_Walk_L_Inplace",
+						"forwardLeft": "Strafe_Walk_FL_Inplace"
 					}
 				},
 				"run": {
-					"startAnimationName": "APose_Strafe_Run_F_Start",
-					"startDuration": 0.15,
-					"loopAnimationName": "APose_Strafe_Run_F_Loop",
-					"endAnimationName": "APose_Strafe_Run_F_End",
-					"endDuration": 0.15
+					"startAnimationName": "Strafe_Run_F_Start_Root",
+					"startDuration": -1.0,
+					"loopAnimationName": "Strafe_Run_F_Loop_Inplace",
+					"endAnimationName": "Strafe_Run_F_End_Root",
+					"endDuration": -1.0
 				},
 				"turn": {
-					"left90": { "duration": 0.25, "animationName": "APose_TurnL90", "useRootMotion": true, "blendDuration": 0.1 },
-					"right90": { "duration": 0.25, "animationName": "APose_TurnR90", "useRootMotion": true, "blendDuration": 0.1 },
-					"left180": { "duration": 0.35, "animationName": "APose_TurnL180", "useRootMotion": true, "blendDuration": 0.1 },
-					"right180": { "duration": 0.35, "animationName": "APose_TurnR180", "useRootMotion": true, "blendDuration": 0.1 }
-				}
+					"left90": { "duration": 0.25, "animationName": "TurnL90_Root", "useRootMotion": true, "blendDuration": 0.1 },
+					"right90": { "duration": 0.25, "animationName": "TurnR90_Root", "useRootMotion": true, "blendDuration": 0.1 },
+					"left180": { "duration": 0.35, "animationName": "TurnL180_Root", "useRootMotion": true, "blendDuration": 0.1 },
+					"right180": { "duration": 0.35, "animationName": "TurnR180_Root", "useRootMotion": true, "blendDuration": 0.1 }
+				},
+				"idle": "Idle"
 			}
 		},
 		{ "type": "FacingDirection" },
@@ -111,19 +122,19 @@
 					"justWindowEnd": 0.15,
 					"evadeDistance": 3.0,
 					"useRootMotion": true,
-					"animationNameForward": "APose_Slide_F",
-					"animationNameBackward": "APose_Slide_B",
-					"animationNameLeft": "APose_Slide_L",
-					"animationNameRight": "APose_Slide_R"
+					"animationNameForward": "Slide_F_Root",
+					"animationNameBackward": "Slide_B_Root",
+					"animationNameLeft": "Slide_L_Root",
+					"animationNameRight": "Slide_R_Root"
 				},
 				"guard": {
 					"justWindowDuration": 0.15,
-					"animationName": "APose2DefenseL",
+					"animationName": "APose2DefenseL_Root",
 					"startDuration": 0.1,
-					"loopAnimationName": "DefenseL_Loop",
-					"parrySuccessAnimationName": "DefenseL_Parry01",
+					"loopAnimationName": "DefenseL_Loop_Inplace",
+					"parrySuccessAnimationName": "DefenseL_Parry01_Root",
 					"parrySuccessDuration": 0.8,
-					"guardHitAnimationName": "DefenseL_Hit01",
+					"guardHitAnimationName": "DefenseL_Hit01_Root",
 					"guardHitDuration": 0.9
 				}
 			}
@@ -184,7 +195,7 @@
 				},
 				{
 					"type": "SlashTrail",
-					"params": { "name": "Sword", "base": [0, 0, -1.0], "tip": [0, 0, -1.75], "key": "Sword_Player" }
+					"params": { "trailName": "Sword", "base": [0, 0, -1.0], "tip": [0, 0, -1.75], "key": "Sword_Player", "emitOnStart": true }
 				},
 				{ "type": "Weapon" }
 			]

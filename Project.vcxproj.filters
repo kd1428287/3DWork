@@ -459,7 +459,7 @@
     <ClInclude Include="Src\Application\Scene\ResultScene\ResultScene.h">
       <Filter>Src\Application\Scene\Result</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Framework\Shader\GPUParticle\KdGPUParticle.h">
+    <ClInclude Include="Src\Framework\Shader\GPUParticle\ParticleBuffer.h">
       <Filter>Src\Framework\Shader\GPUParticle</Filter>
     </ClInclude>
     <ClInclude Include="Src\Framework\Shader\SlashTrailShader\SlashTrailRenderer.h">
@@ -957,6 +957,9 @@
     <ClInclude Include="Src\Application\Definitions\Character\Enemy\EnemyAIDataJson.h">
       <Filter>Src\Application\Components\GamePlay\Character\Enemy</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Framework\Shader\GPUParticle\GPUParticleShader.h">
+      <Filter>Src\Framework\Shader\GPUParticle</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -1106,7 +1109,7 @@
     <ClCompile Include="Src\Application\Scene\ResultScene\ResultScene.cpp">
       <Filter>Src\Application\Scene\Result</Filter>
     </ClCompile>
-    <ClCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle.cpp">
+    <ClCompile Include="Src\Framework\Shader\GPUParticle\ParticleBuffer.cpp">
       <Filter>Src\Framework\Shader\GPUParticle</Filter>
     </ClCompile>
     <ClCompile Include="Src\Framework\Shader\SlashTrailShader\SlashTrailRenderer.cpp">
@@ -1268,6 +1271,9 @@
     <ClCompile Include="Src\Application\Factories\ComponentRegistry.cpp">
       <Filter>Src\Application\Factories\GamePlay</Filter>
     </ClCompile>
+    <ClCompile Include="Src\Framework\Shader\GPUParticle\GPUParticleShader.cpp">
+      <Filter>Src\Framework\Shader\GPUParticle</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Src\Framework\Shader\inc_KdCommon.hlsli">
@@ -1288,7 +1294,7 @@
     <None Include="Asset\Data\Game\EnemySchema.json">
       <Filter>Data\Game</Filter>
     </None>
-    <None Include="Src\Framework\Shader\GPUParticle\inc_KdGPUParticle.hlsli">
+    <None Include="Src\Framework\Shader\GPUParticle\inc_GPUParticleShader.hlsli">
       <Filter>Src\Framework\Shader\GPUParticle</Filter>
     </None>
     <None Include="Src\Framework\Shader\StandardShader\inc_KdSkyDomeShader.hlsli">
@@ -1341,19 +1347,19 @@
     <FxCompile Include="Src\Framework\Shader\StandardShader\KdStandardShader_VS_UnLit.hlsl">
       <Filter>Src\Framework\Shader\StandardShader</Filter>
     </FxCompile>
-    <FxCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle_CS_Emit.hlsl">
+    <FxCompile Include="Src\Framework\Shader\GPUParticle\GPUParticle_CS_Emit.hlsl">
       <Filter>Src\Framework\Shader\GPUParticle</Filter>
     </FxCompile>
-    <FxCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle_CS_Init.hlsl">
+    <FxCompile Include="Src\Framework\Shader\GPUParticle\GPUParticle_CS_Init.hlsl">
       <Filter>Src\Framework\Shader\GPUParticle</Filter>
     </FxCompile>
-    <FxCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle_CS_Update.hlsl">
+    <FxCompile Include="Src\Framework\Shader\GPUParticle\GPUParticle_CS_Update.hlsl">
       <Filter>Src\Framework\Shader\GPUParticle</Filter>
     </FxCompile>
-    <FxCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle_PS.hlsl">
+    <FxCompile Include="Src\Framework\Shader\GPUParticle\GPUParticle_PS.hlsl">
       <Filter>Src\Framework\Shader\GPUParticle</Filter>
     </FxCompile>
-    <FxCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle_VS.hlsl">
+    <FxCompile Include="Src\Framework\Shader\GPUParticle\GPUParticle_VS.hlsl">
       <Filter>Src\Framework\Shader\GPUParticle</Filter>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_ColorGrade.hlsl">
@@ -1362,7 +1368,7 @@
     <FxCompile Include="Src\Framework\Shader\SlashTrailShader\SlashTrail_VS.hlsl">
       <Filter>Src\Framework\Shader\SlashTrailShader</Filter>
     </FxCompile>
-    <FxCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle_PS_Masked.hlsl">
+    <FxCompile Include="Src\Framework\Shader\GPUParticle\GPUParticle_PS_Masked.hlsl">
       <Filter>Src\Framework\Shader\GPUParticle</Filter>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\SlashTrailShader\SlashTrail_PS_AddMasked.hlsl">

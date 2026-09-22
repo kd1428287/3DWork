@@ -1,16 +1,37 @@
 ﻿#pragma once
 #include "Application/Core/EventBus/Events/SlashTrailEvents.h"
 
+// 初期設定(Prefab/JSONから渡す値)。base/tipはローカル座標。emitOnStartがtrueならAwakeで発光を開始する。
+struct SlashTrailConfig
+{
+	std::string   trailName;
+	Math::Vector3 base = { 0.0f, 0.0f, 0.0f };
+	Math::Vector3 tip = { 0.0f, 0.0f, 0.0f };
+	std::string   key;
+	bool          emitOnStart = false;
+};
+
 class SlashTrailComponent : public ComponentBase {
 public:
+	using Config = SlashTrailConfig;
+
 	explicit SlashTrailComponent(GameObject* owner, const std::string& trailName = "")
 		: ComponentBase(owner), trailName_(trailName)
 	{
 	}
 
+	void SetConfig(const Config& config)
+	{
+		trailName_ = config.trailName;
+		SetBaseTip(config.base, config.tip);
+		SetKey(config.key);
+		emitOnStart_ = config.emitOnStart;
+	}
+
 	void Awake() override
 	{
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
+		if (emitOnStart_) StartEmit();
 	}
 
 	void Update(float dt)override
@@ -57,4 +78,5 @@ private:
 	Math::Vector3 tip_{};
 
 	bool emitting_ = false;
+	bool emitOnStart_ = false;
 };

@@ -4,13 +4,38 @@
 
 class ModelAnimatorComponent;
 
+// 初期設定(Prefab/JSONから渡す値)。
+struct SkeletonConfig
+{
+	std::string model;
+	std::string animations;
+};
+
+
 // モデルを保持し、アニメーターのオーケストレーターとして振舞う
 class SkeletonComponent : public ComponentBase, public IModelRenderSource {
 public:
+	using Config = SkeletonConfig;
+
 	explicit SkeletonComponent(GameObject* owner) : ComponentBase(owner) {}
 
-	void SetModelData(std::string_view fileName) { modelWork_.SetModelData(KdAssets::Instance().m_modeldatas.GetData(fileName)); }
-	void SetModelData(const std::shared_ptr<KdModelData>& data) { modelWork_.SetModelData(data); }
+	void SetConfig(const Config& config)
+	{
+		SetModelData(config.model);
+		AddAnimationDirectory(config.animations);
+	}
+
+	void SetModelData(std::string_view fileName) { SetModelData(KdAssets::Instance().m_modeldatas.GetData(fileName)); }
+	void SetModelData(const std::shared_ptr<KdModelData>& data)
+	{
+		modelWork_.SetModelData(data);
+		ApplyPendingAnimSources();
+	}
+
+	// アニメーション専用glTFを登録する(モデル未設定ならSetModelData時に適用)
+	void AddAnimationFile(std::string_view filePath) { AddAnimationSource(filePath, false); }
+	// フォルダ内のアニメーション専用glTFを一括登録する(同上)
+	void AddAnimationDirectory(std::string_view dirPath) { AddAnimationSource(dirPath, true); }
 
 	void Awake() override;
 	void PreUpdate(float deltaTime) override;
@@ -61,7 +86,34 @@ public:
 	bool IsModelDrawable() const override { return true; }
 
 private:
+	struct AnimationSource
+	{
+		std::string	path;
+		bool		isDirectory;
+	};
+
+	void AddAnimationSource(std::string_view path, bool isDirectory)
+	{
+		pendingAnimSources_.push_back({ std::string(path), isDirectory });
+		ApplyPendingAnimSources();
+	}
+
+	// モデルが設定済みなら、溜まっている登録を適用する
+	void ApplyPendingAnimSources()
+	{
+		auto spData = modelWork_.GetData();
+		if (!spData) { return; }
+
+		for (const auto& src : pendingAnimSources_)
+		{
+			if (src.isDirectory) { spData->LoadAnimationDirectory(src.path); }
+			else { spData->LoadAnimationFile(src.path); }
+		}
+		pendingAnimSources_.clear();
+	}
+
 	KdModelWork modelWork_;
+	std::vector<AnimationSource> pendingAnimSources_; // モデル設定前に登録された分
 	TransformComponent* selfTransform_ = nullptr; // 兄弟コンポーネント
 	ModelAnimatorComponent* animator_ = nullptr;   // 兄弟コンポーネント(付いていなければnullptr)
 	uint32_t boneVersion_ = 0;

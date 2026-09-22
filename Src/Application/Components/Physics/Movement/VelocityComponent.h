@@ -1,5 +1,11 @@
 ﻿#pragma once
 
+// 初期設定(Prefab/JSONから渡す値)。dampingPerSecondの意味はコンストラクタ参照。
+struct VelocityConfig
+{
+	float dampingPerSecond = 0.05f;
+};
+
 // ============================================================
 // VelocityComponent(外力)
 //
@@ -13,10 +19,14 @@
 // ============================================================
 class VelocityComponent : public ComponentBase {
 public:
+	using Config = VelocityConfig;
+
 	// dampingPerSecond: impulseVelocity_が1秒間でこの割合まで落ちる減衰係数。
-	explicit VelocityComponent(GameObject* owner, float dampingPerSecond = 0.05f)
+	explicit VelocityComponent(GameObject* owner, float dampingPerSecond = VelocityConfig{}.dampingPerSecond)
 		: ComponentBase(owner), dampingPerSecond_(dampingPerSecond) {
 	}
+
+	void SetConfig(const Config& config) { dampingPerSecond_ = config.dampingPerSecond; }
 
 	// 摩擦減衰と、continuousVelocity_の上限クランプを行う。
 	// MotionComposerComponentが、合成結果をTransformへ適用した「後」に呼ぶ

@@ -94,6 +94,7 @@ public:
 	// それぞれのアセット
 	KdDataStorage<KdTexture>	m_textures;
 	KdDataStorage<KdModelData>	m_modeldatas;
+	KdDataStorage<KdAnimationSetData>	m_animations;
 
 	static KdAssets& Instance()
 	{
@@ -105,6 +106,7 @@ public:
 	{
 		m_textures.ClearData(force);
 		m_modeldatas.ClearData(force);
+		m_animations.ClearData(force);
 	}
 
 private:

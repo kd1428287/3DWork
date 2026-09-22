@@ -3,10 +3,10 @@
 
 	"attacks": [
 		{
-			"id": "APose_Attack02_1",
+			"id": "Attack02_1",
 			"entryCommand": "Attack",
 			"comboLinks": [
-				{ "requiredCommand": "Attack", "priority": 0, "nextAttackId": "APose_Attack02_2" }
+				{ "requiredCommand": "Attack", "priority": 0, "nextAttackId": "Attack02_2" }
 			],
 			"attack": {
 				"damageData": {
@@ -18,15 +18,15 @@
 					"parryPostureDamage": 30.0
 				},
 				"moveData": {
-					"stepDistance": 2.0,
-					"stepDuration": 0.4,
+					"stepDistance": 0.0,
+					"stepDuration": 0.0,
 					"engageDistance": 1.2,
 					"stepDirection": [ 0.0, 0.0, 0.0 ],
 					"blendDuration": 0.12,
-					"useRootMotion": false
+					"useRootMotion": true
 				},
 				"phaseData": {
-					"animationName": "APose_Attack02_1",
+					"animationName": "Attack02_1_Root",
 					"windup":   { "startFrame": 0, "endFrame": 20,  "targetDuration": 0.18 },
 					"active":   { "startFrame": 20, "endFrame": 60,  "targetDuration": 0.35 },
 					"recovery": { "startFrame": 60, "endFrame": 180, "targetDuration": 1.05 }	
@@ -41,9 +41,9 @@
 			}
 		},
 		{
-			"id": "APose_Attack02_2",
+			"id": "Attack02_2",
 			"comboLinks": [
-				{ "requiredCommand": "Attack", "priority": 0, "nextAttackId": "APose_Attack02_3" }
+				{ "requiredCommand": "Attack", "priority": 0, "nextAttackId": "Attack02_3" }
 			],
 			"attack": {
 				"damageData": {
@@ -60,10 +60,10 @@
 					"engageDistance": 1.2,
 					"stepDirection": [ 0.0, 0.0, 0.0 ],
 					"blendDuration": 0.075,
-					"useRootMotion": false
+					"useRootMotion": true
 				},
 				"phaseData": {
-					"animationName": "APose_Attack02_2",
+					"animationName": "Attack02_2_Root",
 					"windup":   { "startFrame": 0, "endFrame": 35,  "targetDuration": 0.30 },
 					"active":   { "startFrame": 35, "endFrame": 65,  "targetDuration": 0.20 },
 					"recovery": { "startFrame": 65, "endFrame": 180, "targetDuration": 1.00 }
@@ -78,9 +78,9 @@
 			}
 		},
 		{
-			"id": "APose_Attack02_3",
+			"id": "Attack02_3",
 			"comboLinks": [
-				{ "requiredCommand": "Attack", "priority": 0, "nextAttackId": "APose_Attack02_4" }
+				{ "requiredCommand": "Attack", "priority": 0, "nextAttackId": "Attack02_4" }
 			],
 			"attack": {
 				"damageData": {
@@ -97,10 +97,10 @@
 					"engageDistance": 1.3,
 					"stepDirection": [ 0.0, 0.0, 0.0 ],
 					"blendDuration": 0.01,
-					"useRootMotion": false
+					"useRootMotion": true
 				},
 				"phaseData": {
-					"animationName": "APose_Attack02_3",
+					"animationName": "Attack02_3_Root",
 					"windup":   { "startFrame": 0, "endFrame": 45,  "targetDuration": 0.24 },
 					"active":   { "startFrame": 45, "endFrame": 70,  "targetDuration": 0.18 },
 					"recovery": { "startFrame": 70, "endFrame": 250, "targetDuration": 1.08 }
@@ -115,9 +115,9 @@
 			}
 		},
 		{
-			"id": "APose_Attack02_4",
+			"id": "Attack02_4",
 			"comboLinks": [
-				{ "requiredCommand": "Attack", "priority": 0, "nextAttackId": "APose_Attack02_5" }
+				{ "requiredCommand": "Attack", "priority": 0, "nextAttackId": "Attack02_5" }
 			],
 			"attack": {
 				"damageData": {
@@ -134,10 +134,10 @@
 					"engageDistance": 1.3,
 					"stepDirection": [ 0.0, 0.0, 0.0 ],
 					"blendDuration": 0.01,
-					"useRootMotion": false
+					"useRootMotion": true
 				},
 				"phaseData": {
-					"animationName": "APose_Attack02_4",
+					"animationName": "Attack02_4_Root",
 					"windup":   { "startFrame": 0, "endFrame": 45,  "targetDuration": 0.24 },
 					"active":   { "startFrame": 45, "endFrame": 70,  "targetDuration": 0.18 },
 					"recovery": { "startFrame": 70, "endFrame": 260, "targetDuration": 1.08 }
@@ -152,9 +152,9 @@
 			}
 		},
 		{
-			"id": "APose_Attack02_5",
+			"id": "Attack02_5",
 			"comboLinks": [
-				{ "requiredCommand": "Attack", "priority": 0, "nextAttackId": "APose_Attack02_6" }
+				{ "requiredCommand": "Attack", "priority": 0, "nextAttackId": "Attack02_6" }
 			],
 			"attack": {
 				"damageData": {
@@ -171,10 +171,10 @@
 					"engageDistance": 1.2,
 					"stepDirection": [ 0.0, 0.0, 0.0 ],
 					"blendDuration": 0.1,
-					"useRootMotion": false
+					"useRootMotion": true
 				},
 				"phaseData": {
-					"animationName": "APose_Attack02_5",
+					"animationName": "Attack02_5_Root",
 					"windup":   { "startFrame": 0, "endFrame": 30,  "targetDuration": 0.20 },
 					"active":   { "startFrame": 30, "endFrame": 65,  "targetDuration": 0.24 },
 					"recovery": { "startFrame": 65, "endFrame": 220, "targetDuration": 1.06 }	
@@ -189,7 +189,7 @@
 			}
 		},
 		{
-			"id": "APose_Attack02_6",
+			"id": "Attack02_6",
 			"attack": {
 				"damageData": {
 					"damage": 20.0,
@@ -205,10 +205,10 @@
 					"engageDistance": 1.2,
 					"stepDirection": [ 0.0, 0.0, 0.0 ],
 					"blendDuration": 0.1,
-					"useRootMotion": false
+					"useRootMotion": true
 				},
 				"phaseData": {
-					"animationName": "APose_Attack02_6",
+					"animationName": "Attack02_6_Root",
 					"windup":   { "startFrame": 0, "endFrame": 30,  "targetDuration": 0.22 },
 					"active":   { "startFrame": 30, "endFrame": 90,  "targetDuration": 0.44 },
 					"recovery": { "startFrame": 90, "endFrame": 270, "targetDuration": 1.33 }	

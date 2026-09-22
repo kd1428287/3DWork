@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "EffectParams.h"	// KdParticleBlendMode / KdParticleDrawPass / KdHasDrawPassFlag を流用する為
+#include "EffectParams.h"	// ParticleBlendMode / KdParticleDrawPass / KdHasDrawPassFlag を流用する為
 #include "Framework/Shader/SlashTrailShader/SlashTrailRenderer.h"	// SlashTrailVertex(=Vertex)の実体を流用する為
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -94,13 +94,13 @@ struct SlashTrailParams
 	bool	CoreEnabled = true;
 	float	CoreWidthScale = 0.1f;
 	DirectX::SimpleMath::Vector3	CoreColor = { 0.45f, 0.325f, 0.3f };
-	KdParticleBlendMode	CoreBlendMode = KdParticleBlendMode::Add;
+	ParticleBlendMode	CoreBlendMode = ParticleBlendMode::Add;
 	ParticleDrawPass	CoreDrawPassFlags = ParticleDrawPass::Default;
 
 	// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 	// マテリアル関連
 	// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 	std::string				TexturePath;
-	KdParticleBlendMode		BlendMode = KdParticleBlendMode::Alpha;
+	ParticleBlendMode		BlendMode = ParticleBlendMode::Alpha;
 	ParticleDrawPass		DrawPassFlags = ParticleDrawPass::Default;// | ParticleDrawPass::Bright;
 };

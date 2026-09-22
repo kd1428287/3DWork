@@ -2,11 +2,30 @@
 #include "SkeletonComponent.h"
 #include "RootMotionExtractor.h"
 
+// 初期設定(Prefab/JSONから渡す値)。rootMotionはRootMotionExtractor.hのRootMotionConfigをそのまま使う。
+struct ModelAnimatorConfig
+{
+	float fps = 60.0f;
+	float speedScale = 1.0f;
+	float blendDuration = 0.15f;
+	RootMotionConfig rootMotion;
+};
+
 // モデルのボーンアニメーション再生
 class ModelAnimatorComponent : public ComponentBase
 {
 public:
+	using Config = ModelAnimatorConfig;
+
 	explicit ModelAnimatorComponent(GameObject* owner) : ComponentBase(owner) {}
+
+	void SetConfig(const Config& config)
+	{
+		SetFPS(config.fps);
+		SetSpeedScale(config.speedScale);
+		SetBlendDuration(config.blendDuration);
+		SetRootMotionConfig(config.rootMotion);
+	}
 
 	void Awake() override
 	{
@@ -22,7 +41,7 @@ public:
 	//   endFrameを0以下にすると、クリップの末尾まで再生する
 	void Play(std::string_view animName, bool loop = true, float targetDurationSeconds = -1.0f, int startFrame = 0, int endFrame = 0, bool force = false)
 	{
-		if (!skeleton_) { return; }
+		if (!skeleton_ || animName.empty()) { return; }
 
 		auto animData = skeleton_->WorkModel().GetAnimation(animName);
 		if (!animData) {
@@ -46,16 +65,16 @@ public:
 			blendElapsed_ = blendDuration_; // ブレンド不要
 		}
 
+		// 同じクリップの続き(フェーズ切替)かどうか。spNowPlaying_を更新する前に判定する
+		const bool continuesClip = (spNowPlaying_ == animData);
+
 		spNowPlaying_ = animData;
 		animator_.SetAnimation(animData, loop, startFrame, endFrame);
 
-		// ルートモーション抽出中に別アニメーションへ切り替わった場合、
-		// 旧アニメーションの最終位置と新アニメーションの先頭位置の差分を
-		// 1フレームの移動量として誤って計上しないよう、基準位置を
-		// 次のAdvanceFK()の冒頭で取り直す
-		rootMotion_.NotifyAnimationChanged();
+		// 切替直後の1フレームが移動量にならないよう基準を取り直させる。同一クリップなら固定位置は維持する
+		rootMotion_.NotifyAnimationChanged(continuesClip);
 
-		const float& duration = animator_.GetDuration();
+		const float duration = animator_.GetDuration();
 		if (targetDurationSeconds > 0.0f && duration > 0.0f) {
 			targetSpeedOverride_ = duration / targetDurationSeconds;
 		}
@@ -76,7 +95,10 @@ public:
 		const float speed = (targetSpeedOverride_ > 0.0f) ? targetSpeedOverride_ : speedScale_;
 		const float timeBeforeAdvance = animator_.GetTime();
 		animator_.AdvanceTime(skeleton_->WorkModel().WorkNodes(), deltaTime * speed);
-		rootMotion_.FinalizeFrame(timeBeforeAdvance, animator_.GetTime());
+
+		// 時間が戻った=ループで先頭(またはstartFrame)へ巻き戻ったフレーム
+		const bool wrapped = animator_.GetTime() < timeBeforeAdvance;
+		rootMotion_.FinalizeFrame(wrapped);
 
 		// クロスフェード: 遷移直後のblendDuration_秒間、直前のポーズと
 		// 新しいアニメーションの今のポーズを補間してWorkNodes()を上書きする。
@@ -100,23 +122,37 @@ public:
 	// 「素早く切り替えたい/じっくり繋ぎたい」が変わる場合はここを調整する。
 	void SetBlendDuration(float seconds) { blendDuration_ = seconds; }
 
+	// アニメーション専用glTFを読み込み、このモデルで再生できるようにする(モデル設定後に呼ぶ)
+	bool LoadAnimationFile(std::string_view filePath)
+	{
+		if (!skeleton_) { return false; }
+
+		auto spData = skeleton_->WorkModel().GetData();
+		return spData && spData->LoadAnimationFile(filePath);
+	}
+
+	// フォルダ内のアニメーションglTFを一括で読み込む(戻り値は読み込めたファイル数)
+	int LoadAnimationDirectory(std::string_view dirPath)
+	{
+		if (!skeleton_) { return 0; }
+
+		auto spData = skeleton_->WorkModel().GetData();
+		return spData ? spData->LoadAnimationDirectory(dirPath) : 0;
+	}
+
 	// 現在のアニメーションが最後まで再生し終わったか(ループ再生時は常にfalse)
 	bool IsAnimationEnd() const { return animator_.IsAnimationEnd(); }
 
 	// --- ルートモーション ---------------------------------------------
-	// Inplaceではない(位置移動が焼き込まれた)アニメーションを使いたい場合、
-	// 抽出元にするボーン名(通常はHip/Root)を指定する。空文字を渡すと無効化。
-	void SetRootMotionBoneName(std::string_view name) { rootMotion_.SetBoneName(name); }
+	// 抽出設定を丸ごと渡す。boneNameが空なら無効。
+	void SetRootMotionConfig(const RootMotionConfig& config) { rootMotion_.SetConfig(config); }
+	const RootMotionConfig& GetRootMotionConfig() const { return rootMotion_.GetConfig(); }
 
-	// 抽出したデルタに掛ける倍率
-	void SetRootMotionScale(float scale) { rootMotion_.SetUnitScale(scale); }
-
-	// ボーンのローカル空間で「前後」「左右」に対応する軸を指定する
-	void SetRootMotionForwardAxis(RootMotionAxis axis, float sign = 1.0f) { rootMotion_.SetForwardAxis(axis, sign); }
-	void SetRootMotionRightAxis(RootMotionAxis axis, float sign = 1.0f) { rootMotion_.SetRightAxis(axis, sign); }
+	// 実行時の切替。ボーン名などはSetRootMotionConfigで設定した値を使う。
+	void SetRootMotionEnabled(bool enabled) { rootMotion_.SetActive(enabled); }
 	void SetRootMotionExtractRotation(bool enabled) { rootMotion_.SetExtractRotation(enabled); }
 
-	// このフレームで蓄積されたルートモーションの移動量　呼ぶと消費される
+	// 蓄積された移動量/Yaw量を取り出す(呼ぶと0に戻る)
 	Math::Vector3 ConsumeRootMotionDelta() { return rootMotion_.ConsumeDelta(); }
 	float ConsumeRootMotionYawDelta() { return rootMotion_.ConsumeYawDelta(); }
 
@@ -164,8 +200,7 @@ private:
 	float								blendDuration_ = 0.15f;    // ブレンドにかける時間(秒)
 	float								blendElapsed_ = 0.0f;      // ブレンド開始からの経過時間(blendDuration_以上ならブレンド終了)
 
-	
-	// ボーン解決・巻き戻り検知・基準位置の管理はすべてこちらに委譲
+	// ボーン解決・巻き戻り時の扱い・基準位置の管理はすべてこちらに委譲
 	RootMotionExtractor					rootMotion_;
 };
 

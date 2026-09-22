@@ -1,7 +1,20 @@
 ﻿#pragma once
 
+#include <unordered_set>
+
 struct KdAnimationData;
 struct KdGLTFModel;
+
+// アニメーション専用glTFの読み込み結果(ノード番号はファイル内のもの)
+class KdAnimationSetData
+{
+public:
+	bool Load(std::string_view filename);
+	const std::vector<std::shared_ptr<KdAnimationData>>& GetAnimations() const { return m_spAnimations; }
+
+private:
+	std::vector<std::shared_ptr<KdAnimationData>> m_spAnimations;
+};
 
 class KdModelData
 {
@@ -37,8 +50,8 @@ public:
 	void CreateAnimations(const std::shared_ptr<KdGLTFModel>& spGltfModel);								// アニメーション作成
 
 	//アクセサ
-	const std::shared_ptr<KdMesh> GetMesh(UINT index) const { return index < m_originalNodes.size() ? m_originalNodes[ index ].m_spMesh : nullptr; }
-	
+	const std::shared_ptr<KdMesh> GetMesh(UINT index) const { return index < m_originalNodes.size() ? m_originalNodes[index].m_spMesh : nullptr; }
+
 	Node* FindNode(std::string name)
 	{
 		for (auto&& node : m_originalNodes)
@@ -62,6 +75,13 @@ public:
 	const std::shared_ptr<KdAnimationData> GetAnimation(std::string_view animName) const;
 	const std::shared_ptr<KdAnimationData> GetAnimation(UINT index) const;
 
+	// 外部アニメーションglTFを読み込み、このモデルのノード名に合わせて登録する
+	bool LoadAnimationFile(std::string_view filePath);
+	// フォルダ内の.gltf/.glbをすべて読み込む(戻り値は読み込めたファイル数)
+	int LoadAnimationDirectory(std::string_view dirPath);
+	// 読み込み済みのセットをノード名でリターゲットして登録する(戻り値は登録数)
+	int AddAnimations(const KdAnimationSetData& animSet);
+
 	// それぞれのノードのインデックスリスト取得
 	const std::vector<int>& GetRootNodeIndices() const { return m_rootNodeIndices; }
 	const std::vector<int>& GetBoneNodeIndices() const { return m_boneNodeIndices; }
@@ -81,6 +101,8 @@ private:
 
 	// アニメーションデータリスト
 	std::vector<std::shared_ptr<KdAnimationData>>	m_spAnimations;
+	// 読み込み済みの外部アニメーションファイル(二重登録防止)
+	std::unordered_set<std::string>					m_loadedAnimFiles;
 
 	// 全ノード配列
 	std::vector<Node>		m_originalNodes;
@@ -119,7 +141,7 @@ public:
 	};
 
 	// コンストラクタ
-	KdModelWork(){}
+	KdModelWork() {}
 	KdModelWork(const std::shared_ptr<KdModelData>& spModel) { SetModelData(spModel); }
 
 	~KdModelWork() {}

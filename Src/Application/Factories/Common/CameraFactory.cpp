@@ -11,6 +11,7 @@
 
 GameObject* CameraFactory::CreateCamera(ObjectManager& objectManager, GameObject* target, int ownerCameraId)
 {
+	auto targets = objectManager.FindComponents<CameraTargetComponent>();
 	return CreateCamera(objectManager, target->GetComponent<CameraTargetComponent>(), ownerCameraId);
 }
 

@@ -244,7 +244,7 @@ public:
 	void PlayAnimation(const std::string& name, bool loop = false, float targetDurationSeconds = -1.0f, bool useRootMotion = false) {
 		currentAnimationName_ = name;
 		if (modelAnimatorComponent_ != nullptr) {
-			modelAnimatorComponent_->SetRootMotionBoneName(useRootMotion ? kRootMotionBoneName : "");
+			modelAnimatorComponent_->SetRootMotionEnabled(useRootMotion);
 			modelAnimatorComponent_->Play(name, loop, targetDurationSeconds);
 		}
 		if (facingDirectionComponent_ != nullptr) {

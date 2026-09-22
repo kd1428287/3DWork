@@ -369,10 +369,10 @@ void EffectEditor::DrawInspector()
 
 	{
 		const char* blendLabels[] = { "Add", "Alpha" };
-		int blendIdx = (params.BlendMode == KdParticleBlendMode::Alpha) ? 1 : 0;
+		int blendIdx = (params.BlendMode == ParticleBlendMode::Alpha) ? 1 : 0;
 		if (ImGui::Combo("Blend Mode", &blendIdx, blendLabels, IM_ARRAYSIZE(blendLabels)))
 		{
-			params.BlendMode = (blendIdx == 1) ? KdParticleBlendMode::Alpha : KdParticleBlendMode::Add;
+			params.BlendMode = (blendIdx == 1) ? ParticleBlendMode::Alpha : ParticleBlendMode::Add;
 		}
 		ImGui::TextDisabled("Alpha選択時、パーティクル同士の重なり順はソートされない(発生順のまま描画)");
 	}

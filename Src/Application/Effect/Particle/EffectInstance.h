@@ -2,7 +2,7 @@
 
 #include "Application/Definitions/Effect/EffectParams.h"
 #include "../Common/ITextureProvider.h"
-#include "Framework/Shader/GPUParticle/KdGPUParticle.h"
+#include "Framework/Shader/GPUParticle/ParticleBuffer.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // エフェクト1個分の実行時状態と、更新/発生/描画ロジックを一元管理するクラス
@@ -80,7 +80,7 @@ private:
 	void ResolveTexture(ITextureProvider* textureProvider);
 
 	GPUParticleParams				params_;
-	std::shared_ptr<KdGPUParticle>	particle_;
+	std::shared_ptr<ParticleBuffer>	particle_;
 	std::shared_ptr<KdTexture>		texture_;
 
 	UINT	capacity_ = 0;

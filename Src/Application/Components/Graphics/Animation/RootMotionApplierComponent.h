@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "ModelAnimatorComponent.h"
 
+// ModelAnimatorComponentが抽出したルートモーションを、所有者のTransformへ反映する
 class RootMotionApplierComponent : public ComponentBase
 {
 public:
@@ -16,16 +17,14 @@ public:
 	{
 		if (modelAnimator_ == nullptr || transform_ == nullptr) return;
 
+		// 並進: ローカルの移動量を現在の向きでワールドへ変換して加算する
 		const Math::Vector3 localDelta = modelAnimator_->ConsumeRootMotionDelta();
 		if (localDelta.LengthSquared() > 0.0f) {
 			const Math::Vector3 worldDelta = Math::Vector3::Transform(localDelta, transform_->GetRotation());
 			transform_->Translate(worldDelta);
 		}
 
-		// 回転も並進と同じ考え方: ローカル空間で測ったYaw差分を、現在の向きに
-		// 対する「さらなる回転」として合成する(conjugateではなく右からの
-		// 合成でよい。並進をtransform_->GetRotation()で world へ変換している
-		// のと役割は同じで、回転の場合は右からの掛け算がそのまま相当する)。
+		// 回転: Yaw差分を現在の向きへの追加回転として右から合成する
 		const float yawDelta = modelAnimator_->ConsumeRootMotionYawDelta();
 		if (yawDelta != 0.0f) {
 			const Math::Quaternion deltaRot = Math::Quaternion::CreateFromAxisAngle(Math::Vector3::Up, yawDelta);
@@ -34,6 +33,6 @@ public:
 	}
 
 private:
-	ModelAnimatorComponent* modelAnimator_ = nullptr; 
-	TransformComponent* transform_ = nullptr;    
+	ModelAnimatorComponent* modelAnimator_ = nullptr;
+	TransformComponent* transform_ = nullptr;
 };

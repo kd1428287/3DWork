@@ -469,7 +469,8 @@
     <ClInclude Include="Src\Framework\Direct3D\KdModel.h" />
     <ClInclude Include="src\Framework\Direct3D\KdTexture.h" />
     <ClInclude Include="Src\Framework\Math\KdUVAnimation.h" />
-    <ClInclude Include="Src\Framework\Shader\GPUParticle\KdGPUParticle.h" />
+    <ClInclude Include="Src\Framework\Shader\GPUParticle\GPUParticleShader.h" />
+    <ClInclude Include="Src\Framework\Shader\GPUParticle\ParticleBuffer.h" />
     <ClInclude Include="Src\Framework\Shader\KdAmbientController.h" />
     <ClInclude Include="Src\Framework\Shader\KdRenderTargetChange.h" />
     <ClInclude Include="Src\Framework\Shader\SlashTrailShader\SlashTrailShader.h" />
@@ -579,7 +580,8 @@
     <ClCompile Include="Src\Framework\Direct3D\KdModel.cpp" />
     <ClCompile Include="src\Framework\Direct3D\KdTexture.cpp" />
     <ClCompile Include="Src\Framework\Math\KdUVAnimation.cpp" />
-    <ClCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle.cpp" />
+    <ClCompile Include="Src\Framework\Shader\GPUParticle\GPUParticleShader.cpp" />
+    <ClCompile Include="Src\Framework\Shader\GPUParticle\ParticleBuffer.cpp" />
     <ClCompile Include="Src\Framework\Shader\KdAmbientController.cpp" />
     <ClCompile Include="Src\Framework\Shader\KdRenderTargetChange.cpp" />
     <ClCompile Include="Src\Framework\Shader\SlashTrailShader\SlashTrailShader.cpp" />
@@ -609,7 +611,7 @@
     <None Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_bezier_math.inl" />
     <None Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_extra_math.inl" />
     <None Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_node_editor_internal.inl" />
-    <None Include="Src\Framework\Shader\GPUParticle\inc_KdGPUParticle.hlsli" />
+    <None Include="Src\Framework\Shader\GPUParticle\inc_GPUParticleShader.hlsli" />
     <None Include="Src\Framework\Shader\inc_KdCommon.hlsli" />
     <None Include="Src\Framework\Shader\PostProcessShader\inc_KdPostProcessShader.hlsli" />
     <None Include="Src\Framework\Shader\SpriteShader\inc_KdSpriteShader.hlsli" />
@@ -617,22 +619,22 @@
     <None Include="Src\Framework\Shader\StandardShader\inc_KdStandardShader.hlsli" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle_CS_Emit.hlsl">
+    <FxCompile Include="Src\Framework\Shader\GPUParticle\GPUParticle_CS_Emit.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
     </FxCompile>
-    <FxCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle_CS_Init.hlsl">
+    <FxCompile Include="Src\Framework\Shader\GPUParticle\GPUParticle_CS_Init.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
     </FxCompile>
-    <FxCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle_CS_Update.hlsl">
+    <FxCompile Include="Src\Framework\Shader\GPUParticle\GPUParticle_CS_Update.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
     </FxCompile>
-    <FxCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle_PS.hlsl">
+    <FxCompile Include="Src\Framework\Shader\GPUParticle\GPUParticle_PS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
     </FxCompile>
-    <FxCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle_PS_Masked.hlsl">
+    <FxCompile Include="Src\Framework\Shader\GPUParticle\GPUParticle_PS_Masked.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
     </FxCompile>
-    <FxCompile Include="Src\Framework\Shader\GPUParticle\KdGPUParticle_VS.hlsl">
+    <FxCompile Include="Src\Framework\Shader\GPUParticle\GPUParticle_VS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_Blur.hlsl">

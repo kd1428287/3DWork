@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "../GPUParticle/KdGPUParticle.h"	// KdParticleBlendMode 等、同じ低レイヤー内で完結させる為
+#include "../GPUParticle/ParticleBuffer.h"	// ParticleBlendMode 等、同じ低レイヤー内で完結させる為
 
 //====================================================================
 //

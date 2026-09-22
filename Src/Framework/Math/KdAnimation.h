@@ -28,6 +28,7 @@ struct KdAnimationData
 	struct Node
 	{
 		int			m_nodeOffset = -1;	// 対象モデルノードのOffset値
+		std::string	m_nodeName;			// リターゲット用の対象ノード名
 
 		// 各チャンネル
 		std::vector<KdAnimKeyVector3>		m_translations;	// 位置キーリスト
@@ -76,8 +77,8 @@ public:
 	void AdvanceTime(std::vector<KdModelWork::Node>& rNodes, float speed = 1.0f);
 
 	void SetFPS(int fps) { m_fps = fps; }
-	
-	const float& GetDuration() {
+
+	float GetDuration() const {
 		return (m_endTime - m_startTime) / m_sampleFPS;
 	}
 
@@ -93,7 +94,7 @@ private:
 	float m_time = 0.0f;
 	float m_startTime = 0.0f;
 	float m_endTime = 0.0f;
-	
+
 	const int m_sampleFPS = 60;
 	int m_fps = 60;
 

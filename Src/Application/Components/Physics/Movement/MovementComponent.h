@@ -2,6 +2,12 @@
 
 #include "../../Tags/IMovementSource.h"
 
+// 初期設定(Prefab/JSONから渡す値)。
+struct MovementConfig
+{
+	float speed = 1.0f;
+};
+
 // ============================================================
 // MovementComponent(内力)
 //
@@ -21,9 +27,13 @@
 // ============================================================
 class MovementComponent : public ComponentBase {
 public:
-	explicit MovementComponent(GameObject* owner, float speed = 1.0f)
+	using Config = MovementConfig;
+
+	explicit MovementComponent(GameObject* owner, float speed = MovementConfig{}.speed)
 		: ComponentBase(owner), speed_(speed) {
 	}
+
+	void SetConfig(const Config& config) { speed_ = config.speed; }
 
 	void Awake() override
 	{

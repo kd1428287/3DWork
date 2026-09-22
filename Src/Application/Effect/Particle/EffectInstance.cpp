@@ -8,10 +8,10 @@ bool EffectInstance::Init(const GPUParticleParams& params, ITextureProvider* tex
 {
 	params_ = params;
 
-	particle_ = std::make_shared<KdGPUParticle>();
+	particle_ = std::make_shared<ParticleBuffer>();
 	if (!particle_->Init(params_.MaxParticleNum))
 	{
-		assert(0 && "EffectInstance：KdGPUParticle初期化失敗");
+		assert(0 && "EffectInstance：ParticleBuffer初期化失敗");
 		particle_.reset();
 		capacity_ = 0;
 		return false;
@@ -37,7 +37,7 @@ bool EffectInstance::Reconfigure(const GPUParticleParams& params, ITextureProvid
 
 	params_ = params;
 
-	// 未初期化、またはMaxParticleNumが変わった場合はKdGPUParticleごと作り直す
+	// 未初期化、またはMaxParticleNumが変わった場合はParticleBufferごと作り直す
 	if (!particle_ || capacityChanged)
 	{
 		return Init(params_, textureProvider);
@@ -162,7 +162,6 @@ void EffectInstance::Draw() const
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 描画：DrawPassが一致する時だけ描画する
-//	(DrawLit/DrawBloomの両方から毎フレーム呼ばれる想定。一致しない方では何もしない)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectInstance::Draw(ParticleDrawPass pass) const
 {
@@ -173,7 +172,6 @@ void EffectInstance::Draw(ParticleDrawPass pass) const
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // テクスチャ解決
-//	textureProviderがnullptr、またはTexturePathが空の場合はテクスチャ無し(nullptr)のまま
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectInstance::ResolveTexture(ITextureProvider* textureProvider)
 {

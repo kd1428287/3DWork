@@ -8,7 +8,7 @@ ComponentRegistry& ComponentRegistry::Instance()
 		ComponentRegistry r;
 		RegisterAllComponents(r);
 		return r;
-		}();
+	}();
 	return registry;
 }
 

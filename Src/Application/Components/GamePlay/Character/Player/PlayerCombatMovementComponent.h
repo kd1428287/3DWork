@@ -4,6 +4,13 @@
 class MovementComponent;
 class TweenMoveComponent;
 
+// 初期設定(Prefab/JSONから渡す値)。既定値は意図的に0(未設定なら動かないので不具合に気付ける)。
+struct PlayerCombatMovementConfig
+{
+	float walkSpeed = 0.0f;
+	float runSpeed = 0.0f;
+};
+
 // ============================================================
 // PlayerCombatMovementComponent
 //
@@ -27,7 +34,11 @@ class TweenMoveComponent;
 class PlayerCombatMovementComponent : public ComponentBase
 {
 public:
+	using Config = PlayerCombatMovementConfig;
+
 	explicit PlayerCombatMovementComponent(GameObject* owner) : ComponentBase(owner) {}
+
+	void SetConfig(const Config& config) { SetMovementSpeeds(config.walkSpeed, config.runSpeed); }
 
 	void Start() override;
 

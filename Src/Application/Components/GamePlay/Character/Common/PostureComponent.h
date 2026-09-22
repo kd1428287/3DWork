@@ -1,11 +1,29 @@
 ﻿#pragma once
 #include "Application/Core/EventBus/Events/PostureEvents.h"
 
+// 初期設定(Prefab/JSONから渡す値)。
+struct PostureConfig
+{
+	float max = 100.0f;
+	float lowerLimit = 0.0f;           // 回復できる下限
+	float regenPerSecond = 10.0f;      // 1秒あたりの自然回復量
+	float regenDelaySeconds = 1.0f;    // 被弾してから回復を再開するまでの秒数
+};
+
 // 体幹を管理
 class PostureComponent : public ComponentBase {
 public:
-	explicit PostureComponent(GameObject* owner, float maxPosture = 100.0f)
+	using Config = PostureConfig;
+
+	explicit PostureComponent(GameObject* owner, float maxPosture = PostureConfig{}.max)
 		: ComponentBase(owner), max_(maxPosture), current_(0.0f) {
+	}
+
+	void SetConfig(const Config& config) {
+		max_ = config.max;
+		lowerLimit_ = config.lowerLimit;
+		regenPerSecond_ = config.regenPerSecond;
+		regenDelaySeconds_ = config.regenDelaySeconds;
 	}
 
 	void Update(float deltaTime) override {
@@ -58,12 +76,12 @@ private:
 	float current_;
 
 	// 回復できる下限
-	float lowerLimit_ = 0.0f;
+	float lowerLimit_ = PostureConfig{}.lowerLimit;
 
 	// 1秒あたりの自然回復量
-	float regenPerSecond_ = 10.0f;
+	float regenPerSecond_ = PostureConfig{}.regenPerSecond;
 
 	// AddPostureDamage()を受けてから回復を再開するまでの秒数
-	float regenDelaySeconds_ = 1.0f;
+	float regenDelaySeconds_ = PostureConfig{}.regenDelaySeconds;
 	float regenDelayTimer_ = 0.0f;
 };

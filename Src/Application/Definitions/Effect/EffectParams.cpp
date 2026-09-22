@@ -1,10 +1,10 @@
 ﻿#include "Application/main.h"
 #include "EffectParams.h"
 
-KdGPUParticle::EmitParameter DirectionalEmitShape::ToEmitParameter(
+ParticleBuffer::EmitParameter DirectionalEmitShape::ToEmitParameter(
 	const DirectX::SimpleMath::Vector3& worldPos, const DirectX::SimpleMath::Vector3& baseDir) const
 {
-	KdGPUParticle::EmitParameter p;
+	ParticleBuffer::EmitParameter p;
 	p.Position = worldPos;
 	p.VelocityMin = baseDir * DirScaleMin - OffsetMin;
 	p.VelocityMax = baseDir * DirScaleMax + OffsetMax;
@@ -19,12 +19,12 @@ KdGPUParticle::EmitParameter DirectionalEmitShape::ToEmitParameter(
 	return p;
 }
 
-KdGPUParticle::EmitParameter GPUParticleLayer::ToEmitParameter(
+ParticleBuffer::EmitParameter GPUParticleLayer::ToEmitParameter(
 	const DirectX::SimpleMath::Vector3& worldPos, const DirectX::SimpleMath::Vector3& baseDir) const
 {
 	// Shape由来(速度・サイズ・寿命・色)のEmitParameterに、
 	// このLayer固有のビルボード設定を合成する
-	KdGPUParticle::EmitParameter p = Shape.ToEmitParameter(worldPos, baseDir);
+	ParticleBuffer::EmitParameter p = Shape.ToEmitParameter(worldPos, baseDir);
 	p.BillboardMode = BillboardMode;
 	p.StretchScale = StretchScale;
 	return p;

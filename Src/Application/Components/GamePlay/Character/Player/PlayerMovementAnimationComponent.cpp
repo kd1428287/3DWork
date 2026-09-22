@@ -22,7 +22,7 @@ void PlayerMovementAnimationComponent::Tick(float deltaTime, MovementState state
 	if (phase_ == Phase::Turning) {
 		if (state == MovementState::Stand) {
 			phase_ = Phase::Loop;
-			Play(kIdleAnimation, true);
+			Play(idleAnim_, true);
 		}
 		lastState_ = state;
 		lastLockedOn_ = isLockedOn;
@@ -86,7 +86,7 @@ void PlayerMovementAnimationComponent::Refresh(MovementState state, const Math::
 	elapsed_ = 0.0f;
 
 	if (state == MovementState::Stand) {
-		Play(kIdleAnimation, true);
+		Play(idleAnim_, true);
 		return;
 	}
 
@@ -129,7 +129,7 @@ void PlayerMovementAnimationComponent::AdvancePhaseTiming(float deltaTime)
 	}
 	else {
 		phase_ = Phase::Loop;
-		Play(kIdleAnimation, true);
+		Play(idleAnim_, true);
 	}
 }
 
@@ -185,7 +185,7 @@ void PlayerMovementAnimationComponent::BeginStart(MovementState state)
 		if (!runAnimSet_.startAnimationName.empty()) {
 			phase_ = Phase::Start;
 			elapsed_ = 0.0f;
-			Play(runAnimSet_.startAnimationName, false, runAnimSet_.startDuration);
+			Play(runAnimSet_.startAnimationName, false, runAnimSet_.startDuration, true);
 		}
 		else {
 			SwitchLoopRun();
@@ -197,7 +197,7 @@ void PlayerMovementAnimationComponent::BeginStart(MovementState state)
 		if (!clips.startAnimationName.empty()) {
 			phase_ = Phase::Start;
 			elapsed_ = 0.0f;
-			Play(clips.startAnimationName, false, clips.startDuration);
+			Play(clips.startAnimationName, false, clips.startDuration, true);
 		}
 		else {
 			SwitchLoopWalkForward();
@@ -232,7 +232,7 @@ void PlayerMovementAnimationComponent::BeginEnd()
 	// ロックWalk(8方向)はStart/Endを持たないため、その場合は即座にIdleへ。
 	if (loopSource_ == LoopSource::WalkLocked) {
 		phase_ = Phase::Loop;
-		Play(kIdleAnimation, true);
+		Play(idleAnim_, true);
 		return;
 	}
 
@@ -240,11 +240,11 @@ void PlayerMovementAnimationComponent::BeginEnd()
 	if (!clips.endAnimationName.empty()) {
 		phase_ = Phase::End;
 		elapsed_ = 0.0f;
-		Play(clips.endAnimationName, false, clips.endDuration);
+		Play(clips.endAnimationName, false, clips.endDuration, true);
 	}
 	else {
 		phase_ = Phase::Loop;
-		Play(kIdleAnimation, true);
+		Play(idleAnim_, true);
 	}
 }
 
@@ -289,7 +289,8 @@ void PlayerMovementAnimationComponent::Play(const std::string& name, bool loop,
 {
 	if (modelAnimatorComponent_ == nullptr) return;
 
-	modelAnimatorComponent_->SetRootMotionBoneName(useRootMotion ? kRootMotionBoneName : "");
+	// ボーン名はSetConfig(ModelAnimatorConfig)で設定済み。ここでは有効/無効の切り替えのみ行う。
+	modelAnimatorComponent_->SetRootMotionEnabled(useRootMotion);
 	modelAnimatorComponent_->SetRootMotionExtractRotation(extractRotation); // 追加
 	modelAnimatorComponent_->SetBlendDuration(kBlendDuration);
 	modelAnimatorComponent_->Play(name, loop, targetDurationSeconds);

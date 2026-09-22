@@ -51,8 +51,8 @@ void StateAttack::Update(PlayerStatusController* controller, float deltaTime) {
 		phase_ = CombatState::AttackActive;
 		elapsed_ = 0.0f;
 		if (!data.moveData.useRootMotion) {
-			controller->RequestStepMoveTowardsTarget(data.moveData.stepDirection, data.moveData.stepDistance,
-				data.moveData.engageDistance, data.moveData.stepDuration);
+			/*controller->RequestStepMoveTowardsTarget(data.moveData.stepDirection, data.moveData.stepDistance,
+				data.moveData.engageDistance, data.moveData.stepDuration);*/
 		}
 		weaponSet_->SetHitBoxEnabled(data.weaponSlots, true); // 攻撃判定が実際に発生する一瞬だけ有効化
 		weaponSet_->SetTrailEmitting(data.weaponSlots, true); // 武器の軌跡エフェクトもHitBoxと同じ窓で記録開始
@@ -160,9 +160,9 @@ void StateEvade::Enter(PlayerStatusController* controller) {
 	// 決める必要があるため。詳細は別途相談)。
 	const float targetDuration = data.activeDuration + data.recoveryDuration;
 	controller->PlayAnimation(data.GetAnimationName(evadeDir), false, targetDuration, data.useRootMotion);
-	//if (!data.useRootMotion) {
-	controller->RequestStepMove(data.evadeDirection, data.evadeDistance, data.activeDuration + data.recoveryDuration);
-	//}
+	if (!data.useRootMotion) {
+		controller->RequestStepMove(data.evadeDirection, data.evadeDistance, data.activeDuration + data.recoveryDuration);
+	}
 }
 
 void StateEvade::Exit(PlayerStatusController* controller) {

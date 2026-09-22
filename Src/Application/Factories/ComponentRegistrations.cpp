@@ -4,7 +4,6 @@
 #include "Application/Definitions/Character/Player/PlayerDefinitionJson.h"
 #include "Application/Definitions/Loaders/PlayerAttackTableLoader.h"
 #include "Application/Definitions/Character/Common/CharacterCollisionDefaults.h"
-#include "Application/Definitions/Character/Enemy/EnemyAIDataJson.h"
 
 // ここでのみ実際のコンポーネントクラスに依存する。
 #include "Application/Components/Core/TransformComponent.h"
@@ -42,16 +41,10 @@
 #include "Application/Components/GamePlay/Character/Player/PlayerLockOnComponent.h"
 #include "Application/Components/GamePlay/Character/Player/PlayerMovementAnimationComponent.h"
 #include "Application/Components/GamePlay/Character/Player/PlayerStatusController.h"
-#include "Application/Components/GamePlay/Character/Enemy/Warrock/WarrockBehavior.h"
-
-
-// TODO: 実際のヘッダパスに合わせて調整すること(未着手ファイルのため未確認)。
-#include "Application/Components/GamePlay/Character/Enemy/EnemyAIController.h"
-#include "Application/Components/GamePlay/Character/Enemy/LockOnTargetComponent.h"
-#include "Application/Components/Graphics/UI/GamePlay/EnemyWorldGaugeComponent.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 各コンポーネントのparams。キー名はメンバ名と同じで、未指定のキーは初期値になる。
+// コンポーネントのConfigのJSON変換。キー名はメンバ名と同じで、未指定のキーは初期値になる。
+// (Configの構造体は各コンポーネントのヘッダにある)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 
 // 未知の軸名は先頭のYになる。
@@ -61,46 +54,33 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 	{ RootMotionAxis::Z, "Z" },
 	})
 
+	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(SkeletonConfig, model, animations)
+
+	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(RootMotionConfig,
+		boneName, unitScale, forwardAxis, forwardSign, rightAxis, rightSign, extractRotation, yawSign)
+	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(ModelAnimatorConfig, fps, speedScale, blendDuration, rootMotion)
+	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(FollowCameraConfig, offset, followPosition, followRotation)
+	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(CameraTargetConfig, offset)
+	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(SlashTrailConfig, trailName, base, tip, key, emitOnStart)
+	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(VelocityConfig, dampingPerSecond)
+	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(MovementConfig, speed)
+	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(FacingDirectionConfig, rotationSpeed, moveThreshold)
+	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(GroundSensorConfig, footOffset, checkDistance)
+	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(PostureConfig, max, lowerLimit, regenPerSecond, regenDelaySeconds)
+	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(HealthConfig, max)
+	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(PlayerCombatMovementConfig, walkSpeed, runSpeed)
+	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(PlayerStatusControllerConfig, evade, guard)
+
+	// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+	// 他のコンポーネントとの接続やファイル読み込みを伴う型のparams。
 	// 他のファイルの同名の型とODR違反にならないよう、無名名前空間に入れる(マクロも同じ名前空間に置く)。
+	// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 	namespace
 {
 
-	struct ModelRenderParams
-	{
-		std::string model;
-	};
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(ModelRenderParams, model)
-
-		struct ModelAnimatorParams
-	{
-		int          fps = 60;
-		float        speedScale = 1.0f;
-		std::string  rootMotionBone;
-		RootMotionAxis rootMotionAxis = RootMotionAxis::Y;
-		float        rootMotionAxisSign = -1.0f;
-		float        rootMotionScale = 0.01f;
-	};
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(ModelAnimatorParams,
-		fps, speedScale, rootMotionBone, rootMotionAxis, rootMotionAxisSign, rootMotionScale)
-
-		struct FollowCameraParams
-	{
-		Math::Vector3 offset = { 0.0f, -25.0f, 0.0f };
-	};
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(FollowCameraParams, offset)
-
-		// rotationSpeedが負の場合はFacingDirectionComponent自身の既定値のままにする
-		// (SetRotationSpeedを呼ばない)。従来のRegister<T>("FacingDirection")と
-		// 同じ挙動を維持しつつ、Enemy側で個別の速度を指定できるようにするため。
-		struct FacingDirectionParams
-	{
-		float rotationSpeed = -1.0f;
-	};
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(FacingDirectionParams, rotationSpeed)
-
-		// Colliderの1形状分。shapeは"Sphere"/"Capsule"/"Box"(未知の値はBox)。
-		// Capsuleはoffsetが始点、capsuleEndが終点。マスクはColliderCategoryNames.hの名前の配列で指定する。
-		struct ColliderShapeParams
+	// Colliderの1形状分。shapeは"Sphere"/"Capsule"/"Box"(未知の値はBox)。
+	// Capsuleはoffsetが始点、capsuleEndが終点。マスクはColliderCategoryNames.hの名前の配列で指定する。
+	struct ColliderShapeParams
 	{
 		std::string name = "shape";
 		std::string shape = "Box";
@@ -133,51 +113,6 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 	};
 	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(ColliderParams, shapes, wireFrame, ignoreParent)
 
-		struct VelocityParams
-	{
-		float dampingPerSecond = 0.05f;
-	};
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(VelocityParams, dampingPerSecond)
-
-		struct MovementParams
-	{
-		float speed = 1.0f;
-	};
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(MovementParams, speed)
-
-		struct PostureParams
-	{
-		float max = 100.0f;
-	};
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(PostureParams, max)
-
-		struct HealthParams
-	{
-		float max = 100.0f;
-	};
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(HealthParams, max)
-
-		// 既定値は目線の高さ(体格の共通定数)。
-		struct CameraTargetParams
-	{
-		Math::Vector3 offset = { 0.0f, CharacterCollisionDefaults::kEyeHeight, 0.0f };
-	};
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(CameraTargetParams, offset)
-
-		struct PlayerCombatMovementParams
-	{
-		float walkSpeed = 4.0f;
-		float runSpeed = 8.0f;
-	};
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(PlayerCombatMovementParams, walkSpeed, runSpeed)
-
-		struct PlayerStatusControllerParams
-	{
-		EvadeData evade;
-		GuardData guard;
-	};
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(PlayerStatusControllerParams, evade, guard)
-
 		struct PlayerAttackSelectorParams
 	{
 		std::string attackTablePath;
@@ -209,29 +144,7 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 	};
 	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(TwoBoneIKParams, rootBone, midBone, tipParentBone, tipBone)
 
-		struct SlashTrailParams
-	{
-		std::string   name = "Sword";
-		Math::Vector3 base = { 0.0f, 0.0f, 0.0f };
-		Math::Vector3 tip = { 0.0f, 0.0f, 0.0f };
-		std::string   key;
-	};
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(SlashTrailParams, name, base, tip, key)
-
-	// behavior名からIEnemyBehaviorを選ぶ。他の敵種を追加する場合はここに分岐を足す。
-	// (BruteBehaviorはIEnemyBehaviorへまだ追従できていないため未対応 — IEnemyBehavior.h参照)
-	struct EnemyAIParams
-	{
-		std::string behavior;
-		EnemyAIData aiData;
-	};
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(EnemyAIParams, behavior, aiData)
-
-}  // namespace
-
-namespace
-{
-	GameObject* RequireParent(BuildContext& ctx, const char* who)
+		GameObject* RequireParent(BuildContext& ctx, const char* who)
 	{
 		if (!ctx.parent) throw std::runtime_error(std::string(who) + " requires a parent object");
 		return ctx.parent;
@@ -262,7 +175,7 @@ namespace
 	{
 		GameObject* ignoreTarget = p.ignoreParent ? RequireParent(ctx, "Collider.ignoreParent") : nullptr;
 
-		auto* collider = ctx.self.AddComponent<ColliderComponent>();
+		auto* collider = ctx.Add<ColliderComponent>();
 		if (p.wireFrame) AddWireFrameOnce(ctx.self);
 
 		for (const ColliderShapeParams& s : p.shapes) {
@@ -306,7 +219,7 @@ namespace
 		GameObject* socket = CreateBoneSocket(ctx.objectManager, skeleton, p.bone);
 		Handle<TransformComponent> attachPoint(socket->GetComponent<BoneSocketComponent>());
 
-		auto* attach = ctx.self.AddComponent<AttachToSocketComponent>(attachPoint);
+		auto* attach = ctx.Add<AttachToSocketComponent>(attachPoint);
 		attach->SetLocalRotation(Math::Quaternion::CreateFromYawPitchRoll(
 			DirectX::XMConvertToRadians(p.rotationEulerDeg.x),
 			DirectX::XMConvertToRadians(p.rotationEulerDeg.y),
@@ -314,17 +227,13 @@ namespace
 		attach->SetLocalPositon(p.position);
 	}
 
-	// 親がPlayer/Enemyどちらかを見て、そちらへ武器として登録する。
+	// 親がPlayerStatusControllerを持つ場合は、自分を武器として登録する。
 	void BuildWeapon(BuildContext& ctx, const nlohmann::json&)
 	{
-		auto* weapon = ctx.self.AddComponent<WeaponComponent>();
+		auto* weapon = ctx.Add<WeaponComponent>();
 		if (!ctx.parent) return;
-
 		if (auto* controller = ctx.parent->GetComponent<PlayerStatusController>()) {
 			controller->SetWeapon(Handle<WeaponComponent>(weapon));
-		}
-		else if (auto* ai = ctx.parent->GetComponent<EnemyAIController>()) {
-			ai->SetWeapon(Handle<WeaponComponent>(weapon));
 		}
 	}
 
@@ -335,142 +244,71 @@ namespace
 		if (!PlayerAttackTableLoader::LoadFromFile(p.attackTablePath, table)) {
 			OutputDebugStringA(("PlayerAttackSelector: attack table load failed: " + p.attackTablePath + "\n").c_str());
 		}
-		ctx.self.AddComponent<PlayerAttackSelector>()->SetAttackTable(table);
+		ctx.Add<PlayerAttackSelector>()->SetAttackTable(table);
 	}
 
-	// 頭上ゲージ用の子オブジェクトを生成する(UIフラグ+ターゲット紐付け)。
-	void BuildWorldGauge(BuildContext& ctx, const nlohmann::json&)
-	{
-		GameObject* gauge = ctx.objectManager.Instantiate("enemy_gauge");
-		if (!gauge) return;
-
-		gauge->AddFlag(ObjectFlags::UI);
-		gauge->AddComponent<EnemyWorldGaugeComponent>()->SetTarget(Handle<GameObject>(&ctx.self));
-	}
-
-	// behavior名からIEnemyBehaviorを選び、EnemyAIController(実行層は共通)を追加する。
-	void BuildEnemyAI(BuildContext& ctx, const EnemyAIParams& p)
-	{
-		std::unique_ptr<IEnemyBehavior> behavior;
-		if (p.behavior == "Warrock") {
-			behavior = std::make_unique<WarrockBehavior>();
-		}
-		// 他の敵種を追加する場合はここに分岐を足す(BruteBehaviorは現状未対応)。
-
-		ctx.self.AddComponent<EnemyAIController>(p.aiData, std::move(behavior));
-	}
-}
+}  // namespace
 
 // 新しいコンポーネントは、ここに登録を足せばPrefab/マップのtypeから使える。
+//   Add<T>          : T::Config(と SetConfig)を持つ型はparamsを自動で読む。持たない型はそのまま追加する
+//   AddWithParams<P>: 他のコンポーネントとの接続などが要る型(paramsは型付きで受け取る)
+//   AddRaw          : paramsを直接扱う型(関数ポインタのみ)
 void RegisterAllComponents(ComponentRegistry& registry)
 {
 	// --- 見た目 ---
-	registry.RegisterWithParams<ModelRenderParams>("ModelRender", [](BuildContext& ctx, const ModelRenderParams& p) {
-		ctx.self.AddComponent<SkeletonComponent>()->SetModelData(p.model);
-		ctx.self.AddComponent<ModelRenderComponent>();
+	registry.AddWithParams<SkeletonConfig>("ModelRender", [](BuildContext& ctx, const SkeletonConfig& config) {
+		auto* skeleton = ctx.Add<SkeletonComponent>();
+		skeleton->SetConfig(config);
+		ctx.Add<ModelRenderComponent>();
 		});
-
-	registry.RegisterWithParams<ModelAnimatorParams>("ModelAnimator", [](BuildContext& ctx, const ModelAnimatorParams& p) {
-		auto* animator = ctx.self.AddComponent<ModelAnimatorComponent>();
-		animator->SetFPS(p.fps);
-		animator->SetSpeedScale(p.speedScale);
-		animator->SetRootMotionBoneName(p.rootMotionBone);
-		animator->SetRootMotionForwardAxis(p.rootMotionAxis, p.rootMotionAxisSign);
-		animator->SetRootMotionScale(p.rootMotionScale);
-		});
-
-	registry.Register<RootMotionApplierComponent>("RootMotionApplier");
-
-	registry.RegisterWithParams<FacingDirectionParams>("FacingDirection", [](BuildContext& ctx, const FacingDirectionParams& p) {
-		auto* facing = ctx.self.AddComponent<FacingDirectionComponent>();
-		if (p.rotationSpeed >= 0.0f) facing->SetRotationSpeed(p.rotationSpeed);
-		});
-
-	registry.Register("WireFrame", [](BuildContext& ctx, const nlohmann::json&) { AddWireFrameOnce(ctx.self); });
-
-	registry.RegisterWithParams<FollowCameraParams>("FollowCamera", [](BuildContext& ctx, const FollowCameraParams& p) {
-		ctx.self.AddComponent<FollowCameraComponent>()->SetOffset(p.offset);
-		});
-
-	registry.RegisterWithParams<CameraTargetParams>("CameraTarget", [](BuildContext& ctx, const CameraTargetParams& p) {
-		ctx.self.AddComponent<CameraTargetComponent>()->SetOffset(p.offset);
-		});
+	registry.Add<ModelAnimatorComponent>("ModelAnimator");
+	registry.Add<RootMotionApplierComponent>("RootMotionApplier");
+	registry.Add<FacingDirectionComponent>("FacingDirection");
+	registry.Add<FollowCameraComponent>("FollowCamera");
+	registry.Add<CameraTargetComponent>("CameraTarget");
+	registry.Add<SlashTrailComponent>("SlashTrail");
+	registry.AddRaw("WireFrame", [](BuildContext& ctx, const nlohmann::json&) { AddWireFrameOnce(ctx.self); });
 
 	// --- 物理・移動 ---
-	registry.RegisterWithParams<ColliderParams>("Collider", BuildCollider);
-	registry.Register<GravityComponent>("Gravity");
-	registry.Register<GroundSensorComponent>("GroundSensor");
-	registry.Register<MovementResolverComponent>("MovementResolver");
+	registry.AddWithParams<ColliderParams>("Collider", BuildCollider);
+	registry.Add<GravityComponent>("Gravity");
+	registry.Add<GroundSensorComponent>("GroundSensor");
+	registry.Add<VelocityComponent>("Velocity");
+	registry.Add<MovementResolverComponent>("MovementResolver");
 
-	registry.RegisterWithParams<VelocityParams>("Velocity", [](BuildContext& ctx, const VelocityParams& p) {
-		ctx.self.AddComponent<VelocityComponent>(p.dampingPerSecond);
-		});
-
-	registry.RegisterWithParams<MovementParams>("Movement", [](BuildContext& ctx, const MovementParams& p) {
-		auto* movement = ctx.self.AddComponent<MovementComponent>(p.speed);
-		// 先に追加されたPlayerInputを入力ソースとして明示的に接続する(旧PlayerFactoryと同じ)。
+	registry.AddWithParams<MovementConfig>("Movement", [](BuildContext& ctx, const MovementConfig& config) {
+		auto* movement = ctx.Add<MovementComponent>();
+		movement->SetConfig(config);
+		// IMovementSourceはTAG_INTERFACESに無く、Awakeのタグ検索では拾えないため、PlayerInputを明示的に接続する。
 		if (auto* input = ctx.self.GetComponent<PlayerInputComponent>()) movement->SetMovementSource(input);
 		});
 
 	// --- 戦闘(共通) ---
-	registry.Register<HitReactionComponent, HitReactionConfig>("HitReaction");
-	registry.Register<WeaponSetComponent>("WeaponSet");
-
-	registry.RegisterWithParams<PostureParams>("Posture", [](BuildContext& ctx, const PostureParams& p) {
-		ctx.self.AddComponent<PostureComponent>(p.max);
-		});
-
-	registry.RegisterWithParams<HealthParams>("Health", [](BuildContext& ctx, const HealthParams& p) {
-		ctx.self.AddComponent<HealthComponent>()->SetMax(p.max, true);
-		});
+	registry.Add<HitReactionComponent>("HitReaction");
+	registry.Add<WeaponSetComponent>("WeaponSet");
+	registry.Add<PostureComponent>("Posture");
+	registry.Add<HealthComponent>("Health");
 
 	// --- 武器・ソケット ---
-	registry.RegisterWithParams<BoneSocketsParams>("BoneSockets", BuildBoneSockets);
-	registry.RegisterWithParams<AttachToBoneParams>("AttachToBone", BuildAttachToBone);
-	registry.Register("Weapon", BuildWeapon);
+	registry.AddWithParams<BoneSocketsParams>("BoneSockets", BuildBoneSockets);
+	registry.AddWithParams<AttachToBoneParams>("AttachToBone", BuildAttachToBone);
+	registry.AddRaw("Weapon", BuildWeapon);
 
-	registry.Register("AttackSource", [](BuildContext& ctx, const nlohmann::json&) {
+	registry.AddRaw("AttackSource", [](BuildContext& ctx, const nlohmann::json&) {
 		GameObject* owner = RequireParent(ctx, "AttackSource");
-		ctx.self.AddComponent<AttackSourceComponent>()->ownerCharacter = Handle<GameObject>(owner);
+		ctx.Add<AttackSourceComponent>()->ownerCharacter = Handle<GameObject>(owner);
 		});
 
-	registry.RegisterWithParams<TwoBoneIKParams>("TwoBoneIK", [](BuildContext& ctx, const TwoBoneIKParams& p) {
-		ctx.self.AddComponent<TwoBoneIKComponent>(p.rootBone, p.midBone, p.tipParentBone, p.tipBone);
-		});
-
-	registry.RegisterWithParams<SlashTrailParams>("SlashTrail", [](BuildContext& ctx, const SlashTrailParams& p) {
-		auto* trail = ctx.self.AddComponent<SlashTrailComponent>(p.name.c_str());
-		trail->SetBaseTip(p.base, p.tip);
-		trail->SetKey(p.key.c_str());
-		trail->StartEmit();
+	registry.AddWithParams<TwoBoneIKParams>("TwoBoneIK", [](BuildContext& ctx, const TwoBoneIKParams& p) {
+		ctx.Add<TwoBoneIKComponent>(p.rootBone, p.midBone, p.tipParentBone, p.tipBone);
 		});
 
 	// --- Player ---
-	registry.Register<PlayerInputComponent>("PlayerInput");
-	registry.Register<PlayerLockOnComponent>("PlayerLockOn");
-	registry.Register<PlayerFacingComponent>("PlayerFacing");
-
-	registry.RegisterWithParams<PlayerMovementAnimationDefinition>("PlayerMovementAnimation",
-		[](BuildContext& ctx, const PlayerMovementAnimationDefinition& p) {
-			ctx.self.AddComponent<PlayerMovementAnimationComponent>()->SetMovementAnimations(p);
-		});
-
-	registry.RegisterWithParams<PlayerStatusControllerParams>("PlayerStatusController",
-		[](BuildContext& ctx, const PlayerStatusControllerParams& p) {
-			ctx.self.AddComponent<PlayerStatusController>()->SetEvadeAndGuardData(p.evade, p.guard);
-		});
-
-	registry.RegisterWithParams<PlayerCombatMovementParams>("PlayerCombatMovement",
-		[](BuildContext& ctx, const PlayerCombatMovementParams& p) {
-			ctx.self.AddComponent<PlayerCombatMovementComponent>()->SetMovementSpeeds(p.walkSpeed, p.runSpeed);
-		});
-
-	registry.RegisterWithParams<PlayerAttackSelectorParams>("PlayerAttackSelector", BuildPlayerAttackSelector);
-
-	// --- Enemy ---
-	// LockOnTargetComponent/EnemyWorldGaugeComponentは未提供のヘッダのため、
-	// コンストラクタ/SetTargetのシグネチャは実際のヘッダに合わせて調整すること。
-	registry.Register<LockOnTargetComponent>("LockOnTarget");
-	registry.Register("WorldGauge", BuildWorldGauge);
-	registry.RegisterWithParams<EnemyAIParams>("EnemyAI", BuildEnemyAI);
+	registry.Add<PlayerInputComponent>("PlayerInput");
+	registry.Add<PlayerLockOnComponent>("PlayerLockOn");
+	registry.Add<PlayerFacingComponent>("PlayerFacing");
+	registry.Add<PlayerMovementAnimationComponent>("PlayerMovementAnimation");
+	registry.Add<PlayerStatusController>("PlayerStatusController");
+	registry.Add<PlayerCombatMovementComponent>("PlayerCombatMovement");
+	registry.AddWithParams<PlayerAttackSelectorParams>("PlayerAttackSelector", BuildPlayerAttackSelector);
 }

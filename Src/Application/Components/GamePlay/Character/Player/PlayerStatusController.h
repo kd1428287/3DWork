@@ -17,6 +17,13 @@ class PlayerAttackSelector;
 class PlayerFacingComponent;
 class PlayerCombatMovementComponent;
 
+// 初期設定(Prefab/JSONから渡す値)。
+struct PlayerStatusControllerConfig
+{
+	EvadeData evade;
+	GuardData guard;
+};
+
 // PlayerStatusController(責務再構成版)
 
 // 【責務(最小要件)】
@@ -29,7 +36,11 @@ class PlayerCombatMovementComponent;
 class PlayerStatusController : public ComponentBase, public IHitReactionQuery
 {
 public:
+	using Config = PlayerStatusControllerConfig;
+
 	explicit PlayerStatusController(GameObject* owner) : ComponentBase(owner) {}
+
+	void SetConfig(const Config& config) { SetEvadeAndGuardData(config.evade, config.guard); }
 
 	void Awake() override;
 	void Update(float deltaTime) override;
@@ -155,6 +166,5 @@ private:
 	StateMachine<PlayerStatusController, IPlayerState> stateMachine_;
 
 	static constexpr float kDefaultAnimationBlendDuration = 0.15f;
-	static constexpr const char* kRootMotionBoneName = "mixamorig_Hips";
 	static constexpr const char* kMainWeaponSlot = "Main";
 };

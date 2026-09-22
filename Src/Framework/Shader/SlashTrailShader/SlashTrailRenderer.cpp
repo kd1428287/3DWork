@@ -138,7 +138,7 @@ void SlashTrailRenderer::Release()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 描画：verticesを動的頂点バッファへ書き込み、三角形ストリップとして描画する
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void SlashTrailRenderer::Draw(const std::vector<Vertex>& vertices, KdParticleBlendMode blendMode)
+void SlashTrailRenderer::Draw(const std::vector<Vertex>& vertices, ParticleBlendMode blendMode)
 {
 
 
@@ -175,7 +175,7 @@ void SlashTrailRenderer::Draw(const std::vector<Vertex>& vertices, KdParticleBle
 
 	// Alpha/Addいずれの場合も、DoFブラー除外マスク(カラーグレード除外マスクと共用)を
 	// 書き込むPSへ切り替える(遠景の深度に引きずられて背景ブラーがかかるのを防ぐ為)
-	shaderMgr.SetPixelShader(blendMode == KdParticleBlendMode::Alpha ? m_PS_Masked : m_PS_AddMasked);
+	shaderMgr.SetPixelShader(blendMode == ParticleBlendMode::Alpha ? m_PS_Masked : m_PS_AddMasked);
 
 	// TODO: SlashTrailParams::TexturePathからの解決が未実装の為、暫定で白テクスチャを割り当てる
 	//	(ITextureProviderと同じ仕組みをSlashTrailInstance/Dispatcher側に用意すれば差し替えられる)
@@ -193,7 +193,7 @@ void SlashTrailRenderer::Draw(const std::vector<Vertex>& vertices, KdParticleBle
 	// ※Alpha側はマスク(SV_Target1)への書き込みを許可する KdBlendState::AlphaMasked を使う事。
 	//   通常の KdBlendState::Alpha ではMRTスロット1への書き込みが無効化されており、
 	//   PS側がマスクを出力しても反映されない
-	const KdBlendState blendState = (blendMode == KdParticleBlendMode::Alpha) ? KdBlendState::AlphaMasked : KdBlendState::Add;
+	const KdBlendState blendState = (blendMode == ParticleBlendMode::Alpha) ? KdBlendState::AlphaMasked : KdBlendState::Add;
 	shaderMgr.ChangeBlendState(blendState);
 	shaderMgr.ChangeDepthStencilState(KdDepthStencilState::ZWriteDisable);
 

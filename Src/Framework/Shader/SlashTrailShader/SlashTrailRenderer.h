@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "../GPUParticle/KdGPUParticle.h"	// KdParticleBlendMode を流用する為(同じ低レイヤー内で完結させる)
+#include "../GPUParticle/ParticleBuffer.h"	// ParticleBlendMode を流用する為(同じ低レイヤー内で完結させる)
 #include <vector>
 
 //====================================================================
@@ -60,7 +60,7 @@ public:
 	//	Alpha/Addいずれの場合もDoFブラー除外マスクを書き込むPSへ切り替わる。
 	// ※事前にShaderManager::WriteCBCamera等でカメラ情報の転送が済んでいる事
 	// ※テクスチャは未対応(TODO)。現状は白テクスチャを割り当て、頂点カラーのみで描画する
-	void Draw(const std::vector<Vertex>& vertices, KdParticleBlendMode blendMode);
+	void Draw(const std::vector<Vertex>& vertices, ParticleBlendMode blendMode);
 
 private:
 

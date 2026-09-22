@@ -1,5 +1,5 @@
 #include "../inc_KdCommon.hlsli"
-#include "../GPUParticle/inc_KdGPUParticle.hlsli"	// VSOutputを共用する為(PSもKdGPUParticle_PS.hlslをそのまま流用する)
+#include "../GPUParticle/inc_GPUParticleShader.hlsli"	// VSOutputを共用する為
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // トレイル(斬撃の軌跡)用の頂点入力

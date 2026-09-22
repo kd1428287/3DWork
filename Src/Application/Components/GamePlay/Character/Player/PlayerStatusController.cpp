@@ -198,7 +198,8 @@ void PlayerStatusController::PlayAnimation(const std::string& name, bool loop, f
 	bool useRootMotion, float blendDurationSeconds)
 {
 	if (modelAnimatorComponent_ == nullptr) return;
-	modelAnimatorComponent_->SetRootMotionBoneName(useRootMotion ? kRootMotionBoneName : "");
+	// ボーン名はSetConfig(ModelAnimatorConfig)で設定済み。ここでは有効/無効の切り替えのみ行う。
+	modelAnimatorComponent_->SetRootMotionEnabled(useRootMotion);
 	modelAnimatorComponent_->SetBlendDuration(blendDurationSeconds);
 	modelAnimatorComponent_->Play(name, loop, targetDurationSeconds, startTime, endTime, true);
 }

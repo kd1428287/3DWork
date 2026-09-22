@@ -4,15 +4,18 @@
       "components": [
         {
           "params": {
+            "animations": "",
             "model": "Asset/Models/Terrains/Ground/Terrain.gltf"
           },
           "type": "ModelRender"
         },
         {
           "params": {
+            "ignoreParent": false,
             "shapes": [
               {
                 "categoryMask": [
+                  "Bump",
                   "Ground"
                 ],
                 "halfExtents": [
@@ -22,7 +25,7 @@
                 ],
                 "isStatic": true,
                 "isTrigger": false,
-                "name": "Body",
+                "name": "Ground",
                 "offset": [
                   0.0,
                   -0.5,
@@ -32,190 +35,29 @@
                 "useDefaultCollideMask": true,
                 "wantsStayEvent": false
               }
-            ]
+            ],
+            "wireFrame": true
           },
           "type": "Collider"
         }
       ],
       "id": 1,
-      "name": "Groound",
+      "name": "Object1",
       "pos": [
         0.0,
         0.0,
         0.0
       ],
       "rotation": [
-        -0.0,
         0.0,
-        -0.0,
+        0.0,
+        0.0,
         1.0
       ],
       "scale": [
         1.0,
         1.0,
         1.0
-      ]
-    },
-    {
-      "components": [
-        {
-          "params": {
-            "model": "Asset/Models/Terrains/Sakura/sakura_big.gltf"
-          },
-          "type": "ModelRender"
-        },
-        {
-          "params": {
-            "shapes": [
-              {
-                "capsuleEnd": [
-                  0.0,
-                  4.0,
-                  0.0
-                ],
-                "categoryMask": [
-                  "Bump"
-                ],
-                "halfExtents": [
-                  0.5,
-                  0.5,
-                  0.5
-                ],
-                "isStatic": true,
-                "isTrigger": false,
-                "name": "Body",
-                "offset": [
-                  0.0,
-                  0.0,
-                  0.0
-                ],
-                "radius": 2.0,
-                "shape": "Capsule",
-                "useDefaultCollideMask": true,
-                "wantsStayEvent": false
-              }
-            ]
-          },
-          "type": "Collider"
-        }
-      ],
-      "id": 2,
-      "name": "Sakura",
-      "pos": [
-        0.0,
-        0.0,
-        -20.0
-      ],
-      "rotation": [
-        -0.0,
-        0.0,
-        -0.0,
-        1.0
-      ],
-      "scale": [
-        1.0,
-        1.0,
-        1.0
-      ]
-    },
-    {
-      "components": [
-        {
-          "params": {
-            "model": "Asset/Models/Terrains/Sakura/sakura_big.gltf"
-          },
-          "type": "ModelRender"
-        },
-        {
-          "params": {
-            "shapes": [
-              {
-                "capsuleEnd": [
-                  0.0,
-                  4.0,
-                  0.0
-                ],
-                "categoryMask": [
-                  "Bump"
-                ],
-                "halfExtents": [
-                  0.5,
-                  0.5,
-                  0.5
-                ],
-                "isStatic": true,
-                "isTrigger": false,
-                "name": "shape0",
-                "offset": [
-                  0.0,
-                  0.0,
-                  0.0
-                ],
-                "radius": 2.0,
-                "shape": "Capsule",
-                "useDefaultCollideMask": true,
-                "wantsStayEvent": false
-              }
-            ]
-          },
-          "type": "Collider"
-        }
-      ],
-      "id": 3,
-      "name": "Object3",
-      "pos": [
-        0.0,
-        0.0,
-        -15.568358421325684
-      ],
-      "rotation": [
-        -0.0,
-        0.39523792266845703,
-        -0.0,
-        0.9185788035392761
-      ],
-      "scale": [
-        0.9999994039535522,
-        1.0,
-        0.9999994039535522
-      ]
-    },
-    {
-      "components": [
-        {
-          "params": {
-            "model": "Asset/Models/Terrains/Sakura/sakura_big.gltf"
-          },
-          "type": "ModelRender"
-        },
-        {
-          "params": {
-            "offset": [
-              0.0,
-              -25.0,
-              0.0
-            ]
-          },
-          "type": "FollowCamera"
-        }
-      ],
-      "id": 4,
-      "name": "Object4",
-      "pos": [
-        -22.200105667114258,
-        0.0,
-        0.0
-      ],
-      "rotation": [
-        -0.0,
-        -0.613977313041687,
-        -0.0,
-        0.789323627948761
-      ],
-      "scale": [
-        0.9999990463256836,
-        1.0,
-        0.9999990463256836
       ]
     }
   ],

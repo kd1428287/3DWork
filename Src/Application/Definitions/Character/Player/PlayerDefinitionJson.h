@@ -23,4 +23,4 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(WalkAnimationSet, forward, locke
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(TurnAnimationSet, left90, right90, left180, right180)
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(PlayerMovementAnimationDefinition, walk, turn, run)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(PlayerMovementAnimationDefinition, walk, turn, run,idle)

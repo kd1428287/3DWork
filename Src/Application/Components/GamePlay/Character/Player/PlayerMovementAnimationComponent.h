@@ -29,7 +29,11 @@
 class PlayerMovementAnimationComponent : public ComponentBase
 {
 public:
+	using Config = PlayerMovementAnimationDefinition;
+
 	explicit PlayerMovementAnimationComponent(GameObject* owner) : ComponentBase(owner) {}
+
+	void SetConfig(const Config& config) { SetMovementAnimations(config); }
 
 	void Awake() override;
 
@@ -41,6 +45,7 @@ public:
 		walkAnimSet_ = def.walk;
 		runAnimSet_ = def.run;
 		turnAnimSet_ = def.turn;
+		idleAnim_ = def.idle;
 	}
 
 	// 毎フレーム、PlayerStatusController::HandleMovementInputから呼ばれる。
@@ -104,7 +109,6 @@ private:
 	MovementPhaseClips runAnimSet_;
 	TurnAnimationSet turnAnimSet_;
 
-	static constexpr const char* kIdleAnimation = "APose_Idle";
-	static constexpr float kBlendDuration = 0.35f;
-	static constexpr const char* kRootMotionBoneName = "mixamorig_Hips";
+	std::string idleAnim_ = "Idle";
+	static constexpr float kBlendDuration = 0.15f;
 };

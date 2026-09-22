@@ -1,12 +1,11 @@
 ﻿#pragma once
 
 #include "Application/Core/EventBus/Events/EffectEvents.h"
-#include "Framework/Shader/GPUParticle/KdGPUParticle.h"
+#include "Framework/Shader/GPUParticle/ParticleBuffer.h"
 #include "Application/Definitions/Loaders/EffectDataLoader.h"
 #include "EffectInstance.h"
 #include "../Common/KdAssetsTextureProvider.h"
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // エフェクト生成ディスパッチャー
 // ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
 // シーン単位のEventBusを購読し、エフェクト生成イベントを受け取ったら

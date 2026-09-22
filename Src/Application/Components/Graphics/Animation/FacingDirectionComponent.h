@@ -3,6 +3,13 @@
 #include "../../Physics/Movement/MovementComponent.h"
 #include "../../Physics/Movement/VelocityComponent.h"
 
+// 初期設定(Prefab/JSONから渡す値)。意味は下のコンストラクタ参照。
+struct FacingDirectionConfig
+{
+	float rotationSpeed = 10.0f;
+	float moveThreshold = 0.001f;
+};
+
 // ============================================================
 // FacingDirectionComponent
 //
@@ -28,9 +35,18 @@ public:
 	// moveThreshold: 1フレームあたりの移動量がこれ未満なら「動いていない」
 	//   とみなし、回転を更新しない(停止直前の僅かな位置ノイズで
 	//   向きがガタつくのを防ぐ)。
+	using Config = FacingDirectionConfig;
+
 	explicit FacingDirectionComponent(GameObject* owner,
-		float rotationSpeed = 10.0f, float moveThreshold = 0.001f)
+		float rotationSpeed = FacingDirectionConfig{}.rotationSpeed,
+		float moveThreshold = FacingDirectionConfig{}.moveThreshold)
 		: ComponentBase(owner), rotationSpeed_(rotationSpeed), moveThreshold_(moveThreshold) {
+	}
+
+	void SetConfig(const Config& config)
+	{
+		rotationSpeed_ = config.rotationSpeed;
+		moveThreshold_ = config.moveThreshold;
 	}
 
 	void Awake() override 

@@ -4,10 +4,25 @@
 #include "../Collision/ColliderComponent.h"
 #include "Application/Definitions/Character/Common/CharacterCollisionDefaults.h"
 
+// 初期設定(Prefab/JSONから渡す値)。意味は下のメンバ参照。
+struct GroundSensorConfig
+{
+	float footOffset = 0.0f;
+	float checkDistance = 0.15f;
+};
+
 // 足元にレイを飛ばして接地判定だけを行う
 class GroundSensorComponent : public ComponentBase {
 public:
+	using Config = GroundSensorConfig;
+
 	explicit GroundSensorComponent(GameObject* owner) : ComponentBase(owner) {}
+
+	void SetConfig(const Config& config)
+	{
+		footOffset = config.footOffset;
+		checkDistance = config.checkDistance;
+	}
 
 	void Awake() override {
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
@@ -57,17 +72,15 @@ public:
 
 	// --- パラメータ ------------------------------------------------
 
-	// TransformComponentの位置(通常はキャラの中心と想定)から、
-	// どれだけ下に足裏があるか。既定値はCharacterCollisionDefaults::
-	// kFootOffsetを参照する(Bodyコライダーの下端の高さと必ず一致させる
-	// 必要があるため。詳細はCharacterCollisionDefaults.h参照)。
-	float footOffset = 0;// CharacterCollisionDefaults::kFootOffset;
+	// TransformComponentの位置から、どれだけ下に足裏があるか(既定値0=原点が足元)。
+	// Bodyコライダーの下端の高さと必ず一致させること(詳細はCharacterCollisionDefaults.h参照)。
+	float footOffset = GroundSensorConfig{}.footOffset;
 
 	// 足裏からどれだけ下まで地面を探すか。
 	// 0に近すぎると段差や坂でわずかに浮いた瞬間に非接地判定されてしまい、
 	// 大きすぎると宙に浮いていても接地扱いになるため、キャラの
 	// 移動速度・段差の高さに応じて調整すること。
-	float checkDistance = 0.15f;
+	float checkDistance = GroundSensorConfig{}.checkDistance;
 
 private:
 	TransformComponent* transform_ = nullptr;

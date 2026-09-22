@@ -5,7 +5,7 @@
 #include "../../../Physics/Movement/VelocityComponent.h"
 #include "../../../Tags/IHitReactionQuery.h"
 #include "Application/Core/EventBus/Events/CollisionEvents.h"
-#include "Application/Definitions/Character/Common/CharacterConfigs.h"
+#include "Application/Definitions/Character/Common/CharacterDefinitionCommon.h" // HitReactionConfig
 
 class WeaponComponent;
 
@@ -33,8 +33,10 @@ public:
 	// 被弾時、鍔迫り合いの火花エフェクトの発生元として使う自分の武器
 	void SetWeapon(Handle<WeaponComponent> weapon) { weapon_ = weapon; }
 
+	using Config = HitReactionConfig;
+
 	// 副作用まわりのチューニング値を一括で設定する(クラス冒頭コメント参照)。
-	void SetConfig(const HitReactionConfig& config) { config_ = config; }
+	void SetConfig(const Config& config) { config_ = config; }
 
 private:
 	void OnCollisionEnter(const Events::Collision::CollisionEnterEvent& e);

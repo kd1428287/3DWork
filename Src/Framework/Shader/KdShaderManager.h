@@ -3,7 +3,8 @@
 #include "StandardShader/KdStandardShader.h"
 #include "PostProcessShader/KdPostProcessShader.h"
 #include "SpriteShader/KdSpriteShader.h"
-#include "SlashTrailShader/SlashTrailShader.h"// トレイル(斬撃の軌跡)描画用シェーダー
+#include "SlashTrailShader/SlashTrailShader.h"	// トレイル(斬撃の軌跡)描画用シェーダー
+#include "GPUParticle/GPUParticleShader.h"		// GPUパーティクル描画用シェーダー
 
 // 点光源データ
 struct PointLight
@@ -143,6 +144,7 @@ public:
 	KdPostProcessShader		m_postProcessShader;	// ポストプロセスシェーダ
 	KdSpriteShader			m_spriteShader;			// 2Dテクスチャ描画シェーダ
 	SlashTrailShader		m_slashTrailShader;		// トレイル(斬撃の軌跡)描画用シェーダー(全SlashTrailInstance/Rendererで共有)
+	GPUParticleShader		m_particleShader;		// GPUパーティクル描画用シェーダー(全ParticleBufferで共有)
 
 	//==========================
 	//

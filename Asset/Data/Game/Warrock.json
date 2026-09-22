@@ -10,6 +10,7 @@
 			"type": "ModelAnimator",
 			"params": {
 				"fps": 60,
+				"animationDirectory": "Asset/Animations/Character",
 				"rootMotionBone": "mixamorig:Hips",
 				"rootMotionAxis": "Y",
 				"rootMotionAxisSign": -1.0,

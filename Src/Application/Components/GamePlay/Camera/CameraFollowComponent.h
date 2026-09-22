@@ -45,31 +45,28 @@ public:
 
 		const Math::Vector3 playerPos = target->GetFixationPoint();
 
+		// オービット操作の影響を受けない、ターゲット自体の移動だけをイージングする基準点
+		if (!anchorInitialized_) {
+			easedAnchorPosition_ = playerPos;
+			anchorInitialized_ = true;
+		}
+		else {
+			easedAnchorPosition_ = EaseTowards(easedAnchorPosition_, playerPos, deltaTime);
+		}
+
 		GameObject* lockedTarget = nullptr;
 		if (const SceneContext* context = GetOwner()->GetContext()) {
 			lockedTarget = context->lockedTarget.Resolve();
 		}
 
 		Math::Vector3 lockedPosition;
-		const bool positioned = (lockedTarget != nullptr) && ComputeLockedPosition(playerPos, lockedTarget, lockedPosition);
+		const bool positioned = (lockedTarget != nullptr) && ComputeLockedPosition(easedAnchorPosition_, lockedTarget, lockedPosition);
 		const bool isTransitioning = (positioned != wasPositionedLastFrame_);
 
 		// --- ロック状態の切り替わり時の向きの同期 ---
-		// 【重要】これはこの下のoffsetRotation/followPosition計算より
-		// 必ず先に行うこと。もし後回しにすると、切り替わったまさにこの
-		// フレームで、まだ同期前の(切り替わる前の)古いorbit_の値を使って
-		// offsetRotationやfollowPositionを計算してしまい、次のフレームで
-		// ようやく正しい値に切り替わる…という1フレームだけのズレが生じる。
-		// これが解除した瞬間に画面が「ガクッ」となる直接の原因だった。
 		if (isTransitioning) {
 			if (positioned) {
-				// ロック開始の瞬間、lockYaw_/lockPitch_を「今実際にカメラが
-				// 向いている方向」で初期化しておく。これをしないと、
-				// 最初にロックした時(デフォルト値0,0のまま)や、一度解除して
-				// 向きを変えてから再ロックした時(前回ロック時の値が残ったまま)に、
-				// TryLookAtLockedTarget()内のApproachAngleが実際のカメラの
-				// 向きとは無関係な値から対象方向への補間を始めてしまい、
-				// 位置はイージングしていても向きだけ急に振れて不自然に見える。
+				// ロック開始の瞬間、lockYaw_/lockPitch_を「今実際にカメラが向いている方向」で初期化しておく
 				if (orbit_ != nullptr) {
 					lockYaw_ = orbit_->GetYaw();
 					lockPitch_ = std::clamp(orbit_->GetPitch(), lockPitchMin_, lockPitchMax_);
@@ -82,10 +79,7 @@ public:
 				}
 			}
 			else if (orbit_ != nullptr) {
-				// ロック解除の瞬間は逆に、orbit_側をロック中の向きに合わせておく。
-				// そうしないと、この直後に向きの基準がlockYaw_/lockPitch_から
-				// orbit_ベースへ切り替わった際、向きだけ瞬間的に飛んでしまう
-				// (位置はイージングするのに向きだけ飛ぶと不自然に見えるため)。
+				// ロック解除の瞬間は逆に、orbit_側をロック中の向きに合わせておく
 				orbit_->SetYawPitch(lockYaw_, lockPitch_);
 			}
 		}
@@ -95,7 +89,7 @@ public:
 		const Math::Quaternion offsetRotation =
 			(orbit_ != nullptr) ? orbit_->GetOrbitRotation() : target->GetTargetRotation();
 		const Math::Vector3 followWorldOffset = Math::Vector3::Transform(Math::Vector3::Forward, offsetRotation) * cameraDistance_;
-		const Math::Vector3 followPosition = playerPos + followWorldOffset;
+		const Math::Vector3 followPosition = easedAnchorPosition_ + followWorldOffset;
 
 		// --- ロック状態の切り替わりを検出し、位置の飛びをイージングで吸収する ---
 		// ロックON/OFFの瞬間は目標位置の計算式そのものが変わるため、何もしないと
@@ -115,6 +109,7 @@ public:
 		if (!positioned) {
 			wasLockedLastFrame_ = false;
 
+			// 基準点(easedAnchorPosition_)側で既にイージング済みのため、ここでは直接反映する
 			transform_->SetPosition(followPosition + easeOffset);
 
 			if (followRotation_) {
@@ -123,8 +118,7 @@ public:
 			return;
 		}
 
-		// ここでの位置(transform_の座標)は、ロック基準の目標位置に
-		// イージング分のオフセットを足したもので確定させる。
+		// 基準点(easedAnchorPosition_)側で既にイージング済みのため、ここでは直接反映する
 		transform_->SetPosition(lockedPosition + easeOffset);
 
 		// followRotation_がtrueの場合のみ、その位置から対象への向きを
@@ -139,11 +133,14 @@ public:
 	// ロック状態切り替え時のイージングにかける秒数
 	void SetPositionEaseDuration(float duration) { positionEaseDuration_ = duration; }
 
+	// ターゲット自体の水平方向(XZ)移動に対する追従イージング速度(オービット操作には影響しない)
+	void SetFollowEaseSpeed(float speed) { followEaseSpeed_ = speed; }
+
+	// ターゲット自体の垂直方向(Y)移動に対する追従イージング速度。デフォルト0=イージングなしで即座に追従(浮遊感対策)
+	void SetFollowEaseSpeedVertical(float speed) { followEaseSpeedVertical_ = speed; }
+
 private:
-	// プレイヤー→対象の水平方向を基準にロック中のカメラ位置を計算する。
-	// 【注意】以前はここでtransform_->SetPositionまで行っていたが、
-	// イージング用オフセットを足し込んでから最終的な位置を確定させたいため、
-	// 計算結果をoutPositionへ書き込むだけにして、実際の反映はResolve()側で行う。
+	// プレイヤー→対象の水平方向を基準にロック中のカメラ位置を計算する
 	bool ComputeLockedPosition(const Math::Vector3& playerPos, GameObject* lockedTarget, Math::Vector3& outPosition) const {
 		TransformComponent* targetTransform = lockedTarget->GetComponent<TransformComponent>();
 		if (targetTransform == nullptr) return false;
@@ -176,6 +173,19 @@ private:
 
 		const float remainingRatio = std::pow(1.0f - t, 3.0f);
 		return positionEaseOffset_ * remainingRatio;
+	}
+
+	// currentからdesiredへ、水平(XZ)と垂直(Y)を別速度でイージング接近させる(垂直を分けるのは浮遊感対策)。
+	// 追従基準点(easedAnchorPosition_)の平滑化に使う
+	Math::Vector3 EaseTowards(const Math::Vector3& current, const Math::Vector3& desired, float deltaTime) const {
+		const float horizontalT = (followEaseSpeed_ > 0.0f) ? (1.0f - std::exp(-followEaseSpeed_ * deltaTime)) : 1.0f;
+		const float verticalT = (followEaseSpeedVertical_ > 0.0f) ? (1.0f - std::exp(-followEaseSpeedVertical_ * deltaTime)) : 1.0f;
+
+		return Math::Vector3(
+			current.x + (desired.x - current.x) * horizontalT,
+			current.y + (desired.y - current.y) * verticalT,
+			current.z + (desired.z - current.z) * horizontalT
+		);
 	}
 
 	// 現在のカメラ位置からlockedTargetを見る回転を計算
@@ -220,6 +230,14 @@ private:
 	Handle<CameraTargetComponent> target_;         // 別GameObjectの参照なのでHandle化
 	float cameraDistance_ = 5.f;
 	bool followRotation_ = true;
+	// 水平(XZ)方向の追従イージング速度。0以下で従来通り瞬間追従
+	float followEaseSpeed_ = 8.0f;
+	// 垂直(Y)方向の追従イージング速度。デフォルト0=イージングなしで即座に追従(浮遊感対策)
+	float followEaseSpeedVertical_ = 0.0f;
+
+	// オービット操作の影響を受けない、ターゲット自体の移動をイージングした基準点
+	Math::Vector3 easedAnchorPosition_ = Math::Vector3::Zero;
+	bool anchorInitialized_ = false;
 
 	// ロック中の向き
 	float lockYaw_ = 0.0f;

@@ -1,13 +1,24 @@
 ﻿#pragma once
 #include "Application/Core/EventBus/Events/HealthEvents.h"
 
+// 初期設定(Prefab/JSONから渡す値)。
+struct HealthConfig
+{
+	float max = 100.0f;
+};
+
 // HP(体力)を管理する汎用コンポーネント
 
 class HealthComponent : public ComponentBase {
 public:
-	explicit HealthComponent(GameObject* owner, float maxHealth = 100.0f)
+	using Config = HealthConfig;
+
+	explicit HealthComponent(GameObject* owner, float maxHealth = HealthConfig{}.max)
 		: ComponentBase(owner), max_(maxHealth), current_(maxHealth) {
 	}
+
+	// 最大値を設定し、全回復した状態で始める。
+	void SetConfig(const Config& config) { SetMax(config.max, true); }
 
 	// 外部から値を変更する(ダメージ)
 	void TakeDamage(float amount) {

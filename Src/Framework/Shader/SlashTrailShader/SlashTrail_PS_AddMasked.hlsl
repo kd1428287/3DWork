@@ -1,4 +1,4 @@
-#include "../GPUParticle/inc_KdGPUParticle.hlsli"
+#include "../GPUParticle/inc_GPUParticleShader.hlsli"
 
 // トレイル用テクスチャ
 Texture2D g_tex : register(t1);

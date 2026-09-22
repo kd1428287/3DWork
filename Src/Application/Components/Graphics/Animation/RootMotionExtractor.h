@@ -2,126 +2,162 @@
 
 enum class RootMotionAxis { X, Y, Z };
 
+// ルートモーション抽出の設定。まとめて渡せるのでデータから読み込みやすい。
+struct RootMotionConfig
+{
+	std::string		boneName;                        // 抽出元ボーン(通常はHip/Root)。空なら無効
+	float			unitScale = 1.0f;                // 抽出した移動量に掛ける倍率
+	RootMotionAxis	forwardAxis = RootMotionAxis::Z; // ボーンのローカル空間で「前後」にあたる軸
+	float			forwardSign = 1.0f;
+	RootMotionAxis	rightAxis = RootMotionAxis::X;   // 同じく「左右」にあたる軸
+	float			rightSign = 1.0f;
+	bool			extractRotation = false;         // Yaw回転も抽出するか
+	float			yawSign = 1.0f;
+};
+
 class RootMotionExtractor
 {
 public:
-	// 抽出元にするボーン名(通常はHip/Root)を指定する。空文字で無効化。
-	void SetBoneName(std::string_view name) {
-		boneName_ = name;
-		node_ = nullptr;
-		boneResolved_ = false;
-		needsResync_ = true;
+	// 設定を差し替える。ボーン名が変わったときだけボーンを再解決する。
+	void SetConfig(const RootMotionConfig& config) {
+		if (config.boneName != config_.boneName) { InvalidateBone(); }
+		config_ = config;
+		RequestResync(FrameKind::Relock);
+	}
+	const RootMotionConfig& GetConfig() const { return config_; }
+
+	bool IsEnabled() const { return active_ && !config_.boneName.empty(); }
+	bool IsExtractingRotation() const { return config_.extractRotation; }
+
+	// 実行時のON/OFF切替。ボーン名などの設定は保持され、再ONで固定位置を取り直す。
+	void SetActive(bool active) {
+		if (active && !active_) { RequestResync(FrameKind::Relock); }
+		active_ = active;
 	}
 
-	bool IsEnabled() const { return !boneName_.empty(); }
-	void SetUnitScale(float scale) { unitScale_ = scale; }
-
-	void SetForwardAxis(RootMotionAxis axis, float sign = 1.0f) {
-		forwardAxis_ = axis;
-		forwardSign_ = sign;
-	}
-
-	void SetRightAxis(RootMotionAxis axis, float sign = 1.0f) {
-		rightAxis_ = axis;
-		rightSign_ = sign;
+	// 回転抽出だけを切り替える。OFF→ONで直前の向きを取り直す。
+	void SetExtractRotation(bool enabled) {
+		if (enabled && !config_.extractRotation) { RequestResync(FrameKind::Rebase); }
+		config_.extractRotation = enabled;
 	}
 
 	// アニメーションが切り替わったことを通知する。
-	void NotifyAnimationChanged() { needsResync_ = true; }
+	// continuesClipがtrueなら同じクリップの続き(フェーズ切替)として、固定位置を維持する。
+	void NotifyAnimationChanged(bool continuesClip) {
+		RequestResync(continuesClip ? FrameKind::Rebase : FrameKind::Relock);
+	}
 
-	// ボーンの解決だけを行う(基準位置の取り直しはここでは行わない。
+	// ボーンポインタを破棄する。モデル差し替え後に呼ぶ。
+	void InvalidateBone() {
+		node_ = nullptr;
+		boneResolved_ = false;
+		RequestResync(FrameKind::Relock);
+	}
+
+	// AdvanceTime前に呼ぶ。ボーンの解決だけを行う。
 	void PrepareFrame(KdModelWork& model) {
-		if (boneName_.empty()) return;
+		if (config_.boneName.empty() || boneResolved_) return;
 
-		if (!boneResolved_) {
-			node_ = model.FindWorkNode(boneName_);
-			boneResolved_ = true;
+		node_ = model.FindWorkNode(config_.boneName);
+		boneResolved_ = true;
+	}
+
+	// AdvanceTime直後に呼ぶ。wrappedはループで先頭へ巻き戻ったフレームかどうか。
+	// 移動量・Yaw量を蓄積し、ボーンの該当成分を固定位置/向きに固定する。
+	void FinalizeFrame(bool wrapped) {
+		if (!active_ || node_ == nullptr) return;
+
+		FrameKind kind = pendingKind_;
+		if (kind == FrameKind::Normal && wrapped) { kind = FrameKind::Wrapped; }
+		pendingKind_ = FrameKind::Normal;
+
+		if (kind == FrameKind::Relock) {
+			positionLocked_ = false;
+			rotationLocked_ = false;
+		}
+
+		ExtractTranslation(kind);
+		if (config_.extractRotation) {
+			ExtractYaw(kind);
 		}
 	}
 
-	void FinalizeFrame(float timeBeforeAdvance, float timeAfterAdvance) {
-		if (node_ == nullptr) return;
-
-		const Math::Vector3 rawLocalPos = node_->m_localTransform.Translation();
-
-		if (needsResync_) {
-			// アニメーションが切り替わった直後の最初のフレーム。
-			delta_ = Math::Vector3::Zero;
-			lockedLocalPos_ = rawLocalPos;
-			needsResync_ = false;
-		}
-		else if (timeAfterAdvance < timeBeforeAdvance) {
-			// ループして先頭に巻き戻った瞬間
-			delta_ = Math::Vector3::Zero;
-		}
-		else {
-			const float forwardDelta =
-				(GetAxis(rawLocalPos, forwardAxis_) - GetAxis(lastLocalPos_, forwardAxis_)) * forwardSign_;
-			const float rightDelta =
-				(GetAxis(rawLocalPos, rightAxis_) - GetAxis(lastLocalPos_, rightAxis_)) * rightSign_;
-			delta_ = Math::Vector3(rightDelta, 0.0f, forwardDelta) * unitScale_;
-		}
-		lastLocalPos_ = rawLocalPos;
-
-		Math::Vector3 lockedRaw = rawLocalPos;
-		SetAxis(lockedRaw, forwardAxis_, GetAxis(lockedLocalPos_, forwardAxis_));
-		SetAxis(lockedRaw, rightAxis_, GetAxis(lockedLocalPos_, rightAxis_));
-		node_->m_localTransform.Translation(lockedRaw);
-
-		if (extractRotation_) {
-			Math::Matrix rawMatrix = node_->m_localTransform; 
-			Math::Vector3 rawScale, rawTrans;
-			Math::Quaternion rawRot;
-			rawMatrix.Decompose(rawScale, rawRot, rawTrans);
-
-			const Math::Vector3 lastForward = Math::Vector3::Transform(Math::Vector3::Forward, lastLocalRot_);
-			const Math::Vector3 rawForward = Math::Vector3::Transform(Math::Vector3::Forward, rawRot);
-
-			if (needsResync_) {
-				yawDelta_ = 0.0f;
-				lockedLocalRot_ = rawRot; 
-			}
-			else if (timeAfterAdvance < timeBeforeAdvance) {
-				yawDelta_ = 0.0f; 
-			}
-			else {
-				yawDelta_ = ComputeHorizontalAngleTo(lastForward, rawForward) * rotationSign_;
-			}
-			lastLocalRot_ = rawRot;
-
-			const Math::Vector3 lockedForward = Math::Vector3::Transform(Math::Vector3::Forward, lockedLocalRot_);
-			const float driftYaw = ComputeHorizontalAngleTo(rawForward, lockedForward);
-			const Math::Quaternion correction = Math::Quaternion::CreateFromAxisAngle(Math::Vector3::Up, driftYaw);
-			const Math::Quaternion lockedRot = correction * rawRot;
-
-			node_->m_localTransform = Math::Matrix::CreateScale(rawScale)
-				* Math::Matrix::CreateFromQuaternion(lockedRot)
-				* Math::Matrix::CreateTranslation(rawTrans);
-		}
-		else {
-			yawDelta_ = 0.0f;
-		}
-	}
-	
+	// 蓄積された移動量(ボーンのローカル基準)を取り出す。呼ぶと0に戻る。
 	Math::Vector3 ConsumeDelta() {
-		Math::Vector3 d = delta_;
+		const Math::Vector3 d = delta_;
 		delta_ = Math::Vector3::Zero;
 		return d;
 	}
 
+	// 蓄積されたYaw量を取り出す。呼ぶと0に戻る。
 	float ConsumeYawDelta() {
-		float d = yawDelta_;
+		const float d = yawDelta_;
 		yawDelta_ = 0.0f;
 		return d;
 	}
 
-	void SetRotationSign(float sign) { rotationSign_ = sign; }
-
-	void SetExtractRotation(bool enabled) { extractRotation_ = enabled; }
-	bool IsExtractingRotation() const { return extractRotation_; }
-
 private:
-	// v(ボーンのローカル並進ベクトル)から、指定した軸の値を取り出す。
+	// フレームの扱い。値が大きいほど優先(RequestResyncで強い方が残る)。
+	// Normal: 通常 / Wrapped: ループ巻き戻り(差分は捨てる)
+	// Rebase: 同一クリップの続き(直前位置だけ取り直し、固定位置は維持)
+	// Relock: 別クリップ・設定変更(固定位置も現在に取り直す)
+	enum class FrameKind { Normal, Wrapped, Rebase, Relock };
+
+	void RequestResync(FrameKind kind) {
+		if (kind > pendingKind_) { pendingKind_ = kind; }
+	}
+
+	void ExtractTranslation(FrameKind kind) {
+		const Math::Vector3 raw = node_->m_localTransform.Translation();
+
+		if (!positionLocked_) {
+			lockedLocalPos_ = raw;
+			positionLocked_ = true;
+		}
+		else if (kind == FrameKind::Normal) {
+			const float forward =
+				(GetAxis(raw, config_.forwardAxis) - GetAxis(lastLocalPos_, config_.forwardAxis)) * config_.forwardSign;
+			const float right =
+				(GetAxis(raw, config_.rightAxis) - GetAxis(lastLocalPos_, config_.rightAxis)) * config_.rightSign;
+			delta_ += Math::Vector3(right, 0.0f, forward) * config_.unitScale;
+		}
+		lastLocalPos_ = raw;
+
+		Math::Vector3 locked = raw;
+		SetAxis(locked, config_.forwardAxis, GetAxis(lockedLocalPos_, config_.forwardAxis));
+		SetAxis(locked, config_.rightAxis, GetAxis(lockedLocalPos_, config_.rightAxis));
+		node_->m_localTransform.Translation(locked);
+	}
+
+	void ExtractYaw(FrameKind kind) {
+		Math::Matrix matrix = node_->m_localTransform;
+		Math::Vector3 scale, trans;
+		Math::Quaternion rot;
+		matrix.Decompose(scale, rot, trans);
+
+		const Math::Vector3 rawForward = Math::Vector3::Transform(Math::Vector3::Forward, rot);
+
+		if (!rotationLocked_) {
+			lockedLocalRot_ = rot;
+			rotationLocked_ = true;
+		}
+		else if (kind == FrameKind::Normal) {
+			const Math::Vector3 lastForward = Math::Vector3::Transform(Math::Vector3::Forward, lastLocalRot_);
+			yawDelta_ += ComputeHorizontalAngleTo(lastForward, rawForward) * config_.yawSign;
+		}
+		lastLocalRot_ = rot;
+
+		// 固定向きとの水平方向のズレを打ち消して、Yawを固定する
+		const Math::Vector3 lockedForward = Math::Vector3::Transform(Math::Vector3::Forward, lockedLocalRot_);
+		const float driftYaw = ComputeHorizontalAngleTo(rawForward, lockedForward);
+		const Math::Quaternion correction = Math::Quaternion::CreateFromAxisAngle(Math::Vector3::Up, driftYaw);
+		const Math::Quaternion lockedRot = correction * rot;
+
+		node_->m_localTransform = Math::Matrix::CreateScale(scale)
+			* Math::Matrix::CreateFromQuaternion(lockedRot)
+			* Math::Matrix::CreateTranslation(trans);
+	}
+
 	static float GetAxis(const Math::Vector3& v, RootMotionAxis axis) {
 		switch (axis) {
 		case RootMotionAxis::X: return v.x;
@@ -131,7 +167,6 @@ private:
 		return 0.0f;
 	}
 
-	// vの指定した軸だけをvalueへ書き換える。
 	static void SetAxis(Math::Vector3& v, RootMotionAxis axis, float value) {
 		switch (axis) {
 		case RootMotionAxis::X: v.x = value; break;
@@ -140,21 +175,22 @@ private:
 		}
 	}
 
-	std::string			boneName_;         
-	KdModelWork::Node*	node_ = nullptr;     
+	RootMotionConfig	config_;
+
+	KdModelWork::Node* node_ = nullptr;
+	bool				active_ = true;
 	bool				boneResolved_ = false;
-	bool				needsResync_ = false;
-	Math::Vector3		lastLocalPos_{};      
-	Math::Vector3		lockedLocalPos_{};   
-	Math::Vector3		delta_{};            
-	float				unitScale_ = 1.0f;   
-	RootMotionAxis		forwardAxis_ = RootMotionAxis::Z;
-	float				forwardSign_ = 1.0f;
-	RootMotionAxis		rightAxis_ = RootMotionAxis::X;  
-	float				rightSign_ = 1.0f;
-	bool				extractRotation_ = false;
+	FrameKind			pendingKind_ = FrameKind::Normal; // 次のFinalizeFrameで行う取り直し
+
+	// 並進: 直前フレームの生の位置 / 固定する位置 / 蓄積された移動量
+	Math::Vector3		lastLocalPos_{};
+	Math::Vector3		lockedLocalPos_{};
+	Math::Vector3		delta_{};
+	bool				positionLocked_ = false;
+
+	// 回転: 直前フレームの生の向き / 固定する向き / 蓄積されたYaw量
 	Math::Quaternion	lastLocalRot_{};
 	Math::Quaternion	lockedLocalRot_{};
 	float				yawDelta_ = 0.0f;
-	float				rotationSign_ = 1.0f;
+	bool				rotationLocked_ = false;
 };

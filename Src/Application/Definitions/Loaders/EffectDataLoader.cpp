@@ -4,19 +4,19 @@
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // BlendMode/EmitModeを文字列で保存する(値の並び替え・追加に強くする為)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-static const char* BlendModeToString(KdParticleBlendMode m)
+static const char* BlendModeToString(ParticleBlendMode m)
 {
 	switch (m)
 	{
-	case KdParticleBlendMode::Add:   return "Add";
-	case KdParticleBlendMode::Alpha: return "Alpha";
+	case ParticleBlendMode::Add:   return "Add";
+	case ParticleBlendMode::Alpha: return "Alpha";
 	}
 	return "Add";
 }
-static KdParticleBlendMode BlendModeFromString(const std::string& s)
+static ParticleBlendMode BlendModeFromString(const std::string& s)
 {
-	if (s == "Alpha") { return KdParticleBlendMode::Alpha; }
-	return KdParticleBlendMode::Add;
+	if (s == "Alpha") { return ParticleBlendMode::Alpha; }
+	return ParticleBlendMode::Add;
 }
 static const char* EmitModeToString(ParticleEmitMode m)
 {
@@ -32,19 +32,19 @@ static ParticleEmitMode EmitModeFromString(const std::string& s)
 	if (s == "Continuous") { return ParticleEmitMode::Continuous; }
 	return ParticleEmitMode::Burst;
 }
-static const char* BillboardModeToString(KdParticleBillboardMode m)
+static const char* BillboardModeToString(ParticleBillboardMode m)
 {
 	switch (m)
 	{
-	case KdParticleBillboardMode::Normal:  return "Normal";
-	case KdParticleBillboardMode::Stretch: return "Stretch";
+	case ParticleBillboardMode::Normal:  return "Normal";
+	case ParticleBillboardMode::Stretch: return "Stretch";
 	}
 	return "Normal";
 }
-static KdParticleBillboardMode BillboardModeFromString(const std::string& s)
+static ParticleBillboardMode BillboardModeFromString(const std::string& s)
 {
-	if (s == "Stretch") { return KdParticleBillboardMode::Stretch; }
-	return KdParticleBillboardMode::Normal;
+	if (s == "Stretch") { return ParticleBillboardMode::Stretch; }
+	return ParticleBillboardMode::Normal;
 }
 static const char* DrawPassToString(ParticleDrawPass p)
 {

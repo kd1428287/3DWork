@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Framework/Shader/GPUParticle/KdGPUParticle.h"
+#include "Framework/Shader/GPUParticle/GPUParticleShader.h"
 
 // パーティクルの発生方式
 //	※GPUParticleLayer::Countの意味がこのモードによって変わる点に注意
@@ -70,8 +70,8 @@ struct DirectionalEmitShape
 {
 	float	DirScaleMin = 1.0f;
 	float	DirScaleMax = 4.0f;
-	DirectX::SimpleMath::Vector3	OffsetMin = { 1.0f, 0.5f, 1.0f };
-	DirectX::SimpleMath::Vector3	OffsetMax = { 1.0f, 1.5f, 1.0f };
+	Math::Vector3	OffsetMin = { 1.0f, 0.5f, 1.0f };
+	Math::Vector3	OffsetMax = { 1.0f, 1.5f, 1.0f };
 
 	float	SizeMin = 0.02f;
 	float	SizeMax = 0.06f;
@@ -79,17 +79,17 @@ struct DirectionalEmitShape
 	float	LifeMin = 0.45f;
 	float	LifeMax = 0.8f;
 
-	DirectX::SimpleMath::Vector4	ColorStartMin = { 0.1f, 0.1f, 0.1f, 1.0f };
-	DirectX::SimpleMath::Vector4	ColorStartMax = { 0.1f, 0.1f, 0.1f, 1.0f };
+	Math::Vector4	ColorStartMin = { 0.1f, 0.1f, 0.1f, 1.0f };
+	Math::Vector4	ColorStartMax = { 0.1f, 0.1f, 0.1f, 1.0f };
 
-	DirectX::SimpleMath::Vector4	ColorMin = { 0.1f, 0.85f, 0.4f, 1.0f };
-	DirectX::SimpleMath::Vector4	ColorMax = { 0.1f, 0.85f, 0.4f, 1.0f };
+	Math::Vector4	ColorMin = { 0.1f, 0.85f, 0.4f, 1.0f };
+	Math::Vector4	ColorMax = { 0.1f, 0.85f, 0.4f, 1.0f };
 
 	// Shape(速度・サイズ・寿命・色)ぶんだけのEmitParameterを作る。
 	// BillboardMode/StretchScale(Layer単位の値)はここでは設定されないので、
 	// 呼び出し元がGPUParticleLayer::ToEmitParameter()経由で使うか、
 	// 自前で追加設定すること
-	KdGPUParticle::EmitParameter ToEmitParameter(const DirectX::SimpleMath::Vector3& worldPos, const DirectX::SimpleMath::Vector3& baseDir) const;
+	ParticleBuffer::EmitParameter ToEmitParameter(const Math::Vector3& worldPos, const Math::Vector3& baseDir) const;
 };
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -110,12 +110,12 @@ struct GPUParticleLayer
 	//	伸び量そのもののクランプ範囲は暴走防止のためVS側の固定値を使う
 	//	(意図的にLayer単位のパラメータにはしていない。EffectInstance.h等のコメント参照)
 	// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-	KdParticleBillboardMode	BillboardMode = KdParticleBillboardMode::Normal;
+	ParticleBillboardMode	BillboardMode = ParticleBillboardMode::Normal;
 	float					StretchScale = 0.15f;
 
 	// Shape由来のEmitParameterに、このLayerのBillboardMode/StretchScaleを合成して返す。
 	// EffectInstance側は基本的にlayer.Shape.ToEmitParameter()ではなくこちらを呼ぶこと
-	KdGPUParticle::EmitParameter ToEmitParameter(const DirectX::SimpleMath::Vector3& worldPos, const DirectX::SimpleMath::Vector3& baseDir) const;
+	ParticleBuffer::EmitParameter ToEmitParameter(const Math::Vector3& worldPos, const Math::Vector3& baseDir) const;
 };
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -138,11 +138,11 @@ struct GPUParticleParams
 
 	std::vector<GPUParticleLayer>	Layers = { GPUParticleLayer{} };	// 最低1層
 
-	DirectX::SimpleMath::Vector3	Gravity = { 0.0f, -0.5f, 0.0f };
+	Math::Vector3	Gravity = { 0.0f, -0.5f, 0.0f };
 
 	std::string	TexturePath;	// Asset/Textureからの相対パス
 
-	KdParticleBlendMode BlendMode = KdParticleBlendMode::Add;	// KdGPUParticle::Draw()へそのまま渡され、実際に切り替わる
+	ParticleBlendMode BlendMode = ParticleBlendMode::Add;	// KdGPUParticle::Draw()へそのまま渡され、実際に切り替わる
 
 	// どの描画パス(DrawLit/DrawBloom)から描画されるか(ビットフラグ、複数同時可)。
 	// デフォルトはLitのみ(従来通りの見え方)

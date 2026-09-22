@@ -1,6 +1,9 @@
 ﻿#include "KdModel.h"
 #include "KdGLTFLoader.h"
 
+#include <algorithm>
+#include <filesystem>
+
 //コンストラクター
 KdModelData::KdModelData()
 {
@@ -18,7 +21,7 @@ bool KdModelData::Load(std::string_view filename)
 	Release();
 
 	std::string fileDir = KdGetDirFromPath(filename.data());
-	
+
 	std::shared_ptr<KdGLTFModel> spGltfModel = KdLoadGLTFModel(filename.data());
 	if (spGltfModel == nullptr) { return false; }
 
@@ -53,7 +56,7 @@ void KdModelData::CreateNodes(const std::shared_ptr<KdGLTFModel>& spGltfModel)
 			float sum = v.SkinWeightList[0] + v.SkinWeightList[1] + v.SkinWeightList[2] + v.SkinWeightList[3];
 
 			char buf[256];
-			
+
 			sprintf_s(buf, "[%s] idx:(%d,%d,%d,%d) wei:(%.3f,%.3f,%.3f,%.3f) sum:%.3f\n",
 				rSrcNode.Name.c_str(),
 				v.SkinIndexList[0], v.SkinIndexList[1], v.SkinIndexList[2], v.SkinIndexList[3],
@@ -122,7 +125,7 @@ void KdModelData::CreateNodes(const std::shared_ptr<KdGLTFModel>& spGltfModel)
 		if (boneIdx >= 0)
 		{
 			if (boneIdx >= (int)m_boneNodeIndices.size()) { m_boneNodeIndices.resize(boneIdx + 1); }
-			
+
 			m_boneNodeIndices[boneIdx] = nodeIdx;
 		}
 	}
@@ -167,33 +170,170 @@ void KdModelData::CreateMaterials(const std::shared_ptr<KdGLTFModel>& spGltfMode
 	}
 }
 
+// glTFのアニメーションをKdAnimationDataへ変換する(ノード名も記録)
+static void ConvertAnimations(const std::shared_ptr<KdGLTFModel>& spGltf,
+	std::vector<std::shared_ptr<KdAnimationData>>& out)
+{
+	out.resize(spGltf->Animations.size());
+
+	for (UINT i = 0; i < out.size(); ++i)
+	{
+		const KdGLTFAnimationData& rSrc = *spGltf->Animations[i];
+
+		out[i] = std::make_shared<KdAnimationData>();
+		KdAnimationData& rDst = *out[i];
+
+		rDst.m_name = rSrc.m_name;
+		rDst.m_maxLength = rSrc.m_maxLength;
+		rDst.m_nodes.resize(rSrc.m_nodes.size());
+
+		for (UINT j = 0; j < rDst.m_nodes.size(); ++j)
+		{
+			auto& rDstNode = rDst.m_nodes[j];
+
+			rDstNode.m_nodeOffset = rSrc.m_nodes[j]->m_nodeOffset;
+			rDstNode.m_nodeName = spGltf->Nodes[rDstNode.m_nodeOffset].Name;
+			rDstNode.m_translations = rSrc.m_nodes[j]->m_translations;
+			rDstNode.m_rotations = rSrc.m_nodes[j]->m_rotations;
+			rDstNode.m_scales = rSrc.m_nodes[j]->m_scales;
+		}
+	}
+}
+
+// アニメーションに含まれないチャンネルを、モデルのバインドポーズ値で補う
+// (欠けたまま補間すると単位行列扱いになり、ボーンが原点へ飛ぶため)
+static void FillMissingChannels(KdAnimationData::Node& rNode, const Math::Matrix& bindLocal)
+{
+	if (!rNode.m_scales.empty() && !rNode.m_rotations.empty() && !rNode.m_translations.empty()) { return; }
+
+	Math::Matrix bind = bindLocal;
+	Math::Vector3 scale, trans;
+	Math::Quaternion rot;
+	if (!bind.Decompose(scale, rot, trans)) { return; }
+
+	if (rNode.m_scales.empty())
+	{
+		KdAnimKeyVector3 key;
+		key.m_time = 0;
+		key.m_vec = scale;
+		rNode.m_scales.push_back(key);
+	}
+	if (rNode.m_rotations.empty())
+	{
+		KdAnimKeyQuaternion key;
+		key.m_time = 0;
+		key.m_quat = rot;
+		rNode.m_rotations.push_back(key);
+	}
+	if (rNode.m_translations.empty())
+	{
+		KdAnimKeyVector3 key;
+		key.m_time = 0;
+		key.m_vec = trans;
+		rNode.m_translations.push_back(key);
+	}
+}
+
 // アニメーション作成
 void KdModelData::CreateAnimations(const std::shared_ptr<KdGLTFModel>& spGltfModel)
 {
-	// アニメーションデータ
-	m_spAnimations.resize(spGltfModel->Animations.size());
+	ConvertAnimations(spGltfModel, m_spAnimations);
+}
 
-	for (UINT i = 0; i < m_spAnimations.size(); ++i)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 
+// KdAnimationSetData：アニメーション専用glTF
+// 
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+bool KdAnimationSetData::Load(std::string_view filename)
+{
+	std::shared_ptr<KdGLTFModel> spGltf = KdLoadGLTFModel(filename.data());
+	if (spGltf == nullptr) { return false; }
+
+	ConvertAnimations(spGltf, m_spAnimations);
+
+	return true;
+}
+
+// 外部アニメーションの登録：ノード名でこのモデルのノードへリターゲットする
+int KdModelData::AddAnimations(const KdAnimationSetData& animSet)
+{
+	// ノード名 → このモデルでのインデックス
+	std::unordered_map<std::string, int> nameToIdx;
+	for (int i = 0; i < (int)m_originalNodes.size(); ++i)
 	{
-		const KdGLTFAnimationData& rSrcAnimation = *spGltfModel->Animations[i];
-
-		m_spAnimations[i] = std::make_shared<KdAnimationData>();
-		KdAnimationData& rDstAnimation = *(m_spAnimations[i]);
-
-		rDstAnimation.m_name = rSrcAnimation.m_name;
-
-		rDstAnimation.m_maxLength = rSrcAnimation.m_maxLength;
-
-		rDstAnimation.m_nodes.resize(rSrcAnimation.m_nodes.size());
-
-		for (UINT j = 0; j < rDstAnimation.m_nodes.size(); ++j)
-		{
-			rDstAnimation.m_nodes[j].m_nodeOffset = rSrcAnimation.m_nodes[j]->m_nodeOffset;
-			rDstAnimation.m_nodes[j].m_translations = rSrcAnimation.m_nodes[j]->m_translations;
-			rDstAnimation.m_nodes[j].m_rotations = rSrcAnimation.m_nodes[j]->m_rotations;
-			rDstAnimation.m_nodes[j].m_scales = rSrcAnimation.m_nodes[j]->m_scales;
-		}
+		nameToIdx.emplace(m_originalNodes[i].m_name, i);
 	}
+
+	int added = 0;
+
+	for (auto& spSrc : animSet.GetAnimations())
+	{
+		auto spDst = std::make_shared<KdAnimationData>();
+		spDst->m_name = spSrc->m_name;
+		spDst->m_maxLength = spSrc->m_maxLength;
+
+		for (auto& srcNode : spSrc->m_nodes)
+		{
+			auto it = nameToIdx.find(srcNode.m_nodeName);
+			if (it == nameToIdx.end()) { continue; }	// モデルに無いノードは無視
+
+			spDst->m_nodes.push_back(srcNode);
+
+			auto& dstNode = spDst->m_nodes.back();
+			dstNode.m_nodeOffset = it->second;
+
+			FillMissingChannels(dstNode, m_originalNodes[it->second].m_localTransform);
+		}
+
+		if (spDst->m_nodes.empty())
+		{
+			KdDebugGUI::Instance().AddLog("[Anim] %s: 一致するノードが0件(ボーン名を確認)\n", spDst->m_name.c_str());
+			continue;
+		}
+
+		// 同名のクリップは差し替え、無ければ追加
+		auto sameName = std::find_if(m_spAnimations.begin(), m_spAnimations.end(),
+			[&](const std::shared_ptr<KdAnimationData>& a) { return a->m_name == spDst->m_name; });
+
+		if (sameName != m_spAnimations.end()) { *sameName = spDst; }
+		else { m_spAnimations.push_back(spDst); }
+
+		++added;
+	}
+
+	return added;
+}
+
+// 外部アニメーションglTFを1ファイル読み込んで登録する
+bool KdModelData::LoadAnimationFile(std::string_view filePath)
+{
+	if (m_loadedAnimFiles.count(std::string(filePath))) { return true; }
+
+	auto spSet = KdAssets::Instance().m_animations.GetData(filePath);
+	if (!spSet) { return false; }
+
+	AddAnimations(*spSet);
+	m_loadedAnimFiles.insert(std::string(filePath));
+
+	return true;
+}
+
+// フォルダ内の.gltf/.glbをすべて読み込む
+int KdModelData::LoadAnimationDirectory(std::string_view dirPath)
+{
+	int count = 0;
+	std::error_code ec;
+
+	for (auto& entry : std::filesystem::directory_iterator(std::string(dirPath), ec))
+	{
+		const std::string ext = entry.path().extension().string();
+		if (ext != ".gltf" && ext != ".glb") { continue; }
+
+		if (LoadAnimationFile(entry.path().generic_string())) { ++count; }
+	}
+
+	return count;
 }
 
 // アニメーションデータ取得：文字列検索
@@ -226,6 +366,8 @@ void KdModelData::Release()
 	m_boneNodeIndices.clear();
 	m_meshNodeIndices.clear();
 	m_drawMeshNodeIndices.clear();
+
+	m_loadedAnimFiles.clear();
 }
 
 bool KdModelData::IsSkinMesh()
@@ -283,7 +425,7 @@ KdModelWork::Node* KdModelWork::FindWorkNode(std::string_view name)
 
 // モデル設定：コピーノードの生成
 void KdModelWork::SetModelData(const std::shared_ptr<KdModelData>& rModel)
-{ 
+{
 	m_spData = rModel;
 
 	size_t nodeSize = rModel->GetOriginalNodes().size();
