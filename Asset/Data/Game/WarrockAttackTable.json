@@ -1,0 +1,284 @@
+{
+	"_comment": "全項目仮値。実際の手触り・アニメーションクリップを見ながら調整する前提の初期値(PlayerAttackTable.json参照)。",
+
+	"attacks": [
+		{
+			"name": "Punch",
+			"minRange": 0.0,
+			"maxRange": 3.0,
+			"weight": 2.0,
+			"attackData": {
+				"damageData": {
+					"damage": 8.0,
+					"knockbackPower": 4.0,
+					"hitStunSeconds": 0.3,
+					"postureDamage": 12.0,
+					"chipDamageRatio": 0.1,
+					"parryPostureDamage": 20.0
+				},
+				"moveData": {
+					"stepDistance": 0.0,
+					"stepDuration": 0.0,
+					"engageDistance": 1.2,
+					"stepDirection": [ 0.0, 0.0, 0.0 ]
+				},
+				"phaseData": {
+					"windup": {
+						"duration": 0.22,
+						"animationName": "Punch_Right",
+						"useRootMotion": true,
+						"blendDuration": 0.1,
+						"startFrame": 0,
+						"endFrame": 10
+					},
+					"active": {
+						"duration": 0.45,
+						"animationName": "Punch_Right",
+						"useRootMotion": true,
+						"blendDuration": 0.0,
+						"startFrame": 10,
+						"endFrame": 30
+					},
+					"recovery": {
+						"duration": 0.83,
+						"animationName": "Punch_Right",
+						"useRootMotion": true,
+						"blendDuration": 0.0,
+						"startFrame": 30,
+						"endFrame": 67
+					}
+				},
+				"cancelData": {
+					"recoveryMoveCancelStart": 0.2,
+					"recoveryEvadeCancelStart": 0.2,
+					"recoveryAttackCancelStart": 0.2,
+					"comboWindowAfterRecovery": 0.2
+				},
+				"weaponSlots": [ "Main" ]
+			}
+		},
+		{
+			"name": "Kick",
+			"minRange": 0.0,
+			"maxRange": 3.5,
+			"weight": 1.5,
+			"attackData": {
+				"damageData": {
+					"damage": 10.0,
+					"knockbackPower": 5.0,
+					"hitStunSeconds": 0.35,
+					"postureDamage": 14.0,
+					"chipDamageRatio": 0.1,
+					"parryPostureDamage": 25.0
+				},
+				"moveData": {
+					"stepDistance": 0.0,
+					"stepDuration": 0.0,
+					"engageDistance": 1.2,
+					"stepDirection": [ 0.0, 0.0, 0.0 ]
+				},
+				"phaseData": {
+					"windup": {
+						"duration": 0.33,
+						"animationName": "Kick",
+						"useRootMotion": true,
+						"blendDuration": 0.1,
+						"startFrame": 0,
+						"endFrame": 25
+					},
+					"active": {
+						"duration": 0.20,
+						"animationName": "Kick",
+						"useRootMotion": true,
+						"blendDuration": 0.0,
+						"startFrame": 25,
+						"endFrame": 40
+					},
+					"recovery": {
+						"duration": 0.97,
+						"animationName": "Kick",
+						"useRootMotion": true,
+						"blendDuration": 0.0,
+						"startFrame": 40,
+						"endFrame": 112
+					}
+				},
+				"cancelData": {
+					"recoveryMoveCancelStart": 0.2,
+					"recoveryEvadeCancelStart": 0.2,
+					"recoveryAttackCancelStart": 0.2,
+					"comboWindowAfterRecovery": 0.2
+				},
+				"weaponSlots": [ "Main" ]
+			}
+		},
+		{
+			"name": "Swipe",
+			"minRange": 0.0,
+			"maxRange": 4.5,
+			"weight": 1.0,
+			"attackData": {
+				"damageData": {
+					"damage": 14.0,
+					"knockbackPower": 7.0,
+					"hitStunSeconds": 0.4,
+					"postureDamage": 18.0,
+					"chipDamageRatio": 0.1,
+					"parryPostureDamage": 30.0
+				},
+				"moveData": {
+					"stepDistance": 0.0,
+					"stepDuration": 0.0,
+					"engageDistance": 1.5,
+					"stepDirection": [ 0.0, 0.0, 0.0 ]
+				},
+				"phaseData": {
+					"windup": {
+						"duration": 0.66,
+						"animationName": "Punch_Left",
+						"useRootMotion": true,
+						"blendDuration": 0.1,
+						"startFrame": 0,
+						"endFrame": 70
+					},
+					"active": {
+						"duration": 0.19,
+						"animationName": "Punch_Left",
+						"useRootMotion": true,
+						"blendDuration": 0.0,
+						"startFrame": 70,
+						"endFrame": 90
+					},
+					"recovery": {
+						"duration": 0.65,
+						"animationName": "Punch_Left",
+						"useRootMotion": true,
+						"blendDuration": 0.0,
+						"startFrame": 90,
+						"endFrame": 160
+					}
+				},
+				"cancelData": {
+					"recoveryMoveCancelStart": 0.2,
+					"recoveryEvadeCancelStart": 0.2,
+					"recoveryAttackCancelStart": 0.2,
+					"comboWindowAfterRecovery": 0.2
+				},
+				"weaponSlots": [ "Main" ]
+			}
+		},
+		{
+			"name": "Spinning",
+			"minRange": 0.0,
+			"maxRange": 4.0,
+			"weight": 1.0,
+			"attackData": {
+				"damageData": {
+					"damage": 12.0,
+					"knockbackPower": 6.0,
+					"hitStunSeconds": 0.35,
+					"postureDamage": 15.0,
+					"chipDamageRatio": 0.1,
+					"parryPostureDamage": 25.0
+				},
+				"moveData": {
+					"stepDistance": 0.0,
+					"stepDuration": 0.0,
+					"engageDistance": 1.2,
+					"stepDirection": [ 0.0, 0.0, 0.0 ]
+				},
+				"phaseData": {
+					"windup": {
+						"duration": 0.20,
+						"animationName": "SpinningAttack_Low",
+						"useRootMotion": true,
+						"blendDuration": 0.1,
+						"startFrame": 0,
+						"endFrame": 20
+					},
+					"active": {
+						"duration": 0.60,
+						"animationName": "SpinningAttack_Low",
+						"useRootMotion": true,
+						"blendDuration": 0.0,
+						"startFrame": 20,
+						"endFrame": 80
+					},
+					"recovery": {
+						"duration": 0.70,
+						"animationName": "SpinningAttack_Low",
+						"useRootMotion": true,
+						"blendDuration": 0.0,
+						"startFrame": 80,
+						"endFrame": 150
+					}
+				},
+				"cancelData": {
+					"recoveryMoveCancelStart": 0.2,
+					"recoveryEvadeCancelStart": 0.2,
+					"recoveryAttackCancelStart": 0.2,
+					"comboWindowAfterRecovery": 0.2
+				},
+				"weaponSlots": [ "Main" ]
+			}
+		}
+	],
+
+	"gapCloserAttacks": [
+		{
+			"name": "JumpAttack",
+			"minRange": 5.0,
+			"maxRange": 9.0,
+			"weight": 1.0,
+			"attackData": {
+				"damageData": {
+					"damage": 20.0,
+					"knockbackPower": 10.0,
+					"hitStunSeconds": 0.5,
+					"postureDamage": 25.0,
+					"chipDamageRatio": 0.15,
+					"parryPostureDamage": 40.0
+				},
+				"moveData": {
+					"stepDistance": 6.0,
+					"stepDuration": 0.6,
+					"engageDistance": 1.0,
+					"stepDirection": [ 0.0, 0.0, 0.0 ]
+				},
+				"phaseData": {
+					"windup": {
+						"duration": 0.64,
+						"animationName": "JumpAttack",
+						"useRootMotion": true,
+						"blendDuration": 0.1,
+						"startFrame": 0,
+						"endFrame": 95
+					},
+					"active": {
+						"duration": 0.13,
+						"animationName": "JumpAttack",
+						"useRootMotion": true,
+						"blendDuration": 0.0,
+						"startFrame": 95,
+						"endFrame": 115
+					},
+					"recovery": {
+						"duration": 0.73,
+						"animationName": "JumpAttack",
+						"useRootMotion": true,
+						"blendDuration": 0.0,
+						"startFrame": 115,
+						"endFrame": 223
+					}
+				},
+				"cancelData": {
+					"recoveryMoveCancelStart": 0.3,
+					"recoveryEvadeCancelStart": 0.3,
+					"recoveryAttackCancelStart": 0.3,
+					"comboWindowAfterRecovery": 0.2
+				},
+				"weaponSlots": [ "Main" ]
+			}
+		}
+	]
+}

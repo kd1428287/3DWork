@@ -15,6 +15,7 @@ public:
 	void Update(float deltaTime);
 
 	void PreDraw(float deltaTime);
+	virtual void OnPreDraw(float deltaTime) {};
 	void Draw();
 	virtual void OnDrawEffects() {};
 	virtual void OnDrawBright() {};

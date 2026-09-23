@@ -28,6 +28,7 @@ private:
 	// BaseScene::Updateは非virtualになったため、シーン固有の処理はこちらに書く
 	// (systemManager_->Update()が終わった後に呼ばれる)
 	void OnUpdate(float deltaTime) override;
+	void OnPreDraw(float deltaTime) override;
 	void OnDrawEffects() override;
 	void OnDrawBright() override;
 	void Init()  override;

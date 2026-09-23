@@ -4,26 +4,11 @@
 
 class GameObject;
 
-// ============================================================
-// GaugeWatcher
-//
-// 指定した対象(target)のHealthChangedEvent/PostureChangedEvent/
-// HealthDiedEventをSceneContext::eventBus経由で購読し、最新の値を
-// 保持するだけの小さなヘルパー。ComponentBaseは継承しない
-// (深い継承ベースクラスを作ると1機能のために肥大化しやすいため)。
-// PlayerHudGaugeComponent/EnemyWorldGaugeComponentがメンバとして
-// 1つ持つ(コンポジション)形で使う。
-//
-// SceneContext::eventBus(シーン全体のバス)を使う理由は
-// HealthEvents.h冒頭のコメント参照。対象の破棄タイミングに関わらず、
-// 保持しているScopedSubscriberによる購読解除が常に安全に行える。
-// ============================================================
+// 対象のHP/体幹イベントをSceneContext::eventBus経由で購読し、最新値を保持するだけのヘルパー
+// (対象のローカルバスだと破棄時にダングリングになるため、シーン全体のバスを使う)
 class GaugeWatcher
 {
 public:
-	// bus			… SceneContext::eventBus
-	// target		… 監視したい対象
-	// onDied		… 対象死亡時に呼びたい処理(不要ならnullptrのまま)
 	void Init(EventBus* bus, Handle<GameObject> target, std::function<void()> onDied = nullptr)
 	{
 		target_ = target;

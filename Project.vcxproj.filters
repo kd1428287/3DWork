@@ -265,6 +265,9 @@
     <Filter Include="Src\Application\Definitions\Prefab">
       <UniqueIdentifier>{75faf62a-6738-42b4-8183-8876fbec466b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\Definitions\UI">
+      <UniqueIdentifier>{f52e37e9-b517-43f9-8c69-e2a46437d583}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -590,12 +593,6 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Graphics\Render\Mod\SkyDomeEdgeFadeComponent.h">
       <Filter>Src\Application\Components\Graphics\Render\Mod</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\Graphics\UI\Enemy\EnemyHPBarComponent.h">
-      <Filter>Src\Application\Components\Graphics\UI</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\Graphics\UI\Player\PlayerStatusUIComponent.h">
-      <Filter>Src\Application\Components\Graphics\UI</Filter>
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Tags\IAnimationPostProcess.h">
       <Filter>Src\Application\Components\Tags</Filter>
@@ -945,7 +942,7 @@
     <ClInclude Include="Src\Application\Factories\ComponentRegistry.h">
       <Filter>Src\Application\Factories</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Definitions\Character\Enemy\EnemyAIDataJson.h">
+    <ClInclude Include="Src\Application\Definitions\Character\Enemy\EnemyDefinitionJson.h">
       <Filter>Src\Application\Definitions\Character\Enemy</Filter>
     </ClInclude>
     <ClInclude Include="Src\Application\Definitions\Prefab\BitFlags.h">
@@ -953,6 +950,15 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Editor\Common\ComponentInspector.h">
       <Filter>Src\Application\Editor\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\UI\GaugeBarStyle.h">
+      <Filter>Src\Application\Definitions\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Loaders\ComponentParamsOrderedJson.h">
+      <Filter>Src\Application\Definitions\Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Loaders\EnemyAttackTableLoader.h">
+      <Filter>Src\Application\Definitions\Loaders</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1136,12 +1142,6 @@
     <ClCompile Include="Src\Application\Components\Graphics\Render\Mod\SkyDomeEdgeFadeComponent.cpp">
       <Filter>Src\Application\Components\Graphics\Render\Mod</Filter>
     </ClCompile>
-    <ClCompile Include="Src\Application\Components\Graphics\UI\Enemy\EnemyHPBarComponent.cpp">
-      <Filter>Src\Application\Components\Graphics\UI</Filter>
-    </ClCompile>
-    <ClCompile Include="Src\Application\Components\Graphics\UI\Player\PlayerStatusUIComponent.cpp">
-      <Filter>Src\Application\Components\Graphics\UI</Filter>
-    </ClCompile>
     <ClCompile Include="Src\Application\Editor\Common\EditorViewport.cpp">
       <Filter>Src\Application\Editor\Common</Filter>
     </ClCompile>
@@ -1244,9 +1244,6 @@
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Common\HitReactionComponent.cpp">
       <Filter>Src\Application\Components\GamePlay\Character\Common</Filter>
     </ClCompile>
-    <ClCompile Include="Src\Application\Components\Graphics\UI\GamePlay\GaugeBarRenderer.cpp">
-      <Filter>Src\Application\Components\Graphics\UI\GamePlay</Filter>
-    </ClCompile>
     <ClCompile Include="Src\Application\Definitions\Loaders\PlayerAttackTableLoader.cpp">
       <Filter>Src\Application\Definitions\Loaders</Filter>
     </ClCompile>
@@ -1267,6 +1264,9 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Editor\Common\ComponentInspector.cpp">
       <Filter>Src\Application\Editor\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Definitions\Loaders\EnemyAttackTableLoader.cpp">
+      <Filter>Src\Application\Definitions\Loaders</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

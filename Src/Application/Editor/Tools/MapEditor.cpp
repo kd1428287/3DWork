@@ -463,7 +463,7 @@ void MapEditor::DrawAssetPicker()
 				{
 					ComponentEntry entry;
 					entry.type = "ModelRender";
-					if (const nlohmann::json* defaults = ComponentRegistry::Instance().FindDefaultParams("ModelRender"))
+					if (const auto* defaults = ComponentRegistry::Instance().FindDefaultParams("ModelRender"))
 					{
 						entry.params = *defaults;
 					}

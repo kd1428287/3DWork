@@ -22,7 +22,7 @@ void StateAttack::Enter(PlayerStatusController* controller) {
 	attackSelector_ = controller->GetOwner()->GetComponent<PlayerAttackSelector>();
 
 	// ロック中ならロック対象へ、未ロックなら画面中心に最も近い敵へ正対する。
-	//controller->FaceAttackTarget();
+	controller->FaceAttackTarget();
 	//controller->SetMovementEnabled(false);
 
 	const AttackData& data = attackSelector_->GetCurrentAttackData();
@@ -309,7 +309,7 @@ void StateStagger::Enter(PlayerStatusController* controller) {
 	// アニメーション未実装のためコメントアウト。
 	// AttackData/GuardDataのような専用データ構造をStaggerは
 	// 持たないため、isLarge_で仮のアニメーション名を直接出し分ける想定だった。
-	controller->PlayAnimation(isLarge_ ? "APose_Large_Hit" : "APose_Hit_B");
+	controller->PlayAnimation(isLarge_ ? "Large_Hit_Root" : "Hit_B_Root");
 }
 
 void StateStagger::Update(PlayerStatusController* controller, float deltaTime) {

@@ -1,10 +1,13 @@
 ﻿#include "ComponentRegistry.h"
+#include "Application/Definitions/Loaders/ComponentParamsOrderedJson.h"
 #include "Application/Definitions/Prefab/BitFlags.h"
 #include "Application/Definitions/Physics/ColliderCategoryNames.h"
 #include "Application/Definitions/Loaders/DefinitionJson.h"
 #include "Application/Definitions/Loaders/PlayerAttackTableLoader.h"
 #include "Application/Definitions/Character/Common/CharacterCollisionDefaults.h"
 #include "Application/Definitions/Character/Player/PlayerDefinitionJson.h"
+#include "Application/Definitions/Character/Enemy/EnemyDefinitionJson.h"
+#include "Application/Definitions/Loaders/EnemyAttackTableLoader.h"
 
 // ここでのみ実際のコンポーネントクラスに依存する。
 #include "Application/Components/Core/TransformComponent.h"
@@ -43,26 +46,16 @@
 #include "Application/Components/GamePlay/Character/Player/PlayerMovementAnimationComponent.h"
 #include "Application/Components/GamePlay/Character/Player/PlayerStatusController.h"
 
+#include "Application/Components/GamePlay/Character/Enemy/EnemyAIController.h"
+#include "Application/Components/GamePlay/Character/Enemy/Warrock/WarrockBehavior.h"
+#include "Application/Components/GamePlay/Character/Enemy/LockOnTargetComponent.h"
+
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // コンポーネントのConfigのJSON変換。キー名はメンバ名と同じで、未指定のキーは初期値になる。
 // (Configの構造体は各コンポーネントのヘッダにある)
 //
-//	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULTはnlohmann::json専用に固定されており、
-//	生成されるto_json()がメンバを宣言順に書き込んでも、書き込み先(nlohmann::json)自体が
-//	std::mapベースのため最終的にキー名のアルファベット順で格納されてしまう。
-//	これがComponentRegistry::FindDefaultParams()の結果(Inspector側の表示順)がA→Zに
-//	なってしまっていた原因。
-//
-//	ComponentRegistryのdefaultParamsだけを挿入順を保持するnlohmann::ordered_jsonで
-//	持たせることにしたので、そちらへ書き込むto_json(ordered_json&, const T&)も追加で
-//	生成する。nlohmann本体のマクロ部品(NLOHMANN_JSON_EXPAND/PASTE/TO)を流用しているだけで、
-//	実行時にparamsを読む方のfrom_json(nlohmann::json)は元のマクロのままなので、
-//	セーブ/ロードや実行時のBuild()の挙動には影響しない
+// COMPONENT_PARAMS_DEFINE_TYPEの説明・理由はComponentParamsOrderedJson.hのコメントを参照。
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-#define COMPONENT_PARAMS_DEFINE_TYPE(Type, ...)                                                \
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(Type, __VA_ARGS__)                          \
-	inline void to_json(nlohmann::ordered_json& nlohmann_json_j, const Type& nlohmann_json_t)   \
-	{ NLOHMANN_JSON_EXPAND(NLOHMANN_JSON_PASTE(NLOHMANN_JSON_TO, __VA_ARGS__)) }
 
 // 未知の軸名は先頭のYになる。
 NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
@@ -163,7 +156,47 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 	};
 	COMPONENT_PARAMS_DEFINE_TYPE(TwoBoneIKParams, rootBone, midBone, tipParentBone, tipBone)
 
-		GameObject* RequireParent(BuildContext& ctx, const char* who)
+		// Enemy1体分の生成パラメータ。dataは挙動のチューニング値(EnemyAIData)、
+		// behaviorは実際の行動ロジック(IEnemyBehaviorの具象クラス)を選ぶキー。
+		// attackTablePathを指定すると、data.attacks/gapCloserAttacksはそちらの内容で
+		// 上書きされる(PlayerAttackSelector.attackTablePathと同じ考え方。
+		// 未指定ならdataに直接書かれたattacks/gapCloserAttacksをそのまま使う)。
+		// 対応する具象クラスが増えたら、下のCreateEnemyBehavior()に足すこと。
+		struct EnemyAIControllerParams
+	{
+		std::string behavior;
+		std::string attackTablePath;
+		EnemyAIData data;
+	};
+	COMPONENT_PARAMS_DEFINE_TYPE(EnemyAIControllerParams, behavior, attackTablePath, data)
+
+		std::unique_ptr<IEnemyBehavior> CreateEnemyBehavior(const std::string& behavior)
+	{
+		if (behavior == "Warrock") return std::make_unique<WarrockBehavior>();
+		throw std::runtime_error("EnemyAIController: unknown behavior \"" + behavior + "\"");
+	}
+
+	// EnemyAIControllerはGameObject*/EnemyAIData/IEnemyBehaviorの3つをコンストラクタで
+	// 要求しSetConfig()も持たないため、Add<T>()には乗らない(EnemyAIController.h冒頭コメント参照)
+	void BuildEnemyAIController(BuildContext& ctx, const EnemyAIControllerParams& p)
+	{
+		EnemyAIData data = p.data;
+
+		if (!p.attackTablePath.empty()) {
+			EnemyAttackTable table;
+			if (EnemyAttackTableLoader::LoadFromFile(p.attackTablePath, table)) {
+				data.attacks = std::move(table.attacks);
+				data.gapCloserAttacks = std::move(table.gapCloserAttacks);
+			}
+			else {
+				OutputDebugStringA(("EnemyAIController: attack table load failed: " + p.attackTablePath + "\n").c_str());
+			}
+		}
+
+		ctx.Add<EnemyAIController>(data, CreateEnemyBehavior(p.behavior));
+	}
+
+	GameObject* RequireParent(BuildContext& ctx, const char* who)
 	{
 		if (!ctx.parent) throw std::runtime_error(std::string(who) + " requires a parent object");
 		return ctx.parent;
@@ -246,13 +279,19 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 		attach->SetLocalPositon(p.position);
 	}
 
-	// 親がPlayerStatusControllerを持つ場合は、自分を武器として登録する。
+	// 親がPlayerStatusController/EnemyAIControllerのいずれかを持つ場合は、自分を武器として登録する。
+	// (両者ともPlayer同様の設計でWeaponSetComponentへ委譲するSetWeapon()を持つ。
+	// EnemyAIController.h冒頭コメント参照)
 	void BuildWeapon(BuildContext& ctx, const nlohmann::json&)
 	{
 		auto* weapon = ctx.Add<WeaponComponent>();
 		if (!ctx.parent) return;
+
 		if (auto* controller = ctx.parent->GetComponent<PlayerStatusController>()) {
 			controller->SetWeapon(Handle<WeaponComponent>(weapon));
+		}
+		else if (auto* enemy = ctx.parent->GetComponent<EnemyAIController>()) {
+			enemy->SetWeapon(Handle<WeaponComponent>(weapon));
 		}
 	}
 
@@ -330,4 +369,8 @@ void RegisterAllComponents(ComponentRegistry& registry)
 	registry.Add<PlayerStatusController>("PlayerStatusController");
 	registry.Add<PlayerCombatMovementComponent>("PlayerCombatMovement");
 	registry.AddWithParams<PlayerAttackSelectorParams>("PlayerAttackSelector", BuildPlayerAttackSelector);
+
+	// --- Enemy ---
+	registry.AddWithParams<EnemyAIControllerParams>("EnemyAIController", BuildEnemyAIController);
+	registry.Add<LockOnTargetComponent>("LockOnTarget");
 }

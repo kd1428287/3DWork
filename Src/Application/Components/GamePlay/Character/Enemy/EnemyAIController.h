@@ -43,7 +43,16 @@
 // 持たないため、IsGuarding()/IsInParryWindow()は常にfalseを返し、
 // HitReactionComponent側は常に「通常被弾」の分岐を通ってEnterStagger()
 // を呼ぶ。
+//
+// 【Prefab/Configについて】
+// このコンポーネントはGameObject*とEnemyAIDataとIEnemyBehaviorの3つを
+// コンストラクタで要求し、SetConfig()での後埋めもできないため、他の
+// コンポーネントのようなT::Config+Add<T>()パターンには乗らない。
+// Prefab(JSON)からの生成は、ComponentRegistrations.cppのAddWithParams
+// (EnemyAIControllerParams・BuildEnemyAIController)側で、
+// behavior名("Warrock"等)から具象IEnemyBehaviorを選んで組み立てている
 // ============================================================
+
 class EnemyAIController : public ComponentBase, public IMovementSource, public IHitReactionQuery
 {
 public:

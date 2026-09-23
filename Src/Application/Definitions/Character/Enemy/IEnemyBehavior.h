@@ -42,6 +42,11 @@ class EnemyAIController;
 // behavior_->GetDespawnDelay(this))の追従が必要(BT実行層の
 // リファクタリングで対応する)。
 // ============================================================
+
+struct EnemyBehaviorConfig {
+
+};
+
 class IEnemyBehavior
 {
 public:

@@ -14,9 +14,12 @@ void BaseScene::Update(float deltaTime)
 	OnUpdate(deltaTime);
 }
 
+// 描画前処理
 void BaseScene::PreDraw(float deltaTime)
 {
 	objManager_->PreDraw();
+
+	OnPreDraw(deltaTime);
 }
 
 void BaseScene::Draw()

@@ -4,17 +4,20 @@
 	"components": [
 		{
 			"type": "ModelRender",
-			"params": { "model": "Asset/Models/Character/Warrock/Warrock.gltf" }
+			"params": {
+				"model": "Asset/Models/Character/Warrock/Warrock.gltf",
+				"animations": "Asset/Animations/Character/Warrock"
+			}
 		},
 		{
 			"type": "ModelAnimator",
 			"params": {
 				"fps": 60,
-				"speedScale":1.0,
+				"speedScale": 1.0,
 				"blendDuration": 0.15,
 				"rootMotion": {
 					"boneName": "mixamorig:Hips",
-					"unitScale": 1.0,
+					"unitScale": 0.01,
 					"forwardAxis": "Y",
 					"forwardSign": -1.0,
 					"rightAxis": "X",
@@ -25,12 +28,8 @@
 			}
 		},
 		{ "type": "RootMotionApplier" },
-		{ "type": "FacingDirection", "params": { "rotationSpeed": 3.0 } },
-		{ "type": "Posture", "params": { "max": 100.0 } },
-		{ "type": "Health", "params": { "max": 1000.0 } },
-		{ "type": "LockOnTarget" },
-		{ "type": "WeaponSet" },
-		{ "type": "HitReaction" },
+		{ "type": "Gravity" },
+		{ "type": "Velocity" },
 		{
 			"type": "Collider",
 			"params": {
@@ -40,103 +39,99 @@
 						"name": "HurtBox",
 						"shape": "Capsule",
 						"radius": 0.5,
-						"offset": [0.0, 0.5, 0.0],
-						"capsuleEnd": [0.0, 1.5, 0.0],
-						"categoryMask": ["HurtBox"],
+						"offset": [ 0.0, 0.5, 0.0 ],
+						"capsuleEnd": [ 0.0, 1.5, 0.0 ],
+						"categoryMask": [ "HurtBox" ],
 						"useDefaultCollideMask": false,
-						"collideMask": ["HitBox"],
+						"collideMask": [ "HitBox" ],
 						"isTrigger": true
 					},
 					{
 						"name": "Body",
 						"shape": "Capsule",
 						"radius": 0.5,
-						"offset": [0.0, 0.5, 0.0],
-						"capsuleEnd": [0.0, 1.5, 0.0],
-						"categoryMask": ["Bump"]
+						"offset": [ 0.0, 0.5, 0.0 ],
+						"capsuleEnd": [ 0.0, 1.5, 0.0 ],
+						"categoryMask": [ "Bump" ]
 					}
 				]
 			}
 		},
-		{ "type": "Gravity" },
-		{ "type": "Velocity" },
-		{ "type": "MovementResolver" },
 		{ "type": "GroundSensor" },
 		{
-			"type": "EnemyAI",
+			"type": "FacingDirection",
+			"params": { "rotationSpeed": 3.0 }
+		},
+		{
+			"type": "Posture",
+			"params": { "max": 100.0 }
+		},
+		{
+			"type": "Health",
+			"params": { "max": 1000.0 }
+		},
+		{
+			"type": "HitReaction",
+			"params": {
+				"effectFrags": [
+					"CameraShake",
+					"HitStop",
+					"WeaponClashFx"
+				],
+				"damageEffectName": "BloodSplatter",
+				"parryEffectName": "WeaponClashParry",
+				"blockEffectName": "WeaponClashBlock",
+				"cameraShakeIntensity": 0.75,
+				"hitStopDelaySeconds": 0.0,
+				"hitStopDurationSeconds": 0.1,
+				"guardKnockbackPower": 2.0,
+				"largeStaggerDuration": 0.6
+			}
+		},
+		{ "type": "LockOnTarget" },
+		{ "type": "WeaponSet" },
+		{
+			"type": "Movement",
+			"params": { "speed": 2.0 }
+		},
+		{ "type": "MovementResolver" },
+		{
+			"type": "EnemyAIController",
 			"params": {
 				"behavior": "Warrock",
-				"aiData": {
+				"attackTablePath": "Asset/Data/Game/WarrockAttackTable.json",
+				"data": {
 					"chaseSpeed": 2.0,
 					"detectionRange": 10.0,
 					"loseTargetRange": 14.0,
 					"attackIntervalDuration": 0.5,
 					"maintainDistance": 3.0,
-					"attacks": [
-						{
-							"name": "Punch",
-							"maxRange": 3.0,
-							"weight": 2.0,
-							"attackData": {
-								"phaseData": {
-									"animationName": "Punch",
-									"windup": { "targetDuration": 0.5 },
-									"active": { "targetDuration": 0.4 },
-									"recovery": { "targetDuration": 0.7 }
-								}
-							}
-						},
-						{
-							"name": "Kick",
-							"maxRange": 3.5,
-							"weight": 1.5,
-							"attackData": {
-								"phaseData": {
-									"animationName": "Kick",
-									"windup": { "targetDuration": 0.5 },
-									"active": { "targetDuration": 0.3 },
-									"recovery": { "targetDuration": 0.6 }
-								}
-							}
-						},
-						{
-							"name": "Swipe",
-							"maxRange": 4.5,
-							"weight": 1.0,
-							"attackData": {
-								"phaseData": {
-									"animationName": "Swipning",
-									"windup": { "targetDuration": 0.7 },
-									"active": { "targetDuration": 0.5 },
-									"recovery": { "targetDuration": 0.9 }
-								}
-							}
-						}
-					],
-					"gapCloserAttacks": [
-						{
-							"name": "JumpAttack",
-							"minRange": 5.0,
-							"maxRange": 9.0,
-							"weight": 1.0,
-							"attackData": {
-								"phaseData": {
-									"animationName": "JumpAttack",
-									"windup": { "targetDuration": 0.9 },
-									"active": { "targetDuration": 0.4 },
-									"recovery": { "targetDuration": 1.8 }
-								},
-								"moveData": { "useRootMotion": true }
-							}
-						}
-					],
-					"movementAnimations": { "idle": "Idle", "walk": "Walk", "run": "Run" },
+					"movementAnimations": {
+						"idle": "Idle",
+						"walk": "Run",
+						"run": "Run"
+					},
 					"oneShotAnimations": {
-						"HitReaction": { "animationName": "SmallReaction", "duration": 0.4 },
-						"BigStagger": { "animationName": "SmallReaction", "duration": 3.0 },
-						"Parried": { "animationName": "SmallReaction", "duration": 0.4 },
-						"Roar": { "animationName": "Roaring", "duration": 1.5 },
-						"Dying": { "animationName": "Dying", "duration": 2.0 }
+						"HitReaction": {
+							"animationName": "Hit_Middle",
+							"duration": 0.4
+						},
+						"BigStagger": {
+							"animationName": "Smashed",
+							"duration": 3.0
+						},
+						"Parried": {
+							"animationName": "Hit_High",
+							"duration": 0.4
+						},
+						"Roar": {
+							"animationName": "Roaring",
+							"duration": 1.5
+						},
+						"Dying": {
+							"animationName": "Died",
+							"duration": 2.0
+						}
 					},
 					"postDeathLingerSeconds": 1.0
 				}
@@ -145,7 +140,7 @@
 	],
 	"children": [
 		{
-			"name": "enemy_weapon",
+			"name": "Main",
 			"scale": [0.5, 0.5, 0.5],
 			"components": [
 				{ "type": "AttachToBone", "params": { "bone": "mixamorig:RightHand" } },
