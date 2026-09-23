@@ -34,7 +34,7 @@ void EnemyAIController::UpdateTargetAcquisition()
 
 TransformComponent* EnemyAIController::FindPlayerTransform() const
 {
-	SceneContext* context = GetOwner()->GetContext();
+	const SceneContext* context = GetOwner()->GetContext();
 	if (context == nullptr || context->objectManager == nullptr) return nullptr;
 
 	for (PlayerStatusController* player : context->objectManager->FindComponents<PlayerStatusController>()) {
@@ -138,7 +138,7 @@ void EnemyAIController::OnDied()
 
 void EnemyAIController::RequestDespawn()
 {
-	SceneContext* context = GetOwner()->GetContext();
+	const SceneContext* context = GetOwner()->GetContext();
 	if (context == nullptr || context->objectManager == nullptr) return;
 
 	for (Handle<GameObject>& owned : ownedObjects_) {

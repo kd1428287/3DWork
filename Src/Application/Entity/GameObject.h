@@ -18,9 +18,9 @@ namespace ObjectFlags
 {
 	constexpr uint32_t None = 0;
 	constexpr uint32_t AlwaysActive = 1 << 1;
-	constexpr uint32_t Gameplay = 1 << 2; 
+	constexpr uint32_t Gameplay = 1 << 2;
 	constexpr uint32_t UI = 1 << 3;
-	constexpr uint32_t System = 1 << 4; 
+	constexpr uint32_t System = 1 << 4;
 }
 
 class GameObject {
@@ -37,8 +37,9 @@ public:
 	// (生存中の全GameObjectが一意な世代を持つ)が静かに破れる穴になっていた。
 	// コンストラクタ自身に発行させることで、生成経路によらず必ず有効な
 	// 世代を持てるようにしている。
-	explicit GameObject(std::string name = "GameObject", SceneContext* context = nullptr)
-		: name_(std::move(name)), context_(context), generation_(s_nextGeneration++) {}
+	explicit GameObject(std::string name = "GameObject", const SceneContext* context = nullptr)
+		: name_(std::move(name)), context_(context), generation_(s_nextGeneration++) {
+	}
 
 	GameObject(const GameObject&) = delete;
 	GameObject& operator=(const GameObject&) = delete;
@@ -163,9 +164,8 @@ public:
 		const float scaledDeltaTime = deltaTime * timeScale_;
 		for (const auto id : componentOrder_) {
 			ComponentBase* comp = components_[id].get();
-			
+
 			if (!comp->IsEnabled()) continue;
-			comp->Start();
 			comp->PreUpdate(scaledDeltaTime);
 		}
 	}
@@ -236,9 +236,9 @@ public:
 	float GetTimeScale() const { return timeScale_; }
 	void SetTimeScale(float timeScale) { timeScale_ = std::max(0.0f, timeScale); }
 
-	// Sceneが持つ非所有参照の束そのものにアクセスしたい場合はこちら。
-	// 例: GetOwner()->GetContext()->activeCamera
-	SceneContext* GetContext() const { return context_; }
+	// Sceneが持つ非所有参照の束そのものにアクセスしたい場合はこちら(読み取り専用)。
+	// 例: GetOwner()->GetContext()->activeCamera。書き込みはObjectManagerのSetterを使う。
+	const SceneContext* GetContext() const { return context_; }
 
 	// --- 汎用タグ走査 --------------------------------------------------
 	// TagInterfaces.hに列挙した任意のタグについて、実装コンポーネントの
@@ -263,7 +263,13 @@ public:
 	uint8_t GetFlags() const { return objectFlags_; }
 	bool HasFlag(uint8_t flag) const { return (objectFlags_ & flag) != 0; }
 
+	// 購読者が同一オブジェクト内ならローカルバス、別オブジェクト(UI/カメラ等)ならシーンバスを使う。
 	EventBus& GetLocalEventBus() { return localEventBus_; }
+	EventBus& GetSceneEventBus() const
+	{
+		assert(context_ && context_->eventBus && "GameObject: シーンのeventBusがありません");
+		return *context_->eventBus;
+	}
 
 private:
 	// タグレジストリの1エントリ。
@@ -324,7 +330,7 @@ private:
 
 	std::string name_;
 	bool active_ = true;
-	SceneContext* context_ = nullptr;
+	const SceneContext* context_ = nullptr;
 	float timeScale_ = 1.0f;
 
 	uint64_t generation_ = 0;
@@ -347,4 +353,3 @@ private:
 
 	EventBus localEventBus_; // このGameObject宛てのイベント専用バス
 };
-

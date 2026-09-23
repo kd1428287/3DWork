@@ -49,7 +49,7 @@ public:
 		{
 			// カメラの水平方向(yaw)を移動方向の基準にする
 			bool usedActualCameraForward = false;
-			if (SceneContext* context = GetOwner()->GetContext()) {
+			if (const SceneContext* context = GetOwner()->GetContext()) {
 				if (CameraComponent* camera = context->activeCamera) {
 					Math::Vector3 camForward = camera->GetForward();
 					camForward.y = 0.0f;

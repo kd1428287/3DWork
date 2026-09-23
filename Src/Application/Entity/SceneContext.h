@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Handle.h"
 
 class EventBus;
@@ -20,6 +20,9 @@ class LockOnTargetComponent;
 //
 // 新しい共有参照(例: AudioListener等)が増えたら、ここにメンバを
 // 1つ足すだけでよく、GameObject/World側は変更不要。
+//
+// GameObjectからはconst越しに渡される(読み取り専用)。書き込みはObjectManagerのSetterのみ。
+// バスの使い分け: 購読者が別オブジェクトならeventBus(シーン)、同一オブジェクト内ならGameObject::GetLocalEventBus()。
 // ============================================================
 struct SceneContext {
 	EventBus* eventBus = nullptr;
@@ -36,17 +39,15 @@ struct SceneContext {
 	// 同じ考え方(このファイル冒頭のコメント参照)で、Playerに限らず誰でも
 	// ここを見ればロック状態を知れるようにする。
 	//
-	// 書き込むのはPlayerLockOnComponent(Playerの兄弟コンポーネント)だけ
+	// 書き込みはObjectManager::SetLockedTarget()経由で、PlayerLockOnComponent(Playerの兄弟コンポーネント)だけが行う
 	// (TryLockOn()/ClearLockOn()、および対象消失時の自動解除)。他の
 	// システム(カメラ側のCameraOrbitComponent等)はPlayerLockOnComponentと
 	// いう型を一切知らずに、ここを読むだけでロック対象を参照できる。
 	//Handle<LockOnTargetComponent> lockedTarget;
 	Handle<GameObject> lockedTarget;
 
-	// シーンに1つだけの「Player」への弱参照。lockedTargetと同じ考え方
-	// (このファイル冒頭のコメント参照)。書き込むのはPlayerFactory::
-	// CreatePlayer()が生成完了時に1回だけ行う。UI側(PlayerHudGauge
-	// Component等)がPlayerの具体クラスを知らずに参照するために使う。
+	// シーンに1つだけの「Player」への弱参照。書き込みはObjectManager::SetPlayer()経由。
+	// UI側(PlayerHudGaugeComponent等)がPlayerの具体クラスを知らずに参照するために使う。
 	Handle<GameObject> player;
 
 	// スケールされていない、フレームの生の経過時間。

@@ -39,6 +39,7 @@
 #include "Application/Components/GamePlay/Character/Common/PostureComponent.h"
 #include "Application/Components/GamePlay/Character/Common/WeaponComponent.h"
 #include "Application/Components/GamePlay/Character/Common/WeaponSetComponent.h"
+#include "Application/Components/GamePlay/Character/Player/PlayerComponent.h"
 #include "Application/Components/GamePlay/Character/Player/PlayerAttackSelector.h"
 #include "Application/Components/GamePlay/Character/Player/PlayerCombatMovementComponent.h"
 #include "Application/Components/GamePlay/Character/Player/PlayerFacingComponent.h"
@@ -51,6 +52,10 @@
 #include "Application/Components/GamePlay/Character/Enemy/EnemyAIController.h"
 #include "Application/Components/GamePlay/Character/Enemy/Warrock/WarrockBehavior.h"
 #include "Application/Components/GamePlay/Character/Enemy/LockOnTargetComponent.h"
+
+// UI(配置フォルダは実際の場所に合わせて調整)
+#include "Application/Components/Graphics/UI/Gauge/PlayerHudGaugeComponent.h"
+#include "Application/Components/Graphics/UI/Gauge/EnemyWorldGaugeComponent.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // コンポーネントのConfigのJSON変換。キー名はメンバ名と同じで、未指定のキーは初期値になる。
@@ -355,6 +360,12 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 		ctx.Add<PlayerAttackSelector>()->SetAttackTable(table);
 	}
 
+	// 親の敵をターゲットにした頭上ゲージUIを組み立てる。
+	void BuildEnemyWorldGauge(BuildContext& ctx, const nlohmann::json&)
+	{
+		ctx.Add<EnemyWorldGaugeComponent>()->SetTarget(Handle<GameObject>(RequireParent(ctx, "EnemyWorldGauge")));
+	}
+
 }  // namespace
 
 // 新しいコンポーネントは、ここに登録を足せばPrefab/マップのtypeから使える。
@@ -413,6 +424,7 @@ void RegisterAllComponents(ComponentRegistry& registry)
 		});
 
 	// --- Player ---
+	registry.Add<PlayerComponent>("Player");
 	registry.Add<PlayerInputComponent>("PlayerInput");
 	registry.Add<PlayerLockOnComponent>("PlayerLockOn");
 	registry.Add<PlayerFacingComponent>("PlayerFacing");
@@ -424,4 +436,9 @@ void RegisterAllComponents(ComponentRegistry& registry)
 	// --- Enemy ---
 	registry.AddWithParams<EnemyAIControllerParams>("EnemyAIController", BuildEnemyAIController);
 	registry.Add<LockOnTargetComponent>("LockOnTarget");
+
+	// --- UI ---
+	// PlayerHudGaugeは独立Prefab(Hud.json)で生成し、ctx->playerを追う。EnemyWorldGaugeは敵Prefabの子として使う。
+	registry.Add<PlayerHudGaugeComponent>("PlayerHudGauge");
+	registry.AddRaw("EnemyWorldGauge", BuildEnemyWorldGauge);
 }

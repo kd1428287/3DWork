@@ -15,6 +15,7 @@
 #include "Application/Factories/GamePlay/Character/EnemyFactory.h"
 #include "Application/Factories/GamePlay/Map/TerrainFactory.h"
 #include "Application/Factories/Common/CameraFactory.h"
+#include "Application/Factories/PrefabFactory.h"
 
 
 // definitions
@@ -89,6 +90,11 @@ void GameScene::Init()
 
 	cameraFactory_ = std::make_unique<CameraFactory>();
 	auto* camera = cameraFactory_->CreateCamera(*objManager_, player);
+
+	PrefabDefinition def;
+	if (PrefabFactory::LoadFromFile("Asset/Data/Game/Hud.json", def)) {
+		PrefabFactory::Create(*objManager_, def);
+	}
 
 	cameraSystem_ = std::make_unique<CameraSystem>(*objManager_);
 

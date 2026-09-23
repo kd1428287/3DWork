@@ -1,9 +1,10 @@
-#pragma once
+﻿#pragma once
 #include "GaugeBarRenderer.h"
 #include "Application/Definitions/UI/GaugeBarStyle.h"
 #include "GaugeWatcher.h"
 
-// Playerとは別のGameObjectに付ける、スクリーン固定のHP/体幹バー表示コンポーネント
+// 独立Prefab(Hud.json)に付ける、スクリーン固定のプレイヤーHP/体幹バー表示コンポーネント
+// 対象はSceneContext::player。Player生成後、最初のStartまでに設定されていること
 class PlayerHudGaugeComponent : public ComponentBase, public IRenderable
 {
 public:
@@ -11,13 +12,20 @@ public:
 
 	void Awake() override
 	{
-		SceneContext* ctx = GetOwner()->GetContext();
-		assert(ctx && ctx->eventBus && "PlayerHudGaugeComponent: eventBusがありません");
-
 		healthSkin_.Load(healthStyle_);
 		postureSkin_.Load(postureStyle_);
+		healthSkin_.fillColor = healthColor_;
+		postureSkin_.fillColor = postureColor_;
+		healthSkin_.capsule = true;
+	}
 
-		watcher_.Init(ctx->eventBus, ctx->player);
+	// Player生成順に依存しないよう、購読はStartで行う
+	void Start() override
+	{
+		Handle<GameObject> player = GetOwner()->GetContext()->player;
+		assert(player.Resolve() && "PlayerHudGaugeComponent: ctx->playerが未設定です");
+
+		watcher_.Init(&GetOwner()->GetSceneEventBus(), player);
 	}
 
 	void DrawSprite() override
@@ -40,8 +48,11 @@ private:
 	Math::Vector2 postureBarPos_ = { 160.0f, 75.0f };
 	Math::Vector2 postureBarSize_ = { 300.0f, 10.0f };
 
-	GaugeBarStyle healthStyle_{ "UI/hp_back", "UI/hp_fill", 8 };
-	GaugeBarStyle postureStyle_{ "UI/posture_back", "UI/posture_fill", 8 };
+	// HPはカプセル型の枠+中身の画像(3分割描画)、体幹は枠+背景1枚と単色の中身
+	GaugeBarStyle healthStyle_{ "Asset/Textures/UI/hp_back.png", "Asset/Textures/UI/hp_fill.png", 0 };
+	GaugeBarStyle postureStyle_{ "Asset/Textures/UI/posture_back.png", "", 8 };
+	Math::Color healthColor_ = { 0.8f, 0.1f, 0.1f, 1.0f };
+	Math::Color postureColor_ = { 0.9f, 0.7f, 0.1f, 1.0f };
 
 	GaugeBarSkin healthSkin_;
 	GaugeBarSkin postureSkin_;

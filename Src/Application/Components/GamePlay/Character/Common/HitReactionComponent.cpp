@@ -135,12 +135,8 @@ void HitReactionComponent::OnCollisionEnter(const Events::Collision::CollisionEn
 		}
 
 		if (transform_ != nullptr) {
-			if (SceneContext* context = GetOwner()->GetContext()) {
-				if (context->eventBus != nullptr) {
-					const Math::Vector3 reflectDir = ComputeSplatterReflection(attacker, e.hitResult.hitNormal);
-					SpawnDamageEffect(e.selfObject, e.otherObject, reflectDir);
-				}
-			}
+			const Math::Vector3 reflectDir = ComputeSplatterReflection(attacker, e.hitResult.hitNormal);
+			SpawnDamageEffect(e.selfObject, e.otherObject, reflectDir);
 		}
 
 		if (velocityComponent_ != nullptr) {
@@ -184,9 +180,6 @@ void HitReactionComponent::SpawnWeaponClashEffect(GameObject* attackerWeaponObj,
 	TransformComponent* myWeaponTransform = myWeapon->GetTransform();
 	if (myWeaponTransform == nullptr) return;
 
-	SceneContext* context = GetOwner()->GetContext();
-	if (context == nullptr || context->eventBus == nullptr) return;
-
 	const Math::Vector3 clashPos =
 		(attackerWeaponTransform->GetPosition() + myWeaponTransform->GetPosition()) * 0.5f;
 
@@ -202,7 +195,7 @@ void HitReactionComponent::SpawnWeaponClashEffect(GameObject* attackerWeaponObj,
 	baseDir.Normalize();
 
 	const std::string id = isParry ? config_.parryEffectName : config_.blockEffectName;
-	PublishGenericEffect(*context->eventBus, id, clashPos, baseDir);
+	PublishGenericEffect(GetOwner()->GetSceneEventBus(), id, clashPos, baseDir);
 }
 
 void HitReactionComponent::SpawnDamageEffect(GameObject* self, GameObject* attackerWeaponObj, const Math::Vector3& reflectDir)
@@ -215,11 +208,8 @@ void HitReactionComponent::SpawnDamageEffect(GameObject* self, GameObject* attac
 	TransformComponent* myTransform = self->GetComponent<TransformComponent>();
 	if (myTransform == nullptr) return;
 
-	SceneContext* context = GetOwner()->GetContext();
-	if (context == nullptr || context->eventBus == nullptr) return;
-
 	const Math::Vector3 clashPos =
 		(attackerWeaponTransform->GetPosition() + myTransform->GetPosition()) * 0.5f;
 
-	PublishGenericEffect(*context->eventBus, config_.damageEffectName, clashPos, reflectDir);
+	PublishGenericEffect(GetOwner()->GetSceneEventBus(), config_.damageEffectName, clashPos, reflectDir);
 }

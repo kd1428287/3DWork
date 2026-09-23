@@ -259,14 +259,14 @@
     <Filter Include="Src\Application\Definitions\Character\Common\StateMachine">
       <UniqueIdentifier>{e6c53a1c-4883-49d0-a541-3a875c2e5054}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Src\Application\Components\Graphics\UI\GamePlay">
-      <UniqueIdentifier>{e2a632af-c05a-4898-8128-4e51243db10f}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Src\Application\Definitions\Prefab">
       <UniqueIdentifier>{75faf62a-6738-42b4-8183-8876fbec466b}</UniqueIdentifier>
     </Filter>
     <Filter Include="Src\Application\Definitions\UI">
       <UniqueIdentifier>{f52e37e9-b517-43f9-8c69-e2a46437d583}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Components\Graphics\UI\Gauge">
+      <UniqueIdentifier>{e2a632af-c05a-4898-8128-4e51243db10f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -891,15 +891,6 @@
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\WeaponComponent.h">
       <Filter>Src\Application\Components\GamePlay\Character\Common</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\Graphics\UI\GamePlay\EnemyWorldGaugeComponent.h">
-      <Filter>Src\Application\Components\Graphics\UI\GamePlay</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\Graphics\UI\GamePlay\GaugeWatcher.h">
-      <Filter>Src\Application\Components\Graphics\UI\GamePlay</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\Graphics\UI\GamePlay\PlayerHudGaugeComponent.h">
-      <Filter>Src\Application\Components\Graphics\UI\GamePlay</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Definitions\Loaders\AttackDataLoader.h">
       <Filter>Src\Application\Definitions\Loaders</Filter>
     </ClInclude>
@@ -957,9 +948,6 @@
     <ClInclude Include="Src\Application\Definitions\Loaders\EnemyAttackTableLoader.h">
       <Filter>Src\Application\Definitions\Loaders</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\Graphics\UI\GamePlay\GaugeBarRenderer.h">
-      <Filter>Src\Application\Components\Graphics\UI\GamePlay</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Components\Graphics\Effect\FootDustComponent.h">
       <Filter>Src\Application\Components\Graphics\Effect</Filter>
     </ClInclude>
@@ -968,6 +956,21 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Definitions\Character\Common\FootstepTypes.h">
       <Filter>Src\Application\Definitions\Character\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\EnemyWorldGaugeComponent.h">
+      <Filter>Src\Application\Components\Graphics\UI\Gauge</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\GaugeBarRenderer.h">
+      <Filter>Src\Application\Components\Graphics\UI\Gauge</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\GaugeWatcher.h">
+      <Filter>Src\Application\Components\Graphics\UI\Gauge</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\PlayerHudGaugeComponent.h">
+      <Filter>Src\Application\Components\Graphics\UI\Gauge</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerComponent.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -34,14 +34,14 @@ public:
 		orbit_ = GetOwner()->GetComponent<CameraOrbitComponent>();
 
 		if (auto* ctx = GetOwner()->GetContext()) {
-			ctx->activeCamera = this;  // 自分をアクティブカメラとして登録
+			ctx->objectManager->SetActiveCamera(this);
 		}
 	}
 
 	void OnDestroy() override {
 		if (auto* ctx = GetOwner()->GetContext()) {
 			if (ctx->activeCamera == this) {
-				ctx->activeCamera = nullptr;
+				ctx->objectManager->SetActiveCamera(this);
 			}
 		}
 	}

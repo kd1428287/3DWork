@@ -34,22 +34,17 @@ public:
 
 	void Awake() override {
 		// SceneContext経由でアクティブカメラを取得する
-		// (GameObject::GetContext()参照。Sceneに1つだけの既知の対象は
-		//  ここにまとめる、という既存の方針に沿う)。
-		sceneContext_ = GetOwner()->GetContext();
-		if (sceneContext_ != nullptr) {
-			cameraComponent_ = sceneContext_->activeCamera;
+		if (GetOwner()->GetContext() != nullptr) {
+			cameraComponent_ = GetOwner()->GetContext()->activeCamera;
 		}
 	}
 
 	void Update(float /*deltaTime*/) override {
-		if (sceneContext_ == nullptr) return;
-
 		// ロック中の対象が死亡/射程外になったら自動解除する。
-		if (GameObject* target = sceneContext_->lockedTarget.Resolve()) {
+		if (GameObject* target = GetOwner()->GetContext()->lockedTarget.Resolve()) {
 			LockOnTargetComponent* targetComp = target->GetComponent<LockOnTargetComponent>();
 			if (targetComp == nullptr || !targetComp->IsLockable() || !IsWithinRange(target)) {
-				sceneContext_->lockedTarget = {};
+				GetOwner()->GetContext()->objectManager->SetLockedTarget(Handle<GameObject>());
 			}
 		}
 	}
@@ -57,25 +52,24 @@ public:
 	// "lock"入力から呼ばれる。既にロック中の場合の挙動(維持/切り替え/解除)は
 	// 呼び出し側(PlayerStatusController::HandleActionInput)のポリシーに委ねる。
 	void TryLockOn() {
-		if (sceneContext_ == nullptr) return;
 		if (GameObject* nearest = FindNearestToScreenCenter()) {
-			sceneContext_->lockedTarget = Handle<GameObject>(nearest);
+			GetOwner()->GetContext()->objectManager->SetLockedTarget(Handle<GameObject>(nearest));
 		}
 	}
 
 	void ClearLockOn() {
-		if (sceneContext_ != nullptr) sceneContext_->lockedTarget = {};
+		if (GetOwner()->GetContext() != nullptr) GetOwner()->GetContext()->objectManager->SetLockedTarget(Handle<GameObject>());
 	}
 	bool IsLockedOn() const {
-		return sceneContext_ != nullptr && sceneContext_->lockedTarget.Resolve() != nullptr;
+		return GetOwner()->GetContext() != nullptr && GetOwner()->GetContext()->lockedTarget.Resolve() != nullptr;
 	}
 	GameObject* GetLockedTarget() const {
-		return sceneContext_ != nullptr ? sceneContext_->lockedTarget.Resolve() : nullptr;
+		return GetOwner()->GetContext() != nullptr ? GetOwner()->GetContext()->lockedTarget.Resolve() : nullptr;
 	}
 
 	// 画面中心に最も近いロック可能対象を検索するだけの関数(状態は変更しない)。
 	GameObject* FindNearestToScreenCenter() const {
-		if (cameraComponent_ == nullptr || sceneContext_ == nullptr || sceneContext_->objectManager == nullptr) return nullptr;
+		if (cameraComponent_ == nullptr || GetOwner()->GetContext()->objectManager == nullptr) return nullptr;
 
 		const Math::Vector3 camPos = cameraComponent_->GetPosition();
 		Math::Vector3 camForward = -cameraComponent_->GetForward();
@@ -86,7 +80,7 @@ public:
 
 		// ObjectManager::FindComponents<T>()が既にシーン走査を提供しているため、
 		// 独自のレジストリ登録は持たない。
-		for (LockOnTargetComponent* target : sceneContext_->objectManager->FindComponents<LockOnTargetComponent>()) {
+		for (LockOnTargetComponent* target : GetOwner()->GetContext()->objectManager->FindComponents<LockOnTargetComponent>()) {
 			if (!target->IsLockable()) continue;
 
 			Math::Vector3 toTarget = target->GetReticlePosition() - camPos;
@@ -120,9 +114,9 @@ private:
 	// 担当する。これにより、カメラ側のCameraOrbitComponent等も
 	// PlayerLockOnComponentという型を知らずにSceneContext::lockedTargetを
 	// 読むだけでロック対象を参照できるようになる。
-	SceneContext* sceneContext_ = nullptr;
+	//SceneContext* sceneContext_ = nullptr;
 
 	// 【要調整】仮の値。実際の画角・カメラ距離感に合わせて調整する前提。
 	static constexpr float kLockOnRange = 150.0f;
-	static constexpr float kLockOnHalfFovCos = 0.f; // 目安: 前方±60度くらいを候補とする
+	static constexpr float kLockOnHalfFovCos = 0.5f; // 目安: 前方±60度くらいを候補とする
 };

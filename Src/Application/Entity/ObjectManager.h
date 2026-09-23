@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "GameObject.h"
 
 class ColliderRegistry;
 
@@ -12,9 +13,9 @@ class ColliderRegistry;
 // ============================================================
 class ObjectManager {
 public:
-	// eventBusはSceneが所有するものへの非所有参照。
-	// nullptrのままでも動作する(イベントバスを使わない場合)。
-	explicit ObjectManager(EventBus* eventBus = nullptr) {
+	// eventBusはSceneが所有するものへの非所有参照。nullptrは不可。
+	explicit ObjectManager(EventBus* eventBus) {
+		assert(eventBus && "ObjectManager: eventBusが必要です");
 		context_.eventBus = eventBus;
 		// 自分自身への参照をSceneContextに登録しておく。
 		// GameObject側のコンポーネントが「自分自身を破棄予約したい」
@@ -45,6 +46,7 @@ public:
 
 	// --- 各フェーズ(それぞれ独立して呼び出し可能) --------------------
 
+	// 追加待ちのコンポーネントにAwake/Startを1回ずつ呼ぶ。処理中に追加された分も同フレーム内で同様に処理する。
 	void UpdateAwake()
 	{
 		while (!pendingAwakeComponents_.empty())
@@ -52,12 +54,14 @@ public:
 			std::vector<ComponentBase*> processingList;
 			processingList.swap(pendingAwakeComponents_);
 
+			// 全Awake→全Startの順。Startでは他コンポーネントのAwake済みを前提にできる
 			for (auto* component : processingList)
 			{
-				if (component)
-				{
-					component->Awake();
-				}
+				if (component) { component->Awake(); }
+			}
+			for (auto* component : processingList)
+			{
+				if (component) { component->Start(); }
 			}
 		}
 	}
@@ -170,7 +174,11 @@ public:
 		context_.colliderRegistry = colliderRegistry;
 	}
 
-	void SetActiveCamera(CameraComponent* camera) 
+	// SceneContextの状態メンバは、書き込みをここに集約する。
+	void SetPlayer(Handle<GameObject> player) { context_.player = player; }
+	void SetLockedTarget(Handle<GameObject> target) { context_.lockedTarget = target; }
+
+	void SetActiveCamera(CameraComponent* camera)
 	{
 		context_.activeCamera = camera;
 	}
@@ -185,8 +193,8 @@ private:
 	std::vector<std::unique_ptr<GameObject>> objects_;
 	std::vector<GameObject*> pendingDestroy_;
 	std::vector<ComponentBase*> pendingAwakeComponents_;
-	SceneContext context_; 
+	SceneContext context_;
 	float timeScale_ = 1.0f;
-	uint8_t currentUpdateMask_ = 
+	uint8_t currentUpdateMask_ =
 		ObjectFlags::Gameplay | ObjectFlags::UI | ObjectFlags::AlwaysActive;
 };

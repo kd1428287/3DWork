@@ -301,6 +301,7 @@
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Enemy\Warrock\WarrockBehavior.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerAttackSelector.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerCombatMovementComponent.h" />
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerFacingComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerInputComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerLockOnComponent.h" />
@@ -324,10 +325,10 @@
     <ClInclude Include="Src\Application\Components\Graphics\Render\Mod\SkyDomeEdgeFadeComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\PolygonRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\WireFrameComponent.h" />
-    <ClInclude Include="Src\Application\Components\Graphics\UI\GamePlay\EnemyWorldGaugeComponent.h" />
-    <ClInclude Include="Src\Application\Components\Graphics\UI\GamePlay\GaugeBarRenderer.h" />
-    <ClInclude Include="Src\Application\Components\Graphics\UI\GamePlay\GaugeWatcher.h" />
-    <ClInclude Include="Src\Application\Components\Graphics\UI\GamePlay\PlayerHudGaugeComponent.h" />
+    <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\EnemyWorldGaugeComponent.h" />
+    <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\GaugeBarRenderer.h" />
+    <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\GaugeWatcher.h" />
+    <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\PlayerHudGaugeComponent.h" />
     <ClInclude Include="Src\Application\Components\Physics\Collision\ColliderComponent.h" />
     <ClInclude Include="Src\Application\Components\Physics\Movement\DirectionTransformSource.h" />
     <ClInclude Include="Src\Application\Components\Physics\Movement\FollowCameraComponent.h" />
