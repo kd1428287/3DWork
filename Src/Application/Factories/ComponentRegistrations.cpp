@@ -17,6 +17,7 @@
 #include "Application/Components/Graphics/Render/ModelRenderComponent.h"
 #include "Application/Components/Graphics/Render/WireFrameComponent.h"
 #include "Application/Components/Graphics/Effect/SlashTrailComponent.h"
+#include "Application/Components/Graphics/Effect/FootDustComponent.h"
 #include "Application/Components/Graphics/Animation/SkeletonComponent.h"
 #include "Application/Components/Graphics/Animation/ModelAnimatorComponent.h"
 #include "Application/Components/Graphics/Animation/RootMotionApplierComponent.h"
@@ -45,6 +46,7 @@
 #include "Application/Components/GamePlay/Character/Player/PlayerLockOnComponent.h"
 #include "Application/Components/GamePlay/Character/Player/PlayerMovementAnimationComponent.h"
 #include "Application/Components/GamePlay/Character/Player/PlayerStatusController.h"
+#include "Application/Components/GamePlay/Character/Common/FootstepEventComponent.h"
 
 #include "Application/Components/GamePlay/Character/Enemy/EnemyAIController.h"
 #include "Application/Components/GamePlay/Character/Enemy/Warrock/WarrockBehavior.h"
@@ -64,7 +66,13 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 	{ RootMotionAxis::Z, "Z" },
 	})
 
-	COMPONENT_PARAMS_DEFINE_TYPE(SkeletonConfig, model, animations)
+	// FootSide: JSONでは"Left"/"Right"の文字列で指定する。未知の値はLeftになる。
+	NLOHMANN_JSON_SERIALIZE_ENUM(FootSide, {
+		{ FootSide::Left, "Left" },
+		{ FootSide::Right, "Right" },
+		})
+
+		COMPONENT_PARAMS_DEFINE_TYPE(SkeletonConfig, model, animations)
 
 	COMPONENT_PARAMS_DEFINE_TYPE(RootMotionConfig,
 		boneName, unitScale, forwardAxis, forwardSign, rightAxis, rightSign, extractRotation, yawSign)
@@ -82,6 +90,7 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 		cameraShakeIntensity, hitStopDelaySeconds, hitStopDurationSeconds, guardKnockbackPower, largeStaggerDuration)
 	COMPONENT_PARAMS_DEFINE_TYPE(PlayerCombatMovementConfig, walkSpeed, runSpeed)
 	COMPONENT_PARAMS_DEFINE_TYPE(PlayerStatusControllerConfig, evade, guard)
+	COMPONENT_PARAMS_DEFINE_TYPE(FootstepTrigger, phase, foot)
 
 	// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 	// 他のコンポーネントとの接続やファイル読み込みを伴う型のparams。
@@ -155,6 +164,26 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 		std::string tipBone;
 	};
 	COMPONENT_PARAMS_DEFINE_TYPE(TwoBoneIKParams, rootBone, midBone, tipParentBone, tipBone)
+
+		// 1クリップ分の接地phase定義。clipはアニメーションクリップ名
+		// (ModelAnimatorComponentが再生する名前と一致させる)。
+		struct FootstepClipParams
+	{
+		std::string clip;
+		std::vector<FootstepTrigger> triggers;
+	};
+	COMPONENT_PARAMS_DEFINE_TYPE(FootstepClipParams, clip, triggers)
+
+		// 足音ダスト用のパラメータ。左右の足ボーンにBoneSocketComponentを生成し、
+		// FootstepEventComponent(接地検知)とFootDustComponent(エフェクト発行)を組み立てる。
+		struct FootDustParams
+	{
+		std::string leftFootBone = "mixamorig:LeftFoot";
+		std::string rightFootBone = "mixamorig:RightFoot";
+		std::string effectId = "FootDust";
+		std::vector<FootstepClipParams> clips;
+	};
+	COMPONENT_PARAMS_DEFINE_TYPE(FootDustParams, leftFootBone, rightFootBone, effectId, clips)
 
 		// Enemy1体分の生成パラメータ。dataは挙動のチューニング値(EnemyAIData)、
 		// behaviorは実際の行動ロジック(IEnemyBehaviorの具象クラス)を選ぶキー。
@@ -263,6 +292,27 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 		for (const std::string& bone : p.bones) CreateBoneSocket(ctx.objectManager, skeleton, bone);
 	}
 
+	// 左右の足ボーンにBoneSocketComponentを生成し、FootstepEventComponent(クリップごとの
+	// 接地phase監視)とFootDustComponent(GenericEffectSpawnEvent発行)を組み立てる。
+	void BuildFootDust(BuildContext& ctx, const FootDustParams& p)
+	{
+		SkeletonComponent* skeleton = RequireSkeleton(&ctx.self, "FootDust");
+
+		GameObject* leftSocketObj = CreateBoneSocket(ctx.objectManager, skeleton, p.leftFootBone);
+		GameObject* rightSocketObj = CreateBoneSocket(ctx.objectManager, skeleton, p.rightFootBone);
+
+		auto* footstepEvents = ctx.Add<FootstepEventComponent>();
+		for (const FootstepClipParams& clip : p.clips) {
+			footstepEvents->RegisterClip(clip.clip, clip.triggers);
+		}
+
+		auto* footDust = ctx.Add<FootDustComponent>();
+		auto left = Handle<BoneSocketComponent>(leftSocketObj->GetComponent<BoneSocketComponent>());
+		auto right = Handle<BoneSocketComponent>(rightSocketObj->GetComponent<BoneSocketComponent>());
+		footDust->SetFootSockets(left, right);
+		footDust->SetEffectId(p.effectId);
+	}
+
 	// 親のボーンにソケット用オブジェクトを作り、自分をそこへ取り付ける。
 	void BuildAttachToBone(BuildContext& ctx, const AttachToBoneParams& p)
 	{
@@ -325,6 +375,7 @@ void RegisterAllComponents(ComponentRegistry& registry)
 	registry.Add<FollowCameraComponent>("FollowCamera");
 	registry.Add<CameraTargetComponent>("CameraTarget");
 	registry.Add<SlashTrailComponent>("SlashTrail");
+	registry.AddWithParams<FootDustParams>("FootDust", BuildFootDust);
 	registry.AddRaw("WireFrame", [](BuildContext& ctx, const nlohmann::json&) { AddWireFrameOnce(ctx.self); });
 
 	// --- 物理・移動 ---

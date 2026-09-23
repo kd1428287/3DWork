@@ -288,6 +288,7 @@
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\AttackSourceComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\CharacterInputBufferComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\CharacterEvents.h" />
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\FootstepEventComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\HealthComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\HitReactionComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\PostureComponent.h" />
@@ -315,6 +316,7 @@
     <ClInclude Include="Src\Application\Components\Graphics\Animation\staticModelComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Animation\TwoBoneIK.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Animation\TwoBoneIKComponent.h" />
+    <ClInclude Include="Src\Application\Components\Graphics\Effect\FootDustComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Effect\SlashTrailComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Effect\SlowEffectComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\ModelRenderComponent.h" />
@@ -368,6 +370,7 @@
     <ClInclude Include="Src\Application\Definitions\Character\Common\CharacterCollisionDefaults.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\CharacterDefinitionCommon.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\CombatData.h" />
+    <ClInclude Include="Src\Application\Definitions\Character\Common\FootstepTypes.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\StateMachine\StateMachine.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Enemy\EnemyAIData.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Enemy\EnemyDefinitionJson.h" />
@@ -499,6 +502,7 @@
     <ClCompile Include="..\Library\imgui\imgui_stdlib.cpp" />
     <ClCompile Include="..\Library\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\Library\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="Src\Application\Components\GamePlay\Character\Common\FootstepEventComponent.cpp" />
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Common\HitReactionComponent.cpp" />
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Enemy\EnemyActions.cpp" />
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Enemy\EnemyAIController.cpp" />
@@ -510,6 +514,7 @@
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerMovementAnimationComponent.cpp" />
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerState.cpp" />
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerStatusController.cpp" />
+    <ClCompile Include="Src\Application\Components\Graphics\Effect\FootDustComponent.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\Render\ModelRenderComponent.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\Render\Mod\ForceMaxDepthComponent.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\Render\Mod\SkyDomeEdgeFadeComponent.cpp" />

@@ -26,11 +26,144 @@
 				}
 			}
 		},
-		{ "type": "RootMotionApplier" },
-		{ "type": "Gravity" },
+		{
+			"type": "RootMotionApplier"
+		},
+		{
+			"type": "FootDust",
+			"params": {
+				"leftFootBone": "mixamorig:LeftFoot",
+				"rightFootBone": "mixamorig:RightFoot",
+				"effectId": "FootDust",
+				"clips": [
+					{
+						"clip": "Strafe_Walk_F_Loop_Inplace",
+						"triggers": [
+							{
+								"phase": 0.0,
+								"foot": "Left"
+							},
+							{
+								"phase": 0.5,
+								"foot": "Right"
+							}
+						]
+					},
+					{
+						"clip": "Strafe_Walk_FR_Inplace",
+						"triggers": [
+							{
+								"phase": 0.0,
+								"foot": "Left"
+							},
+							{
+								"phase": 0.5,
+								"foot": "Right"
+							}
+						]
+					},
+					{
+						"clip": "Strafe_Walk_R_Inplace",
+						"triggers": [
+							{
+								"phase": 0.0,
+								"foot": "Left"
+							},
+							{
+								"phase": 0.5,
+								"foot": "Right"
+							}
+						]
+					},
+					{
+						"clip": "Strafe_Walk_BR_Inplace",
+						"triggers": [
+							{
+								"phase": 0.0,
+								"foot": "Left"
+							},
+							{
+								"phase": 0.5,
+								"foot": "Right"
+							}
+						]
+					},
+					{
+						"clip": "Strafe_Walk_B_Inplace",
+						"triggers": [
+							{
+								"phase": 0.0,
+								"foot": "Left"
+							},
+							{
+								"phase": 0.5,
+								"foot": "Right"
+							}
+						]
+					},
+					{
+						"clip": "Strafe_Walk_BL_Inplace",
+						"triggers": [
+							{
+								"phase": 0.0,
+								"foot": "Left"
+							},
+							{
+								"phase": 0.5,
+								"foot": "Right"
+							}
+						]
+					},
+					{
+						"clip": "Strafe_Walk_L_Inplace",
+						"triggers": [
+							{
+								"phase": 0.0,
+								"foot": "Left"
+							},
+							{
+								"phase": 0.5,
+								"foot": "Right"
+							}
+						]
+					},
+					{
+						"clip": "Strafe_Walk_FL_Inplace",
+						"triggers": [
+							{
+								"phase": 0.0,
+								"foot": "Left"
+							},
+							{
+								"phase": 0.5,
+								"foot": "Right"
+							}
+						]
+					},
+					{
+						"clip": "Strafe_Run_F_Loop_Inplace",
+						"triggers": [
+							{
+								"phase": 0.0,
+								"foot": "Left"
+							},
+							{
+								"phase": 0.5,
+								"foot": "Right"
+							}
+						]
+					}
+				]
+			}
+		},
+		{
+			"type": "Gravity"
+		},
 		{
 			"type": "Velocity",
-			"params": { "dampingPerSecond": 0.01 }
+			"params": {
+				"dampingPerSecond": 0.01
+			}
 		},
 		{
 			"type": "Collider",
@@ -40,19 +173,41 @@
 						"name": "Body",
 						"shape": "Capsule",
 						"radius": 0.4,
-						"offset": [ 0.0, 0.465, 0.0 ],
-						"capsuleEnd": [ 0.0, 1.6, 0.0 ],
-						"categoryMask": [ "Bump" ]
+						"offset": [
+							0.0,
+							0.465,
+							0.0
+						],
+						"capsuleEnd": [
+							0.0,
+							1.6,
+							0.0
+						],
+						"categoryMask": [
+							"Bump"
+						]
 					},
 					{
 						"name": "HurtBox",
 						"shape": "Capsule",
 						"radius": 0.3,
-						"offset": [ 0.0, 0.365, 0.0 ],
-						"capsuleEnd": [ 0.0, 1.7, 0.0 ],
-						"categoryMask": [ "HurtBox" ],
+						"offset": [
+							0.0,
+							0.365,
+							0.0
+						],
+						"capsuleEnd": [
+							0.0,
+							1.7,
+							0.0
+						],
+						"categoryMask": [
+							"HurtBox"
+						],
 						"useDefaultCollideMask": false,
-						"collideMask": [ "HitBox" ],
+						"collideMask": [
+							"HitBox"
+						],
 						"isTrigger": true
 					}
 				],
@@ -95,21 +250,49 @@
 					"endDuration": -1.0
 				},
 				"turn": {
-					"left90": { "duration": 0.25, "animationName": "TurnL90_Root", "useRootMotion": true, "blendDuration": 0.1 },
-					"right90": { "duration": 0.25, "animationName": "TurnR90_Root", "useRootMotion": true, "blendDuration": 0.1 },
-					"left180": { "duration": 0.35, "animationName": "TurnL180_Root", "useRootMotion": true, "blendDuration": 0.1 },
-					"right180": { "duration": 0.35, "animationName": "TurnR180_Root", "useRootMotion": true, "blendDuration": 0.1 }
+					"left90": {
+						"duration": 0.25,
+						"animationName": "TurnL90_Root",
+						"useRootMotion": true,
+						"blendDuration": 0.1
+					},
+					"right90": {
+						"duration": 0.25,
+						"animationName": "TurnR90_Root",
+						"useRootMotion": true,
+						"blendDuration": 0.1
+					},
+					"left180": {
+						"duration": 0.35,
+						"animationName": "TurnL180_Root",
+						"useRootMotion": true,
+						"blendDuration": 0.1
+					},
+					"right180": {
+						"duration": 0.35,
+						"animationName": "TurnR180_Root",
+						"useRootMotion": true,
+						"blendDuration": 0.1
+					}
 				},
 				"idle": "Idle"
 			}
 		},
-		{ "type": "FacingDirection" },
-		{ "type": "Posture" },
+		{
+			"type": "FacingDirection"
+		},
+		{
+			"type": "Posture"
+		},
 		{
 			"type": "Health",
-			"params": { "max": 100.0 }
+			"params": {
+				"max": 100.0
+			}
 		},
-		{ "type": "PlayerLockOn" },
+		{
+			"type": "PlayerLockOn"
+		},
 		{
 			"type": "HitReaction",
 			"params": {
@@ -128,13 +311,21 @@
 				"largeStaggerDuration": 0.6
 			}
 		},
-		{ "type": "WeaponSet" },
-		{ "type": "PlayerInput" },
+		{
+			"type": "WeaponSet"
+		},
+		{
+			"type": "PlayerInput"
+		},
 		{
 			"type": "Movement",
-			"params": { "speed": 2.0 }
+			"params": {
+				"speed": 2.0
+			}
 		},
-		{ "type": "MovementResolver" },
+		{
+			"type": "MovementResolver"
+		},
 		{
 			"type": "PlayerStatusController",
 			"params": {
@@ -152,27 +343,69 @@
 				},
 				"guard": {
 					"justWindowDuration": 0.15,
-					"start":{ "duration": 0.35, "animationName": "APose2DefenseL_Root",  "useRootMotion": true, "blendDuration": 0.1 },
-					"loop": { "duration": -1.0, "animationName": "DefenseL_Loop_Root",	 "useRootMotion": true, "blendDuration": 0.1, "loop": true },
-					"parry":{ "duration": -1.0, "animationName": "DefenseL_Parry01_Root","useRootMotion": true, "blendDuration": 0.1 },
-					"hit":	{ "duration": -1.0, "animationName": "DefenseL_Hit01_Root",	 "useRootMotion": true, "blendDuration": 0.1 },
-					"end":	{ "duration": 0.35, "animationName": "DefenseL2APose_Root",	 "useRootMotion": true, "blendDuration": 0.1 }
+					"start": {
+						"duration": 0.35,
+						"animationName": "APose2DefenseL_Root",
+						"useRootMotion": true,
+						"blendDuration": 0.1
+					},
+					"loop": {
+						"duration": -1.0,
+						"animationName": "DefenseL_Loop_Root",
+						"useRootMotion": true,
+						"blendDuration": 0.1,
+						"loop": true
+					},
+					"parry": {
+						"duration": -1.0,
+						"animationName": "DefenseL_Parry01_Root",
+						"useRootMotion": true,
+						"blendDuration": 0.1
+					},
+					"hit": {
+						"duration": -1.0,
+						"animationName": "DefenseL_Hit01_Root",
+						"useRootMotion": true,
+						"blendDuration": 0.1
+					},
+					"end": {
+						"duration": 0.35,
+						"animationName": "DefenseL2APose_Root",
+						"useRootMotion": true,
+						"blendDuration": 0.1
+					}
 				}
 			}
 		},
-		{ "type": "CameraTarget" },
+		{
+			"type": "CameraTarget"
+		},
 		{
 			"type": "PlayerCombatMovement",
-			"params": { "walkSpeed": 2.0, "runSpeed": 6.0 }
+			"params": {
+				"walkSpeed": 2.0,
+				"runSpeed": 6.0
+			}
 		},
 		{
 			"type": "PlayerAttackSelector",
-			"params": { "attackTablePath": "Asset/Data/Game/PlayerAttackTable.json" }
+			"params": {
+				"attackTablePath": "Asset/Data/Game/PlayerAttackTable.json"
+			}
 		},
-		{ "type": "PlayerFacing" },
+		{
+			"type": "PlayerFacing"
+		},
 		{
 			"type": "BoneSockets",
-			"params": { "bones": ["mixamorig:LeftHand", "mixamorig:LeftForeArm", "mixamorig:LeftArm", "mixamorig:LeftShoulder"] }
+			"params": {
+				"bones": [
+					"mixamorig:LeftHand",
+					"mixamorig:LeftForeArm",
+					"mixamorig:LeftArm",
+					"mixamorig:LeftShoulder"
+				]
+			}
 		}
 	],
 	"children": [
@@ -181,11 +414,25 @@
 			"components": [
 				{
 					"type": "AttachToBone",
-					"params": { "bone": "katana_r", "position": [0.0, 0.0, 0.0], "rotationEulerDeg": [0, 0, -90] }
+					"params": {
+						"bone": "katana_r",
+						"position": [
+							0.0,
+							0.0,
+							0.0
+						],
+						"rotationEulerDeg": [
+							0,
+							0,
+							-90
+						]
+					}
 				},
 				{
 					"type": "ModelRender",
-					"params": { "model": "Asset/Models/Character/GhostSamurai/Katana.gltf" }
+					"params": {
+						"model": "Asset/Models/Character/GhostSamurai/Katana.gltf"
+					}
 				},
 				{
 					"type": "Collider",
@@ -196,16 +443,28 @@
 							{
 								"name": "HitBox",
 								"shape": "Box",
-								"halfExtents": [0.3, 0.3, 1.0],
-								"offset": [0.0, 0.0, -0.75],
-								"categoryMask": ["HitBox"],
+								"halfExtents": [
+									0.3,
+									0.3,
+									1.0
+								],
+								"offset": [
+									0.0,
+									0.0,
+									-0.75
+								],
+								"categoryMask": [
+									"HitBox"
+								],
 								"enabled": false,
 								"isTrigger": true
 							}
 						]
 					}
 				},
-				{ "type": "AttackSource" },
+				{
+					"type": "AttackSource"
+				},
 				{
 					"type": "TwoBoneIK",
 					"params": {
@@ -217,9 +476,25 @@
 				},
 				{
 					"type": "SlashTrail",
-					"params": { "trailName": "Sword", "base": [0, 0, -1.0], "tip": [0, 0, -1.75], "key": "Sword_Player", "emitOnStart": true }
+					"params": {
+						"trailName": "Sword",
+						"base": [
+							0,
+							0,
+							-1.0
+						],
+						"tip": [
+							0,
+							0,
+							-1.75
+						],
+						"key": "Sword_Player",
+						"emitOnStart": true
+					}
 				},
-				{ "type": "Weapon" }
+				{
+					"type": "Weapon"
+				}
 			]
 		}
 	]

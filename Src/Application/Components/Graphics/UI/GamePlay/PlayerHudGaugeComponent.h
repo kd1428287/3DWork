@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "GaugeBarRenderer.h"
 #include "Application/Definitions/UI/GaugeBarStyle.h"
 #include "GaugeWatcher.h"
@@ -12,22 +12,23 @@ public:
 	void Awake() override
 	{
 		SceneContext* ctx = GetOwner()->GetContext();
+		assert(ctx && ctx->eventBus && "PlayerHudGaugeComponent: eventBusがありません");
+
+		healthSkin_.Load(healthStyle_);
+		postureSkin_.Load(postureStyle_);
+
 		watcher_.Init(ctx->eventBus, ctx->player);
 	}
 
 	void DrawSprite() override
 	{
 		KdSpriteShader& shader = KdShaderManager::Instance().m_spriteShader;
+		const Math::Vector2 pivot = { 0.0f, 0.0f };
 
-		auto hpFrame = KdAssets::Instance().m_textures.GetData(healthStyle_.FrameTexName);
-		auto hpFill = KdAssets::Instance().m_textures.GetData(healthStyle_.FillTexName);
 		GaugeBarRenderer::Draw(shader, healthBarPos_, healthBarSize_, watcher_.GetHealthRatio(),
-			hpFrame.get(), hpFill.get(), kWhiteColor, { 0.0f, 0.0f }, healthStyle_.FrameBorder);
-
-		auto postureFrame = KdAssets::Instance().m_textures.GetData(postureStyle_.FrameTexName);
-		auto postureFill = KdAssets::Instance().m_textures.GetData(postureStyle_.FillTexName);
+			healthSkin_, kWhiteColor, pivot);
 		GaugeBarRenderer::Draw(shader, postureBarPos_, postureBarSize_, watcher_.GetPostureRatio(),
-			postureFrame.get(), postureFill.get(), kWhiteColor, { 0.0f, 0.0f }, postureStyle_.FrameBorder);
+			postureSkin_, kWhiteColor, pivot);
 	}
 
 private:
@@ -41,4 +42,7 @@ private:
 
 	GaugeBarStyle healthStyle_{ "UI/hp_back", "UI/hp_fill", 8 };
 	GaugeBarStyle postureStyle_{ "UI/posture_back", "UI/posture_fill", 8 };
+
+	GaugeBarSkin healthSkin_;
+	GaugeBarSkin postureSkin_;
 };

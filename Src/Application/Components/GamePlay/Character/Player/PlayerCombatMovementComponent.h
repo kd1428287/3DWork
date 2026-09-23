@@ -40,7 +40,7 @@ public:
 
 	void SetConfig(const Config& config) { SetMovementSpeeds(config.walkSpeed, config.runSpeed); }
 
-	void Start() override;
+	void Awake() override;
 
 	void SetMovementSpeeds(float walkSpeed, float runSpeed) {
 		walkSpeed_ = walkSpeed;

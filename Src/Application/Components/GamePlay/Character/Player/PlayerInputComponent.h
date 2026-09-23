@@ -24,7 +24,7 @@ public:
 	{
 		actionBuffer_ = GetOwner()->GetComponent<PlayerActionBufferComponent>();
 		if (actionBuffer_ == nullptr) {
-			actionBuffer_ = GetOwner()->AddComponent<PlayerActionBufferComponent>();
+			actionBuffer_ = GetOwner()->RequestAddComponent<PlayerActionBufferComponent>();
 		}
 	}
 

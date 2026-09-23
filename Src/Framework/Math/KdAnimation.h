@@ -87,6 +87,8 @@ public:
 	// (AdvanceTime()の前後でこの値を比較し、巻き戻ったかどうかを見る)に使う。
 	float GetTime() const { return m_time; }
 
+	float GetNormalizedTime() const { return (m_time - m_startTime) / (m_endTime - m_startTime); }
+
 private:
 
 	std::shared_ptr<KdAnimationData>	m_spAnimation = nullptr;	// 再生するアニメーションデータ

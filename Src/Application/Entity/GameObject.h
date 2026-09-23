@@ -112,9 +112,29 @@ public:
 	// 実際の追加/削除はFlushComponentChanges()が呼ばれるまで遅延される
 	// (ObjectManager::Destroy()+Flush()と全く同じ考え方)。
 	template <typename T, typename... Args>
-	void RequestAddComponent(Args... args) {
-		pendingActions_.push_back(
-			[this, args...]() { AddComponent<T>(args...); });
+	T* RequestAddComponent(Args&&... args) {
+		auto component = std::make_unique<T>(this, std::forward<Args>(args)...);
+		T* rawPtr = component.get();
+
+		// unique_ptrをshared_ptrに包むことで、コピー可能な状態を作る
+		auto sharedWrapper = std::make_shared<std::unique_ptr<T>>(std::move(component));
+
+		pendingActions_.push_back([this, sharedWrapper]() mutable {
+			const ComponentTypeId id = GetComponentTypeId<T>();
+
+			// 実行時にshared_ptrの中からunique_ptrをムーブして取り出す
+			std::unique_ptr<T> comp = std::move(*sharedWrapper);
+			T* ptr = comp.get();
+			ComponentBase* base = ptr;
+
+			components_[id] = std::move(comp);
+			componentOrder_.push_back(id);
+
+			RegisterTags<T, TAG_INTERFACES>(ptr, base);
+			RequestAwake(ptr);
+			});
+
+		return rawPtr;
 	}
 
 	template <typename T>
@@ -143,6 +163,7 @@ public:
 		const float scaledDeltaTime = deltaTime * timeScale_;
 		for (const auto id : componentOrder_) {
 			ComponentBase* comp = components_[id].get();
+			
 			if (!comp->IsEnabled()) continue;
 			comp->Start();
 			comp->PreUpdate(scaledDeltaTime);

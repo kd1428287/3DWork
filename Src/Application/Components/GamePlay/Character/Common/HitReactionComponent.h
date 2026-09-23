@@ -72,9 +72,10 @@ public:
 private:
 	void OnCollisionEnter(const Events::Collision::CollisionEnterEvent& e);
 	void SpawnWeaponClashEffect(GameObject* attackerWeaponObj, bool isParry);
-	void SpawnDamageEffect(GameObject* self, GameObject* attackerWeaponObj);
+	void SpawnDamageEffect(GameObject* self, GameObject* attackerWeaponObj, const Math::Vector3& reflectDir);
 
 	Math::Vector3 ComputeKnockbackDirection(GameObject* attacker) const;
+	Math::Vector3 ComputeSplatterReflection(GameObject* attacker, const Math::Vector3& hitNormal) const;
 
 	IHitReactionQuery* query_ = nullptr;
 

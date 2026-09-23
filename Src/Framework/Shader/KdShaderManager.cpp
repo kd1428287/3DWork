@@ -17,6 +17,7 @@ void KdShaderManager::Init()
 	m_StandardShader.Init();
 	m_postProcessShader.Init();
 	m_slashTrailShader.Init();
+	m_particleShader.Init();
 
 	//============================================
 	// 定数バッファ

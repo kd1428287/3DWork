@@ -894,9 +894,6 @@
     <ClInclude Include="Src\Application\Components\Graphics\UI\GamePlay\EnemyWorldGaugeComponent.h">
       <Filter>Src\Application\Components\Graphics\UI\GamePlay</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\Graphics\UI\GamePlay\GaugeBarRenderer.h">
-      <Filter>Src\Application\Components\Graphics\UI\GamePlay</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Components\Graphics\UI\GamePlay\GaugeWatcher.h">
       <Filter>Src\Application\Components\Graphics\UI\GamePlay</Filter>
     </ClInclude>
@@ -959,6 +956,18 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Definitions\Loaders\EnemyAttackTableLoader.h">
       <Filter>Src\Application\Definitions\Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Graphics\UI\GamePlay\GaugeBarRenderer.h">
+      <Filter>Src\Application\Components\Graphics\UI\GamePlay</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Graphics\Effect\FootDustComponent.h">
+      <Filter>Src\Application\Components\Graphics\Effect</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\FootstepEventComponent.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Character\Common\FootstepTypes.h">
+      <Filter>Src\Application\Definitions\Character\Common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1267,6 +1276,12 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Definitions\Loaders\EnemyAttackTableLoader.cpp">
       <Filter>Src\Application\Definitions\Loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\Graphics\Effect\FootDustComponent.cpp">
+      <Filter>Src\Application\Components\Graphics\Effect</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\GamePlay\Character\Common\FootstepEventComponent.cpp">
+      <Filter>Src\Application\Components\GamePlay\Character\Common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

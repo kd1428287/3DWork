@@ -106,7 +106,6 @@ bool StateAttack::CanStartMove(const PlayerStatusController* controller) const {
 void StateEvade::Enter(PlayerStatusController* controller) {
 	phase_ = CombatState::Evade;
 	elapsed_ = 0.0f;
-	KdDebugGUI::Instance().AddLog("Evade");
 
 	// 回避中の移動は入力ではなく、決め打ちの軌道(RequestStepMove)、
 	// または(useRootMotionがtrueの場合)アニメーションのルートモーションに
@@ -128,19 +127,17 @@ void StateEvade::Enter(PlayerStatusController* controller) {
 	const float targetDuration = data.activeDuration + data.recoveryDuration;
 	controller->PlayAnimation(data.GetAnimationName(evadeDir), false, targetDuration, data.useRootMotion);
 	if (!data.useRootMotion) {
-		controller->RequestStepMove(data.evadeDirection, data.evadeDistance, data.activeDuration + data.recoveryDuration);
+		//controller->RequestStepMove(data.evadeDirection, data.evadeDistance, data.activeDuration + data.recoveryDuration);
 	}
 }
 
 void StateEvade::Exit(PlayerStatusController* controller) {
-	// EvadeRecovery終了(あるいは何らかの理由での中断)で必ず後始末する。
 	controller->CancelStepMove();
 }
 
 void StateEvade::Update(PlayerStatusController* controller, float deltaTime) {
 	elapsed_ += deltaTime;
 	const auto& data = controller->GetCurrentEvadeData();
-	KdDebugGUI::Instance().AddLog("Evade");
 	if (phase_ == CombatState::Evade && elapsed_ >= data.activeDuration) {
 		phase_ = CombatState::EvadeRecovery;
 		elapsed_ = 0.0f;
@@ -148,7 +145,6 @@ void StateEvade::Update(PlayerStatusController* controller, float deltaTime) {
 	}
 	else if (phase_ == CombatState::EvadeRecovery && elapsed_ >= data.recoveryDuration) {
 		controller->ChangeStateToNone();
-		KdDebugGUI::Instance().AddLog("\nEvadeRecovery");
 	}
 }
 

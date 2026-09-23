@@ -34,6 +34,47 @@ Math::Vector3 HitReactionComponent::ComputeKnockbackDirection(GameObject* attack
 	return dir;
 }
 
+Math::Vector3 HitReactionComponent::ComputeSplatterReflection(GameObject* attacker, const Math::Vector3& hitNormal) const
+{
+	Math::Vector3 normal = hitNormal;
+	if (normal.LengthSquared() < 1e-6f) {
+		normal = Math::Vector3(0.0f, 1.0f, 0.0f);
+	}
+	else {
+		normal.Normalize();
+	}
+
+	// 進行方向(攻撃者→自分)。取れなければ法線の逆をフォールバックに。
+	Math::Vector3 incoming = -normal;
+	if (attacker != nullptr && transform_ != nullptr) {
+		if (TransformComponent* attackerTransform = attacker->GetComponent<TransformComponent>()) {
+			Math::Vector3 toSelf = transform_->GetPosition() - attackerTransform->GetPosition();
+			if (toSelf.LengthSquared() > 1e-6f) {
+				toSelf.Normalize();
+				incoming = toSelf;
+			}
+		}
+	}
+
+	// 法線を攻撃者側へ向ける(hitNormalの符号規約に依存しないため)。
+	if (incoming.Dot(normal) > 0.0f) {
+		normal = -normal;
+	}
+
+	// 進行方向から体内向き成分を除き、外向き法線を混ぜる。
+	constexpr float kOutwardBlend = 0.4f;
+	const Math::Vector3 tangent = incoming - normal * incoming.Dot(normal);
+
+	Math::Vector3 dir = tangent + normal * kOutwardBlend;
+	if (dir.LengthSquared() < 1e-6f) {
+		dir = normal;
+	}
+	else {
+		dir.Normalize();
+	}
+	return dir;
+}
+
 void HitReactionComponent::OnCollisionEnter(const Events::Collision::CollisionEnterEvent& e)
 {
 	if (query_ == nullptr) return;
@@ -96,7 +137,8 @@ void HitReactionComponent::OnCollisionEnter(const Events::Collision::CollisionEn
 		if (transform_ != nullptr) {
 			if (SceneContext* context = GetOwner()->GetContext()) {
 				if (context->eventBus != nullptr) {
-					SpawnDamageEffect(e.selfObject, e.otherObject);
+					const Math::Vector3 reflectDir = ComputeSplatterReflection(attacker, e.hitResult.hitNormal);
+					SpawnDamageEffect(e.selfObject, e.otherObject, reflectDir);
 				}
 			}
 		}
@@ -163,7 +205,7 @@ void HitReactionComponent::SpawnWeaponClashEffect(GameObject* attackerWeaponObj,
 	PublishGenericEffect(*context->eventBus, id, clashPos, baseDir);
 }
 
-void HitReactionComponent::SpawnDamageEffect(GameObject* self, GameObject* attackerWeaponObj)
+void HitReactionComponent::SpawnDamageEffect(GameObject* self, GameObject* attackerWeaponObj, const Math::Vector3& reflectDir)
 {
 	if (attackerWeaponObj == nullptr) return;
 
@@ -179,5 +221,5 @@ void HitReactionComponent::SpawnDamageEffect(GameObject* self, GameObject* attac
 	const Math::Vector3 clashPos =
 		(attackerWeaponTransform->GetPosition() + myTransform->GetPosition()) * 0.5f;
 
-	PublishGenericEffect(*context->eventBus, config_.damageEffectName, clashPos);
+	PublishGenericEffect(*context->eventBus, config_.damageEffectName, clashPos, reflectDir);
 }

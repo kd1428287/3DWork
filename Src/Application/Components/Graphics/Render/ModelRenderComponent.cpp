@@ -42,7 +42,6 @@ void ModelRenderComponent::DrawUnLit()
 
 void ModelRenderComponent::DrawLit()
 {
-	KdShaderManager::Instance().ChangeRasterizerState(KdRasterizerState::CullNone);
 	if (layer_ & RenderLayer::DrawLit) { DrawModel(); }
 }
 

@@ -78,7 +78,7 @@
 					"HitStop",
 					"WeaponClashFx"
 				],
-				"damageEffectName": "BloodSplatter",
+				"damageEffectName": "InkSplash",
 				"parryEffectName": "WeaponClashParry",
 				"blockEffectName": "WeaponClashBlock",
 				"cameraShakeIntensity": 0.75,

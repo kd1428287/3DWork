@@ -60,6 +60,9 @@ public:
 		// 既に同じアニメーションを再生中なら再生しない
 		if (!force && spNowPlaying_ == animData) { return; }
 
+		// FootstepEventComponent等がクリップ切り替えを検知するために保持しておく
+		currentAnimName_ = animName;
+
 		// 遷移前のポーズをスナップショットしておく
 		if (spNowPlaying_ != nullptr) {
 			const auto& nodes = skeleton_->WorkModel().WorkNodes();
@@ -151,6 +154,16 @@ public:
 	// 現在のアニメーションが最後まで再生し終わったか(ループ再生時は常にfalse)
 	bool IsAnimationEnd() const { return animator_.IsAnimationEnd(); }
 
+	// 現在再生中のアニメーション名(FootstepEventComponent等のクリップ切り替え検知用)
+	std::string_view GetCurrentAnimationName() const { return currentAnimName_; }
+
+	// 現在の再生位置を0.0〜1.0の比率で返す。速度スケーリングの影響を受けないため、
+	// 接地タイミング等を実時間ではなく比率で判定したい場合に使う。
+	float GetNormalizedTime() const
+	{
+		return animator_.GetNormalizedTime();
+	}
+
 	// --- ルートモーション ---------------------------------------------
 	// 抽出設定を丸ごと渡す。boneNameが空なら無効。
 	void SetRootMotionConfig(const RootMotionConfig& config) { rootMotion_.SetConfig(config); }
@@ -198,6 +211,9 @@ private:
 
 	// 現在再生中のアニメーションデータ
 	std::shared_ptr<KdAnimationData>	spNowPlaying_ = nullptr;
+
+	// 現在再生中のアニメーション名(GetCurrentAnimationName()用)
+	std::string							currentAnimName_;
 
 	float								speedScale_ = 1.0f;
 

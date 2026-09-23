@@ -3,7 +3,7 @@
 #include "../../../Physics/Movement/MovementComponent.h"
 #include "../../../Physics/Movement/TweenMoveComponent.h"
 
-void PlayerCombatMovementComponent::Start()
+void PlayerCombatMovementComponent::Awake()
 {
 	movementComponent_ = GetOwner()->GetComponent<MovementComponent>();
 
@@ -14,7 +14,7 @@ void PlayerCombatMovementComponent::Start()
 	//   即時追加ができない)場合は、そちらに置き換えてください。
 	tweenMoveComponent_ = GetOwner()->GetComponent<TweenMoveComponent>();
 	if (tweenMoveComponent_ == nullptr) {
-		tweenMoveComponent_ = GetOwner()->AddComponent<TweenMoveComponent>();
+		tweenMoveComponent_ = GetOwner()->RequestAddComponent<TweenMoveComponent>();
 	}
 }
 

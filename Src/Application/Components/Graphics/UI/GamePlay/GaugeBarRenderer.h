@@ -1,9 +1,39 @@
 #pragma once
+#include <algorithm>
+#include "Application/Definitions/UI/GaugeBarStyle.h"
 
-// ゲージバー(HP/体幹等)の見た目だけを描画するステートレスなユーティリティ
+//===================================================
+//
+// ゲージバー(HP/体幹等)の見た目を描画するだけの
+// ステートレスなユーティリティ
+// ・座標/数値/テクスチャは呼び出し側からすべて渡してもらう
+// 　ことで、画面固定UI/ワールド追従UIの両方から共通利用できる
+//
+//===================================================
+
+// 読み込み済みのゲージ見た目。毎フレームのアセット検索を避けるためAwakeでLoadして使う
+struct GaugeBarSkin
+{
+	std::shared_ptr<KdTexture> frameTex;
+	std::shared_ptr<KdTexture> fillTex;
+	int frameBorder = 0;
+
+	void Load(const GaugeBarStyle& style)
+	{
+		frameTex    = KdAssets::Instance().m_textures.GetData(style.FrameTexName);
+		fillTex     = KdAssets::Instance().m_textures.GetData(style.FillTexName);
+		frameBorder = style.FrameBorder;
+	}
+};
+
 struct GaugeBarRenderer
 {
-	// ゲージ1本を描画する(frameBorder>0で枠+背景一体テクスチャを9スライス)
+	// ゲージ1本を描画する(shaderはBegin～End間で呼ぶこと)
+	// ・ratio		… 現在値の割合(範囲外は内部でクランプ)
+	// ・fillTex	… nullptrなら何も描画しない
+	// ・tint		… 枠と中身の両方に掛ける色(フェードのアルファもここ)
+	// ・pivot		… KdSpriteShader::DrawTexと同じ意味
+	// ・frameBorder … 枠の厚み(px)。中身は枠の内側にこの分だけインセットして描く
 	static void Draw(
 		KdSpriteShader& shader,
 		const Math::Vector2& screenPos,
@@ -21,54 +51,35 @@ struct GaugeBarRenderer
 
 		if (frameTex)
 		{
-			if (frameBorder > 0)
-				DrawNineSliceFrame(shader, frameTex, screenPos, size, pivot, frameBorder);
-			else
-				shader.DrawTex(frameTex, (int)screenPos.x, (int)screenPos.y, (int)size.x, (int)size.y, nullptr, &kWhiteColor, pivot);
+			shader.DrawTex(frameTex, (int)screenPos.x, (int)screenPos.y, (int)size.x, (int)size.y, nullptr, &tint, pivot);
 		}
 
-		// FillRatioは呼ぶたびに必ず1.0fへ戻す(戻し忘れ防止)
+		// 枠の厚みがバーより大きくても中身が反転しないよう上限を掛ける
+		float border = std::clamp((float)frameBorder, 0.0f, (std::min(size.x, size.y) - 1.0f) * 0.5f);
+
+		// 四方をborderずつ縮めた矩形を、同じpivotで置き直した座標(pivotの向きに依らず成立)
+		Math::Vector2 fillSize = { size.x - border * 2.0f, size.y - border * 2.0f };
+		Math::Vector2 fillPos  = {
+			screenPos.x + border * (1.0f - pivot.x * 2.0f),
+			screenPos.y + border * (1.0f - pivot.y * 2.0f) };
+
+		// 【注意】FillRatioは必ず1.0fへ戻す。戻し忘れると後続スプライトまで切り抜かれる
 		shader.SetFillRatio(clampedRatio);
-		shader.DrawTex(fillTex, (int)screenPos.x, (int)screenPos.y, (int)size.x, (int)size.y, nullptr, &tint, pivot);
+		shader.DrawTex(fillTex, (int)fillPos.x, (int)fillPos.y, (int)fillSize.x, (int)fillSize.y, nullptr, &tint, pivot);
 		shader.SetFillRatio(1.0f);
 	}
 
-private:
-	// 3x3(角4+辺4+中央1)に分割し、角のサイズを保ったまま描画する
-	static void DrawNineSliceFrame(
+	// Skin版:テクスチャと枠の厚みをまとめて渡す
+	static void Draw(
 		KdSpriteShader& shader,
-		const KdTexture* tex,
 		const Math::Vector2& screenPos,
 		const Math::Vector2& size,
-		const Math::Vector2& pivot,
-		int border)
+		float ratio,
+		const GaugeBarSkin& skin,
+		const Math::Color& tint = kWhiteColor,
+		const Math::Vector2& pivot = { 0.5f, 0.5f })
 	{
-		const int texW = tex->GetInfo().Width;
-		const int texH = tex->GetInfo().Height;
-
-		const int left = (int)(screenPos.x - pivot.x * size.x);
-		const int top = (int)(screenPos.y - pivot.y * size.y);
-		const int w = (int)size.x;
-		const int h = (int)size.y;
-
-		const int srcColW[3] = { border, texW - border * 2, border };
-		const int srcRowH[3] = { border, texH - border * 2, border };
-		const int dstColW[3] = { border, std::max(0, w - border * 2), border };
-		const int dstRowH[3] = { border, std::max(0, h - border * 2), border };
-
-		int srcY = 0, dstY = top;
-		for (int row = 0; row < 3; ++row)
-		{
-			int srcX = 0, dstX = left;
-			for (int col = 0; col < 3; ++col)
-			{
-				Math::Rectangle srcRect(srcX, srcY, srcColW[col], srcRowH[row]);
-				shader.DrawTex(tex, dstX, dstY, dstColW[col], dstRowH[row], &srcRect, &kWhiteColor, { 0.0f, 0.0f });
-				srcX += srcColW[col];
-				dstX += dstColW[col];
-			}
-			srcY += srcRowH[row];
-			dstY += dstRowH[row];
-		}
+		Draw(shader, screenPos, size, ratio,
+			skin.frameTex.get(), skin.fillTex.get(), tint, pivot, skin.frameBorder);
 	}
 };
