@@ -1,6 +1,4 @@
 ﻿#pragma once
-#include <nlohmann/json.hpp>
-#include <type_traits>
 
 template <typename Enum>
 class BitFlags {

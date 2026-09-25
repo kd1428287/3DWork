@@ -95,6 +95,7 @@ struct KdGLTFAnimationData
 	std::string				m_name;
 	// アニメの長さ
 	float					m_maxLength = 0;
+	int						m_fps = 0;
 	// １ノードのアニメーションデータ
 	struct Node
 	{

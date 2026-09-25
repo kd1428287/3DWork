@@ -1,6 +1,5 @@
 ﻿#pragma once
-#include "GaugeBarRenderer.h"
-#include "Application/Definitions/UI/GaugeBarStyle.h"
+#include "GaugeBar.h"
 #include "GaugeWatcher.h"
 #include "../../../Core/TransformComponent.h"
 #include "../../../GamePlay/Camera/CameraComponent.h"
@@ -10,17 +9,22 @@
 class EnemyWorldGaugeComponent : public ComponentBase, public IRenderable
 {
 public:
-	explicit EnemyWorldGaugeComponent(GameObject* owner) : ComponentBase(owner) {}
+	explicit EnemyWorldGaugeComponent(GameObject* owner) : ComponentBase(owner)
+	{
+		// 敵のHPは小さいバー用の絵に差し替える(絵自体に色があるので色は掛けない)
+		GaugeBarPreset& hp = healthBar_.Preset();
+		hp.style = GaugeBarStyle{ "UI/enemy_hp_back", "UI/enemy_hp_fill", 4 };
+		hp.capsule = false;
+		hp.fillColor = kWhiteColor;
+	}
 
 	// AddComponent直後(Startより前)に呼ぶこと
 	void SetTarget(Handle<GameObject> target) { pendingTarget_ = target; }
 
 	void Awake() override
 	{
-		healthSkin_.Load(healthStyle_);
-		postureSkin_.Load(postureStyle_);
-		healthSkin_.fillColor = healthColor_;
-		postureSkin_.fillColor = postureColor_;
+		healthBar_.Load();
+		postureBar_.Load();
 	}
 
 	// 対象のHealth等が他オブジェクトのAwakeに依存しないよう、購読はStartで行う
@@ -31,10 +35,15 @@ public:
 		watcher_.Init(&GetOwner()->GetSceneEventBus(), pendingTarget_, [this]() { DestroySelf(); });
 	}
 
-	void Update(float deltaTime) override
+	void Update(float) override
 	{
 		// 死亡以外(シーン遷移・デスポーン等)で対象が消えた場合も追従して消える
-		if (!pendingTarget_.Resolve()) { DestroySelf(); }
+		if (!pendingTarget_.Resolve()) { DestroySelf(); return; }
+
+		// UIの演出はヒットストップ等に影響されないよう、スケールなしの経過時間で進める
+		const float dt = GetOwner()->GetContext()->unscaledDeltaTime;
+		healthBar_.Update(dt, watcher_.GetHealthRatio());
+		postureBar_.Update(dt, watcher_.GetPostureRatio());
 	}
 
 	void DrawSprite() override
@@ -56,12 +65,10 @@ public:
 		const Math::Vector2 pivot = { 0.5f, 0.0f };
 
 		Math::Vector2 healthPos = { screenPos3D.x, screenPos3D.y };
-		GaugeBarRenderer::Draw(shader, healthPos, healthBarSize_, watcher_.GetHealthRatio(),
-			healthSkin_, kWhiteColor, pivot);
+		healthBar_.Draw(shader, healthPos, healthBarSize_, pivot);
 
 		Math::Vector2 posturePos = { screenPos3D.x, screenPos3D.y + healthBarSize_.y + 2.0f };
-		GaugeBarRenderer::Draw(shader, posturePos, postureBarSize_, watcher_.GetPostureRatio(),
-			postureSkin_, kWhiteColor, pivot);
+		postureBar_.Draw(shader, posturePos, postureBarSize_, pivot);
 	}
 
 private:
@@ -73,17 +80,11 @@ private:
 	Handle<GameObject> pendingTarget_;
 	GaugeWatcher watcher_;
 
+	GaugeBar healthBar_{ GaugeBarType::Health };
+	GaugeBar postureBar_{ GaugeBarType::Posture };
+
 	Math::Vector3 worldOffset_ = { 0.0f, 2.0f, 0.0f };
 
 	Math::Vector2 healthBarSize_ = { 80.0f, 10.0f };
 	Math::Vector2 postureBarSize_ = { 80.0f, 6.0f };
-
-	// 枠+背景が1枚の画像、中身は単色(FillTexNameが空)
-	GaugeBarStyle healthStyle_{ "UI/enemy_hp_back", "", 4 };
-	GaugeBarStyle postureStyle_{ "UI/enemy_posture_back", "", 4 };
-	Math::Color healthColor_ = { 0.8f, 0.1f, 0.1f, 1.0f };
-	Math::Color postureColor_ = { 0.9f, 0.7f, 0.1f, 1.0f };
-
-	GaugeBarSkin healthSkin_;
-	GaugeBarSkin postureSkin_;
 };

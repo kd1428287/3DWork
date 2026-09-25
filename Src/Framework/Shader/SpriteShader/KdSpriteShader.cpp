@@ -1,4 +1,4 @@
-#include "Framework/KdFramework.h"
+﻿#include "Framework/KdFramework.h"
 
 #include "KdSpriteShader.h"
 
@@ -15,7 +15,7 @@ bool KdSpriteShader::Init()
 
 		// 頂点シェーダー作成
 		if (FAILED(KdDirect3D::Instance().WorkDev()->CreateVertexShader(compiledBuffer, sizeof(compiledBuffer), nullptr, &m_VS))) {
-			assert(0 && "頂点シェーダー作成失敗");
+			//assert(0 && "頂点シェーダー作成失敗");
 			Release();
 			return false;
 		}
@@ -34,7 +34,7 @@ bool KdSpriteShader::Init()
 			sizeof(compiledBuffer),
 			&m_VLayout))
 		){
-			assert(0 && "CreateInputLayout失敗");
+			//assert(0 && "CreateInputLayout失敗");
 			Release();
 			return false;
 		}
@@ -48,7 +48,7 @@ bool KdSpriteShader::Init()
 		#include "KdSpriteShader_PS.shaderInc"
 
 		if (FAILED(KdDirect3D::Instance().WorkDev()->CreatePixelShader(compiledBuffer, sizeof(compiledBuffer), nullptr, &m_PS))) {
-			assert(0 && "ピクセルシェーダー作成失敗");
+			//assert(0 && "ピクセルシェーダー作成失敗");
 			Release();
 			return false;
 		}

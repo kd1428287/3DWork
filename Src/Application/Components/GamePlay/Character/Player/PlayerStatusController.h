@@ -22,6 +22,7 @@ struct PlayerStatusControllerConfig
 {
 	EvadeData evade;
 	GuardData guard;
+	ChargeData charge;
 };
 
 // PlayerStatusController(責務再構成版)
@@ -40,7 +41,11 @@ public:
 
 	explicit PlayerStatusController(GameObject* owner) : ComponentBase(owner) {}
 
-	void SetConfig(const Config& config) { SetEvadeAndGuardData(config.evade, config.guard); }
+	void SetConfig(const Config& config)
+	{
+		SetEvadeAndGuardData(config.evade, config.guard);
+		baseChargeData_ = config.charge;
+	}
 
 	void Awake() override;
 	void Update(float deltaTime) override;
@@ -56,6 +61,7 @@ public:
 	bool IsEvading() const { return GetCombatState() == CombatState::Evade || GetCombatState() == CombatState::EvadeRecovery; }
 	bool IsStaggered() const { return GetCombatState() == CombatState::StaggerSmall || GetCombatState() == CombatState::StaggerLarge; }
 	bool IsGuarding() const override { return GetCombatState() == CombatState::Guard; }
+	bool IsCharging() const { return GetCombatState() == CombatState::Charge; }
 
 	bool IsInJustEvadeWindow() const { return stateMachine_.Current()->IsInJustEvadeWindow(this); }
 	bool IsInParryWindow() const override { return stateMachine_.Current()->IsInParryWindow(this); }
@@ -74,6 +80,10 @@ public:
 	// --- 現在実行中の技データ(Stateが毎フレーム参照する) ---
 	const EvadeData& GetCurrentEvadeData() const { return currentEvade_; }
 	const GuardData& GetCurrentGuardData() const { return currentGuard_; }
+	const ChargeData& GetChargeData() const { return baseChargeData_; }
+
+	// 現在の攻撃に掛けるダメージ倍率(通常攻撃は1.0、チャージ攻撃は溜め量で決まる)。
+	float GetAttackDamageScale() const { return attackDamageScale_; }
 
 	// 回避方向の分類。現在の向き(Transform)を必要とするためfacing_へ委譲する。
 	EvadeDirection ClassifyEvadeDirection(const Math::Vector3& inputDirection) const;
@@ -83,6 +93,10 @@ public:
 	bool TryStartAttack();
 	bool TryStartEvade(const EvadeData& data);
 	bool TryStartGuard();
+	bool TryStartCharge();
+
+	// 溜めを解放してチャージ攻撃を発射する。HandleActionInputから呼ぶ。
+	void ReleaseCharge();
 	void ApplyStagger(bool isLarge, float duration);
 
 	// --- IHitReactionQuery ---
@@ -162,12 +176,15 @@ private:
 	EvadeData currentEvade_;
 	GuardData baseGuardData_;
 	GuardData currentGuard_;
+	ChargeData baseChargeData_;
+	float attackDamageScale_ = 1.0f;
 
 	// --- Stateインスタンス ---
 	StateNone    stateNone_;
 	StateAttack  stateAttack_;
 	StateEvade   stateEvade_;
 	StateGuard   stateGuard_;
+	StateCharge  stateCharge_;
 	StateStagger stateStagger_;
 
 	StateMachine<PlayerStatusController, IPlayerState> stateMachine_;

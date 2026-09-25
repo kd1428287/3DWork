@@ -77,7 +77,7 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 		{ FootSide::Right, "Right" },
 		})
 
-		COMPONENT_PARAMS_DEFINE_TYPE(SkeletonConfig, model, animations)
+	COMPONENT_PARAMS_DEFINE_TYPE(SkeletonConfig, model, animations)
 
 	COMPONENT_PARAMS_DEFINE_TYPE(RootMotionConfig,
 		boneName, unitScale, forwardAxis, forwardSign, rightAxis, rightSign, extractRotation, yawSign)
@@ -144,6 +144,14 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 		std::string attackTablePath;
 	};
 	COMPONENT_PARAMS_DEFINE_TYPE(PlayerAttackSelectorParams, attackTablePath)
+
+		// 武器(攻撃部位)を登録するスロット名。未指定ならPlayer同様"Main"扱い
+		// (既存Prefabは変更不要)。敵が複数の攻撃部位を持つ場合に指定する。
+		struct WeaponParams
+	{
+		std::string slot = "Main";
+	};
+	COMPONENT_PARAMS_DEFINE_TYPE(WeaponParams, slot)
 
 		// 親のボーンに追従するソケット用オブジェクトを、boneごとに生成する。
 		struct BoneSocketsParams
@@ -335,9 +343,9 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 	}
 
 	// 親がPlayerStatusController/EnemyAIControllerのいずれかを持つ場合は、自分を武器として登録する。
-	// (両者ともPlayer同様の設計でWeaponSetComponentへ委譲するSetWeapon()を持つ。
-	// EnemyAIController.h冒頭コメント参照)
-	void BuildWeapon(BuildContext& ctx, const nlohmann::json&)
+	// Playerは単一武器のみ(SetWeapon()は変更していない)。Enemyは攻撃部位を
+	// 複数持ちうるため、params.slotで登録先スロットを指定する。
+	void BuildWeapon(BuildContext& ctx, const WeaponParams& p)
 	{
 		auto* weapon = ctx.Add<WeaponComponent>();
 		if (!ctx.parent) return;
@@ -346,7 +354,7 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 			controller->SetWeapon(Handle<WeaponComponent>(weapon));
 		}
 		else if (auto* enemy = ctx.parent->GetComponent<EnemyAIController>()) {
-			enemy->SetWeapon(Handle<WeaponComponent>(weapon));
+			enemy->SetWeapon(p.slot, Handle<WeaponComponent>(weapon));
 		}
 	}
 
@@ -412,7 +420,7 @@ void RegisterAllComponents(ComponentRegistry& registry)
 	// --- 武器・ソケット ---
 	registry.AddWithParams<BoneSocketsParams>("BoneSockets", BuildBoneSockets);
 	registry.AddWithParams<AttachToBoneParams>("AttachToBone", BuildAttachToBone);
-	registry.AddRaw("Weapon", BuildWeapon);
+	registry.AddWithParams<WeaponParams>("Weapon", BuildWeapon);
 
 	registry.AddRaw("AttackSource", [](BuildContext& ctx, const nlohmann::json&) {
 		GameObject* owner = RequireParent(ctx, "AttackSource");

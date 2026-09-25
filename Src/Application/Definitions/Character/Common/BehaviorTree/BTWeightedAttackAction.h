@@ -24,33 +24,7 @@
 //   void SetWeaponHitBoxEnabled(const std::vector<std::string>&, bool)
 //   void SetWeaponTrailEmitting(const std::vector<std::string>&, bool)
 //   void NotifyAttackCompleted()
-//
-// 【IBTNode::Reset()の制約について】
-// IBTNode<T>::Reset()はcontext引数を受け取らない仕様のため、Active中
-// (HitBoxが有効な最中)に中断された場合にSetWeaponHitBoxEnabled(false)
-// で閉じたくてもcontrollerを直接参照できない。そのためTick()の冒頭で
-// 直前のcontextをlastContext_へキャッシュしておき、Reset()からは
-// それを使う回避策を取っている(旧EnemyActionAttack/WarrockActionAttack
-// と同じ回避策)。
-//
-// 【攻撃インターバルについて】
-// Recoveryフェーズが完了しSuccessを返す直前にcontext->NotifyAttackCompleted()
-// を呼び、次の攻撃までのインターバル(EnemyAIData::attackIntervalDuration)を
-// 開始させる。中断(Reset()経由)された場合はこの通知を行わない
-// (攻撃をやり切っていない以上、インターバルを課す理由が無いため)。
-//
-// 【フェーズ遷移が実データを読むようになった経緯(修正)】
-// 以前はWindup/Active/Recoveryの遷移条件が全て「elapsed_ >= 0」という
-// ハードコードのままだった(EnemyAttackDefinition::attackData.phaseData
-// 自体はWarrockAIData.h側で実際の秒数が設定済みだったが、この
-// Tick()側がまだそれを読んでいなかった)。elapsed_は0からdeltaTime分
-// しか進んでいない最初のTickで既に「0以上」を満たしてしまうため、
-// Windup→Active→Recoveryが実質同じフレームで連鎖的に完了し、
-// 「HitBoxが有効化された直後に無効化される」「アニメーションが
-// 最後まで再生される前に攻撃自体が終わる」といった不具合の原因に
-// なっていた。実際にphaseData.windup/active/recovery.targetDurationを
-// 読むよう修正した。
-//
+
 // 【今後の展望・改善案3】
 // もし「攻撃の形そのもの」(例: JumpAttackだけ移動を伴う突進にする等)
 // がWarrock固有に崩れてきたら、この共通化は足かせになる可能性がある。

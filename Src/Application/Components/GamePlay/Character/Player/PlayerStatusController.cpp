@@ -86,24 +86,11 @@ void PlayerStatusController::HandleMovementInput(const PlayerInputComponent& inp
 
 void PlayerStatusController::HandleActionInput(PlayerInputComponent& input)
 {
-	// スタン中(Stagger)は一切の行動入力を受け付けない。
 	if (IsStaggered()) return;
 
 	if (input.ConsumeLockPressed()) {
-		if (IsLockedOn()) {
-			ClearLockOn();
-		}
-		else {
-			TryLockOn();
-		}
-	}
-
-	if (input.IsGuardHeld()) {
-		TryStartGuard();
-	}
-	else if (GetCombatState() == CombatState::Guard && CanReleaseGuard()) {
-		// ガードキーを離したら解除要求を出す
-		RequestGuardRelease();
+		if (IsLockedOn()) ClearLockOn();
+		else TryLockOn();
 	}
 
 	if (input.HasCommand(ActionCommand::Evade) && CanStartEvade()) {
@@ -111,9 +98,25 @@ void PlayerStatusController::HandleActionInput(PlayerInputComponent& input)
 		input.ConsumeCommand(ActionCommand::Evade, data.evadeDirection);
 		TryStartEvade(data);
 	}
+	else if (input.HasCommand(ActionCommand::Attack) && CanStartAttack() && input.IsGuardHeld()) {
+		input.ConsumeCommand(ActionCommand::Attack);
+		input.ConsumeCommand(ActionCommand::Guard); 
+		TryStartCharge();
+	}
 	else if (input.HasCommand(ActionCommand::Attack) && CanStartAttack()) {
 		input.ConsumeCommand(ActionCommand::Attack);
 		TryStartAttack();
+	}
+	else if (input.HasCommand(ActionCommand::Guard) && CanStartGuard()) {
+		input.ConsumeCommand(ActionCommand::Guard);
+		TryStartGuard();
+	}
+	else if (!input.IsGuardHeld() && GetCombatState() == CombatState::Guard && CanReleaseGuard()) {
+		RequestGuardRelease();
+	}
+	else if (IsCharging() && !(input.IsAttackHeld() && input.IsGuardHeld())) {
+		// どちらかのボタンを離したら発射。
+		ReleaseCharge();
 	}
 }
 
@@ -127,6 +130,7 @@ bool PlayerStatusController::TryStartAttack()
 	if (!CanStartAttack()) return false;
 	if (attackSelector_ == nullptr || !attackSelector_->TryResolveNext(ActionCommand::Attack)) return false;
 
+	attackDamageScale_ = 1.0f;
 	ForceTransitionTo(&stateAttack_);
 	return true;
 }
@@ -143,8 +147,29 @@ bool PlayerStatusController::TryStartGuard()
 {
 	if (!CanStartGuard()) return false;
 	currentGuard_ = baseGuardData_;
-	TransitionTo(&stateGuard_);
+	ForceTransitionTo(&stateGuard_);
 	return true;
+}
+
+bool PlayerStatusController::TryStartCharge()
+{
+	if (!CanStartAttack() || !CanStartGuard()) return false;
+	ForceTransitionTo(&stateCharge_);
+	return true;
+}
+
+void PlayerStatusController::ReleaseCharge()
+{
+	if (!IsCharging()) return;
+
+	// チャージ技が未登録なら、溜めを捨ててNoneへ戻る。
+	if (attackSelector_ == nullptr || !attackSelector_->TryResolveNext(ActionCommand::ChargeAttack)) {
+		ChangeStateToNone();
+		return;
+	}
+
+	attackDamageScale_ = baseChargeData_.GetDamageScale(GetCombatElapsed());
+	ForceTransitionTo(&stateAttack_);
 }
 
 void PlayerStatusController::ApplyStagger(bool isLarge, float duration)
@@ -292,7 +317,13 @@ void PlayerStatusController::OnStateChanged(IPlayerState* prevState, IPlayerStat
 		combatMovement_->SetMovementEnabled(nextState == &stateNone_);
 	}
 	if (facing_ != nullptr) {
-		facing_->SetFacingEnabled(nextState == &stateNone_);
+		// None: movement追従で向く。Attack: FaceAttackTarget()のoverrideで向く。
+		// Evade/Guard/Staggerはfacing完全停止(現在の向きを保つ)。
+		facing_->SetFacingEnabled(nextState == &stateNone_ || nextState == &stateAttack_);
+
+		if (nextState != &stateAttack_) {
+			facing_->ClearAttackFacingOverride();
+		}
 	}
 
 	if (attackSelector_ == nullptr) return;

@@ -27,6 +27,7 @@ enum class CombatState
 	Guard,
 	StaggerSmall,
 	StaggerLarge,
+	Charge,
 };
 
 
@@ -43,6 +44,8 @@ enum class ActionCommand
 {
 	Attack,
 	Evade,
+	Guard,
+	ChargeAttack, // Attack+Guard同時押しで溜め開始→離して発射する技のエントリ用
 };
 
 // Player用の入力バッファコンポーネントの具体化。
@@ -323,6 +326,22 @@ struct GuardData
 	MotionClipData parry;
 	MotionClipData hit;
 	MotionClipData end;
+};
+
+// --- チャージ攻撃の溜めデータ ----------------------------------------
+struct ChargeData
+{
+	float maxChargeTime = 1.5f;  // この秒数で最大チャージ(以降は保持)
+	float minDamageScale = 1.0f; // 溜めなしで離した時のダメージ倍率
+	float maxDamageScale = 2.0f; // 最大チャージ時のダメージ倍率
+
+	MotionClipData loop; // 溜め中の構えアニメーション
+
+	float GetDamageScale(float elapsed) const
+	{
+		const float t = (maxChargeTime > 0.0f) ? std::clamp(elapsed / maxChargeTime, 0.0f, 1.0f) : 1.0f;
+		return minDamageScale + (maxDamageScale - minDamageScale) * t;
+	}
 };
 
 // 以前は配列サイズ(コンボ段数の上限)そのものを表す定数だったが、

@@ -50,6 +50,8 @@ public:
 	// よいかを伝える。
 	void SetFacingEnabled(bool enabled);
 
+	void ClearAttackFacingOverride();
+
 private:
 	void FaceTowards(GameObject* target);
 

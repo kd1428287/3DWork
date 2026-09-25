@@ -1,4 +1,4 @@
-#include "PlayerFacingComponent.h"
+﻿#include "PlayerFacingComponent.h"
 #include "PlayerLockOnComponent.h"
 #include "../../../Graphics/Animation/FacingDirectionComponent.h"
 
@@ -55,9 +55,16 @@ void PlayerFacingComponent::SetFacingEnabled(bool enabled)
 	}
 }
 
+void PlayerFacingComponent::ClearAttackFacingOverride()
+{
+	if (facingDirectionComponent_ != nullptr) {
+		facingDirectionComponent_->ClearTargetOverrideDirection();
+	}
+}
+
 void PlayerFacingComponent::FaceTowards(GameObject* target)
 {
-	if (target == nullptr || transform_ == nullptr) return;
+	if (target == nullptr || transform_ == nullptr || facingDirectionComponent_ == nullptr) return;
 
 	TransformComponent* targetTransform = target->GetComponent<TransformComponent>();
 	if (targetTransform == nullptr) return;
@@ -66,8 +73,6 @@ void PlayerFacingComponent::FaceTowards(GameObject* target)
 	dir.y = 0.0f;
 	if (dir.LengthSquared() <= kDirectionEpsilon) return;
 	dir.Normalize();
-	dir = -dir;
 
-	const float yaw = std::atan2(dir.x, dir.z);
-	transform_->SetRotation(Math::Quaternion::CreateFromAxisAngle(Math::Vector3::Up, yaw));
+	facingDirectionComponent_->SetTargetOverrideDirection(dir);
 }

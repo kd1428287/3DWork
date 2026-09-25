@@ -57,8 +57,7 @@ class EnemyAIController : public ComponentBase, public IMovementSource, public I
 {
 public:
 	EnemyAIController(GameObject* owner, const EnemyAIData& data, std::unique_ptr<IEnemyBehavior> behavior)
-		: ComponentBase(owner), data_(data), behavior_(std::move(behavior)) {
-	}
+		: ComponentBase(owner), data_(data), behavior_(std::move(behavior)) {}
 
 	void Awake() override
 	{
@@ -267,19 +266,12 @@ public:
 	}
 
 	// --- 武器の攻撃判定 --------------------------------------------------
-	// 【変更】以前はweaponCollider_/weaponAttackSource_という生の2Handleを
-	// 自前で持っていたが、Player同様WeaponSetComponentへ委譲する形にした
-	// (クラス冒頭コメント参照)。単一武器のEnemyを想定し、Playerと同じ
-	// "Main"スロットへ登録する簡易版のセッターとして提供する
-	// (複数武器を持つ敵種が出てきたら、スロット名を引数に取る形へ
-	// 拡張すること)。
-	void SetWeapon(Handle<WeaponComponent> weapon) {
-		if (weaponSet_ != nullptr) weaponSet_->RegisterWeapon(kMainWeaponSlot, weapon);
+	void SetWeapon(const std::string& slot, Handle<WeaponComponent> weapon) {
+		if (WeaponSetComponent* weaponSet = GetOwner()->GetComponent<WeaponSetComponent>()) {
+			weaponSet->RegisterWeapon(slot, weapon);
+		}
 	}
 
-	// 【変更】以前は引数なし(常に唯一の武器を指す)だったが、Player同様
-	// AttackData::weaponSlotsで対象スロットを指定できる形にした
-	// (BTWeightedAttackAction::Tick()参照)。
 	void SetWeaponHitBoxEnabled(const std::vector<std::string>& slots, bool enabled) {
 		if (weaponSet_ != nullptr) weaponSet_->SetHitBoxEnabled(slots, enabled);
 	}

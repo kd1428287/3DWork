@@ -73,8 +73,7 @@
 		{
 			"type": "HitReaction",
 			"params": {
-				"effectFrags": [
-					"CameraShake",
+				"effectFlags": [
 					"HitStop",
 					"WeaponClashFx"
 				],
@@ -84,12 +83,14 @@
 				"cameraShakeIntensity": 0.75,
 				"hitStopDelaySeconds": 0.0,
 				"hitStopDurationSeconds": 0.1,
-				"guardKnockbackPower": 2.0,
+				"guardKnockbackPower": 0.1,
 				"largeStaggerDuration": 0.6
 			}
 		},
 		{ "type": "LockOnTarget" },
-		{ "type": "WeaponSet" },
+		{
+			"type": "WeaponSet"
+		},
 		{
 			"type": "Movement",
 			"params": { "speed": 2.0 }
@@ -152,7 +153,34 @@
 							{
 								"name": "HitBox",
 								"shape": "Box",
-								"halfExtents": [5.0, 5.0, 5.1],
+								"halfExtents": [ 2.0, 2.0, 2.0 ],
+								"offset": [ 1.0, 1.0, 0.0 ],
+								"categoryMask": [ "HitBox" ],
+								"enabled": false,
+								"isTrigger": true
+							}
+						],
+						"wireFrame": true
+					}
+				},
+				{ "type": "AttackSource" },
+				{ "type": "Weapon" }
+			]
+		},
+		{
+			"name": "Off",
+			"scale": [0.5, 0.5, 0.5],
+			"components": [
+				{ "type": "AttachToBone", "params": { "bone": "mixamorig:LeftHand" } },
+				{
+					"type": "Collider",
+					"params": {
+						"ignoreParent": true,
+						"shapes": [
+							{
+								"name": "HitBox",
+								"shape": "Box",
+								"halfExtents": [2.0, 2.0, 2.0],
 								"offset": [1.0, 1.0, 0.0],
 								"categoryMask": ["HitBox"],
 								"enabled": false,
@@ -162,7 +190,33 @@
 					}
 				},
 				{ "type": "AttackSource" },
-				{ "type": "Weapon" }
+				{ "type": "Weapon", "params": { "slot": "Off" } }
+			]
+		},
+		{
+			"name": "Foot",
+			"scale": [0.5, 0.5, 0.5],
+			"components": [
+				{ "type": "AttachToBone", "params": { "bone": "mixamorig:RightFoot" } },
+				{
+					"type": "Collider",
+					"params": {
+						"ignoreParent": true,
+						"shapes": [
+							{
+								"name": "HitBox",
+								"shape": "Box",
+								"halfExtents": [2.0, 2.0, 2.0],
+								"offset": [0.0, 0.5, 0.5],
+								"categoryMask": ["HitBox"],
+								"enabled": false,
+								"isTrigger": true
+							}
+						]
+					}
+				},
+				{ "type": "AttackSource" },
+				{ "type": "Weapon", "params": { "slot": "Foot" } }
 			]
 		}
 	]

@@ -826,6 +826,20 @@ std::shared_ptr<KdGLTFModel> KdLoadGLTFModel(std::string_view path)
 			// データアクセサ
 			GLTFBufferGetter valueGetter(&model, sampler.output);
 
+			// --- 追加: 元のフレームレート（FPS）の算出と代入 ---
+			if (animation->m_fps == 0 && timeGetter.GetAccessor()->count >= 2)
+			{
+				float t0 = timeGetter.GetValue_Float(0);
+				float t1 = timeGetter.GetValue_Float(1);
+				float deltaTime = t1 - t0;
+
+				if (deltaTime > 0.0001f)
+				{
+					// 例: 0.03333s -> 30fps, 0.01666s -> 60fps（誤差吸収のためroundを通す）
+					animation->m_fps = std::round(1.0f / deltaTime);
+				}
+			}
+
 			if (channel.target_path == "translation")
 			{
 

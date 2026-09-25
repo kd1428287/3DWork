@@ -12,7 +12,6 @@
 		{
 			"type": "ModelAnimator",
 			"params": {
-				"fps": 120,
 				"speedScale": 0.25,
 				"blendDuration": 0.15,
 				"rootMotion": {
@@ -145,11 +144,11 @@
 						"clip": "Strafe_Run_F_Loop_Inplace",
 						"triggers": [
 							{
-								"phase": 0.0,
+								"phase": 0.48,
 								"foot": "Left"
 							},
 							{
-								"phase": 0.5,
+								"phase": 0.92,
 								"foot": "Right"
 							}
 						]
@@ -297,7 +296,7 @@
 		{
 			"type": "HitReaction",
 			"params": {
-				"effectFrags": [
+				"effectFlags": [
 					"CameraShake",
 					"HitStop",
 					"WeaponClashFx"
@@ -358,13 +357,13 @@
 						"loop": true
 					},
 					"parry": {
-						"duration": -1.0,
+						"duration": 1.0,
 						"animationName": "DefenseL_Parry01_Root",
 						"useRootMotion": true,
 						"blendDuration": 0.1
 					},
 					"hit": {
-						"duration": -1.0,
+						"duration": 0.5,
 						"animationName": "DefenseL_Hit01_Root",
 						"useRootMotion": true,
 						"blendDuration": 0.1

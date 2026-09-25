@@ -10,38 +10,14 @@ struct FacingDirectionConfig
 	float moveThreshold = 0.001f;
 };
 
-// ============================================================
-// FacingDirectionComponent
-//
-// 「前フレームからTransformの位置がどちらへ動いたか」を毎フレーム
-// 観測し、その水平方向(Y成分を無視した進行方向)へ、Y軸まわりの
-// Yaw回転のみをSlerpで滑らかに追従させる。
-//
-// MovementComponent(入力駆動)/TweenMoveComponent(演出移動)のどちらで
-// 実際にTransformを動かしたかには関知しない(位置差分だけを見る設計)。
-//
-// ただしVelocityComponent(外力駆動。ノックバック等)によるimpulse移動
-// だけは例外で、IsImpulseActive()==trueの間は向きの更新自体を一時停止
-// する。ノックバックで吹っ飛ばされている方向へ向き直ってしまうと、
-// 「怯み中に攻撃を受けた方向を向いたまま」という自然な演出にならない
-// ため(MovementComponent/TweenMoveComponentが同じ理由でIsImpulseActive()
-// を見て自分の位置更新を一時的に譲っているのと同じ考え方。VelocityComponent
-// が無いGameObjectにアタッチしても問題なく動く。任意添付)。
-// ============================================================
 class FacingDirectionComponent : public ComponentBase {
 public:
-	// rotationSpeed: 向きの追従の速さ(大きいほど素早く向き直る。
-	//   毎フレームのSlerpのt値は rotationSpeed * deltaTime で決まる)。
-	// moveThreshold: 1フレームあたりの移動量がこれ未満なら「動いていない」
-	//   とみなし、回転を更新しない(停止直前の僅かな位置ノイズで
-	//   向きがガタつくのを防ぐ)。
 	using Config = FacingDirectionConfig;
 
 	explicit FacingDirectionComponent(GameObject* owner,
 		float rotationSpeed = FacingDirectionConfig{}.rotationSpeed,
 		float moveThreshold = FacingDirectionConfig{}.moveThreshold)
-		: ComponentBase(owner), rotationSpeed_(rotationSpeed), moveThreshold_(moveThreshold) {
-	}
+		: ComponentBase(owner), rotationSpeed_(rotationSpeed), moveThreshold_(moveThreshold) {}
 
 	void SetConfig(const Config& config)
 	{
@@ -49,39 +25,32 @@ public:
 		moveThreshold_ = config.moveThreshold;
 	}
 
-	void Awake() override 
+	void Awake() override
 	{
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
 		movement_ = GetOwner()->GetComponent<MovementComponent>();
-		// 無くてもよい(任意)。存在する場合のみノックバック中の向き固定に使う
-		velocity_ = GetOwner()->GetComponent<VelocityComponent>();
+		// velocity_はIsImpulseActive()判定を廃止したため不要(前回の変更で削除済み)
 	}
 
-	void PostUpdate(float deltaTime) override 
+	void PostUpdate(float deltaTime) override
 	{
-		if (!movement_)return;
+		if (!updateEnabled_) return;
+		if (transform_ == nullptr) return;
 
-		const Math::Vector3 desiredDirection = movement_->GetDesiredDirection();
-
-		// ノックバック中(外力で強制的に押し出されている間)は向きを固定する。
-		// 「今どちらへ飛ばされているか」ではなく「攻撃を受けた時点の向き」を
-		// 保ちたいため、この間はlastPosition_の更新も含めて丸ごとスキップする
-		// (位置差分だけ蓄積させて後で反映する、という中途半端な状態にしないため。
-		//  ノックバックが終わった直後の1フレームで大きな差分が出て急に
-		//  振り向く、という事故を避ける)。
-		if (velocity_ != nullptr && velocity_->IsImpulseActive()) {
-			return;
+		Math::Vector3 dir;
+		if (hasTargetOverride_) {
+			// 外部(攻撃対象への正対等)から明示された方向を最優先する
+			dir = targetOverrideDirection_;
+		}
+		else {
+			if (movement_ == nullptr) return;
+			dir = movement_->GetDesiredDirection();
+			if (dir == Math::Vector3::Zero) return;
 		}
 
-		if (desiredDirection == Math::Vector3::Zero)return;
+		lastMoveDirection_ = dir;
+		const Math::Quaternion targetRotation = LookRotationYawOnly(dir);
 
-		Math::Quaternion targetRotation = Math::Quaternion::Identity;
-		lastMoveDirection_ = desiredDirection;
-		targetRotation = LookRotationYawOnly(lastMoveDirection_);
-
-		// rotationSpeed_ * deltaTimeをそのままtに使うと、フレームレートが
-		// 極端に低い場合に1を超えうるためclampしておく(Slerpの定義域外を
-		// 渡さないため)。
 		const float t = std::clamp(rotationSpeed_ * deltaTime, 0.0f, 1.0f);
 		transform_->SetRotation(Math::Quaternion::Slerp(transform_->GetRotation(), targetRotation, t));
 	}
@@ -92,11 +61,21 @@ public:
 	void SetMoveThreshold(float threshold) { moveThreshold_ = threshold; }
 	float GetMoveThreshold() const { return moveThreshold_; }
 
-	// trueなら通常通り移動方向へ向きを追従させる、falseなら向きの自動更新を
-	// 完全に止める(位置の記録だけは続ける)。攻撃/回避中など、移動方向を
-	// 向きの根拠にしたくない場面でPlayerStatusController等から呼ぶ想定。
 	void SetUpdateEnabled(bool enabled) { updateEnabled_ = enabled; }
 	bool IsUpdateEnabled() const { return updateEnabled_; }
+
+	// 移動方向への自動追従より優先される、外部から明示した水平方向へ向く。
+	// PlayerFacingComponent::FaceTowards(攻撃対象/ロック対象への正対)から使う。
+	void SetTargetOverrideDirection(const Math::Vector3& horizontalDir)
+	{
+		if (horizontalDir.LengthSquared() <= kEpsilon) return;
+		targetOverrideDirection_ = horizontalDir;
+		targetOverrideDirection_.Normalize();
+		hasTargetOverride_ = true;
+	}
+
+	// override解除。移動方向への自動追従に戻す。
+	void ClearTargetOverrideDirection() { hasTargetOverride_ = false; }
 
 private:
 	// Math::Vector3::Forward(TransformComponent::GetForward()が基準にしている
@@ -127,11 +106,15 @@ private:
 
 	TransformComponent* transform_ = nullptr;
 	MovementComponent* movement_ = nullptr;
-	VelocityComponent* velocity_ = nullptr; // 無くてもよい(任意)
 
 	Math::Vector3 lastMoveDirection_{};
+
+	bool hasTargetOverride_ = false;
+	Math::Vector3 targetOverrideDirection_{};
 
 	float rotationSpeed_;
 	float moveThreshold_;
 	bool updateEnabled_ = true;
+
+	static constexpr float kEpsilon = 1e-5f;
 };

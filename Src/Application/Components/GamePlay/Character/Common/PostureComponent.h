@@ -6,7 +6,7 @@ struct PostureConfig
 {
 	float max = 100.0f;
 	float lowerLimit = 0.0f;           // 回復できる下限
-	float regenPerSecond = 10.0f;      // 1秒あたりの自然回復量
+	float regenPerSecond = 3.0f;      // 1秒あたりの自然回復量
 	float regenDelaySeconds = 1.0f;    // 被弾してから回復を再開するまでの秒数
 };
 

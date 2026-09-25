@@ -26,9 +26,11 @@ void StateAttack::Enter(PlayerStatusController* controller) {
 	//controller->SetMovementEnabled(false);
 
 	const AttackData& data = attackSelector_->GetCurrentAttackData();
-	weaponSet_->SetAttackDamageData(data.weaponSlots, data.damageData);
+	auto damageData = data.damageData;
+	damageData.damage *= controller->GetAttackDamageScale(); // チャージ倍率(通常攻撃は1.0)
+	weaponSet_->SetAttackDamageData(data.weaponSlots, damageData);
 
-	controller->PlayAnimation(data.phaseData.windup); 
+	controller->PlayAnimation(data.phaseData.windup);
 }
 
 void StateAttack::Update(PlayerStatusController* controller, float deltaTime) {
@@ -43,7 +45,7 @@ void StateAttack::Update(PlayerStatusController* controller, float deltaTime) {
 		weaponSet_->SetHitBoxEnabled(data.weaponSlots, true); // 攻撃判定が実際に発生する一瞬だけ有効化
 		weaponSet_->SetTrailEmitting(data.weaponSlots, true); // 武器の軌跡エフェクトもHitBoxと同じ窓で記録開始
 
-		controller->PlayAnimation(data.phaseData.active); 
+		controller->PlayAnimation(data.phaseData.active);
 	}
 	else if (phase_ == CombatState::AttackActive && elapsed_ >= data.phaseData.active.duration) {
 		phase_ = CombatState::AttackRecovery;
@@ -51,7 +53,7 @@ void StateAttack::Update(PlayerStatusController* controller, float deltaTime) {
 		weaponSet_->SetHitBoxEnabled(data.weaponSlots, false); // 判定の発生窓を閉じる
 		weaponSet_->SetTrailEmitting(data.weaponSlots, false); // 軌跡エフェクトの記録も停止(既に生成済みの頂点はStopEmit後も自然に流れて消える)
 
-		controller->PlayAnimation(data.phaseData.recovery); 
+		controller->PlayAnimation(data.phaseData.recovery);
 	}
 	else if (phase_ == CombatState::AttackRecovery && elapsed_ >= data.phaseData.recovery.duration) {
 		// 自律的に終了し、ControllerにNoneへの復帰を要請する
@@ -231,19 +233,16 @@ void StateGuard::RequestRelease(PlayerStatusController* controller) {
 	isReleasing_ = true;
 	releaseElapsed_ = 0.0f;
 
-	// パリィ成功/ガードヒットの単発リアクション演出と解除演出が競合しないよう、
-	// 解除開始時点でそれらは終了させておく(CanReleaseGuard()がパリィ成功中は
-	// falseを返す設計上、通常はここに来ないが念のため明示的に処理する)。
 	parrySucceeded_ = false;
 	isReactingToGuardHit_ = false;
-	hasEnteredLoop_ = true; // Startへ戻す必要はもう無い
+	hasEnteredLoop_ = true;
 
 	controller->PlayAnimation(controller->GetCurrentGuardData().end);
 }
 
-bool StateGuard::CanStartAttack(const PlayerStatusController* controller) const {
-	// パリィ時の反撃はGuardStateと組み合わせる
-	return parrySucceeded_ || isReleasing_;
+bool StateGuard::CanStartAttack(const PlayerStatusController* controller) const
+{
+	return true;
 }
 
 bool StateGuard::CanStartEvade(const PlayerStatusController* controller) const
@@ -253,7 +252,7 @@ bool StateGuard::CanStartEvade(const PlayerStatusController* controller) const
 
 bool StateGuard::CanStartGuard(const PlayerStatusController* controller) const
 {
-	return isReleasing_;
+	return true;
 }
 
 bool StateGuard::CanStartMove(const PlayerStatusController* controller) const
@@ -297,6 +296,18 @@ StateGuard::GuardPhase StateGuard::GetGuardPhase(const PlayerStatusController* c
 }
 
 
+// --- Charge State ---
+void StateCharge::Enter(PlayerStatusController* controller) {
+	elapsed_ = 0.0f;
+	controller->PlayAnimation(controller->GetChargeData().loop);
+}
+
+void StateCharge::Update(PlayerStatusController* controller, float deltaTime) {
+	// 最大値のクランプはChargeData::GetDamageScale側で行う(最大到達後は保持)。
+	elapsed_ += deltaTime;
+}
+
+
 // --- Stagger State ---
 void StateStagger::Enter(PlayerStatusController* controller) {
 	elapsed_ = 0.0f;
@@ -316,5 +327,4 @@ void StateStagger::Update(PlayerStatusController* controller, float deltaTime) {
 }
 
 void StateStagger::Exit(PlayerStatusController* controller)
-{
-}
+{}

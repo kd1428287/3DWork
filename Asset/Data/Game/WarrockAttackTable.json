@@ -24,7 +24,7 @@
 				},
 				"phaseData": {
 					"windup": {
-						"duration": 0.22,
+						"duration": 1.22,
 						"animationName": "Punch_Right",
 						"useRootMotion": true,
 						"blendDuration": 0.1,
@@ -79,7 +79,7 @@
 				},
 				"phaseData": {
 					"windup": {
-						"duration": 0.33,
+						"duration": 1.33,
 						"animationName": "Kick",
 						"useRootMotion": true,
 						"blendDuration": 0.1,
@@ -109,7 +109,7 @@
 					"recoveryAttackCancelStart": 0.2,
 					"comboWindowAfterRecovery": 0.2
 				},
-				"weaponSlots": [ "Main" ]
+				"weaponSlots": [ "Foot" ]
 			}
 		},
 		{
@@ -134,7 +134,7 @@
 				},
 				"phaseData": {
 					"windup": {
-						"duration": 0.66,
+						"duration": 1.66,
 						"animationName": "Punch_Left",
 						"useRootMotion": true,
 						"blendDuration": 0.1,
@@ -164,7 +164,7 @@
 					"recoveryAttackCancelStart": 0.2,
 					"comboWindowAfterRecovery": 0.2
 				},
-				"weaponSlots": [ "Main" ]
+				"weaponSlots": [ "Off" ]
 			}
 		},
 		{
@@ -194,14 +194,14 @@
 						"useRootMotion": true,
 						"blendDuration": 0.1,
 						"startFrame": 0,
-						"endFrame": 20
+						"endFrame": 30
 					},
 					"active": {
 						"duration": 0.60,
 						"animationName": "SpinningAttack_Low",
 						"useRootMotion": true,
 						"blendDuration": 0.0,
-						"startFrame": 20,
+						"startFrame": 30,
 						"endFrame": 80
 					},
 					"recovery": {

@@ -23,6 +23,7 @@ struct KdAnimationData
 	std::string		m_name;
 	// アニメの60FPS換算されたフレーム数
 	float			m_maxLength = 0;
+	int				m_fps = 0;
 
 	// １ノードのアニメーションデータ
 	struct Node
@@ -56,12 +57,12 @@ public:
 		m_spAnimation = rData;
 		m_isLoop = isLoop;
 
-		m_startTime = std::min((float)startFrame / m_fps * m_sampleFPS, m_spAnimation->m_maxLength);
+		m_startTime = std::min((float)startFrame / m_spAnimation->m_fps * m_sampleFPS, m_spAnimation->m_maxLength);
 		m_time = m_startTime;
 
 		m_endTime = endFrame <= 0
 			? m_spAnimation->m_maxLength
-			: std::min((float)endFrame / m_fps * m_sampleFPS, m_spAnimation->m_maxLength);
+			: std::min((float)endFrame / m_spAnimation->m_fps * m_sampleFPS, m_spAnimation->m_maxLength);
 	}
 
 	// アニメーションが終了してる？

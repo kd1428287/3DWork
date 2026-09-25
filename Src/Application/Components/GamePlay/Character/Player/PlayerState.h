@@ -169,6 +169,23 @@ private:
 };
 
 
+// Attack+Guard同時押し中の溜め状態。発射(ReleaseCharge)はControllerが行う。
+class StateCharge : public IPlayerState {
+public:
+	void Enter(PlayerStatusController* controller) override;
+	void Update(PlayerStatusController* controller, float deltaTime) override;
+
+	CombatState GetDetailedState() const override { return CombatState::Charge; }
+	float GetElapsed() const override { return elapsed_; }
+
+	// 溜め中は回避でキャンセルできる。
+	bool CanStartEvade(const PlayerStatusController* controller) const override { return true; }
+
+private:
+	float elapsed_ = 0.0f;
+};
+
+
 class StateStagger : public IPlayerState {
 public:
 	void Setup(bool isLarge, float duration) {

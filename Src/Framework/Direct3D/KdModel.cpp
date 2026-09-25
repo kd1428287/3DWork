@@ -185,6 +185,7 @@ static void ConvertAnimations(const std::shared_ptr<KdGLTFModel>& spGltf,
 
 		rDst.m_name = rSrc.m_name;
 		rDst.m_maxLength = rSrc.m_maxLength;
+		rDst.m_fps = rSrc.m_fps;
 		rDst.m_nodes.resize(rSrc.m_nodes.size());
 
 		for (UINT j = 0; j < rDst.m_nodes.size(); ++j)
@@ -272,6 +273,7 @@ int KdModelData::AddAnimations(const KdAnimationSetData& animSet)
 		auto spDst = std::make_shared<KdAnimationData>();
 		spDst->m_name = spSrc->m_name;
 		spDst->m_maxLength = spSrc->m_maxLength;
+		spDst->m_fps = spSrc->m_fps;
 
 		for (auto& srcNode : spSrc->m_nodes)
 		{

@@ -326,6 +326,7 @@
     <ClInclude Include="Src\Application\Components\Graphics\Render\PolygonRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\WireFrameComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\EnemyWorldGaugeComponent.h" />
+    <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\GaugeBar.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\GaugeBarRenderer.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\GaugeWatcher.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\PlayerHudGaugeComponent.h" />
@@ -624,21 +625,27 @@
   <ItemGroup>
     <FxCompile Include="Src\Framework\Shader\GPUParticle\GPUParticle_CS_Emit.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\GPUParticle\GPUParticle_CS_Init.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\GPUParticle\GPUParticle_CS_Update.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\GPUParticle\GPUParticle_PS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\GPUParticle\GPUParticle_PS_Masked.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\GPUParticle\GPUParticle_VS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_Blur.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
@@ -672,9 +679,11 @@
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\SlashTrailShader\SlashTrail_PS_AddMasked.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\SlashTrailShader\SlashTrail_VS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\SpriteShader\KdSpriteShader_PS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
