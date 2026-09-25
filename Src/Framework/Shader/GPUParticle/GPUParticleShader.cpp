@@ -153,8 +153,10 @@ void GPUParticleShader::Emit(ID3D11UnorderedAccessView* particleUAV, ID3D11Unord
 	emit.EmitCount = (int)count;
 	emit.EmitVelocityMin = param.VelocityMin;
 	emit.EmitVelocityMax = param.VelocityMax;
-	emit.EmitSizeMin = param.SizeMin;
-	emit.EmitSizeMax = param.SizeMax;
+	emit.EmitSizeStartMin = param.SizeStartMin;
+	emit.EmitSizeStartMax = param.SizeStartMax;
+	emit.EmitSizeEndMin = param.SizeEndMin;
+	emit.EmitSizeEndMax = param.SizeEndMax;
 	emit.EmitLifeMin = param.LifeMin;
 	emit.EmitLifeMax = param.LifeMax;
 	emit.EmitColorStartMin = param.ColorStartMin;
@@ -246,7 +248,19 @@ void GPUParticleShader::Draw(ID3D11ShaderResourceView* particleSRV, UINT maxPart
 	shaderMgr.ChangeSamplerState(KdSamplerState::Linear_Clamp, 0);
 
 	// ブレンドモードの切り替え・Z書き込み無効(重なった時に不透明に潰れないように)
-	const KdBlendState blendState = (blendMode == ParticleBlendMode::Alpha) ? KdBlendState::AlphaMasked : KdBlendState::Add;
+	const KdBlendState blendState = [&]() {
+		switch (blendMode)
+		{
+		case ParticleBlendMode::Add:
+			return KdBlendState::Add;
+		case ParticleBlendMode::Alpha:
+			return KdBlendState::AlphaMasked;
+		case ParticleBlendMode::Multiply:
+			return KdBlendState::Multiply;
+		default:
+			break;
+		}
+		}(); 
 	shaderMgr.ChangeBlendState(blendState);
 	shaderMgr.ChangeDepthStencilState(KdDepthStencilState::ZWriteDisable);
 

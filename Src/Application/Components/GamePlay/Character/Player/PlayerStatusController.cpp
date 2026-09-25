@@ -74,11 +74,6 @@ void PlayerStatusController::HandleMovementInput(const PlayerInputComponent& inp
 		}
 	}
 
-	if (facing_ != nullptr) {
-		const bool shouldFaceMovement = !IsLockedOn() || movementState_ == MovementState::Run;
-		facing_->SetFacingEnabled(shouldFaceMovement);
-	}
-
 	if (movementAnimationComponent_ != nullptr) {
 		movementAnimationComponent_->Tick(deltaTime, movementState_, input.GetMoveDirection(), IsLockedOn());
 	}
@@ -248,6 +243,10 @@ void PlayerStatusController::PlayAnimation(const MotionClipData& clip)
 	modelAnimatorComponent_->Play(clip);
 }
 
+void PlayerStatusController::FaceDirection(const Math::Vector3& worldDir)
+{
+	if (facing_ != nullptr) facing_->FaceDirection(worldDir);
+}
 void PlayerStatusController::RefreshMovementAnimation()
 {
 	if (inputComponent_ == nullptr) return;

@@ -42,6 +42,12 @@ public:
 	// (StateEvade::Enter()がアニメーション選択に使う)。
 	EvadeDirection ClassifyEvadeDirection(const Math::Vector3& inputDirection) const;
 
+	// 指定したワールド方向へ即座に向き直す(FacingDirectionComponentの
+	// 補間を経由しない)。Evade中はfacingDirectionComponent_自体が
+	// 無効化されているため、その経路には乗せられない。ロック中の回避
+	// (StateEvade::Enter)から使う想定。
+	void FaceDirection(const Math::Vector3& worldDir);
+
 	// FaceAttackTarget()で正対した対象(未設定ならnullptr)。
 	GameObject* GetCurrentAttackTarget() const { return currentAttackTarget_.Resolve(); }
 

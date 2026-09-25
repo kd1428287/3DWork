@@ -35,7 +35,7 @@ public:
 
 		Math::Vector3	DissolveEmissive = { 0.0f, 1.0f, 1.0f };
 
-		float			_blankEnd = 0.0f;		// 64byte境界に揃える末尾パディング
+		float			OutlineWidth = 0.0f;	// 輪郭線(裏面拡大)の太さ。0なら通常描画(64byte境界の末尾に収まる)
 	};
 
 	// 定数バッファ(メッシュ単位更新)
@@ -101,6 +101,13 @@ public:
 	void SetForceMaxDepth(bool enable)
 	{
 		m_cb0_Obj.Work().ForceMaxDepth = enable;
+		m_dirtyCBObj = true;
+	}
+
+	// 輪郭線の太さ設定(ワールド単位)。0より大きい間は墨一色の輪郭パスとして描画される
+	void SetOutlineWidth(float width)
+	{
+		m_cb0_Obj.Work().OutlineWidth = width;
 		m_dirtyCBObj = true;
 	}
 

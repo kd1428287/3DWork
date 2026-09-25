@@ -140,8 +140,6 @@ void SlashTrailRenderer::Release()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void SlashTrailRenderer::Draw(const std::vector<Vertex>& vertices, ParticleBlendMode blendMode)
 {
-
-
 	if (!m_initialized) { return; }
 
 	// 三角形ストリップを組むには最低2サンプル(4頂点)必要
@@ -193,7 +191,19 @@ void SlashTrailRenderer::Draw(const std::vector<Vertex>& vertices, ParticleBlend
 	// ※Alpha側はマスク(SV_Target1)への書き込みを許可する KdBlendState::AlphaMasked を使う事。
 	//   通常の KdBlendState::Alpha ではMRTスロット1への書き込みが無効化されており、
 	//   PS側がマスクを出力しても反映されない
-	const KdBlendState blendState = (blendMode == ParticleBlendMode::Alpha) ? KdBlendState::AlphaMasked : KdBlendState::Add;
+	const KdBlendState blendState = [&]() {
+		switch (blendMode)
+		{
+		case ParticleBlendMode::Add:
+			return KdBlendState::Add;
+		case ParticleBlendMode::Alpha:
+			return KdBlendState::AlphaMasked;
+		case ParticleBlendMode::Multiply:
+			return KdBlendState::Multiply;
+		default:
+			break;
+		}
+		}();
 	shaderMgr.ChangeBlendState(blendState);
 	shaderMgr.ChangeDepthStencilState(KdDepthStencilState::ZWriteDisable);
 

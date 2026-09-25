@@ -53,7 +53,7 @@ inline bool KdHasDrawPassFlag(ParticleDrawPass flags, ParticleDrawPass test)
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 発生方向(baseDir)を軸にした「1層分」の速度・サイズ・寿命・色の形状定義
+// 発生方向(baseDir)を軸にした「1層分」の速度分布の形状定義
 // ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
 // VelocityMin = baseDir * DirScaleMin - OffsetMin
 // VelocityMax = baseDir * DirScaleMax + OffsetMax
@@ -62,9 +62,8 @@ inline bool KdHasDrawPassFlag(ParticleDrawPass flags, ParticleDrawPass test)
 // 逆にDirScaleを大きくしOffsetを絞れば、鍔迫り合いの火花のような「特定方向へ勢いよく飛ぶ」
 // 表現もこの1つの形状定義だけで表現できる(WeaponClash専用の形状は不要)。
 //
-// Color*は発生時(ColorStart)→消滅時(Color)への線形フェードを表す
-// (KdGPUParticle::EmitParameter側が寿命に応じて補間する前提。ColorStartとColorを同じ値に
-//  しておけば、フェードしない単色エフェクトとしても使える)
+// 見た目(サイズ・寿命・色)はここでは扱わない。ParticleAppearance側の担当(Shapeの種類が
+// 増えても見た目のパラメータを複製しなくて済むように分離してある)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 struct DirectionalEmitShape
 {
@@ -73,11 +72,28 @@ struct DirectionalEmitShape
 	Math::Vector3	OffsetMin = { 1.0f, 0.5f, 1.0f };
 	Math::Vector3	OffsetMax = { 1.0f, 1.5f, 1.0f };
 
-	float	SizeMin = 0.02f;
-	float	SizeMax = 0.06f;
+	// Position/VelocityMin/VelocityMaxのみを埋めて返す。他フィールドは既定値のまま
+	// (Size/Life/Color/BillboardModeはGPUParticleLayer::ToEmitParameter()側で上書きされる)
+	ParticleBuffer::EmitParameter ToEmitParameter(const Math::Vector3& worldPos, const Math::Vector3& baseDir) const;
+};
 
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// パーティクルの見た目の時間変化(発生時→消滅時)。Shapeの種類に依らず共通で使い回す
+// ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
+// Size/ColorともにStart→Endへ寿命に応じて線形補間される想定(補間計算はVS側で行う)。
+// StartとEndを同じ値にしておけば、変化しない従来通りの見た目としても使える。
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+struct ParticleAppearance
+{
 	float	LifeMin = 0.45f;
 	float	LifeMax = 0.8f;
+
+	// 発生時サイズの範囲
+	float	SizeStartMin = 0.02f;
+	float	SizeStartMax = 0.06f;
+	// 消滅時サイズの範囲(既定値はStartと同じ＝サイズ変化なし)
+	float	SizeEndMin = 0.02f;
+	float	SizeEndMax = 0.06f;
 
 	Math::Vector4	ColorStartMin = { 0.1f, 0.1f, 0.1f, 1.0f };
 	Math::Vector4	ColorStartMax = { 0.1f, 0.1f, 0.1f, 1.0f };
@@ -85,21 +101,19 @@ struct DirectionalEmitShape
 	Math::Vector4	ColorMin = { 0.1f, 0.85f, 0.4f, 1.0f };
 	Math::Vector4	ColorMax = { 0.1f, 0.85f, 0.4f, 1.0f };
 
-	// Shape(速度・サイズ・寿命・色)ぶんだけのEmitParameterを作る。
-	// BillboardMode/StretchScale(Layer単位の値)はここでは設定されないので、
-	// 呼び出し元がGPUParticleLayer::ToEmitParameter()経由で使うか、
-	// 自前で追加設定すること
-	ParticleBuffer::EmitParameter ToEmitParameter(const Math::Vector3& worldPos, const Math::Vector3& baseDir) const;
+	// pのLife/Size/Colorぶんだけを上書きする(Position/Velocity/BillboardMode等はそのまま維持)
+	void ApplyTo(ParticleBuffer::EmitParameter& p) const;
 };
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 汎用エフェクトの1層分(形状 + そのレイヤーのEmit数 + ビルボード方式)
+// 汎用エフェクトの1層分(発生形状 + 見た目 + そのレイヤーのEmit数 + ビルボード方式)
 //	Count の意味はGPUParticleParams::EmitModeに従う
 //	(Burst：1回の発生イベントで出す個数／Continuous：1秒あたりに発生させる個数)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 struct GPUParticleLayer
 {
 	DirectionalEmitShape	Shape;
+	ParticleAppearance		Appearance;
 	int		Count = 30;
 
 	// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -113,7 +127,7 @@ struct GPUParticleLayer
 	ParticleBillboardMode	BillboardMode = ParticleBillboardMode::Normal;
 	float					StretchScale = 0.15f;
 
-	// Shape由来のEmitParameterに、このLayerのBillboardMode/StretchScaleを合成して返す。
+	// Shape(速度)にAppearance(見た目)とBillboardMode/StretchScaleを合成して返す。
 	// EffectInstance側は基本的にlayer.Shape.ToEmitParameter()ではなくこちらを呼ぶこと
 	ParticleBuffer::EmitParameter ToEmitParameter(const Math::Vector3& worldPos, const Math::Vector3& baseDir) const;
 };

@@ -323,6 +323,7 @@
     <ClInclude Include="Src\Application\Components\Graphics\Render\ModelRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\Mod\ForceMaxDepthComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\Mod\SkyDomeEdgeFadeComponent.h" />
+    <ClInclude Include="Src\Application\Components\Graphics\Render\OutlineRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\PolygonRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\WireFrameComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\EnemyWorldGaugeComponent.h" />
@@ -520,6 +521,7 @@
     <ClCompile Include="Src\Application\Components\Graphics\Render\ModelRenderComponent.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\Render\Mod\ForceMaxDepthComponent.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\Render\Mod\SkyDomeEdgeFadeComponent.cpp" />
+    <ClCompile Include="Src\Application\Components\Graphics\Render\OutlineRenderComponent.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\Render\WireFrameComponent.cpp" />
     <ClCompile Include="Src\Application\Core\Scene\SceneManager.cpp" />
     <ClCompile Include="Src\Application\Definitions\Effect\EffectParams.cpp" />

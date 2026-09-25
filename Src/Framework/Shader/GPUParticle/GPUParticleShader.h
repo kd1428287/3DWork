@@ -66,16 +66,18 @@ private:
 	};
 	KdConstantBuffer<cbInit> m_cb0_Init;
 
+	// ※末尾のEmitSizeEndMin/Maxは元々16バイト境界合わせの_pad[2]だった箇所を転用しており、
+	//   構造体全体のサイズ・アライメントは変化していない
 	struct cbEmit
 	{
 		Math::Vector3	EmitPos;
 		int				EmitCount = 0;
 
 		Math::Vector3	EmitVelocityMin;
-		float			EmitSizeMin = 0.0f;
+		float			EmitSizeStartMin = 0.0f;
 
 		Math::Vector3	EmitVelocityMax;
-		float			EmitSizeMax = 0.0f;
+		float			EmitSizeStartMax = 0.0f;
 
 		Math::Vector4	EmitColorStartMin = { 2.0f, 2.0f, 1.5f, 1.0f };
 		Math::Vector4	EmitColorStartMax = { 2.0f, 2.0f, 1.5f, 1.0f };
@@ -90,7 +92,8 @@ private:
 
 		float			EmitBillboardMode = 0.0f;
 		float			EmitStretchScale = 0.0f;
-		float			_pad[2] = { 0.0f, 0.0f };	// 16バイト境界に揃える為のパディング
+		float			EmitSizeEndMin = 0.0f;
+		float			EmitSizeEndMax = 0.0f;
 	};
 	KdConstantBuffer<cbEmit> m_cb0_Emit;
 

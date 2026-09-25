@@ -8,9 +8,12 @@
 #include "../Common/CharacterInputBufferComponent.h"
 #include "PlayerLockOnComponent.h" 
 
-static float ComputeMovementBasisYaw(const Math::Vector3& horizontalForward)
+// ロック中限定の変換式。CameraComponent側の変換(オフセット方向→スクリーン前方向、
+// のため反転が必要)とは意味が異なり、こちらは自身のforwardをそのままスクリーン前方向
+// として使いたいため反転しない。
+static float ComputeYawFromOwnForward(const Math::Vector3& horizontalForward)
 {
-	return std::atan2(-horizontalForward.x, -horizontalForward.z);
+	return std::atan2(horizontalForward.x, horizontalForward.z);
 }
 
 class PlayerInputComponent : public ComponentBase, public IMovementSource {
@@ -43,54 +46,64 @@ public:
 		const Math::Vector2 axis = KdInputManager::Instance().GetAxisState("Move");
 		Math::Vector3 dir{ axis.x, 0.0f, axis.y };
 
-		if (dir != Math::Vector3::Zero)
-		{
-			Math::Vector3 basisForward;
-			bool hasBasis = false;
+		const bool isLockedOn = lockOnComponent_ != nullptr && lockOnComponent_->IsLockedOn();
+		const bool wantsRun = KdInputManager::Instance().IsHold("Dash"); // dashHeld_確定より前に判定用として先読み
 
-			if (lockOnComponent_ != nullptr && lockOnComponent_->IsLockedOn() && transform_ != nullptr) {
-				// ロック中: ClassifyDirection8/ClassifyEvadeDirectionが
-				// transform_->GetForward()を基準に判定するのに合わせる
-				basisForward = transform_->GetForward();
-				basisForward.y = 0.0f;
-				hasBasis = basisForward.LengthSquared() > kMinCameraForwardLengthSq;
-			}
-			else if (const SceneContext* context = GetOwner()->GetContext()) {
-				if (CameraComponent* camera = context->activeCamera) {
-					basisForward = camera->GetForward();
-					basisForward.y = 0.0f;
-					hasBasis = basisForward.LengthSquared() > kMinCameraForwardLengthSq;
-				}
-			}
-
-			if (hasBasis) {
+		// 移動(Walk)用の基準: ロック中かつWalkの場合だけ自身の向きを使う。
+		// ロック中でもRunなら向きのバインドを外し、下のカメラ基準にフォールスルーする。
+		Math::Quaternion moveBasis = Math::Quaternion::Identity;
+		bool hasMoveBasis = false;
+		if (isLockedOn && !wantsRun && transform_ != nullptr) {
+			Math::Vector3 basisForward = transform_->GetForward();
+			basisForward.y = 0.0f;
+			if (basisForward.LengthSquared() > kMinForwardLengthSq) {
 				basisForward.Normalize();
-				const float yaw = ComputeMovementBasisYaw(basisForward); // ← 両方これ1本
-				const Math::Quaternion yawOnly =
-					Math::Quaternion::CreateFromAxisAngle(Math::Vector3::Up, yaw);
-				dir = Math::Vector3::Transform(dir, yawOnly);
-			}
-			else if (CameraOrbitComponent* orbit = cameraOrbitFallback_.Resolve()) {
-				const Math::Quaternion yawOnly =
-					Math::Quaternion::CreateFromYawPitchRoll(orbit->GetYaw(), 0.0f, 0.0f);
-				dir = Math::Vector3::Transform(dir, yawOnly);
+				const float yaw = ComputeYawFromOwnForward(basisForward);
+				moveBasis = Math::Quaternion::CreateFromAxisAngle(Math::Vector3::Up, yaw);
+				hasMoveBasis = true;
 			}
 		}
 
-		SetMoveDirection(dir);
+		// カメラ基準: Run時の移動、および回避方向(ロック中でも常に)から共通で参照する。
+		Math::Quaternion cameraBasis = Math::Quaternion::Identity;
+		bool hasCameraBasis = false;
+		if (const SceneContext* context = GetOwner()->GetContext()) {
+			if (CameraComponent* camera = context->activeCamera) {
+				cameraBasis = camera->GetMovementYawRotation();
+				hasCameraBasis = true;
+			}
+		}
+		if (!hasCameraBasis) {
+			if (CameraOrbitComponent* orbit = cameraOrbitFallback_.Resolve()) {
+				cameraBasis = Math::Quaternion::CreateFromYawPitchRoll(orbit->GetYaw(), 0.0f, 0.0f);
+				hasCameraBasis = true;
+			}
+		}
 
-		// --- 継続入力(押している間ずっと反映) -----------------------
-		dashHeld_ = KdInputManager::Instance().IsHold("Dash");
+		Math::Vector3 moveDir = dir;
+		if (dir != Math::Vector3::Zero) {
+			if (hasMoveBasis)        moveDir = Math::Vector3::Transform(dir, moveBasis);
+			else if (hasCameraBasis) moveDir = Math::Vector3::Transform(dir, cameraBasis);
+		}
+		SetMoveDirection(moveDir);
+
+		// 回避方向はロック中でも常にカメラ基準(自身の向き基準にはしない)
+		Math::Vector3 evadeDir = dir;
+		if (dir != Math::Vector3::Zero && hasCameraBasis) {
+			evadeDir = Math::Vector3::Transform(dir, cameraBasis);
+			evadeDir.Normalize();
+		}
+
+		dashHeld_ = wantsRun;
 		guardHeld_ = KdInputManager::Instance().IsHold("Guard");
 		attackHeld_ = KdInputManager::Instance().IsHold("Attack");
 
-		// --- 単発入力(押した瞬間だけバッファへ積む/フラグを立てる) -----
 		if (actionBuffer_ != nullptr) {
 			if (KdInputManager::Instance().IsPress("Attack")) {
 				actionBuffer_->PushCommand(ActionCommand::Attack, moveDirection_);
 			}
 			if (KdInputManager::Instance().IsPress("Evade")) {
-				actionBuffer_->PushCommand(ActionCommand::Evade, moveDirection_);
+				actionBuffer_->PushCommand(ActionCommand::Evade, evadeDir); // moveDirection_ではなくevadeDirを積む
 			}
 			if (KdInputManager::Instance().IsPress("Guard")) {
 				actionBuffer_->PushCommand(ActionCommand::Guard, Math::Vector3::Zero);
@@ -168,8 +181,8 @@ private:
 
 	Handle<CameraOrbitComponent> cameraOrbitFallback_; // activeCamera不使用時のyawフォールバック先
 
-	// activeCameraの水平前方ベクトルがこれ以下(ほぼ真上/真下を向いている)
+	// 自身/カメラの水平前方ベクトルがこれ以下(ほぼ真上/真下を向いている)
 	// の場合は、そこからyawを決めずCameraOrbitComponent側にフォールバックする、
 	// という閾値。
-	static constexpr float kMinCameraForwardLengthSq = 1e-6f;
+	static constexpr float kMinForwardLengthSq = 1e-6f;
 };

@@ -15,11 +15,15 @@ cbuffer cbGPUParticleEmit : register(b0)
 	float3 g_EmitPos; // 発生座標
 	int g_EmitCount; // 今回発生させる数
 
+	// ※Velocity(vec3)とSize(float)を交互に並べる事。C++側cbEmitと同じ順にしないと、
+	//   HLSLの「16バイト境界をまたがない」パッキング規則で暗黙のパディングが入り、
+	//   構造体サイズがC++側のsizeof()とズレて以降の全フィールドが誤ったオフセットで
+	//   読まれてしまう(Particle構造体で起きたのと全く同じ種類の事故)
 	float3 g_EmitVelocityMin; // 初速の範囲(最小)
-	float g_EmitSizeMin; // サイズの範囲(最小)
+	float g_EmitSizeStartMin; // サイズの範囲(最小)
 
 	float3 g_EmitVelocityMax; // 初速の範囲(最大)
-	float g_EmitSizeMax; // サイズの範囲(最大)
+	float g_EmitSizeStartMax; // サイズの範囲(最大)
 
 	float4 g_EmitColorStartMin; // 色
 	float4 g_EmitColorStartMax; // 色
@@ -36,7 +40,8 @@ cbuffer cbGPUParticleEmit : register(b0)
 	// ※C++側 KdGPUParticle::cbEmit とレイアウトを必ず一致させる事
 	float g_EmitBillboardMode; // 0:Normal 1:Stretch(そのままParticle::BillboardModeへコピーする)
 	float g_EmitStretchScale; // Stretch時のみ使用：速度→伸び量の係数
-	float2 _cbPad; // 16バイト境界に揃える為のパディング(C++側 cbEmit::_pad[2] に対応)
+	float g_EmitSizeEndMin;
+	float g_EmitSizeEndMax;
 };
 
 //================================
@@ -64,14 +69,14 @@ void main(uint3 id : SV_DispatchThreadID)
 	Particle p;
 	p.Position = g_EmitPos;
 	p.Velocity = RandRange3(g_EmitVelocityMin, g_EmitVelocityMax, seed);
-	p.Size = RandRange(g_EmitSizeMin, g_EmitSizeMax, seed + 3.0f);
+	p.SizeStart = RandRange(g_EmitSizeStartMin, g_EmitSizeStartMax, seed + 3.0f);
+	p.SizeEnd = RandRange(g_EmitSizeEndMin, g_EmitSizeEndMax, seed + 7.0f);
 	p.ColorStart = RandRange4(g_EmitColorStartMin, g_EmitColorStartMax, seed + 5.0f);
 	p.Color = RandRange4(g_EmitColorMin, g_EmitColorMax, seed + 6.0f);
 	p.LifeMax = RandRange(g_EmitLifeMin, g_EmitLifeMax, seed + 4.0f);
 	p.Life = p.LifeMax;
 	p.BillboardMode = g_EmitBillboardMode;
 	p.StretchScale = g_EmitStretchScale;
-	p._pad = 0.0f;
 
 	g_ParticleBuffer[index] = p;
 }

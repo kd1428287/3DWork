@@ -155,7 +155,9 @@ static void ReportLoadWarning(const std::string& context, const std::exception& 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // DirectionalEmitShape ⇔ JSON
 //	GPUParticleLayerから共用する(鍔迫り合いの火花もこの形状定義だけで表現される為、
-//	専用のSparkLayer変換関数は不要になった)
+//	専用のSparkLayer変換関数は不要になった)。
+//	見た目(Size/Life/Color)はParticleAppearance側に分離済み。JSON上は引き続き
+//	Layerと同じフラットなオブジェクトにキーを併存させる(後方互換のため)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 static nlohmann::json ShapeToJson(const DirectionalEmitShape& s)
 {
@@ -164,14 +166,6 @@ static nlohmann::json ShapeToJson(const DirectionalEmitShape& s)
 		{ "dirScaleMax", s.DirScaleMax },
 		{ "offsetMin",   { s.OffsetMin.x, s.OffsetMin.y, s.OffsetMin.z } },
 		{ "offsetMax",   { s.OffsetMax.x, s.OffsetMax.y, s.OffsetMax.z } },
-		{ "sizeMin",     s.SizeMin },
-		{ "sizeMax",     s.SizeMax },
-		{ "lifeMin",     s.LifeMin },
-		{ "lifeMax",     s.LifeMax },
-		{ "colorStartMin", { s.ColorStartMin.x, s.ColorStartMin.y, s.ColorStartMin.z, s.ColorStartMin.w } },
-		{ "colorStartMax", { s.ColorStartMax.x, s.ColorStartMax.y, s.ColorStartMax.z, s.ColorStartMax.w } },
-		{ "colorMin",    { s.ColorMin.x, s.ColorMin.y, s.ColorMin.z, s.ColorMin.w } },
-		{ "colorMax",    { s.ColorMax.x, s.ColorMax.y, s.ColorMax.z, s.ColorMax.w } },
 	};
 }
 
@@ -188,34 +182,74 @@ static DirectionalEmitShape ShapeFromJson(const nlohmann::json& j, const Directi
 	TryReadVector3(j, "offsetMin", s.OffsetMin);
 	TryReadVector3(j, "offsetMax", s.OffsetMax);
 
-	s.SizeMin = j.value("sizeMin", s.SizeMin);
-	s.SizeMax = j.value("sizeMax", s.SizeMax);
-	s.LifeMin = j.value("lifeMin", s.LifeMin);
-	s.LifeMax = j.value("lifeMax", s.LifeMax);
+	return s;
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// ParticleAppearance ⇔ JSON
+// ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
+// "sizeMin"/"sizeMax"は従来通り発生時サイズ(SizeStart)として読み書きする(キー名は
+// 後方互換のため維持)。"sizeEndMin"/"sizeEndMax"が記載されていない旧JSONは、
+// 消滅時サイズ＝発生時サイズとして扱う(＝これまで通りサイズが変化しない挙動)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+static nlohmann::json AppearanceToJson(const ParticleAppearance& a)
+{
+	return nlohmann::json{
+		{ "lifeMin",       a.LifeMin },
+		{ "lifeMax",       a.LifeMax },
+		{ "sizeMin",       a.SizeStartMin },
+		{ "sizeMax",       a.SizeStartMax },
+		{ "sizeEndMin",    a.SizeEndMin },
+		{ "sizeEndMax",    a.SizeEndMax },
+		{ "colorStartMin", { a.ColorStartMin.x, a.ColorStartMin.y, a.ColorStartMin.z, a.ColorStartMin.w } },
+		{ "colorStartMax", { a.ColorStartMax.x, a.ColorStartMax.y, a.ColorStartMax.z, a.ColorStartMax.w } },
+		{ "colorMin",      { a.ColorMin.x, a.ColorMin.y, a.ColorMin.z, a.ColorMin.w } },
+		{ "colorMax",      { a.ColorMax.x, a.ColorMax.y, a.ColorMax.z, a.ColorMax.w } },
+	};
+}
+
+static ParticleAppearance AppearanceFromJson(const nlohmann::json& j, const ParticleAppearance& defaults)
+{
+	ParticleAppearance a = defaults;
+
+	a.LifeMin = j.value("lifeMin", a.LifeMin);
+	a.LifeMax = j.value("lifeMax", a.LifeMax);
+
+	// 後方互換："sizeMin"/"sizeMax"は発生時サイズ(SizeStart)として読む
+	a.SizeStartMin = j.value("sizeMin", a.SizeStartMin);
+	a.SizeStartMax = j.value("sizeMax", a.SizeStartMax);
+
+	// "sizeEndMin/Max"が無い場合はSizeStartと同値にする(旧仕様＝サイズ変化なしを再現)
+	a.SizeEndMin = j.value("sizeEndMin", a.SizeStartMin);
+	a.SizeEndMax = j.value("sizeEndMax", a.SizeStartMax);
 
 	// 旧形式("color"単一キー)からの読み込みにも対応し、既存の保存済みJSONを壊さない
 	{
 		DirectX::SimpleMath::Vector4 legacyColor;
 		if (TryReadVector4(j, "color", legacyColor))
 		{
-			s.ColorMin = legacyColor;
-			s.ColorMax = legacyColor;
+			a.ColorMin = legacyColor;
+			a.ColorMax = legacyColor;
 		}
 	}
-	TryReadVector4(j, "colorStartMin", s.ColorStartMin);
-	TryReadVector4(j, "colorStartMax", s.ColorStartMax);
-	TryReadVector4(j, "colorMin", s.ColorMin);
-	TryReadVector4(j, "colorMax", s.ColorMax);
+	TryReadVector4(j, "colorStartMin", a.ColorStartMin);
+	TryReadVector4(j, "colorStartMax", a.ColorStartMax);
+	TryReadVector4(j, "colorMin", a.ColorMin);
+	TryReadVector4(j, "colorMax", a.ColorMax);
 
-	return s;
+	return a;
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // GPUParticleLayer ⇔ JSON
+//	Shape/Appearanceそれぞれの変換結果を1つのフラットなJSONオブジェクトへ統合する。
+//	(以前からJSON側は分割されておらず1階層のオブジェクトなので、スキーマ自体は
+//	 変えずに済む。既存の保存済みJSONもそのまま読める)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 static nlohmann::json LayerToJson(const GPUParticleLayer& l)
 {
 	nlohmann::json j = ShapeToJson(l.Shape);
+	j.update(AppearanceToJson(l.Appearance));
 	j["count"] = l.Count;
 	j["billboardMode"] = BillboardModeToString(l.BillboardMode);
 	j["stretchScale"] = l.StretchScale;
@@ -226,6 +260,7 @@ static GPUParticleLayer LayerFromJson(const nlohmann::json& j, const GPUParticle
 {
 	GPUParticleLayer l;
 	l.Shape = ShapeFromJson(j, defaults.Shape);
+	l.Appearance = AppearanceFromJson(j, defaults.Appearance);
 	l.Count = j.value("count", defaults.Count);
 	// 旧形式のJSON(billboardMode未記載)はNormal扱いになる(後方互換)
 	l.BillboardMode = BillboardModeFromString(j.value("billboardMode", std::string("Normal")));

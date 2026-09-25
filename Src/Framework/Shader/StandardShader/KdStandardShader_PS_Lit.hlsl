@@ -26,6 +26,9 @@ float BlinnPhong(float3 lightDir, float3 vCam, float3 normal, float specPower)
 	return spec * ((specPower + 2) / (2 * 3.1415926535));
 }
 
+// 水墨調パラメータ(輪郭線の墨色。濃淡の白黒変換は撤去し、色そのものは残す)
+static const float3 kInkColor = float3(0.04, 0.04, 0.05);	// 濃墨(輪郭線に使用)
+
 //================================
 // ピクセルシェーダ
 //================================
@@ -226,6 +229,12 @@ float4 main(VSOutput In) : SV_Target0
 	else
 	{
 		outColor += g_emissiveTex.Sample(g_ss, In.UV).rgb * g_Emissive * In.Color.rgb;
+	}
+	
+	// 輪郭パスは墨一色(以降のフォグで遠景ほど霞む)
+	if (g_OutlineWidth > 0)
+	{
+		outColor = kInkColor;
 	}
 	
 	//------------------------------------------

@@ -65,6 +65,9 @@ void KdShaderManager::Init()
 	m_blendStates[(int)KdBlendState::Alpha] = KdDirect3D::Instance().CreateBlendState(KdBlendMode::Alpha);
 	m_blendStates[(int)KdBlendState::Add] = KdDirect3D::Instance().CreateBlendState(KdBlendMode::Add);
 	m_blendStates[(int)KdBlendState::AlphaMasked] = KdDirect3D::Instance().CreateBlendState(KdBlendMode::AlphaMasked);
+	m_blendStates[(int)KdBlendState::Multiply] = KdDirect3D::Instance().CreateBlendState(KdBlendMode::Multiply);
+	m_blendStates[(int)KdBlendState::Subtract] = KdDirect3D::Instance().CreateBlendState(KdBlendMode::Subtract);
+	m_blendStates[(int)KdBlendState::PreMultipliedAlpha] = KdDirect3D::Instance().CreateBlendState(KdBlendMode::PreMultipliedAlpha);
 
 	// 初期ブレンドステートの設定
 	KdDirect3D::Instance().WorkDevContext()->OMSetBlendState(m_blendStates[(int)KdBlendState::Alpha], Math::Color(0, 0, 0, 0), 0xFFFFFFFF);

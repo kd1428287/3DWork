@@ -30,8 +30,9 @@ enum class ParticleBillboardMode
 //	ParticleBuffer::Draw()の引数として渡し、GPUParticleShader側でKdBlendStateへ変換する
 enum class ParticleBlendMode
 {
-	Add,	// 加算合成(発光系の火花・炎向け)
-	Alpha,	// 半透明合成(煙・砂煙等、加算だと不自然になるもの向け)
+	Add,		// 加算合成
+	Alpha,		// 半透明合成
+	Multiply,	// 乗算合成
 };
 
 class ParticleBuffer
@@ -42,14 +43,13 @@ public:
 	~ParticleBuffer() { Release(); }
 
 	// パーティクル1粒のデータ
-	// ※HLSL側(inc_KdGPUParticle.hlsli の Particle構造体)とレイアウトを必ず一致させる事
 	struct Particle
 	{
 		Math::Vector3	Position;
 		float			Life = 0.0f;
 
 		Math::Vector3	Velocity;
-		float			Size = 0.1f;
+		float			SizeStart = 0.1f;		// 発生時サイズ(旧Size)
 
 		Math::Vector4	ColorStart = { 0.f,0.f,0.f, 1.0f };	// 発生直後の熱い色(1.0超で明るめに)
 		Math::Vector4	Color = { 0.f,0.f,0.f, 1.0f };						// 冷えた後の最終色
@@ -58,7 +58,7 @@ public:
 
 		float			BillboardMode = 0.0f;	// ParticleBillboardMode::Normal相当
 		float			StretchScale = 0.0f;	// Stretch時のみ使用：速度→伸び量の係数
-		float			_pad = 0.0f;			// 予備(将来の拡張用)
+		float			SizeEnd = 0.0f;			// 消滅時サイズ(旧_pad を転用)
 	};
 
 	// 発生パラメータ
@@ -69,8 +69,10 @@ public:
 		Math::Vector3	VelocityMin = { -1,-1,-1 };
 		Math::Vector3	VelocityMax = { 1, 1, 1 };
 
-		float			SizeMin = 0.1f;
-		float			SizeMax = 0.3f;
+		float			SizeStartMin = 0.1f;
+		float			SizeStartMax = 0.3f;
+		float			SizeEndMin = 0.1f;
+		float			SizeEndMax = 0.3f;
 
 		float			LifeMin = 0.5f;
 		float			LifeMax = 1.5f;

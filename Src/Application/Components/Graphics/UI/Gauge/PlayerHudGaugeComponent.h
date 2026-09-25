@@ -47,9 +47,9 @@ private:
 	GaugeBar healthBar_{ GaugeBarType::Health };
 	GaugeBar postureBar_{ GaugeBarType::Posture };
 
-	Math::Vector2 healthBarPos_ = { 0.0f, 0.0f };
-	Math::Vector2 healthBarSize_ = { 300.0f, 20.0f };
+	Math::Vector2 healthBarPos_ = { -600.0f, -300.0f };
+	Math::Vector2 healthBarSize_ = { 200.0f, 20.0f };
 
-	Math::Vector2 postureBarPos_ = { 0.0f, 0.0f };
-	Math::Vector2 postureBarSize_ = { 300.0f, 10.0f };
+	Math::Vector2 postureBarPos_ = { -250.0f, -300.0f };
+	Math::Vector2 postureBarSize_ = { 500.0f, 10.0f };
 };

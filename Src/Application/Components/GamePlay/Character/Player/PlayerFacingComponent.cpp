@@ -30,14 +30,16 @@ void PlayerFacingComponent::UpdateLockOnFacing(bool isRunning)
 
 	facingDirectionComponent_->SetUpdateEnabled(true);
 
-	// 走行中は方向ロック解除(入力方向へ普通に正対させる。
-	// PlayerMovementAnimationComponent::Tick()側のRun分岐と同じ考え方)。
-	if (isRunning) return;
-
 	const bool lockedOn = lockOnComponent_ != nullptr && lockOnComponent_->IsLockedOn();
-	if (lockedOn) {
-		FaceTowards(lockOnComponent_->GetLockedTarget());
+
+	// 走行中、または未ロックの場合は方向ロックを解除し、
+	// 通常の入力方向追従(FacingDirectionComponent側の既定挙動)に戻す。
+	if (isRunning || !lockedOn) {
+		facingDirectionComponent_->ClearTargetOverrideDirection();
+		return;
 	}
+
+	FaceTowards(lockOnComponent_->GetLockedTarget());
 }
 
 EvadeDirection PlayerFacingComponent::ClassifyEvadeDirection(const Math::Vector3& inputDirection) const
@@ -46,6 +48,20 @@ EvadeDirection PlayerFacingComponent::ClassifyEvadeDirection(const Math::Vector3
 	// 呼ぶ。このメンバ関数自体と同名のため、::が無いと自己再帰になる。
 	const Math::Vector3 forward = (transform_ != nullptr) ? transform_->GetForward() : Math::Vector3::Zero;
 	return ::ClassifyEvadeDirection(forward, inputDirection);
+}
+
+void PlayerFacingComponent::FaceDirection(const Math::Vector3& worldDir)
+{
+	if (transform_ == nullptr) return;
+
+	Math::Vector3 dir = worldDir;
+	dir.y = 0.0f;
+	if (dir.LengthSquared() <= kDirectionEpsilon) return;
+	dir.Normalize();
+
+	// PlayerMovementAnimationComponent::FaceDirection()と同じ変換規約
+	const float yaw = ComputeHorizontalAngleTo(Math::Vector3::Forward, dir);
+	transform_->SetRotation(Math::Quaternion::CreateFromAxisAngle(Math::Vector3::Up, yaw));
 }
 
 void PlayerFacingComponent::SetFacingEnabled(bool enabled)

@@ -47,9 +47,12 @@ enum class KdRasterizerState
 // ピクセルの色合成方法の制御ステート
 enum class KdBlendState
 {
-	Alpha,			// 透明度による色合成
-	Add,			// 加算による色合成
-	AlphaMasked,	// 透明度による色合成＋MRTスロット1(カラーグレード除外マスク等)は上書き
+	Alpha,					// 透明度による色合成
+	Add,					// 加算による色合成
+	AlphaMasked,			// 透明度による色合成＋MRTスロット1(カラーグレード除外マスク等)は上書き
+	Multiply,				// 乗算	
+	Subtract,				// 減算
+	PreMultipliedAlpha,		// 乗算済みアルファ
 	Max
 };
 

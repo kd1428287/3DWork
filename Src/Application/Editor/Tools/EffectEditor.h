@@ -5,6 +5,7 @@
 #include "../../Effect/Particle/EffectInstance.h"
 #include "../../Effect/Common/KdAssetsTextureProvider.h"
 #include "../Common/KdPreviewPostProcess.h"
+#include <imgui.h>
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // マップに配置する1エフェクト分のデータ
@@ -100,11 +101,17 @@ private:
 	void DrawMainMenu();
 	void DrawHierarchy();
 	void DrawInspector();
+	bool DrawLayerInspector(GPUParticleLayer& layer, int index);
 	void DrawGizmo();
 	void DrawTexturePicker();
 
 	// 選択中エフェクトのプレビュー専用ウィンドウ(RenderPreviewViewport()が描いた絵を表示する)
 	void DrawPreviewWindow();
+
+	void DrawColorRangeGradient(const ParticleAppearance& a, ImVec2 size);
+	ImVec4 ToImVec4(Math::Vector4 vector) {
+		return ImVec4{ vector.x,vector.y,vector.z,vector.w };
+	}
 
 	void AddObject();
 	void RemoveSelected();

@@ -35,6 +35,12 @@ VSOutput main(
 
     // 座標変換
 	Out.Pos = mul(pos, g_mWorld);	 // ローカル座標系	-> ワールド座標系へ変換
+	// 輪郭パス：ワールド法線方向へ押し出す(スケールに依存しない太さ)
+	if (g_OutlineWidth > 0)
+	{
+		Out.Pos.xyz += normalize(mul(normal, (float3x3) g_mWorld)) * g_OutlineWidth;
+	}
+
 	Out.wPos = Out.Pos.xyz;			 // ワールド座標を別途保存
 	Out.Pos = mul(Out.Pos, g_mView); // ワールド座標系	-> ビュー座標系へ変換
 	Out.Pos = mul(Out.Pos, g_mProj); // ビュー座標系	-> 射影座標系へ変換

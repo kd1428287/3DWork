@@ -15,6 +15,7 @@
 #include "Application/Components/Core/BoneSocketComponent.h"
 
 #include "Application/Components/Graphics/Render/ModelRenderComponent.h"
+#include "Application/Components/Graphics/Render/OutlineRenderComponent.h"
 #include "Application/Components/Graphics/Render/WireFrameComponent.h"
 #include "Application/Components/Graphics/Effect/SlashTrailComponent.h"
 #include "Application/Components/Graphics/Effect/FootDustComponent.h"
@@ -77,7 +78,7 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 		{ FootSide::Right, "Right" },
 		})
 
-	COMPONENT_PARAMS_DEFINE_TYPE(SkeletonConfig, model, animations)
+		COMPONENT_PARAMS_DEFINE_TYPE(SkeletonConfig, model, animations)
 
 	COMPONENT_PARAMS_DEFINE_TYPE(RootMotionConfig,
 		boneName, unitScale, forwardAxis, forwardSign, rightAxis, rightSign, extractRotation, yawSign)
@@ -85,6 +86,7 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 	COMPONENT_PARAMS_DEFINE_TYPE(FollowCameraConfig, offset, followPosition, followRotation)
 	COMPONENT_PARAMS_DEFINE_TYPE(CameraTargetConfig, offset)
 	COMPONENT_PARAMS_DEFINE_TYPE(SlashTrailConfig, trailName, base, tip, key, emitOnStart)
+	COMPONENT_PARAMS_DEFINE_TYPE(OutlineConfig, width)
 	COMPONENT_PARAMS_DEFINE_TYPE(VelocityConfig, dampingPerSecond)
 	COMPONENT_PARAMS_DEFINE_TYPE(MovementConfig, speed)
 	COMPONENT_PARAMS_DEFINE_TYPE(FacingDirectionConfig, rotationSpeed, moveThreshold)
@@ -394,6 +396,7 @@ void RegisterAllComponents(ComponentRegistry& registry)
 	registry.Add<FollowCameraComponent>("FollowCamera");
 	registry.Add<CameraTargetComponent>("CameraTarget");
 	registry.Add<SlashTrailComponent>("SlashTrail");
+	registry.Add<OutlineRenderComponent>("Outline");
 	registry.AddWithParams<FootDustParams>("FootDust", BuildFootDust);
 	registry.AddRaw("WireFrame", [](BuildContext& ctx, const nlohmann::json&) { AddWireFrameOnce(ctx.self); });
 

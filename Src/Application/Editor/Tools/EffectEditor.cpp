@@ -239,6 +239,7 @@ void EffectEditor::DrawHierarchy()
 
 void EffectEditor::DrawInspector()
 {
+
 	ImGui::Begin("Effect Inspector");
 
 	if (m_selected < 0 || m_selected >= (int)m_objects.size())
@@ -257,10 +258,6 @@ void EffectEditor::DrawInspector()
 	{
 		obj.name = nameBuf;
 	}
-
-	ImGui::DragFloat3("Position", &obj.pos.x, 0.1f);
-	ImGui::DragFloat3("Rotation", &obj.rotate.x, 1.0f);
-	ImGui::DragFloat3("Scale", &obj.scale.x, 0.05f, 0.01f, 100.0f);
 
 	ImGui::Separator();
 	ImGui::Text("Emission");
@@ -295,85 +292,18 @@ void EffectEditor::DrawInspector()
 	ImGui::DragFloat3("Gravity", &params.Gravity.x, 0.05f);
 
 	ImGui::Separator();
-
-	for (int i = 0; i < (int)params.Layers.size(); i++)
-	{
-		ImGui::PushID(i);
-
-		GPUParticleLayer& layer = params.Layers[i];
-		DirectionalEmitShape& shape = layer.Shape;
-
-		std::string headerLabel = "Layer " + std::to_string(i);
-		bool open = ImGui::CollapsingHeader(headerLabel.c_str(), ImGuiTreeNodeFlags_DefaultOpen);
-
-		bool removed = false;
-
-		if (open)
-		{
-			ImGui::DragInt("Count", &layer.Count, 1.0f, 0, 100000);
-			ImGui::DragFloat("Dir Scale Min", &shape.DirScaleMin, 0.05f);
-			ImGui::DragFloat("Dir Scale Max", &shape.DirScaleMax, 0.05f);
-			ImGui::DragFloat3("Offset Min", &shape.OffsetMin.x, 0.05f);
-			ImGui::DragFloat3("Offset Max", &shape.OffsetMax.x, 0.05f);
-			ImGui::DragFloatRange2("Size Min/Max", &shape.SizeMin, &shape.SizeMax, 0.01f, 0.001f, 100.0f);
-			ImGui::DragFloatRange2("Life Min/Max(sec)", &shape.LifeMin, &shape.LifeMax, 0.02f, 0.01f, 60.0f);
-			ImGui::ColorEdit4("Color Start Min", &shape.ColorStartMin.x);
-			ImGui::ColorEdit4("Color Start Max", &shape.ColorStartMax.x);
-			ImGui::ColorEdit4("Color Min", &shape.ColorMin.x);
-			ImGui::ColorEdit4("Color Max", &shape.ColorMax.x);
-			ImGui::TextDisabled("ColorStart=発生時、Color=消滅時の色。同じ値ならフェードしない単色になる");
-			ImGui::TextDisabled("方向を使わない単純エフェクトはDir Scaleを0にし、Offsetだけで速度範囲を作る想定");
-
-			ImGui::Separator();
-			{
-				const char* billboardLabels[] = { "Normal", "Stretch" };
-				int billboardIdx = (layer.BillboardMode == ParticleBillboardMode::Stretch) ? 1 : 0;
-				if (ImGui::Combo("Billboard Mode", &billboardIdx, billboardLabels, IM_ARRAYSIZE(billboardLabels)))
-				{
-					layer.BillboardMode = (billboardIdx == 1) ? ParticleBillboardMode::Stretch : ParticleBillboardMode::Normal;
-				}
-
-				if (layer.BillboardMode == ParticleBillboardMode::Stretch)
-				{
-					ImGui::DragFloat("Stretch Scale", &layer.StretchScale, 0.01f, 0.0f, 10.0f);
-					ImGui::TextDisabled("速度が速いパーティクルほど進行方向へ伸びる(HitSpark/WeaponClash等の速い表現向け)");
-				}
-			}
-
-			// 最後の1層は削除できないようにする
-			if (params.Layers.size() > 1 && ImGui::Button("- Remove This Layer"))
-			{
-				removed = true;
-			}
-		}
-
-		ImGui::PopID();
-
-		if (removed)
-		{
-			params.Layers.erase(params.Layers.begin() + i);
-			break;	// vectorのサイズが変わった為、このフレームのループはここで打ち切る(次フレームで再描画される)
-		}
-	}
-
-	ImGui::Text("Layers (%d)", (int)params.Layers.size());
-
-	if (ImGui::Button("+ Add Layer"))
-	{
-		params.Layers.push_back(GPUParticleLayer{});
-	}
-
-	ImGui::Separator();
 	ImGui::Text("Material (WIP)");
 	ImGui::Text("Texture : %s", params.TexturePath.empty() ? "(None)" : params.TexturePath.c_str());
 
 	{
-		const char* blendLabels[] = { "Add", "Alpha" };
-		int blendIdx = (params.BlendMode == ParticleBlendMode::Alpha) ? 1 : 0;
+		const char* blendLabels[] = { "Add", "Alpha", "Multiply"};
+		int blendIdx = static_cast<int>(params.BlendMode);
+
 		if (ImGui::Combo("Blend Mode", &blendIdx, blendLabels, IM_ARRAYSIZE(blendLabels)))
 		{
-			params.BlendMode = (blendIdx == 1) ? ParticleBlendMode::Alpha : ParticleBlendMode::Add;
+			params.BlendMode = static_cast<ParticleBlendMode>(blendIdx);
 		}
+
 		ImGui::TextDisabled("Alpha選択時、パーティクル同士の重なり順はソートされない(発生順のまま描画)");
 	}
 
@@ -402,6 +332,29 @@ void EffectEditor::DrawInspector()
 
 	ImGui::Separator();
 
+	int deleteIndex = -1;
+
+	for (int i = 0; i < (int)params.Layers.size(); i++)
+	{
+		if (DrawLayerInspector(params.Layers[i], i)) { deleteIndex = i; }
+	}
+
+	ImGui::Separator();
+
+	ImGui::Text("Layers (%d)", (int)params.Layers.size());
+
+	if (deleteIndex >= 0)
+	{
+		params.Layers.erase(params.Layers.begin() + deleteIndex);
+	}
+
+	if (ImGui::Button("+ Add Layer"))
+	{
+		params.Layers.push_back(GPUParticleLayer{});
+	}
+
+	ImGui::Separator();
+
 	bool playing = obj.IsPlaying();
 	if (!playing)
 	{
@@ -425,32 +378,79 @@ void EffectEditor::DrawInspector()
 		if (ImGui::Button("Restart")) PlayPreview(obj);
 	}
 
-	ImGui::Separator();
-	ImGui::Text("Gizmo Operation");
-
-	if (ImGui::RadioButton("Translate(1)", m_operation == ImGuizmo::TRANSLATE)) m_operation = ImGuizmo::TRANSLATE;
-	ImGui::SameLine();
-	if (ImGui::RadioButton("Rotate(2)", m_operation == ImGuizmo::ROTATE)) m_operation = ImGuizmo::ROTATE;
-	ImGui::SameLine();
-	if (ImGui::RadioButton("Scale(3)", m_operation == ImGuizmo::SCALE)) m_operation = ImGuizmo::SCALE;
-
-	if (m_operation != ImGuizmo::SCALE)
-	{
-		if (ImGui::RadioButton("World", m_mode == ImGuizmo::WORLD)) m_mode = ImGuizmo::WORLD;
-		ImGui::SameLine();
-		if (ImGui::RadioButton("Local", m_mode == ImGuizmo::LOCAL)) m_mode = ImGuizmo::LOCAL;
-	}
-
-	ImGui::Checkbox("Snap", &m_useSnap);
-	if (m_useSnap)
-	{
-		if (m_operation == ImGuizmo::TRANSLATE)
-			ImGui::DragFloat3("SnapValue", m_snapValue, 0.1f);
-		else
-			ImGui::DragFloat("SnapValue", m_snapValue, 0.5f);
-	}
-
 	ImGui::End();
+}
+
+bool EffectEditor::DrawLayerInspector(GPUParticleLayer& layer, int index)
+{
+	ImGui::PushID(index);
+	DirectionalEmitShape& shape = layer.Shape;
+	ParticleAppearance& app = layer.Appearance;
+
+	std::string headerLabel = "Layer " + std::to_string(index);
+	bool open = ImGui::CollapsingHeader(headerLabel.c_str(), ImGuiTreeNodeFlags_DefaultOpen);
+
+	bool requestDelete = false;
+
+	if (open)
+	{
+		ImGui::DragInt("Count", &layer.Count, 1.0f, 0, 100000);
+
+		ImGui::SeparatorText("Shape");
+		ImGui::DragFloat2("DirScale", &shape.DirScaleMin /* Min/Maxを並べる */);
+		ImGui::DragFloat3("OffsetMin", &shape.OffsetMin.x);
+		ImGui::DragFloat3("OffsetMax", &shape.OffsetMax.x);
+
+		ImGui::SeparatorText("Appearance");
+		ImGui::DragFloatRange2("Life Min/Max(sec)", &app.LifeMin, &app.LifeMax, 0.02f, 0.01f, 60.0f);
+		ImGui::DragFloat2("Size Start", &app.SizeStartMin);
+		ImGui::DragFloat2("Size End", &app.SizeEndMin);
+		ImGui::SameLine();
+		if (ImGui::SmallButton("Copy Start##Size"))
+		{
+			app.SizeEndMin = app.SizeStartMin;
+			app.SizeEndMax = app.SizeStartMax;
+		}
+
+		ImGui::ColorEdit4("Color Start Min", &app.ColorStartMin.x);
+		ImGui::ColorEdit4("Color Start Max", &app.ColorStartMax.x);
+		ImGui::ColorEdit4("Color Min", &app.ColorMin.x);
+		ImGui::ColorEdit4("Color Max", &app.ColorMax.x);
+		ImGui::SameLine();
+		if (ImGui::SmallButton("Copy Start##Color"))
+		{
+			app.ColorMin = app.ColorStartMin;
+			app.ColorMax = app.ColorStartMax;
+		}
+
+		DrawColorRangeGradient(app, { 250,10 });
+
+		ImGui::Separator();
+		{
+			const char* billboardLabels[] = { "Normal", "Stretch" };
+			int billboardIdx = (layer.BillboardMode == ParticleBillboardMode::Stretch) ? 1 : 0;
+			if (ImGui::Combo("Billboard Mode", &billboardIdx, billboardLabels, IM_ARRAYSIZE(billboardLabels)))
+			{
+				layer.BillboardMode = (billboardIdx == 1) ? ParticleBillboardMode::Stretch : ParticleBillboardMode::Normal;
+			}
+
+			if (layer.BillboardMode == ParticleBillboardMode::Stretch)
+			{
+				ImGui::DragFloat("Stretch Scale", &layer.StretchScale, 0.01f, 0.0f, 10.0f);
+				ImGui::TextDisabled("速度が速いパーティクルほど進行方向へ伸びる(HitSpark/WeaponClash等の速い表現向け)");
+			}
+		}
+
+		// 最後の1層は削除できないようにする
+		if (ImGui::Button("- Remove This Layer"))
+		{
+			requestDelete = true;
+		}
+	}
+
+	ImGui::PopID();
+
+	return requestDelete;
 }
 
 void EffectEditor::DrawGizmo()
@@ -596,6 +596,22 @@ void EffectEditor::DrawPreviewWindow()
 	ImGui::PopStyleVar();
 }
 
+// x軸：寿命の進行(左=Start / 右=End)
+// y軸：Min-Maxの乱数幅(上=Max側 / 下=Min側)
+void EffectEditor::DrawColorRangeGradient(const ParticleAppearance& a, ImVec2 size)
+{
+	ImVec2 p0 = ImGui::GetCursorScreenPos();
+	ImVec2 p1 = ImVec2(p0.x + size.x, p0.y + size.y);
+
+	ImU32 topLeft = ImGui::ColorConvertFloat4ToU32(ToImVec4(a.ColorStartMax)); // Start側Max
+	ImU32 topRight = ImGui::ColorConvertFloat4ToU32(ToImVec4(a.ColorMax));      // End側Max
+	ImU32 botRight = ImGui::ColorConvertFloat4ToU32(ToImVec4(a.ColorMin));      // End側Min
+	ImU32 botLeft = ImGui::ColorConvertFloat4ToU32(ToImVec4(a.ColorStartMin)); // Start側Min
+
+	ImGui::GetWindowDrawList()->AddRectFilledMultiColor(p0, p1, topLeft, topRight, botRight, botLeft);
+	ImGui::Dummy(size); // レイアウト上の場所取り
+}
+
 void EffectEditor::PreviewViewport::Resize(int w, int h)
 {
 	if (w <= 0 || h <= 0) return;
@@ -731,7 +747,7 @@ void EffectEditor::PlayPreview(EffectObject& obj)
 	obj.playing = true;
 	obj.paused = false;
 
-	obj.previewInstance.Play(obj.pos);
+	obj.previewInstance.Play(obj.pos,{1,1,1});
 }
 
 void EffectEditor::StopPreview(EffectObject& obj)

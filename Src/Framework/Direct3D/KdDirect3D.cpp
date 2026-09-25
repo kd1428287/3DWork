@@ -521,7 +521,45 @@ ID3D11BlendState* KdDirect3D::CreateBlendState(KdBlendMode mode) const
 		desc.RenderTarget[1].BlendEnable = FALSE;
 		desc.RenderTarget[1].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 	}
+	// 乗算ブレンド
+	else if (mode == KdBlendMode::Multiply)
+	{
+		// 色の合成方法: 最終カラー = (SrcColor * DestColor) + (DestColor * 0)
+		desc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+		desc.RenderTarget[0].SrcBlend = D3D11_BLEND_DEST_COLOR;
+		desc.RenderTarget[0].DestBlend = D3D11_BLEND_ZERO;
 
+		// アルファの合成方法: Srcを0、Destを1にして背景のアルファ値をそのまま維持する
+		desc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+		desc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ZERO;
+		desc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ONE;
+	}
+	// 減算ブレンド
+	else if (mode == KdBlendMode::Subtract)
+	{
+		// 色の合成方法: 最終カラー = (DestColor * 1) - (SrcColor * SrcAlpha)
+		desc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_REV_SUBTRACT; // DestからSrcを引く
+		desc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+		desc.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;
+
+		// アルファの合成方法: 減算すると背景のアルファが消えるため、維持する
+		desc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+		desc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ZERO;
+		desc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ONE;
+	}
+	// 乗算済みアルファ (Pre-multiplied Alpha)
+	else if (mode == KdBlendMode::PreMultipliedAlpha)
+	{
+		// 色の合成方法: 最終カラー = (SrcColor * 1) + (DestColor * (1 - SrcAlpha))
+		desc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+		desc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
+		desc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+
+		// アルファの合成方法
+		desc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+		desc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+		desc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
+	}
 	// ステートオブジェクト作成
 	ID3D11BlendState* state = nullptr;
 	if (FAILED(m_pDevice->CreateBlendState(&desc, &state)))return nullptr;

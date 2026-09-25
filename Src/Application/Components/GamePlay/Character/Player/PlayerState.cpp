@@ -109,30 +109,19 @@ void StateEvade::Enter(PlayerStatusController* controller) {
 	phase_ = CombatState::Evade;
 	elapsed_ = 0.0f;
 
-	// 回避中の移動は入力ではなく、決め打ちの軌道(RequestStepMove)、
-	// または(useRootMotionがtrueの場合)アニメーションのルートモーションに
-	// 任せる。MovementComponentはTransitionTo側で既に無効化されているため、
-	// 位置を書き換える権利がここで競合することはない。
 	const auto& data = controller->GetCurrentEvadeData();
-
-	// 現在の前方に対する入力方向の相対位置(前後左右)を判定し、
-	// 対応するアニメーションを選ぶ。キャラクター自体は向きを変えない
-	// (facingDirectionComponent_はEvade中無効化されているため、
-	//  ここで回転させない限り自然に維持される)。
 	const EvadeDirection evadeDir = controller->ClassifyEvadeDirection(data.evadeDirection);
 
-	// 回避全体(Active+Recovery)の秒数を目標としてアニメーション速度を
-	// 自動スケーリングする(詳細はModelAnimatorComponent::Play参照)。
-	// 【未対応】EvadeはAttackと異なり、まだ「1回避=1クリップ」のまま
-	// フェーズ分割していない(前後左右4方向とのかけ合わせ方を先に
-	// 決める必要があるため。詳細は別途相談)。
+	if (controller->IsLockedOn()) {
+		controller->FaceAttackTarget();
+	}
+
 	const float targetDuration = data.activeDuration + data.recoveryDuration;
 	controller->PlayAnimation(data.GetAnimationName(evadeDir), false, targetDuration, data.useRootMotion);
 	if (!data.useRootMotion) {
 		//controller->RequestStepMove(data.evadeDirection, data.evadeDistance, data.activeDuration + data.recoveryDuration);
 	}
 }
-
 void StateEvade::Exit(PlayerStatusController* controller) {
 	controller->CancelStepMove();
 }

@@ -49,9 +49,12 @@ VSOutput main(uint vertID : SV_VertexID, uint instID : SV_InstanceID)
 
 	Particle p = g_ParticleBuffer[instID];
 
-	// 死亡中のパーティクルは面積0にして描画結果に影響しないようにする
-	float size = (p.Life > 0) ? p.Size : 0;
+	// LifeRateはこの後のsize/color補間の両方で使うので先に計算しておく
+	Out.LifeRate = (p.LifeMax > 0) ? saturate(p.Life / p.LifeMax) : 0;
 
+// 死亡中のパーティクルは面積0にして描画結果に影響しないようにする
+	float size = lerp(p.SizeStart, p.SizeEnd, 1 - Out.LifeRate);
+	
 	// ビュー行列(row_major)の列から、カメラのワールド空間での右方向・上方向を取り出す
 	// ※mul(v, mView)というベクトル×行列の掛け方をしている場合、
 	//   ビュー行列の各「列」がカメラのワールド空間での軸ベクトルになる
@@ -102,8 +105,7 @@ VSOutput main(uint vertID : SV_VertexID, uint instID : SV_InstanceID)
 	Out.Pos = mul(Out.Pos, g_mProj);
 
 	Out.UV = kQuadUV[vertID];
-	Out.LifeRate = (p.LifeMax > 0) ? saturate(p.Life / p.LifeMax) : 0;
-
+	
 	// 発生直後(LifeRate=1)はColorStart、消滅直前(LifeRate=0)はColorへ補間
 	Out.Color = lerp(p.ColorStart, p.Color, 1 - Out.LifeRate);
 

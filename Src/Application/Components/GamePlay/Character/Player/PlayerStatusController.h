@@ -140,6 +140,7 @@ public:
 		bool useRootMotion = false, float blendDurationSeconds = kDefaultAnimationBlendDuration);
 
 	void PlayAnimation(const MotionClipData& clip);
+	void FaceDirection(const Math::Vector3& worldDir);
 
 	// 戦闘行動からNoneへ復帰した直後、現在の入力状態に合わせて
 	// Idle/Walk/Runへアニメーション・向きを同期し直す(StateNone::Enter参照)。
