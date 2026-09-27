@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "../Common/CombatData.h"
 #include "../Common/CharacterDefinitionCommon.h" // MotionClipData
 
@@ -129,4 +129,18 @@ struct EnemyAIData
 	// 「間」。旧WarrockBehavior::GetDespawnDelay()が独自定数として
 	// 持っていた値をこちらへ移した。
 	float postDeathLingerSeconds = 1.0f;
+
+	// ルートモーション抽出に使うボーン名。
+	// 【経緯】以前はEnemyAIController::kRootMotionBoneNameという
+	// C++定数として持っていたが、実際にはどこからも参照されておらず
+	// (ApplyRootMotion()はModelAnimatorComponent::ConsumeRootMotionDelta()
+	// を呼ぶだけでボーン名を扱わない)、実質的な二重管理にすらなっていない
+	// 死んだ定数だった。Warrock.json側は元々ModelAnimatorコンポーネントの
+	// params.rootMotion.boneNameとして同じ値("mixamorig:Hips")を持って
+	// おり、実行時のルートモーション抽出はそちらの値だけで完結している。
+	// このフィールドはEnemyAIData側にも同じ値を持たせておくための箱で、
+	// 実行層(EnemyAIController)側からModelAnimatorComponentへ明示的に
+	// 渡す配線は未実装(oneShotAnimationsを追加した時と同じく、まずは
+	// データを持たせるところまで。EnemyAIData.h冒頭コメント参照)。
+	std::string rootMotionBoneName = "mixamorig:Hips";
 };

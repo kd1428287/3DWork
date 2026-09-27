@@ -393,7 +393,6 @@
 					}
 				},
 				"stagger": {
-					"_comment": "怯み→復帰までが1本のクリップに収録されている前提。reactionStartFrame/reactionEndFrame/recoveryEndFrameは要調整(実クリップのフレーム数に合わせること)。recoveryDurationはRecovery区間の再生秒数(アニメ速度のスケーリングとフェーズ終了判定を兼ねる)。Reaction自体の秒数はここではなくHitReaction側のhitStunSeconds/largeStaggerDurationが決める。",
 					"staggerSmall": {
 						"animationName": "Hit_B_Root",
 						"useRootMotion": false,

@@ -39,10 +39,11 @@
 // 適用・ノックバック・体幹ダメージ・体幹崩壊判定まで、以前このクラスの
 // OnCollisionEnter()が自前でやっていたことをほぼそのまま代替するため、
 // 旧OnCollisionEnter()は削除しIHitReactionQueryの実装へ置き換えた。
-// Enemy(少なくとも現状のWarrock)はガード/パリィといった防御行動を
-// 持たないため、IsGuarding()/IsInParryWindow()は常にfalseを返し、
-// HitReactionComponent側は常に「通常被弾」の分岐を通ってEnterStagger()
-// を呼ぶ。
+// Enemy(少なくとも現状のWarrock)は武器を持たない大型モンスターであり、
+// パリィ判定は持たない想定のため、IsInParryWindow()は常にfalseを返す。
+// 一方、常時ノーガードでは無く「攻撃のRecoveryフェーズ(隙)以外は
+// ハイパーアーマー気味に通常被弾をガード扱いする」という性質を
+// IsGuarding()側に持たせている(下のIsGuarding()/SetVulnerable()参照)。
 //
 // 【Prefab/Configについて】
 // このコンポーネントはGameObject*とEnemyAIDataとIEnemyBehaviorの3つを
@@ -57,7 +58,8 @@ class EnemyAIController : public ComponentBase, public IMovementSource, public I
 {
 public:
 	EnemyAIController(GameObject* owner, const EnemyAIData& data, std::unique_ptr<IEnemyBehavior> behavior)
-		: ComponentBase(owner), data_(data), behavior_(std::move(behavior)) {}
+		: ComponentBase(owner), data_(data), behavior_(std::move(behavior)) {
+	}
 
 	void Awake() override
 	{
@@ -67,6 +69,15 @@ public:
 		postureComponent_ = GetOwner()->GetComponent<PostureComponent>();
 		healthComponent_ = GetOwner()->GetComponent<HealthComponent>();
 		weaponSet_ = GetOwner()->GetComponent<WeaponSetComponent>();
+		// 子オブジェクト構築中(weaponSet_取得前)にSetWeapon()が呼ばれ
+		// バッファされていた分を、ここでまとめて登録する(SetWeapon()の
+		// コメント参照)。
+		if (weaponSet_ != nullptr) {
+			for (auto& [slot, weapon] : pendingWeapons_) {
+				weaponSet_->RegisterWeapon(slot, weapon);
+			}
+			pendingWeapons_.clear();
+		}
 		// 無くてもよい(任意)。存在する場合のみルートモーション中の
 		// 向き自動追従の一時停止に使う(クラス冒頭コメント参照)。
 		facingDirectionComponent_ = GetOwner()->GetComponent<FacingDirectionComponent>();
@@ -139,12 +150,16 @@ public:
 	Math::Vector3 GetDesiredVelocity() override { return desiredVelocity_; }
 
 	// --- IHitReactionQueryの実装 --------------------------------------------
-	// Enemy(少なくとも現状のWarrock)はガード/パリィといった防御行動を
-	// 持たないため、常にfalseを返す。HitReactionComponent::
-	// OnCollisionEnter()はこれを見て常に「通常被弾」の分岐(else節)を
-	// 通ってEnterStagger()を呼ぶ。防御行動を持つ敵種が今後増えたら、
-	// この実装をEnemyAIData側のフラグ等で差し替えられるようにすること。
-	bool IsGuarding() const override { return false; }
+	// 【変更】以前は常にfalse固定だった。武器を持たない大型モンスターは
+	// 常時ハイパーアーマー気味で、自分の攻撃のRecoveryフェーズ(隙)の
+	// 間だけ無防備になる、という性質をここで表現する
+	// (isVulnerable_はBTWeightedAttackAction::Tick()がRecoveryフェーズの
+	// 開始/終了に合わせてSetVulnerable()経由で書き換える。クラス冒頭
+	// コメント参照)。ガード時はHitReactionComponent側がモーション無しで
+	// 体幹ダメージ+チップダメージ(AttackDamageData::chipDamageRatio)を
+	// 処理し、無防備時のみEnterStagger()経由で被弾リアクションが起きる。
+	// パリィはこの敵種には実装しないため常にfalse。
+	bool IsGuarding() const override { return !isVulnerable_; }
 	bool IsInParryWindow() const override { return false; }
 	void NotifyParrySuccess() override {}
 	void NotifyGuardHit() override {}
@@ -260,18 +275,48 @@ public:
 		}
 	}
 
+	// 【修正】以前はcurrentAnimationName_を更新していなかった。この
+	// オーバーロードはBTWeightedAttackAction(Windup/Active/Recovery)が
+	// 使う経路で、更新を怠るとキャッシュが攻撃前の値(例:"Idle")の
+	// まま古くなり、攻撃終了後にEnemyActionMaintainDistance等が
+	// PlayAnimationIfChanged("Idle", true)を呼んでも「既にIdleのはず」と
+	// 誤判定してスキップされてしまっていた(実際はRecoveryクリップの
+	// 最終フレームで止まったまま)。移動アニメーションが再生されない/
+	// ブレンドがおかしい不具合の原因だったため、こちらのオーバーロードも
+	// 文字列版と同じくキャッシュを更新するようにした。
 	void PlayAnimation(const MotionClipData& clip) {
+		currentAnimationName_ = clip.animationName;
 		if (modelAnimatorComponent_ == nullptr) return;
 		modelAnimatorComponent_->Play(clip);
 	}
 
 	// --- 武器の攻撃判定 --------------------------------------------------
+	// 【変更】以前はweaponCollider_/weaponAttackSource_という生の2Handleを
+	// 自前で持っていたが、Player同様WeaponSetComponentへ委譲する形にした
+	// (クラス冒頭コメント参照)。
+	// 【変更】以前は引数なし(常に"Main"固定)だったが、敵は攻撃部位を
+	// 複数持つ(右手/左手/足等)ため、スロット名を呼び出し側
+	// (ComponentRegistrations.cpp::BuildWeapon)から指定できる形にした。
+	// 【修正】武器(子GameObject)の"Weapon"コンポーネントはPrefabFactory::
+	// CreateImpl()の中で同期的に構築され、その場でこのSetWeapon()が
+	// 呼ばれる。一方weaponSet_はAwake()(RequestAwake()経由で次フレーム
+	// 以降に遅延実行される)で初めて取得されるため、SetWeapon()が呼ばれる
+	// 時点ではweaponSet_はまだ必ずnullptrで、登録が黙って失敗していた
+	// (攻撃判定のHitBoxが一切アクティブ化しない不具合の原因)。
+	// weaponSet_が無い間はpendingWeapons_へ溜めておき、Awake()で
+	// weaponSet_を取得した直後にまとめて登録する。
 	void SetWeapon(const std::string& slot, Handle<WeaponComponent> weapon) {
-		if (WeaponSetComponent* weaponSet = GetOwner()->GetComponent<WeaponSetComponent>()) {
-			weaponSet->RegisterWeapon(slot, weapon);
+		if (weaponSet_ != nullptr) {
+			weaponSet_->RegisterWeapon(slot, weapon);
+		}
+		else {
+			pendingWeapons_.emplace_back(slot, weapon);
 		}
 	}
 
+	// 【変更】以前は引数なし(常に唯一の武器を指す)だったが、Player同様
+	// AttackData::weaponSlotsで対象スロットを指定できる形にした
+	// (BTWeightedAttackAction::Tick()参照)。
 	void SetWeaponHitBoxEnabled(const std::vector<std::string>& slots, bool enabled) {
 		if (weaponSet_ != nullptr) weaponSet_->SetHitBoxEnabled(slots, enabled);
 	}
@@ -281,6 +326,11 @@ public:
 	void SetWeaponTrailEmitting(const std::vector<std::string>& slots, bool emitting) {
 		if (weaponSet_ != nullptr) weaponSet_->SetTrailEmitting(slots, emitting);
 	}
+
+	// 自分の攻撃のRecoveryフェーズ(隙)中かどうか。IsGuarding()が
+	// 見る唯一の実体で、BTWeightedAttackAction::Tick()がRecoveryフェーズの
+	// 開始/終了(通常完了・中断の両方)に合わせて書き換える。
+	void SetVulnerable(bool vulnerable) { isVulnerable_ = vulnerable; }
 
 	// --- 体幹 --------------------------------------------------------------
 	PostureComponent* GetPostureComponent() const { return postureComponent_; }
@@ -313,14 +363,24 @@ private:
 	FacingDirectionComponent* facingDirectionComponent_ = nullptr;
 	WeaponSetComponent* weaponSet_ = nullptr;
 
+	// weaponSet_取得前(子オブジェクト構築中)にSetWeapon()が呼ばれた分の
+	// 一時バッファ。Awake()でweaponSet_取得後にまとめて登録して空にする。
+	std::vector<std::pair<std::string, Handle<WeaponComponent>>> pendingWeapons_;
+
 	std::vector<Handle<GameObject>> ownedObjects_;
 
 	Math::Vector3 desiredVelocity_{};
 	std::string currentAnimationName_;
 
-	static constexpr const char* kRootMotionBoneName = "mixamorig:Hips";
+	// 【削除】kRootMotionBoneName定数は削除した。実際にはどこからも
+	// 参照されておらず、Warrock.json側のModelAnimator.params.rootMotion.
+	// boneNameと同じ値を持つだけの死んだ定数だったため。同じ値は
+	// EnemyAIData::rootMotionBoneNameへ移した(EnemyAIData.h参照)。
 	static constexpr const char* kMainWeaponSlot = "Main";
 	float attackCooldownTimer_ = 0.0f;
+
+	// 自分の攻撃のRecoveryフェーズ(隙)中かどうか。IsGuarding()参照。
+	bool isVulnerable_ = false;
 
 	size_t patrolIndex_ = 0;
 	// 直前に選ばれた技。同じ技の連続選択を避けるためChooseAttack()/

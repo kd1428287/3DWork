@@ -14,6 +14,16 @@ class EnemyAIController;
 // Brute専用ではなく全敵種で共用するクラスであるため
 // (EnemyAIController.h冒頭コメント参照)。
 //
+// 【移動アニメーション名のデータ駆動化について】
+// 以前はIdle/Walk/Runのアニメーション名を"Idle"/"Walk"/"Run"という
+// 文字列リテラルで直書きしていた(EnemyAIData::movementAnimationsは
+// 定義だけあり、実行層側は読んでいなかった)。攻撃終了後に
+// PlayAnimationIfChanged()のキャッシュ比較が壊れる不具合の調査中に、
+// この配線漏れ自体も直しておくことにした。全アクションが
+// EnemyAIData::movementAnimationsを読むようにしたことで、敵種ごとに
+// 実際のアニメーションクリップ名(Warrock.jsonのdata.movementAnimations
+// 参照)を差し替えられるようになった。
+//
 // 【攻撃(Attack)について】
 // 以前はEnemyActionAttackとしてここに実装があったが、Windup/Active/
 // Recoveryの3フェーズ実行はWarrockActionAttackと完全に同一のコピーに

@@ -17,10 +17,10 @@
 COMPONENT_PARAMS_DEFINE_TYPE(EnemyAttackDefinition,
 	name, attackData, minRange, maxRange, weight)
 
-COMPONENT_PARAMS_DEFINE_TYPE(EnemyMovementAnimationNames,
-	idle, walk, run)
+	COMPONENT_PARAMS_DEFINE_TYPE(EnemyMovementAnimationNames,
+		idle, walk, run)
 
-COMPONENT_PARAMS_DEFINE_TYPE(EnemyAIData,
-	patrolPoints, patrolSpeed, chaseSpeed, idleDuration, detectionRange, loseTargetRange,
-	maintainDistance, attackIntervalDuration, attacks, gapCloserAttacks,
-	movementAnimations, oneShotAnimations, postDeathLingerSeconds)
+	COMPONENT_PARAMS_DEFINE_TYPE(EnemyAIData,
+		patrolPoints, patrolSpeed, chaseSpeed, idleDuration, detectionRange, loseTargetRange,
+		maintainDistance, attackIntervalDuration, attacks, gapCloserAttacks,
+		movementAnimations, oneShotAnimations, postDeathLingerSeconds, rootMotionBoneName)

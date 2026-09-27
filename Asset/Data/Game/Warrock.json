@@ -1,6 +1,6 @@
 {
 	"name": "enemy_warrock",
-	"scale": [1.0, 1.0, 1.0],
+	"scale": [ 1.0, 1.0, 1.0 ],
 	"components": [
 		{
 			"type": "ModelRender",
@@ -138,7 +138,8 @@
 							"duration": 2.0
 						}
 					},
-					"postDeathLingerSeconds": 1.0
+					"postDeathLingerSeconds": 1.0,
+					"rootMotionBoneName": "mixamorig:Hips"
 				}
 			}
 		}
@@ -146,9 +147,12 @@
 	"children": [
 		{
 			"name": "Main",
-			"scale": [0.5, 0.5, 0.5],
+			"scale": [ 0.5, 0.5, 0.5 ],
 			"components": [
-				{ "type": "AttachToBone", "params": { "bone": "mixamorig:RightHand" } },
+				{
+					"type": "AttachToBone",
+					"params": { "bone": "mixamorig:RightHand" }
+				},
 				{
 					"type": "Collider",
 					"params": {
@@ -173,9 +177,12 @@
 		},
 		{
 			"name": "Off",
-			"scale": [0.5, 0.5, 0.5],
+			"scale": [ 0.5, 0.5, 0.5 ],
 			"components": [
-				{ "type": "AttachToBone", "params": { "bone": "mixamorig:LeftHand" } },
+				{
+					"type": "AttachToBone",
+					"params": { "bone": "mixamorig:LeftHand" }
+				},
 				{
 					"type": "Collider",
 					"params": {
@@ -184,9 +191,9 @@
 							{
 								"name": "HitBox",
 								"shape": "Box",
-								"halfExtents": [2.0, 2.0, 2.0],
-								"offset": [1.0, 1.0, 0.0],
-								"categoryMask": ["HitBox"],
+								"halfExtents": [ 2.0, 2.0, 2.0 ],
+								"offset": [ 1.0, 1.0, 0.0 ],
+								"categoryMask": [ "HitBox" ],
 								"enabled": false,
 								"isTrigger": true
 							}
@@ -194,14 +201,20 @@
 					}
 				},
 				{ "type": "AttackSource" },
-				{ "type": "Weapon", "params": { "slot": "Off" } }
+				{
+					"type": "Weapon",
+					"params": { "slot": "Off" }
+				}
 			]
 		},
 		{
 			"name": "Foot",
-			"scale": [0.5, 0.5, 0.5],
+			"scale": [ 0.5, 0.5, 0.5 ],
 			"components": [
-				{ "type": "AttachToBone", "params": { "bone": "mixamorig:RightFoot" } },
+				{
+					"type": "AttachToBone",
+					"params": { "bone": "mixamorig:RightFoot" }
+				},
 				{
 					"type": "Collider",
 					"params": {
@@ -210,9 +223,9 @@
 							{
 								"name": "HitBox",
 								"shape": "Box",
-								"halfExtents": [2.0, 2.0, 2.0],
-								"offset": [0.0, 0.5, 0.5],
-								"categoryMask": ["HitBox"],
+								"halfExtents": [ 2.0, 2.0, 2.0 ],
+								"offset": [ 0.0, 0.5, 0.5 ],
+								"categoryMask": [ "HitBox" ],
 								"enabled": false,
 								"isTrigger": true
 							}
@@ -220,7 +233,10 @@
 					}
 				},
 				{ "type": "AttackSource" },
-				{ "type": "Weapon", "params": { "slot": "Foot" } }
+				{
+					"type": "Weapon",
+					"params": { "slot": "Foot" }
+				}
 			]
 		}
 	]

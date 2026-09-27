@@ -5,7 +5,7 @@
 BTNodeStatus EnemyActionIdle::Tick(EnemyAIController* context, float deltaTime)
 {
 	context->StopMovement();
-	context->PlayAnimationIfChanged("Idle", true);
+	context->PlayAnimationIfChanged(context->GetData().movementAnimations.idle, true);
 
 	// 巡回地点が無ければ巡回へ進む意味が無いため、待機のまま居座る。
 	if (context->GetData().patrolPoints.empty()) {
@@ -44,7 +44,7 @@ BTNodeStatus EnemyActionPatrol::Tick(EnemyAIController* context, float /*deltaTi
 	toTarget.Normalize();
 	context->SetMovementSpeed(context->GetData().patrolSpeed);
 	context->SetDesiredVelocity(toTarget);
-	context->PlayAnimationIfChanged("Walk", true);
+	context->PlayAnimationIfChanged(context->GetData().movementAnimations.walk, true);
 	return BTNodeStatus::Running;
 }
 
@@ -64,7 +64,7 @@ BTNodeStatus EnemyActionChase::Tick(EnemyAIController* context, float /*deltaTim
 	toTarget.Normalize();
 	context->SetMovementSpeed(context->GetData().chaseSpeed);
 	context->SetDesiredVelocity(toTarget);
-	context->PlayAnimationIfChanged("Run", true);
+	context->PlayAnimationIfChanged(context->GetData().movementAnimations.run, true);
 	return BTNodeStatus::Running;
 }
 
@@ -82,13 +82,13 @@ BTNodeStatus EnemyActionMaintainDistance::Tick(EnemyAIController* context, float
 	// 停止する(近すぎても後退はしない設計。EnemyActions.h冒頭コメント参照)。
 	if (toTarget.LengthSquared() <= maintainDistance * maintainDistance) {
 		context->StopMovement();
-		context->PlayAnimationIfChanged("Idle", true);
+		context->PlayAnimationIfChanged(context->GetData().movementAnimations.idle, true);
 		return BTNodeStatus::Running;
 	}
 
 	toTarget.Normalize();
 	context->SetMovementSpeed(context->GetData().chaseSpeed);
 	context->SetDesiredVelocity(toTarget);
-	context->PlayAnimationIfChanged("Run", true);
+	context->PlayAnimationIfChanged(context->GetData().movementAnimations.run, true);
 	return BTNodeStatus::Running;
 }
