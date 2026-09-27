@@ -1,7 +1,7 @@
 {
 	"name": "player",
 	"components": [
-		{	"type": "Player" },
+		{ "type": "Player" },
 		{
 			"type": "ModelRender",
 			"params": {
@@ -306,8 +306,8 @@
 					"WeaponClashFx"
 				],
 				"damageEffectName": "BloodSplatter",
-				"parryEffectName": "WeaponClashParry",
-				"blockEffectName": "WeaponClashBlock",
+				"parryEffectName": "ParryEffect",
+				"blockEffectName": "BlockEffect",
 				"cameraShakeIntensity": 0.75,
 				"hitStopDelaySeconds": 0.0,
 				"hitStopDurationSeconds": 0.1,
@@ -377,6 +377,44 @@
 						"animationName": "DefenseL2APose_Root",
 						"useRootMotion": true,
 						"blendDuration": 0.1
+					},
+					"rootMotionScale": 0.3
+				},
+				"charge": {
+					"maxChargeTime": 1.5,
+					"minDamageScale": 1.0,
+					"maxDamageScale": 2.0,
+					"loop": {
+						"duration": -1.0,
+						"animationName": "ChargeAttack_Loop_Root",
+						"useRootMotion": false,
+						"blendDuration": 0.15,
+						"loop": true
+					}
+				},
+				"stagger": {
+					"_comment": "怯み→復帰までが1本のクリップに収録されている前提。reactionStartFrame/reactionEndFrame/recoveryEndFrameは要調整(実クリップのフレーム数に合わせること)。recoveryDurationはRecovery区間の再生秒数(アニメ速度のスケーリングとフェーズ終了判定を兼ねる)。Reaction自体の秒数はここではなくHitReaction側のhitStunSeconds/largeStaggerDurationが決める。",
+					"staggerSmall": {
+						"animationName": "Hit_B_Root",
+						"useRootMotion": false,
+						"reactionStartFrame": 0,
+						"reactionEndFrame": 15,
+						"reactionBlendDuration": 0.1,
+						"recoveryEndFrame": 40,
+						"recoveryDuration": 0.15,
+						"recoveryBlendDuration": 0.0,
+						"recoveryEvadeCancelStart": 0.05
+					},
+					"staggerLarge": {
+						"animationName": "Large_Hit_Root",
+						"useRootMotion": false,
+						"reactionStartFrame": 0,
+						"reactionEndFrame": 40,
+						"reactionBlendDuration": 0.1,
+						"recoveryEndFrame": 100,
+						"recoveryDuration": 0.6,
+						"recoveryBlendDuration": 0.0,
+						"recoveryEvadeCancelStart": 0.3
 					}
 				}
 			}
@@ -427,7 +465,7 @@
 						],
 						"rotationEulerDeg": [
 							0,
-							0,
+							180,
 							-90
 						]
 					}
@@ -435,7 +473,7 @@
 				{
 					"type": "ModelRender",
 					"params": {
-						"model": "Asset/Models/Character/GhostSamurai/Katana.gltf"
+						"model": "Asset/Models/Character/Ninja/Tachi.gltf"
 					}
 				},
 				{
@@ -455,7 +493,7 @@
 								"offset": [
 									0.0,
 									0.0,
-									-0.75
+									0.75
 								],
 								"categoryMask": [
 									"HitBox"
@@ -485,12 +523,12 @@
 						"base": [
 							0,
 							0,
-							-1.0
+							1.0
 						],
 						"tip": [
 							0,
 							0,
-							-1.75
+							1.75
 						],
 						"key": "Sword_Player",
 						"emitOnStart": true

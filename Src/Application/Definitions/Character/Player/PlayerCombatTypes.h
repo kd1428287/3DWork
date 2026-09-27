@@ -326,6 +326,42 @@ struct GuardData
 	MotionClipData parry;
 	MotionClipData hit;
 	MotionClipData end;
+
+	// Guard中(start/loop/parry/hit/end全て)のルートモーション移動量に
+	// 掛ける倍率。ルートモーションが動きすぎる場合、1.0未満にして抑制する
+	// (RootMotionApplierComponent::SetRootMotionWarp参照)。既定1.0は無効化なし。
+	float rootMotionScale = 1.0f;
+};
+
+// --- スタン(被弾リアクション)のデータ全体 -----------------------------
+// 「怯み→基の姿勢に戻る」までが1本のクリップに収録されているため、
+// AttackData::phaseDataと同じ考え方(同じクリップをstartFrame/endFrameで
+// 区切り、複数フェーズとして繋げて再生する)を採用する。
+// Reaction(怯み/ダウン)の秒数は攻撃側(hitStunSeconds/largeStaggerDuration等)が
+// EnterStagger/ApplyStaggerへ渡す値に従う(技によってスタン尺を変えたいため、
+// ここでは「クリップ内のどこからどこまでか」というフレーム範囲だけを持ち、
+// 秒数そのものは持たない)。Recovery(復帰動作)は食らった側の固定動作のため、
+// フレーム範囲・秒数・キャンセル猶予をここに持つ。
+struct StaggerPhaseData
+{
+	std::string animationName; // Reaction/Recovery共通の1本のクリップ
+	bool useRootMotion = false;
+
+	int reactionStartFrame = 0;
+	int reactionEndFrame = 0;     // ここまでがReaction(Recoveryはこの続きから再生する)
+	float reactionBlendDuration = 0.1f; // Reaction開始時(直前の別アニメーションからの遷移)のブレンド秒数
+
+	int recoveryEndFrame = 0;     // ここまでがRecovery(クリップ末尾)
+	float recoveryDuration = 0.15f;     // Recovery区間の再生秒数。アニメ速度のスケーリングと
+	// フェーズ終了判定の両方に使う(AttackDataの各phaseと同じ扱い)
+	float recoveryBlendDuration = 0.0f; // Recovery開始時(同一クリップの続き)のブレンド秒数。基本0でよい
+	float recoveryEvadeCancelStart = 0.05f; // Recovery開始から何秒でEvade/Moveキャンセル可能か
+};
+
+struct StaggerData
+{
+	StaggerPhaseData staggerSmall;
+	StaggerPhaseData staggerLarge;
 };
 
 // --- チャージ攻撃の溜めデータ ----------------------------------------

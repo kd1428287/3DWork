@@ -74,6 +74,11 @@ void PlayerStatusController::HandleMovementInput(const PlayerInputComponent& inp
 		}
 	}
 
+	if (facing_ != nullptr) {
+		const bool shouldFaceMovement = !IsLockedOn() || movementState_ == MovementState::Run;
+		facing_->SetFacingEnabled(shouldFaceMovement);
+	}
+
 	if (movementAnimationComponent_ != nullptr) {
 		movementAnimationComponent_->Tick(deltaTime, movementState_, input.GetMoveDirection(), IsLockedOn());
 	}
@@ -93,9 +98,11 @@ void PlayerStatusController::HandleActionInput(PlayerInputComponent& input)
 		input.ConsumeCommand(ActionCommand::Evade, data.evadeDirection);
 		TryStartEvade(data);
 	}
-	else if (input.HasCommand(ActionCommand::Attack) && CanStartAttack() && input.IsGuardHeld()) {
+	else if (input.HasCommand(ActionCommand::Attack) && input.HasCommand(ActionCommand::Guard)
+		&& CanStartAttack() && CanStartGuard()) {
+		// 同時押しは個別のAttack/Guardより優先し、両方消費してチャージ開始。
 		input.ConsumeCommand(ActionCommand::Attack);
-		input.ConsumeCommand(ActionCommand::Guard); 
+		input.ConsumeCommand(ActionCommand::Guard);
 		TryStartCharge();
 	}
 	else if (input.HasCommand(ActionCommand::Attack) && CanStartAttack()) {
@@ -243,10 +250,6 @@ void PlayerStatusController::PlayAnimation(const MotionClipData& clip)
 	modelAnimatorComponent_->Play(clip);
 }
 
-void PlayerStatusController::FaceDirection(const Math::Vector3& worldDir)
-{
-	if (facing_ != nullptr) facing_->FaceDirection(worldDir);
-}
 void PlayerStatusController::RefreshMovementAnimation()
 {
 	if (inputComponent_ == nullptr) return;
@@ -280,6 +283,29 @@ void PlayerStatusController::CancelStepMove()
 {
 	if (combatMovement_ != nullptr) {
 		combatMovement_->CancelStepMove();
+	}
+}
+
+void PlayerStatusController::RequestRootMotionWarpTowardsTarget(float expectedDistance, float engageDistance,
+	float minScale, float maxScale)
+{
+	if (combatMovement_ == nullptr) return;
+
+	GameObject* target = (facing_ != nullptr) ? facing_->GetCurrentAttackTarget() : nullptr;
+	combatMovement_->RequestRootMotionWarpTowardsTarget(target, expectedDistance, engageDistance, minScale, maxScale);
+}
+
+void PlayerStatusController::SetRootMotionScale(float scale)
+{
+	if (combatMovement_ != nullptr) {
+		combatMovement_->SetRootMotionScale(scale);
+	}
+}
+
+void PlayerStatusController::ClearRootMotionWarp()
+{
+	if (combatMovement_ != nullptr) {
+		combatMovement_->ClearRootMotionWarp();
 	}
 }
 

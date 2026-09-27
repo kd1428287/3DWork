@@ -63,11 +63,15 @@ void EditorHost::RenderPreviewViewports()
 {
 	// 無効な間は、プレビュー描画のコストも払わない
 	if (!m_enabled) { return; }
+	
+	KdShaderManager::Instance().ChangeRasterizerState(KdRasterizerState::CullNone);
 
 	// エフェクトプレビュー専用ビューポートへの描画
 	EffectEditor::Instance().RenderPreviewViewport();
 	// マッププレビュー
 	MapEditor::Instance().RenderPreviewViewport();
+
+	KdShaderManager::Instance().UndoRasterizerState();
 }
 
 void EditorHost::Draw()

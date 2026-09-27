@@ -40,8 +40,17 @@ void StateAttack::Update(PlayerStatusController* controller, float deltaTime) {
 	if (phase_ == CombatState::AttackWindup && elapsed_ >= data.phaseData.windup.duration) {
 		phase_ = CombatState::AttackActive;
 		elapsed_ = 0.0f;
-		controller->RequestStepMoveTowardsTarget(data.moveData.stepDirection, data.moveData.stepDistance,
-			data.moveData.engageDistance, data.moveData.stepDuration);
+
+		// Activeクリップがルートモーションなら、移動量そのものを対象へ向けて
+		// ワープ補正する。そうでなければ従来通りTweenで決め打ち移動する。
+		if (data.phaseData.active.useRootMotion) {
+			controller->RequestRootMotionWarpTowardsTarget(data.moveData.stepDistance, data.moveData.engageDistance,
+				kMinRootMotionWarpScale, kMaxRootMotionWarpScale);
+		}
+		else {
+			controller->RequestStepMoveTowardsTarget(data.moveData.stepDirection, data.moveData.stepDistance,
+				data.moveData.engageDistance, data.moveData.stepDuration);
+		}
 		weaponSet_->SetHitBoxEnabled(data.weaponSlots, true); // 攻撃判定が実際に発生する一瞬だけ有効化
 		weaponSet_->SetTrailEmitting(data.weaponSlots, true); // 武器の軌跡エフェクトもHitBoxと同じ窓で記録開始
 
@@ -50,6 +59,7 @@ void StateAttack::Update(PlayerStatusController* controller, float deltaTime) {
 	else if (phase_ == CombatState::AttackActive && elapsed_ >= data.phaseData.active.duration) {
 		phase_ = CombatState::AttackRecovery;
 		elapsed_ = 0.0f;
+		controller->ClearRootMotionWarp(); // 踏み込み区間の終了(Tween側はCancelStepMoveが別途処理)
 		weaponSet_->SetHitBoxEnabled(data.weaponSlots, false); // 判定の発生窓を閉じる
 		weaponSet_->SetTrailEmitting(data.weaponSlots, false); // 軌跡エフェクトの記録も停止(既に生成済みの頂点はStopEmit後も自然に流れて消える)
 
@@ -64,6 +74,7 @@ void StateAttack::Update(PlayerStatusController* controller, float deltaTime) {
 void StateAttack::Exit(PlayerStatusController* controller) {
 	// 強制中断された場合のガード
 	controller->CancelStepMove();
+	controller->ClearRootMotionWarp();
 	controller->SetMovementEnabled(true);
 
 	const AttackData& data = attackSelector_->GetCurrentAttackData();
@@ -109,19 +120,30 @@ void StateEvade::Enter(PlayerStatusController* controller) {
 	phase_ = CombatState::Evade;
 	elapsed_ = 0.0f;
 
+	// 回避中の移動は入力ではなく、決め打ちの軌道(RequestStepMove)、
+	// または(useRootMotionがtrueの場合)アニメーションのルートモーションに
+	// 任せる。MovementComponentはTransitionTo側で既に無効化されているため、
+	// 位置を書き換える権利がここで競合することはない。
 	const auto& data = controller->GetCurrentEvadeData();
+
+	// 現在の前方に対する入力方向の相対位置(前後左右)を判定し、
+	// 対応するアニメーションを選ぶ。キャラクター自体は向きを変えない
+	// (facingDirectionComponent_はEvade中無効化されているため、
+	//  ここで回転させない限り自然に維持される)。
 	const EvadeDirection evadeDir = controller->ClassifyEvadeDirection(data.evadeDirection);
 
-	if (controller->IsLockedOn()) {
-		controller->FaceAttackTarget();
-	}
-
+	// 回避全体(Active+Recovery)の秒数を目標としてアニメーション速度を
+	// 自動スケーリングする(詳細はModelAnimatorComponent::Play参照)。
+	// 【未対応】EvadeはAttackと異なり、まだ「1回避=1クリップ」のまま
+	// フェーズ分割していない(前後左右4方向とのかけ合わせ方を先に
+	// 決める必要があるため。詳細は別途相談)。
 	const float targetDuration = data.activeDuration + data.recoveryDuration;
 	controller->PlayAnimation(data.GetAnimationName(evadeDir), false, targetDuration, data.useRootMotion);
 	if (!data.useRootMotion) {
 		//controller->RequestStepMove(data.evadeDirection, data.evadeDistance, data.activeDuration + data.recoveryDuration);
 	}
 }
+
 void StateEvade::Exit(PlayerStatusController* controller) {
 	controller->CancelStepMove();
 }
@@ -163,8 +185,15 @@ void StateGuard::Enter(PlayerStatusController* controller) {
 	isReleasing_ = false;
 	releaseElapsed_ = 0.0f;
 
+	// Guard中のルートモーション移動量を一律に抑制する(動きすぎ対策)。
+	controller->SetRootMotionScale(controller->GetCurrentGuardData().rootMotionScale);
+
 	// 構え動作を単発再生する
 	controller->PlayAnimation(controller->GetCurrentGuardData().start);
+}
+
+void StateGuard::Exit(PlayerStatusController* controller) {
+	controller->ClearRootMotionWarp();
 }
 
 void StateGuard::Update(PlayerStatusController* controller, float deltaTime) {
@@ -299,21 +328,52 @@ void StateCharge::Update(PlayerStatusController* controller, float deltaTime) {
 
 // --- Stagger State ---
 void StateStagger::Enter(PlayerStatusController* controller) {
+	phase_ = Phase::Reaction;
 	elapsed_ = 0.0f;
 	KdDebugGUI::Instance().AddLog("Stagger");
 
-	// アニメーション未実装のためコメントアウト。
-	// AttackData/GuardDataのような専用データ構造をStaggerは
-	// 持たないため、isLarge_で仮のアニメーション名を直接出し分ける想定だった。
-	controller->PlayAnimation(isLarge_ ? "Large_Hit_Root" : "Hit_B_Root");
+	const StaggerPhaseData& data = GetPhaseData(controller);
+
+	// Reaction秒数は攻撃側(hitStunSeconds/largeStaggerDuration等)が決めるため、
+	// アニメーションの再生速度もreactionDuration_に合わせて自動スケーリングする。
+	// クリップ内のreactionStartFrame〜reactionEndFrameだけを再生する。
+	controller->PlayAnimation(data.animationName, false, reactionDuration_,
+		static_cast<float>(data.reactionStartFrame), static_cast<float>(data.reactionEndFrame),
+		data.useRootMotion, data.reactionBlendDuration);
 }
 
 void StateStagger::Update(PlayerStatusController* controller, float deltaTime) {
 	elapsed_ += deltaTime;
-	if (elapsed_ >= duration_) {
+	const StaggerPhaseData& data = GetPhaseData(controller);
+
+	if (phase_ == Phase::Reaction && elapsed_ >= reactionDuration_) {
+		phase_ = Phase::Recovery;
+		elapsed_ = 0.0f;
+		// 同じクリップの続き(reactionEndFrame〜recoveryEndFrame)を繋げて再生する
+		// (AttackDataの各phaseを繋げて再生するのと同じ考え方)。
+		controller->PlayAnimation(data.animationName, false, data.recoveryDuration,
+			static_cast<float>(data.reactionEndFrame), static_cast<float>(data.recoveryEndFrame),
+			data.useRootMotion, data.recoveryBlendDuration);
+	}
+	else if (phase_ == Phase::Recovery && elapsed_ >= data.recoveryDuration) {
 		controller->ChangeStateToNone();
 	}
 }
 
 void StateStagger::Exit(PlayerStatusController* controller)
-{}
+{
+}
+
+bool StateStagger::CanStartEvade(const PlayerStatusController* controller) const {
+	if (phase_ != Phase::Recovery) return false;
+	return elapsed_ >= GetPhaseData(controller).recoveryEvadeCancelStart;
+}
+
+bool StateStagger::CanStartMove(const PlayerStatusController* controller) const {
+	return CanStartEvade(controller);
+}
+
+const StaggerPhaseData& StateStagger::GetPhaseData(const PlayerStatusController* controller) const {
+	const StaggerData& data = controller->GetStaggerData();
+	return isLarge_ ? data.staggerLarge : data.staggerSmall;
+}

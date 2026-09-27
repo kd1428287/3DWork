@@ -125,9 +125,12 @@ private:
 	// pendingEvents_を取り出して1件ずつ処理する(Update()冒頭から呼ばれる)
 	void ProcessPendingEvents();
 
-	bool LoadEffectData(const std::string& effectDataPath);
+	bool LoadData(const std::string& effectDataPath);
+	bool LoadEffectData(const EffectDataFile& data);
+	bool LoadGroupsData(const EffectDataFile& data);
 
 	std::unordered_map<std::string, EffectInstance> simpleEffects_;
+	std::unordered_map<std::string, std::vector<std::string>> groups_;
 
 	struct ActiveInstance
 	{

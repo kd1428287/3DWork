@@ -1,5 +1,5 @@
 {
-	"_comment": "全項目仮値。実際の手触り・アニメーションクリップを見ながら調整する前提の初期値。startFrame/endFrameはanimatorFPS(Player.json参照)基準の暫定値で、実クリップの長さが分かり次第調整すること。",
+	"_comment": "全項目仮値。実際の手触り・アニメーションクリップを見ながら調整する前提の初期値。startFrame/endFrameはanimatorFPS(Player.json参照)基準の暫定値で、実クリップの長さが分かり次第調整すること。moveData.stepDistanceは、activeがuseRootMotion:trueの技では『クリップが素で進む想定距離』の意味になる(ルートモーションワーピングのスケール計算に使用。PlayerCombatMovementComponent::RequestRootMotionWarpTowardsTarget参照)。0のままだと踏み込み補正が掛からないため、実クリップの前進量に合わせて必ず調整すること。",
 
 	"attacks": [
 		{
@@ -22,7 +22,7 @@
 					"parryPostureDamage": 30.0
 				},
 				"moveData": {
-					"stepDistance": 0.0,
+					"stepDistance": 1.0,
 					"stepDuration": 0.0,
 					"engageDistance": 1.2,
 					"stepDirection": [ 0.0, 0.0, 0.0 ]
@@ -81,7 +81,7 @@
 					"parryPostureDamage": 30.0
 				},
 				"moveData": {
-					"stepDistance": 0.0,
+					"stepDistance": 0.8,
 					"stepDuration": 0.0,
 					"engageDistance": 1.0,
 					"stepDirection": [ 0.0, 0.0, 0.0 ]
@@ -140,7 +140,7 @@
 					"parryPostureDamage": 35.0
 				},
 				"moveData": {
-					"stepDistance": 0.0,
+					"stepDistance": 0.8,
 					"stepDuration": 0.0,
 					"engageDistance": 1.0,
 					"stepDirection": [ 0.0, 0.0, 0.0 ]
@@ -199,7 +199,7 @@
 					"parryPostureDamage": 35.0
 				},
 				"moveData": {
-					"stepDistance": 0.0,
+					"stepDistance": 0.8,
 					"stepDuration": 0.0,
 					"engageDistance": 1.0,
 					"stepDirection": [ 0.0, 0.0, 0.0 ]
@@ -258,7 +258,7 @@
 					"parryPostureDamage": 40.0
 				},
 				"moveData": {
-					"stepDistance": 0.0,
+					"stepDistance": 1.0,
 					"stepDuration": 0.0,
 					"engageDistance": 1.0,
 					"stepDirection": [ 0.0, 0.0, 0.0 ]
@@ -299,6 +299,60 @@
 			}
 		},
 		{
+			"id": "ChargeAttack_1",
+			"_comment": "要差し替え: アニメーションクリップ未定のプレースホルダー。Attack+Guard同時押しで溜めて離した時に出る専用技。entryCommandはChargeAttackのため、ActionCommandの文字列⇔enum変換にもChargeAttackの追加が必要。",
+			"entryCommand": "ChargeAttack",
+			"attack": {
+				"damageData": {
+					"damage": 25.0,
+					"knockbackPower": 12.0,
+					"hitStunSeconds": 0.5,
+					"postureDamage": 30.0,
+					"chipDamageRatio": 0.1,
+					"parryPostureDamage": 60.0
+				},
+				"moveData": {
+					"stepDistance": 1.2,
+					"stepDuration": 0.0,
+					"engageDistance": 1.0,
+					"stepDirection": [ 0.0, 0.0, 0.0 ]
+				},
+				"phaseData": {
+					"windup": {
+						"duration": 0.05,
+						"animationName": "SPAttack04_Root",
+						"useRootMotion": true,
+						"blendDuration": 0.05,
+						"startFrame": 0,
+						"endFrame": 5
+					},
+					"active": {
+						"duration": 0.30,
+						"animationName": "SPAttack04_Root",
+						"useRootMotion": true,
+						"blendDuration": 0.0,
+						"startFrame": 5,
+						"endFrame": 50
+					},
+					"recovery": {
+						"duration": 1.20,
+						"animationName": "SPAttack04_Root",
+						"useRootMotion": true,
+						"blendDuration": 0.1,
+						"startFrame": 50,
+						"endFrame": 200
+					}
+				},
+				"cancelData": {
+					"recoveryMoveCancelStart": 0.4,
+					"recoveryEvadeCancelStart": 0.35,
+					"recoveryAttackCancelStart": 0.5,
+					"comboWindowAfterRecovery": 0.0
+				},
+				"weaponSlots": [ "Main" ]
+			}
+		},
+		{
 			"id": "Attack02_6",
 			"attack": {
 				"damageData": {
@@ -310,7 +364,7 @@
 					"parryPostureDamage": 50.0
 				},
 				"moveData": {
-					"stepDistance": 0.0,
+					"stepDistance": 1.5,
 					"stepDuration": 0.0,
 					"engageDistance": 1.0,
 					"stepDirection": [ 0.0, 0.0, 0.0 ]

@@ -96,7 +96,7 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 	COMPONENT_PARAMS_DEFINE_TYPE(HitReactionConfig, effectFlags, damageEffectName, parryEffectName, blockEffectName,
 		cameraShakeIntensity, hitStopDelaySeconds, hitStopDurationSeconds, guardKnockbackPower, largeStaggerDuration)
 	COMPONENT_PARAMS_DEFINE_TYPE(PlayerCombatMovementConfig, walkSpeed, runSpeed)
-	COMPONENT_PARAMS_DEFINE_TYPE(PlayerStatusControllerConfig, evade, guard)
+	COMPONENT_PARAMS_DEFINE_TYPE(PlayerStatusControllerConfig, evade, guard,charge,stagger)
 	COMPONENT_PARAMS_DEFINE_TYPE(FootstepTrigger, phase, foot)
 
 	// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -136,7 +136,7 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 		struct ColliderParams
 	{
 		std::vector<ColliderShapeParams> shapes;
-		bool                             wireFrame = true;
+		bool                             wireFrame = false;
 		bool                             ignoreParent = false;
 	};
 	COMPONENT_PARAMS_DEFINE_TYPE(ColliderParams, shapes, wireFrame, ignoreParent)

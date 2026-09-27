@@ -29,11 +29,17 @@ void main(uint3 id : SV_DispatchThreadID)
 	// 死亡中のパーティクルは何もしない
 	if (p.Life <= 0) { return; }
 
-	// 重力を速度に加算
-	p.Velocity += g_Gravity * g_DeltaTime;
+	// Beam(固定軸方向に伸びる線)は物理挙動の対象外：重力はもちろん、速度による移動も一切適用しない。
+	// Beamは「静止したまま軸方向に伸縮するマーカー」という定義そのものなので、
+	// 万が一Beamのレイヤーに初速を設定してしまっても動かないようにここで保証しておく
+	if (p.BillboardMode < 1.5f)
+	{
+		// 重力を速度に加算
+		p.Velocity += g_Gravity * g_DeltaTime;
 
-	// 移動
-	p.Position += p.Velocity * g_DeltaTime;
+		// 移動
+		p.Position += p.Velocity * g_DeltaTime;
+	}
 
 	// 寿命を減らす
 	p.Life -= g_DeltaTime;

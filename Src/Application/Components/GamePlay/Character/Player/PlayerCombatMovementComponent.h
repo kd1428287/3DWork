@@ -3,6 +3,7 @@
 
 class MovementComponent;
 class TweenMoveComponent;
+class RootMotionApplierComponent;
 
 // 初期設定(Prefab/JSONから渡す値)。既定値は意図的に0(未設定なら動かないので不具合に気付ける)。
 struct PlayerCombatMovementConfig
@@ -71,6 +72,22 @@ public:
 
 	void CancelStepMove();
 
+	// ルートモーション区間の踏み込みを、targetの位置へワープ補正する
+	// (RequestStepMoveTowardsTargetのルートモーション版)。
+	// expectedDistance: このクリップが素で進む想定距離。
+	// engageDistance: 到達後に残しておきたい間合い。
+	// targetが無い/各種Transformが取得できない場合は補正を解除するだけに留める
+	// (フォールバックの決め打き移動は持たない。ルートモーション自体は
+	//  そのまま再生され続けるため、Tween版のような代替移動は不要)。
+	void RequestRootMotionWarpTowardsTarget(GameObject* target, float expectedDistance,
+		float engageDistance, float minScale, float maxScale);
+
+	// 方向はそのまま、距離だけ一律にスケールする(Guardの動きすぎ抑制等)。
+	void SetRootMotionScale(float scale);
+
+	// ワープ補正を解除し、素のルートモーションへ戻す。
+	void ClearRootMotionWarp();
+
 private:
 	MovementComponent* movementComponent_ = nullptr;
 
@@ -78,6 +95,8 @@ private:
 	// enabled_フラグ(TweenMoveComponent::SetEnabled/Cancel)で
 	// 動作可否を切り替える(アタッチ/デタッチの繰り返しはしない)。
 	TweenMoveComponent* tweenMoveComponent_ = nullptr;
+
+	RootMotionApplierComponent* rootMotionApplier_ = nullptr;
 
 	// SetMovementSpeeds()で注入されるまでは0のまま
 	// (=呼び忘れがあれば「動かない」という分かりやすい形で不具合に気付ける。

@@ -166,8 +166,16 @@ void GPUParticleShader::Emit(ID3D11UnorderedAccessView* particleUAV, ID3D11Unord
 	emit.MaxParticleNum = maxParticleNum;
 	// 毎回変化する乱数シード(パーティクルが毎回同じ並びで発生しないようにする)
 	emit.RandomSeed = static_cast<float>(rand() % 100000);
-	emit.EmitBillboardMode = (param.BillboardMode == ParticleBillboardMode::Stretch) ? 1.0f : 0.0f;
+	// Normal=0 / Stretch=1 / Beam=2。三択なので三項演算子ではなくif/elseで判定する
+	float billboardModeValue = 0.0f;
+	if (param.BillboardMode == ParticleBillboardMode::Stretch) { billboardModeValue = 1.0f; }
+	else if (param.BillboardMode == ParticleBillboardMode::Beam) { billboardModeValue = 2.0f; }
+	emit.EmitBillboardMode = billboardModeValue;
 	emit.EmitStretchScale = param.StretchScale;
+	emit.EmitDistribution = (param.Distribution == ParticleEmitDistribution::RadialInPlane) ? 1.0f : 0.0f;
+	emit.EmitRadialSpeedMin = param.RadialSpeedMin;
+	emit.EmitRadialSpeedMax = param.RadialSpeedMax;
+	emit.EmitAxis = param.Axis;
 
 	m_cb0_Emit.Write();
 
@@ -248,19 +256,7 @@ void GPUParticleShader::Draw(ID3D11ShaderResourceView* particleSRV, UINT maxPart
 	shaderMgr.ChangeSamplerState(KdSamplerState::Linear_Clamp, 0);
 
 	// ブレンドモードの切り替え・Z書き込み無効(重なった時に不透明に潰れないように)
-	const KdBlendState blendState = [&]() {
-		switch (blendMode)
-		{
-		case ParticleBlendMode::Add:
-			return KdBlendState::Add;
-		case ParticleBlendMode::Alpha:
-			return KdBlendState::AlphaMasked;
-		case ParticleBlendMode::Multiply:
-			return KdBlendState::Multiply;
-		default:
-			break;
-		}
-		}(); 
+	const KdBlendState blendState = (blendMode == ParticleBlendMode::Alpha) ? KdBlendState::AlphaMasked : KdBlendState::Add;
 	shaderMgr.ChangeBlendState(blendState);
 	shaderMgr.ChangeDepthStencilState(KdDepthStencilState::ZWriteDisable);
 

@@ -11,7 +11,17 @@ COMPONENT_PARAMS_DEFINE_TYPE(EvadeData,
 	animationNameForward, animationNameBackward, animationNameLeft, animationNameRight)
 
 	COMPONENT_PARAMS_DEFINE_TYPE(GuardData,
-		justWindowDuration, start, loop, parry, hit, end)
+		justWindowDuration, start, loop, parry, hit, end, rootMotionScale)
+
+	COMPONENT_PARAMS_DEFINE_TYPE(StaggerPhaseData,
+		animationName, useRootMotion,
+		reactionStartFrame, reactionEndFrame, reactionBlendDuration,
+		recoveryEndFrame, recoveryDuration, recoveryBlendDuration, recoveryEvadeCancelStart)
+
+	COMPONENT_PARAMS_DEFINE_TYPE(StaggerData, staggerSmall, staggerLarge)
+
+	COMPONENT_PARAMS_DEFINE_TYPE(ChargeData,
+		maxChargeTime, minDamageScale, maxDamageScale, loop)
 
 	COMPONENT_PARAMS_DEFINE_TYPE(MovementPhaseClips,
 		startAnimationName, startDuration, loopAnimationName, endAnimationName, endDuration)

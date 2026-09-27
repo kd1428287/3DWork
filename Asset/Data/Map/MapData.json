@@ -39,12 +39,6 @@
             "wireFrame": false
           },
           "type": "Collider"
-        },
-        {
-          "params": {
-            "width": 0.019999999552965164
-          },
-          "type": "Outline"
         }
       ],
       "id": 1,
@@ -123,7 +117,7 @@
       "name": "Sakura",
       "pos": [
         10.45106029510498,
-        3.1742453575134277,
+        0.12603825330734253,
         -4.867675304412842
       ],
       "rotation": [
@@ -209,6 +203,56 @@
         -0.0,
         0.0,
         -0.0,
+        1.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "components": [
+        {
+          "params": {
+            "animations": "",
+            "model": "Asset/Models/Terrains/Sakura/sakura_big.gltf"
+          },
+          "type": "ModelRender"
+        }
+      ],
+      "id": 4,
+      "name": "Object4",
+      "pos": [
+        0.0,
+        0.0,
+        -12.26057243347168
+      ],
+      "rotation": [
+        -0.0,
+        0.0,
+        -0.0,
+        1.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "components": [],
+      "id": 5,
+      "name": "Object5",
+      "pos": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0,
         1.0
       ],
       "scale": [

@@ -67,13 +67,23 @@ inline bool KdHasDrawPassFlag(ParticleDrawPass flags, ParticleDrawPass test)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 struct DirectionalEmitShape
 {
+	// Directional(既定)：baseDir軸のDirScale/Offsetで速度範囲(箱型)を決める。
+	// RadialInPlane：水平面内のランダムな角度へ均等に飛ばす(角度はGPU側で毎粒子決定)。
+	//	十字/放射状に広がるヒットスパーク向け。DirScale/Offsetはこのモードでは使わない
+	ParticleEmitDistribution Distribution = ParticleEmitDistribution::Directional;
+
+	// ---- Directional用 ----
 	float	DirScaleMin = 1.0f;
 	float	DirScaleMax = 4.0f;
 	Math::Vector3	OffsetMin = { 1.0f, 0.5f, 1.0f };
 	Math::Vector3	OffsetMax = { 1.0f, 1.5f, 1.0f };
 
-	// Position/VelocityMin/VelocityMaxのみを埋めて返す。他フィールドは既定値のまま
-	// (Size/Life/Color/BillboardModeはGPUParticleLayer::ToEmitParameter()側で上書きされる)
+	// ---- RadialInPlane用：速度の大きさの範囲のみ指定(角度はGPU側の乱数任せ) ----
+	float	RadialSpeedMin = 1.0f;
+	float	RadialSpeedMax = 4.0f;
+
+	// Position/VelocityMin/VelocityMax(またはDistribution/RadialSpeed)のみを埋めて返す。
+	// 他フィールドは既定値のまま(Size/Life/Color/BillboardModeはGPUParticleLayer側で上書きされる)
 	ParticleBuffer::EmitParameter ToEmitParameter(const Math::Vector3& worldPos, const Math::Vector3& baseDir) const;
 };
 

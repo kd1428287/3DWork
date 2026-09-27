@@ -105,6 +105,9 @@ private:
 	void DrawGizmo();
 	void DrawTexturePicker();
 
+	// グループ(複数エフェクトをまとめて1つの名前で発生させる為の定義)の管理・プレビュー用パネル
+	void DrawGroupsPanel();
+
 	// 選択中エフェクトのプレビュー専用ウィンドウ(RenderPreviewViewport()が描いた絵を表示する)
 	void DrawPreviewWindow();
 
@@ -115,6 +118,7 @@ private:
 
 	void AddObject();
 	void RemoveSelected();
+	void CopySelected();
 
 	// nameに一致するEffectObjectをm_objectsから探す(無ければnullptr)。
 	// DrawWeaponClashTestPanel()から、"WeaponClashParry"/"WeaponClashBlock"を引く為に使う
@@ -139,6 +143,14 @@ private:
 
 	std::vector<EffectObject>	m_objects;
 	int							m_selected = -1;
+
+	// グループ名 → メンバーのEffect名一覧(実体は持たず、m_objects内の名前を参照するだけ)。
+	// EffectDataFile::Groupsと同じ形。Load()/Save()でそのまま読み書きする
+	std::unordered_map<std::string, std::vector<std::string>>	m_groups;
+
+	// 現在Effect Previewウィンドウに表示しているグループ名。空なら従来通りm_selected単体を表示する。
+	// Hierarchyで個別オブジェクトを選択した瞬間にクリアされる(単体プレビューへ戻る)
+	std::string					m_previewedGroup;
 
 	// テクスチャ取得(EffectInstance用。EffectDispatcherと共通の実装)
 	KdAssetsTextureProvider		m_textureProvider;

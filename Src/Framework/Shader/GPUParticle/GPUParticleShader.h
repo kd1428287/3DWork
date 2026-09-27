@@ -94,6 +94,15 @@ private:
 		float			EmitStretchScale = 0.0f;
 		float			EmitSizeEndMin = 0.0f;
 		float			EmitSizeEndMax = 0.0f;
+
+		// ※必ず末尾に追加する事(途中に挿すとHLSL側とオフセットがズレる。過去に実際発生した事故)
+		float			EmitDistribution = 0.0f;	// 0:Directional 1:RadialInPlane
+		float			EmitRadialSpeedMin = 0.0f;
+		float			EmitRadialSpeedMax = 0.0f;
+		float			_padDistribution = 0.0f;
+
+		Math::Vector3	EmitAxis;				// Beam専用：伸びる向き(固定)
+		float			_padAxis = 0.0f;		// 16バイト境界合わせ(次に追加するならここを使う)
 	};
 	KdConstantBuffer<cbEmit> m_cb0_Emit;
 

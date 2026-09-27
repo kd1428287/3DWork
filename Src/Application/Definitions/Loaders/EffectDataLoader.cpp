@@ -38,13 +38,29 @@ static const char* BillboardModeToString(ParticleBillboardMode m)
 	{
 	case ParticleBillboardMode::Normal:  return "Normal";
 	case ParticleBillboardMode::Stretch: return "Stretch";
+	case ParticleBillboardMode::Beam:    return "Beam";
 	}
 	return "Normal";
 }
 static ParticleBillboardMode BillboardModeFromString(const std::string& s)
 {
 	if (s == "Stretch") { return ParticleBillboardMode::Stretch; }
+	if (s == "Beam") { return ParticleBillboardMode::Beam; }
 	return ParticleBillboardMode::Normal;
+}
+static const char* DistributionToString(ParticleEmitDistribution d)
+{
+	switch (d)
+	{
+	case ParticleEmitDistribution::Directional:   return "Directional";
+	case ParticleEmitDistribution::RadialInPlane: return "RadialInPlane";
+	}
+	return "Directional";
+}
+static ParticleEmitDistribution DistributionFromString(const std::string& s)
+{
+	if (s == "RadialInPlane") { return ParticleEmitDistribution::RadialInPlane; }
+	return ParticleEmitDistribution::Directional;
 }
 static const char* DrawPassToString(ParticleDrawPass p)
 {
@@ -162,10 +178,13 @@ static void ReportLoadWarning(const std::string& context, const std::exception& 
 static nlohmann::json ShapeToJson(const DirectionalEmitShape& s)
 {
 	return nlohmann::json{
+		{ "distribution", DistributionToString(s.Distribution) },
 		{ "dirScaleMin", s.DirScaleMin },
 		{ "dirScaleMax", s.DirScaleMax },
 		{ "offsetMin",   { s.OffsetMin.x, s.OffsetMin.y, s.OffsetMin.z } },
 		{ "offsetMax",   { s.OffsetMax.x, s.OffsetMax.y, s.OffsetMax.z } },
+		{ "radialSpeedMin", s.RadialSpeedMin },
+		{ "radialSpeedMax", s.RadialSpeedMax },
 	};
 }
 
@@ -176,8 +195,14 @@ static DirectionalEmitShape ShapeFromJson(const nlohmann::json& j, const Directi
 	// スカラー値：型不一致(文字列が入っている等)ならvalue()が例外を投げるが、
 	// それはこの関数の呼び出し元(LayerFromJson)がtry/catchで受け止め、
 	// この1レイヤーぶんだけデフォルトへフォールバックさせる想定
+	// 旧形式(distribution未記載)はDirectional扱いになる(後方互換)
+	s.Distribution = DistributionFromString(j.value("distribution", std::string("Directional")));
+
 	s.DirScaleMin = j.value("dirScaleMin", s.DirScaleMin);
 	s.DirScaleMax = j.value("dirScaleMax", s.DirScaleMax);
+
+	s.RadialSpeedMin = j.value("radialSpeedMin", s.RadialSpeedMin);
+	s.RadialSpeedMax = j.value("radialSpeedMax", s.RadialSpeedMax);
 
 	TryReadVector3(j, "offsetMin", s.OffsetMin);
 	TryReadVector3(j, "offsetMax", s.OffsetMax);
@@ -369,6 +394,59 @@ static EffectDefinition DefinitionFromJson(const nlohmann::json& j)
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// グループ ⇔ JSON
+// ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
+// { "グループ名": ["メンバー1", "メンバー2", ...] } というオブジェクト形式。
+// メンバー名がEffectsに実在するかはここではチェックしない(EffectDataFileのコメント参照)。
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+static nlohmann::json GroupsToJson(const std::unordered_map<std::string, std::vector<std::string>>& groups)
+{
+	nlohmann::json j = nlohmann::json::object();
+	for (const auto& pair : groups)
+	{
+		j[pair.first] = pair.second;
+	}
+	return j;
+}
+
+static std::unordered_map<std::string, std::vector<std::string>> GroupsFromJson(const nlohmann::json& j)
+{
+	std::unordered_map<std::string, std::vector<std::string>> groups;
+
+	if (!j.is_object()) { return groups; }
+
+	for (auto it = j.begin(); it != j.end(); ++it)
+	{
+		const std::string& groupName = it.key();
+		const nlohmann::json& membersJson = it.value();
+
+		if (groupName.empty() || !membersJson.is_array())
+		{
+			ReportLoadWarning("group entry is malformed, skipped: " + groupName, std::runtime_error("invalid group entry"));
+			continue;
+		}
+
+		std::vector<std::string> members;
+		members.reserve(membersJson.size());
+		for (const auto& memberEntry : membersJson)
+		{
+			// メンバー名の実在チェックはしない(EffectDataFileのコメント参照)。
+			// 文字列でない要素だけ無視して、そのグループ自体は読み込みを続ける
+			if (memberEntry.is_string())
+			{
+				members.push_back(memberEntry.get<std::string>());
+			}
+		}
+
+		// メンバーが1件も読めなかったグループは空のまま保持する(丸ごと捨てはしない。
+		// 編集中に一時的に空になっているだけの可能性がある為)
+		groups[groupName] = std::move(members);
+	}
+
+	return groups;
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // エフェクトデータ一式の読み込み/書き出し
 //	JSON全体は { "effects": [...] } という形の1オブジェクト
 //	(以前あった専用の"weaponClash"キーは廃止。鍔迫り合いの火花もeffects配列内の
@@ -411,6 +489,11 @@ bool EffectDataLoader::Load(const std::string& path, EffectDataFile& out)
 			}
 		}
 
+		if (j.contains("groups") && j.at("groups").is_object())
+		{
+			data.Groups = GroupsFromJson(j.at("groups"));
+		}
+
 		out = std::move(data);
 		return true;
 	}
@@ -435,6 +518,7 @@ bool EffectDataLoader::Save(const std::string& path, const EffectDataFile& data)
 
 		nlohmann::json j = {
 			{ "effects", effectsJson },
+			{ "groups",  GroupsToJson(data.Groups) },
 		};
 
 		return JsonLoader::Save(path, j);

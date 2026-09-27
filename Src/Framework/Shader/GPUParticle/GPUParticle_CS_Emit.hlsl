@@ -42,6 +42,15 @@ cbuffer cbGPUParticleEmit : register(b0)
 	float g_EmitStretchScale; // Stretch時のみ使用：速度→伸び量の係数
 	float g_EmitSizeEndMin;
 	float g_EmitSizeEndMax;
+
+	// 初速の決め方(追加分。必ず末尾に追加する事。C++側cbEmitと同じ理由)
+	float g_EmitDistribution; // 0:Directional 1:RadialInPlane
+	float g_EmitRadialSpeedMin;
+	float g_EmitRadialSpeedMax;
+	float _padDistribution;
+
+	float3 g_EmitAxis; // Beam専用：伸びる向き(固定)
+	float _padAxis;
 };
 
 //================================
@@ -68,7 +77,19 @@ void main(uint3 id : SV_DispatchThreadID)
 
 	Particle p;
 	p.Position = g_EmitPos;
-	p.Velocity = RandRange3(g_EmitVelocityMin, g_EmitVelocityMax, seed);
+
+	p.Velocity = float3(0, 0, 0);
+	if (g_EmitDistribution > 0.5f)
+	{
+		// 水平面(XZ)内でランダムな角度へ均等に飛ばす(放射状ヒットスパーク向け)
+		float angle = RandRange(0.0f, 6.28318530718f, seed + 8.0f);
+		float speed = RandRange(g_EmitRadialSpeedMin, g_EmitRadialSpeedMax, seed + 9.0f);
+		p.Velocity = float3(cos(angle), 0.0f, sin(angle)) * speed;
+	}
+	else
+	{
+		p.Velocity = RandRange3(g_EmitVelocityMin, g_EmitVelocityMax, seed);
+	}
 	p.SizeStart = RandRange(g_EmitSizeStartMin, g_EmitSizeStartMax, seed + 3.0f);
 	p.SizeEnd = RandRange(g_EmitSizeEndMin, g_EmitSizeEndMax, seed + 7.0f);
 	p.ColorStart = RandRange4(g_EmitColorStartMin, g_EmitColorStartMax, seed + 5.0f);
@@ -77,6 +98,8 @@ void main(uint3 id : SV_DispatchThreadID)
 	p.Life = p.LifeMax;
 	p.BillboardMode = g_EmitBillboardMode;
 	p.StretchScale = g_EmitStretchScale;
+	p.Axis = g_EmitAxis;
+	p._padAxis = 0.0f;
 
 	g_ParticleBuffer[index] = p;
 }

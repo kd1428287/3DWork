@@ -83,6 +83,12 @@ private:
 
 	CombatState phase_ = CombatState::AttackWindup;
 	float elapsed_ = 0.0f;
+
+	// ルートモーション踏み込みの距離スケールをクランプする範囲。
+	// 敵が遠すぎる/近すぎる場合に不自然な速度で動くのを防ぐ安全弁で、
+	// 技ごとの調整値ではないためここに定数として持つ。
+	static constexpr float kMinRootMotionWarpScale = 0.5f;
+	static constexpr float kMaxRootMotionWarpScale = 1.8f;
 };
 
 
@@ -108,6 +114,7 @@ class StateGuard : public IPlayerState {
 public:
 	void Enter(PlayerStatusController* controller) override;
 	void Update(PlayerStatusController* controller, float deltaTime) override;
+	void Exit(PlayerStatusController* controller) override;
 
 	CombatState GetDetailedState() const override { return CombatState::Guard; }
 	float GetElapsed() const override { return elapsed_; }
@@ -188,9 +195,12 @@ private:
 
 class StateStagger : public IPlayerState {
 public:
+	// durationはReaction(怯み/ダウン)の秒数。攻撃側のデータに応じて
+	// 呼び出し側(HitReactionComponent経由)が指定する。Recoveryの尺は
+	// StaggerData側(クリップ内のフレーム範囲)の固定値を使う。
 	void Setup(bool isLarge, float duration) {
 		isLarge_ = isLarge;
-		duration_ = duration;
+		reactionDuration_ = duration;
 	}
 
 	void Enter(PlayerStatusController* controller) override;
@@ -202,8 +212,19 @@ public:
 	}
 	float GetElapsed() const override { return elapsed_; }
 
+	// Recovery中、一定タイミングを過ぎたらEvade/移動によるキャンセルを許可する
+	// (StateAttack::CanStartEvade/CanStartMoveと同じ考え方)。
+	bool CanStartEvade(const PlayerStatusController* controller) const override;
+	bool CanStartMove(const PlayerStatusController* controller) const override;
+
 private:
+	enum class Phase { Reaction, Recovery };
+	Phase phase_ = Phase::Reaction;
+
+	// isLarge_に応じてsmall/largeどちらのデータを見るかをまとめるヘルパー。
+	const StaggerPhaseData& GetPhaseData(const PlayerStatusController* controller) const;
+
 	bool isLarge_ = false;
-	float duration_ = 0.0f;
+	float reactionDuration_ = 0.0f;
 	float elapsed_ = 0.0f;
 };

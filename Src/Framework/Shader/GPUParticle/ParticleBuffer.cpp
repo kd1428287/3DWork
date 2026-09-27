@@ -11,14 +11,14 @@ bool ParticleBuffer::Init(UINT maxParticleNum)
 {
 	Release();
 
-	m_maxParticleNum = maxParticleNum;
+	maxParticleNum_ = maxParticleNum;
 
 	if (!CreateBuffers(maxParticleNum)) { return false; }
 
 	// 全パーティクルを「死亡」状態に初期化
-	KdShaderManager::Instance().m_particleShader.InitParticles(m_particleUAV, maxParticleNum);
+	KdShaderManager::Instance().m_particleShader.InitParticles(particleUAV_, maxParticleNum);
 
-	m_initialized = true;
+	initialized_ = true;
 
 	return true;
 }
@@ -41,7 +41,7 @@ bool ParticleBuffer::CreateBuffers(UINT maxParticleNum)
 		desc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
 		desc.StructureByteStride = sizeof(Particle);
 
-		if (FAILED(Dev->CreateBuffer(&desc, nullptr, &m_particleBuffer)))
+		if (FAILED(Dev->CreateBuffer(&desc, nullptr, &particleBuffer_)))
 		{
 			assert(0 && "GPUパーティクル：本体バッファ作成失敗");
 			return false;
@@ -53,7 +53,7 @@ bool ParticleBuffer::CreateBuffers(UINT maxParticleNum)
 		uavDesc.Buffer.FirstElement = 0;
 		uavDesc.Buffer.NumElements = maxParticleNum;
 
-		if (FAILED(Dev->CreateUnorderedAccessView(m_particleBuffer, &uavDesc, &m_particleUAV)))
+		if (FAILED(Dev->CreateUnorderedAccessView(particleBuffer_, &uavDesc, &particleUAV_)))
 		{
 			assert(0 && "GPUパーティクル：本体UAV作成失敗");
 			return false;
@@ -65,7 +65,7 @@ bool ParticleBuffer::CreateBuffers(UINT maxParticleNum)
 		srvDesc.Buffer.FirstElement = 0;
 		srvDesc.Buffer.NumElements = maxParticleNum;
 
-		if (FAILED(Dev->CreateShaderResourceView(m_particleBuffer, &srvDesc, &m_particleSRV)))
+		if (FAILED(Dev->CreateShaderResourceView(particleBuffer_, &srvDesc, &particleSRV_)))
 		{
 			assert(0 && "GPUパーティクル：本体SRV作成失敗");
 			return false;
@@ -88,7 +88,7 @@ bool ParticleBuffer::CreateBuffers(UINT maxParticleNum)
 		D3D11_SUBRESOURCE_DATA initData = {};
 		initData.pSysMem = &initialValue;
 
-		if (FAILED(Dev->CreateBuffer(&desc, &initData, &m_emitCounterBuffer)))
+		if (FAILED(Dev->CreateBuffer(&desc, &initData, &emitCounterBuffer_)))
 		{
 			assert(0 && "GPUパーティクル：発生カウンタバッファ作成失敗");
 			return false;
@@ -100,7 +100,7 @@ bool ParticleBuffer::CreateBuffers(UINT maxParticleNum)
 		uavDesc.Buffer.FirstElement = 0;
 		uavDesc.Buffer.NumElements = 1;
 
-		if (FAILED(Dev->CreateUnorderedAccessView(m_emitCounterBuffer, &uavDesc, &m_emitCounterUAV)))
+		if (FAILED(Dev->CreateUnorderedAccessView(emitCounterBuffer_, &uavDesc, &emitCounterUAV_)))
 		{
 			assert(0 && "GPUパーティクル：発生カウンタUAV作成失敗");
 			return false;
@@ -115,15 +115,15 @@ bool ParticleBuffer::CreateBuffers(UINT maxParticleNum)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void ParticleBuffer::Release()
 {
-	KdSafeRelease(m_particleUAV);
-	KdSafeRelease(m_particleSRV);
-	KdSafeRelease(m_particleBuffer);
+	KdSafeRelease(particleUAV_);
+	KdSafeRelease(particleSRV_);
+	KdSafeRelease(particleBuffer_);
 
-	KdSafeRelease(m_emitCounterUAV);
-	KdSafeRelease(m_emitCounterBuffer);
+	KdSafeRelease(emitCounterUAV_);
+	KdSafeRelease(emitCounterBuffer_);
 
-	m_initialized = false;
-	m_maxParticleNum = 0;
+	initialized_ = false;
+	maxParticleNum_ = 0;
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -131,22 +131,22 @@ void ParticleBuffer::Release()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void ParticleBuffer::Emit(const EmitParameter& param, UINT count)
 {
-	if (!m_initialized || count == 0) { return; }
+	if (!initialized_ || count == 0) { return; }
 
 	KdShaderManager::Instance().m_particleShader.Emit(
-		m_particleUAV, m_emitCounterUAV, m_maxParticleNum, param, count);
+		particleUAV_, emitCounterUAV_, maxParticleNum_, param, count);
 }
 
 void ParticleBuffer::Update(float deltaTime, const Math::Vector3& gravity)
 {
-	if (!m_initialized) { return; }
+	if (!initialized_) { return; }
 
-	KdShaderManager::Instance().m_particleShader.Update(m_particleUAV, m_maxParticleNum, deltaTime, gravity);
+	KdShaderManager::Instance().m_particleShader.Update(particleUAV_, maxParticleNum_, deltaTime, gravity);
 }
 
 void ParticleBuffer::Draw(const std::shared_ptr<KdTexture>& texture, ParticleBlendMode blendMode)
 {
-	if (!m_initialized) { return; }
+	if (!initialized_) { return; }
 
-	KdShaderManager::Instance().m_particleShader.Draw(m_particleSRV, m_maxParticleNum, texture, blendMode);
+	KdShaderManager::Instance().m_particleShader.Draw(particleSRV_, maxParticleNum_, texture, blendMode);
 }

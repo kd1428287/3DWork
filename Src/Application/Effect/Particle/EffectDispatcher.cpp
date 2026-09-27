@@ -12,7 +12,7 @@ bool EffectDispatcher::Init(EventBus& bus, const std::string& effectDataPath)
 	bus_ = &bus;
 	effectDataPath_ = effectDataPath;
 
-	LoadEffectData(effectDataPath_);
+	LoadData(effectDataPath_);
 
 	subscriptions_.emplace_back(
 		&bus,
@@ -42,15 +42,20 @@ bool EffectDispatcher::Init(EventBus& bus, const std::string& effectDataPath)
 	return true;
 }
 
+bool EffectDispatcher::LoadData(const std::string& effectDataPath)
+{
+	EffectDataFile data;
+	if (!EffectDataLoader::Load(effectDataPath, data)) { return false; }
+
+	return LoadEffectData(data) && LoadGroupsData(data);
+}
+
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // effectDataPathをEffectDataLoaderで読み込み、simpleEffects_を構築する
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-bool EffectDispatcher::LoadEffectData(const std::string& effectDataPath)
+bool EffectDispatcher::LoadEffectData(const EffectDataFile& data)
 {
 	simpleEffects_.clear();
-
-	EffectDataFile data;
-	if (!EffectDataLoader::Load(effectDataPath, data)) { return false; }
 
 	for (auto& def : data.Effects)
 	{
@@ -61,7 +66,35 @@ bool EffectDispatcher::LoadEffectData(const std::string& effectDataPath)
 
 		simpleEffects_[def.Name] = std::move(instance);
 	}
+
 	return true;
+}
+
+bool EffectDispatcher::LoadGroupsData(const EffectDataFile& data)
+{
+	groups_.clear();
+
+	for (const auto& [key, members] : data.Groups)
+	{
+		std::vector<std::string> validMembers;
+		validMembers.reserve(members.size());
+
+		for (const auto& member : members) // const auto& に修正
+		{
+			if (simpleEffects_.find(member) != simpleEffects_.end())
+			{
+				validMembers.push_back(member);
+			}
+			else
+			{
+				// TODO:エラーログ
+			}
+		}
+
+		groups_.emplace(key, std::move(validMembers));
+	}
+
+	return true; 
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -77,6 +110,7 @@ void EffectDispatcher::Release()
 	subscriptions_.clear();
 
 	simpleEffects_.clear();
+	groups_.clear();
 	activeInstances_.clear();
 
 	{
@@ -111,7 +145,7 @@ void EffectDispatcher::Update(float deltaTime)
 {
 	if (reloadRequested_.exchange(false, std::memory_order_acq_rel))
 	{
-		LoadEffectData(effectDataPath_);
+		LoadData(effectDataPath_);
 	}
 
 	ProcessPendingEvents();
@@ -147,12 +181,25 @@ void EffectDispatcher::ProcessPendingEvents()
 
 				if constexpr (std::is_same_v<T, PendingSpawn>)
 				{
-					// 対応表に無いIdは無視(JSON未定義、または呼び出し側のミス)
-					//	鍔迫り合いの火花("WeaponClashParry"/"WeaponClashBlock")も
-					//	通常のIdの1つとしてここで処理される
 					auto it = simpleEffects_.find(e.Id);
-					if (it == simpleEffects_.end()) { return; }
-					it->second.Emit(e.Position, e.BaseDir);
+					if (it != simpleEffects_.end())
+					{
+						it->second.Emit(e.Position, e.BaseDir);
+						return;
+					}
+
+					auto git = groups_.find(e.Id);
+					if (git != groups_.end())
+					{
+						for (const auto& memberName : git->second)
+						{
+							auto mit = simpleEffects_.find(memberName);
+							if (mit != simpleEffects_.end())
+							{
+								mit->second.Emit(e.Position, e.BaseDir);
+							}
+						}
+					}
 				}
 				else if constexpr (std::is_same_v<T, PendingAttach>)
 				{

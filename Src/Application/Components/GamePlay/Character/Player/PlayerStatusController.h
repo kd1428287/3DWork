@@ -23,6 +23,7 @@ struct PlayerStatusControllerConfig
 	EvadeData evade;
 	GuardData guard;
 	ChargeData charge;
+	StaggerData stagger;
 };
 
 // PlayerStatusController(責務再構成版)
@@ -45,6 +46,7 @@ public:
 	{
 		SetEvadeAndGuardData(config.evade, config.guard);
 		baseChargeData_ = config.charge;
+		staggerData_ = config.stagger;
 	}
 
 	void Awake() override;
@@ -81,6 +83,7 @@ public:
 	const EvadeData& GetCurrentEvadeData() const { return currentEvade_; }
 	const GuardData& GetCurrentGuardData() const { return currentGuard_; }
 	const ChargeData& GetChargeData() const { return baseChargeData_; }
+	const StaggerData& GetStaggerData() const { return staggerData_; }
 
 	// 現在の攻撃に掛けるダメージ倍率(通常攻撃は1.0、チャージ攻撃は溜め量で決まる)。
 	float GetAttackDamageScale() const { return attackDamageScale_; }
@@ -140,7 +143,6 @@ public:
 		bool useRootMotion = false, float blendDurationSeconds = kDefaultAnimationBlendDuration);
 
 	void PlayAnimation(const MotionClipData& clip);
-	void FaceDirection(const Math::Vector3& worldDir);
 
 	// 戦闘行動からNoneへ復帰した直後、現在の入力状態に合わせて
 	// Idle/Walk/Runへアニメーション・向きを同期し直す(StateNone::Enter参照)。
@@ -152,6 +154,13 @@ public:
 		float engageDistance, float duration);
 	void CancelStepMove();
 	void SetMovementEnabled(bool enabled);
+
+	// ルートモーション区間の踏み込みを、現在ロック/正対中の対象へワープ補正する
+	// (RequestStepMoveTowardsTargetのルートモーション版。StateAttack::Update参照)。
+	void RequestRootMotionWarpTowardsTarget(float expectedDistance, float engageDistance,
+		float minScale, float maxScale);
+	void SetRootMotionScale(float scale);
+	void ClearRootMotionWarp();
 
 private:
 	void TransitionTo(IPlayerState* nextState);
@@ -178,6 +187,7 @@ private:
 	GuardData baseGuardData_;
 	GuardData currentGuard_;
 	ChargeData baseChargeData_;
+	StaggerData staggerData_;
 	float attackDamageScale_ = 1.0f;
 
 	// --- Stateインスタンス ---

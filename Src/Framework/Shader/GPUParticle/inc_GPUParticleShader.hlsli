@@ -17,9 +17,13 @@ struct Particle
 	float LifeMax; // 発生時の寿命(フェードアウト計算に使用)
 
 	// ストレッチビルボード関連(以前は_pad3だった領域を転用)
-	float BillboardMode; // 0:Normal(カメラ正面) 1:Stretch(速度方向に伸びる)
-	float StretchScale; // Stretch時のみ使用：速度→伸び量の係数
+	float BillboardMode; // 0:Normal(カメラ正面) 1:Stretch(速度方向に伸びる) 2:Beam(固定軸方向に両端へ伸びる)
+	float StretchScale; // Stretch時のみ使用：速度→伸び量の係数。Beam時は「幅」として読み替える
 	float SizeEnd; // 終了時表示サイズ(板ポリの一辺の長さ。旧_pad転用領域)
+
+	// ※必ず末尾に追加する事(途中に挿すとC++側とオフセットがズレる。過去に実際発生した事故)
+	float3 Axis; // Beam専用：伸びる向き(固定。速度とは無関係)
+	float _padAxis; // 16バイト境界合わせ
 };
 
 // 描画シェーダー(VS→PS)の受け渡し用

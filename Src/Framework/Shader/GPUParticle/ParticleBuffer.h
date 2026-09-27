@@ -6,7 +6,7 @@
 // ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
 // ・パーティクルデータ本体(StructuredBuffer)はインスタンスごとにここで保持する
 // ・発生(Emit)／更新(Update)／描画(Draw)の実処理はGPUParticleShader(全インスタンスで
-//   共有。KdShaderManager::Instance().m_particleShaderが唯一のインスタンス)に委譲する
+//   共有。KdShaderManager::Instance().particleShader_が唯一のインスタンス)に委譲する
 //
 // 【使い方】
 //   ParticleBuffer particle;
@@ -24,15 +24,24 @@ enum class ParticleBillboardMode
 {
 	Normal,		// カメラ正面を向く正方形のビルボード(従来通り)
 	Stretch,	// 速度方向へ伸びる板ポリ(火花・斬撃の軌跡等、速く飛ぶ表現向け)
+	Beam,		// 静止したまま、固定した軸(Particle::Axis)方向へ中心から両端に伸びる板ポリ(線エフェクト向け)
+};
+
+// 初速の決め方(Layer単位)
+enum class ParticleEmitDistribution
+{
+	Directional,	// 従来通り：baseDir軸のVelocityMin〜Maxの範囲(箱型の乱数)で決める
+	RadialInPlane,	// 水平面(XZ)内でランダムな角度へ均等に飛ばす(角度はGPU側で毎粒子ごとに決定)。
+	// 放射状に広がるヒットスパーク(十字/星形の線)向け
 };
 
 // パーティクルのブレンドモード
 //	ParticleBuffer::Draw()の引数として渡し、GPUParticleShader側でKdBlendStateへ変換する
 enum class ParticleBlendMode
 {
-	Add,		// 加算合成
-	Alpha,		// 半透明合成
-	Multiply,	// 乗算合成
+	Add,	// 加算合成(発光系の火花・炎向け)
+	Alpha,	// 半透明合成(煙・砂煙等、加算だと不自然になるもの向け)
+	Multiply,
 };
 
 class ParticleBuffer
@@ -43,6 +52,8 @@ public:
 	~ParticleBuffer() { Release(); }
 
 	// パーティクル1粒のデータ
+	// ※HLSL側(inc_KdGPUParticle.hlsli の Particle構造体)とレイアウトを必ず一致させる事
+	// ※SizeStart/SizeEndはColorStart/Colorと同様、寿命に応じてVS側で線形補間される想定
 	struct Particle
 	{
 		Math::Vector3	Position;
@@ -57,8 +68,12 @@ public:
 		float			LifeMax = 1.0f;
 
 		float			BillboardMode = 0.0f;	// ParticleBillboardMode::Normal相当
-		float			StretchScale = 0.0f;	// Stretch時のみ使用：速度→伸び量の係数
+		float			StretchScale = 0.0f;	// Stretch時のみ使用：速度→伸び量の係数。Beam時は「幅」として読み替える
 		float			SizeEnd = 0.0f;			// 消滅時サイズ(旧_pad を転用)
+
+		// ※必ず末尾に追加する事(途中に挿すとHLSL側とオフセットがズレる。過去に実際発生した事故)
+		Math::Vector3	Axis = { 0,0,1 };		// Beam専用：伸びる向き(固定。速度とは無関係)
+		float			_padAxis = 0.0f;		// 16バイト境界合わせ
 	};
 
 	// 発生パラメータ
@@ -85,6 +100,13 @@ public:
 
 		ParticleBillboardMode	BillboardMode = ParticleBillboardMode::Normal;
 		float					StretchScale = 0.0f;
+
+		// ※必ず末尾に追加する事(途中に挿すとC++/HLSL双方の構造体オフセットがズレる。過去に実際発生した事故)
+		ParticleEmitDistribution	Distribution = ParticleEmitDistribution::Directional;
+		float						RadialSpeedMin = 1.0f;	// RadialInPlane専用：速度の大きさの範囲(最小)
+		float						RadialSpeedMax = 4.0f;	// RadialInPlane専用：速度の大きさの範囲(最大)
+
+		Math::Vector3	Axis = { 0,0,1 };	// Beam専用：伸びる向き(固定。baseDirをそのまま渡す想定)
 	};
 
 	//================================================
@@ -110,26 +132,26 @@ public:
 	// ※事前にKdShaderManager::WriteCBCamera等でカメラ情報の転送が済んでいる事
 	void Draw(const std::shared_ptr<KdTexture>& texture, ParticleBlendMode blendMode = ParticleBlendMode::Add);
 
-	UINT GetMaxParticleNum() const { return m_maxParticleNum; }
+	UINT GetMaxParticleNum() const { return maxParticleNum_; }
 
 private:
 
 	bool CreateBuffers(UINT maxParticleNum);
 
-	bool m_initialized = false;
+	bool initialized_ = false;
 
-	UINT m_maxParticleNum = 0;
+	UINT maxParticleNum_ = 0;
 
 	//================================================
 	// バッファ
 	//================================================
 
 	// パーティクル本体(CS：UAVで読み書き／VS：SRVで読み取り)
-	ID3D11Buffer* m_particleBuffer = nullptr;
-	ID3D11UnorderedAccessView* m_particleUAV = nullptr;
-	ID3D11ShaderResourceView* m_particleSRV = nullptr;
+	ID3D11Buffer* particleBuffer_ = nullptr;
+	ID3D11UnorderedAccessView* particleUAV_ = nullptr;
+	ID3D11ShaderResourceView* particleSRV_ = nullptr;
 
 	// 発生用リングバッファの書き込みカーソル(要素数1)
-	ID3D11Buffer* m_emitCounterBuffer = nullptr;
-	ID3D11UnorderedAccessView* m_emitCounterUAV = nullptr;
+	ID3D11Buffer* emitCounterBuffer_ = nullptr;
+	ID3D11UnorderedAccessView* emitCounterUAV_ = nullptr;
 };

@@ -32,10 +32,18 @@ struct EffectDefinition
 // 発生方向を外部から受け取るエフェクトも)を、汎用のGPUParticleParams(Layers構成)で
 // 表現された単一のEffects一覧としてまとめる。
 // 以前あった専用の"weaponClash"キー・専用データ型(WeaponClashEffectParams等)は廃止した。
+//
+// Groups：グループ名 → メンバーのEffect名一覧。実体は持たず、Effects内の名前を
+//	参照するだけの間接参照層(テクスチャ・BlendMode等が異なる複数のエフェクトを
+//	1つの名前でまとめて発生させたい場合に使う。輪+火花のような組み合わせを想定)。
+//	メンバー名がEffectsに実在するかはロード時点ではチェックしない
+//	(EffectDispatcher側がEmit解決時に「存在すれば発生、無ければ無視」する方針の為。
+//	 保存順序によって一時的に参照切れになるケースを誤ってエラー扱いしないようにしている)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 struct EffectDataFile
 {
 	std::vector<EffectDefinition>	Effects;
+	std::unordered_map<std::string, std::vector<std::string>>	Groups;
 };
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////

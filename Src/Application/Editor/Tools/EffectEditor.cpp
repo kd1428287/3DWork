@@ -41,6 +41,7 @@ static void SetupEffectDockLayout(ImGuiID dockspaceId, const ImVec2& size)
 	ImGuiID preview = ImGui::DockBuilderSplitNode(center, ImGuiDir_Right, 0.45f, nullptr, &center);
 
 	ImGui::DockBuilderDockWindow("Effect Hierarchy", left);
+	ImGui::DockBuilderDockWindow("Effect Groups", left);	// Effect Hierarchyとタブ化
 	ImGui::DockBuilderDockWindow("Effect Inspector", center);	// 残った中央上
 	ImGui::DockBuilderDockWindow("Effect Preview", preview);
 	ImGui::DockBuilderDockWindow("Effect Assets", bottom);
@@ -95,6 +96,7 @@ void EffectEditor::Update()
 
 	DrawMainMenu();
 	DrawHierarchy();
+	DrawGroupsPanel();
 	DrawInspector();
 	DrawTexturePicker();
 	DrawPreviewWindow();
@@ -152,14 +154,47 @@ void EffectEditor::RenderPreviewViewport()
 	vp.MaxDepth = 1.0f;
 	context->RSSetViewports(1, &vp);
 
-	if (m_selected >= 0 && m_selected < (int)m_objects.size())
+	const float aspect = (float)m_previewViewport.Width / (float)m_previewViewport.Height;
+
+	if (!m_previewedGroup.empty())
+	{
+		// グループプレビュー：メンバー全員を同じカメラで描画する。
+		// 注視点はメンバー(実在するものだけ)のposの平均値にする
+		auto groupIt = m_groups.find(m_previewedGroup);
+		if (groupIt != m_groups.end())
+		{
+			DirectX::SimpleMath::Vector3 center = { 0,0,0 };
+			int validCount = 0;
+			for (const auto& memberName : groupIt->second)
+			{
+				if (EffectObject* obj = FindObjectByName(memberName))
+				{
+					center += obj->pos;
+					validCount++;
+				}
+			}
+			if (validCount > 0) { center /= (float)validCount; }
+
+			DirectX::SimpleMath::Matrix view = m_previewCamera.GetView(center);
+			DirectX::SimpleMath::Matrix proj = m_previewCamera.GetProj(aspect);
+			KdShaderManager::Instance().WriteCBCamera(view.Invert(), proj);
+
+			for (const auto& memberName : groupIt->second)
+			{
+				if (EffectObject* obj = FindObjectByName(memberName))
+				{
+					if (obj->playing) { obj->previewInstance.Draw(); }
+				}
+			}
+		}
+	}
+	else if (m_selected >= 0 && m_selected < (int)m_objects.size())
 	{
 		EffectObject& obj = m_objects[m_selected];
 
 		// プレビュー用カメラの適用
 		DirectX::SimpleMath::Matrix view = m_previewCamera.GetView(obj.pos);
-		DirectX::SimpleMath::Matrix proj = m_previewCamera.GetProj(
-			(float)m_previewViewport.Width / (float)m_previewViewport.Height);
+		DirectX::SimpleMath::Matrix proj = m_previewCamera.GetProj(aspect);
 
 		KdShaderManager::Instance().WriteCBCamera(view.Invert(), proj);
 
@@ -220,6 +255,11 @@ void EffectEditor::DrawHierarchy()
 	{
 		RemoveSelected();
 	}
+	ImGui::SameLine();
+	if (ImGui::Button("Copy"))
+	{
+		CopySelected();
+	}
 
 	ImGui::Separator();
 
@@ -231,6 +271,7 @@ void EffectEditor::DrawHierarchy()
 		if (ImGui::Selectable(label.c_str(), isSelected))
 		{
 			m_selected = i;
+			m_previewedGroup.clear();	// 単体選択に戻った時はグループプレビューを解除する
 		}
 	}
 
@@ -296,7 +337,7 @@ void EffectEditor::DrawInspector()
 	ImGui::Text("Texture : %s", params.TexturePath.empty() ? "(None)" : params.TexturePath.c_str());
 
 	{
-		const char* blendLabels[] = { "Add", "Alpha", "Multiply"};
+		const char* blendLabels[] = { "Add", "Alpha", "Multiply" };
 		int blendIdx = static_cast<int>(params.BlendMode);
 
 		if (ImGui::Combo("Blend Mode", &blendIdx, blendLabels, IM_ARRAYSIZE(blendLabels)))
@@ -397,9 +438,26 @@ bool EffectEditor::DrawLayerInspector(GPUParticleLayer& layer, int index)
 		ImGui::DragInt("Count", &layer.Count, 1.0f, 0, 100000);
 
 		ImGui::SeparatorText("Shape");
-		ImGui::DragFloat2("DirScale", &shape.DirScaleMin /* Min/Maxを並べる */);
-		ImGui::DragFloat3("OffsetMin", &shape.OffsetMin.x);
-		ImGui::DragFloat3("OffsetMax", &shape.OffsetMax.x);
+		{
+			const char* distributionLabels[] = { "Directional", "Radial In Plane" };
+			int distributionIdx = (shape.Distribution == ParticleEmitDistribution::RadialInPlane) ? 1 : 0;
+			if (ImGui::Combo("Distribution", &distributionIdx, distributionLabels, IM_ARRAYSIZE(distributionLabels)))
+			{
+				shape.Distribution = (distributionIdx == 1) ? ParticleEmitDistribution::RadialInPlane : ParticleEmitDistribution::Directional;
+			}
+
+			if (shape.Distribution == ParticleEmitDistribution::RadialInPlane)
+			{
+				ImGui::DragFloat2("Radial Speed", &shape.RadialSpeedMin /* Min/Maxを並べる */);
+				ImGui::TextDisabled("水平面内のランダムな角度へ均等に飛ばす(角度はGPU側で毎粒子ごとに決定)");
+			}
+			else
+			{
+				ImGui::DragFloat2("DirScale", &shape.DirScaleMin /* Min/Maxを並べる */);
+				ImGui::DragFloat3("OffsetMin", &shape.OffsetMin.x);
+				ImGui::DragFloat3("OffsetMax", &shape.OffsetMax.x);
+			}
+		}
 
 		ImGui::SeparatorText("Appearance");
 		ImGui::DragFloatRange2("Life Min/Max(sec)", &app.LifeMin, &app.LifeMax, 0.02f, 0.01f, 60.0f);
@@ -427,17 +485,26 @@ bool EffectEditor::DrawLayerInspector(GPUParticleLayer& layer, int index)
 
 		ImGui::Separator();
 		{
-			const char* billboardLabels[] = { "Normal", "Stretch" };
-			int billboardIdx = (layer.BillboardMode == ParticleBillboardMode::Stretch) ? 1 : 0;
+			const char* billboardLabels[] = { "Normal", "Stretch", "Beam" };
+			int billboardIdx = 0;
+			if (layer.BillboardMode == ParticleBillboardMode::Stretch) { billboardIdx = 1; }
+			else if (layer.BillboardMode == ParticleBillboardMode::Beam) { billboardIdx = 2; }
 			if (ImGui::Combo("Billboard Mode", &billboardIdx, billboardLabels, IM_ARRAYSIZE(billboardLabels)))
 			{
-				layer.BillboardMode = (billboardIdx == 1) ? ParticleBillboardMode::Stretch : ParticleBillboardMode::Normal;
+				if (billboardIdx == 1) { layer.BillboardMode = ParticleBillboardMode::Stretch; }
+				else if (billboardIdx == 2) { layer.BillboardMode = ParticleBillboardMode::Beam; }
+				else { layer.BillboardMode = ParticleBillboardMode::Normal; }
 			}
 
 			if (layer.BillboardMode == ParticleBillboardMode::Stretch)
 			{
 				ImGui::DragFloat("Stretch Scale", &layer.StretchScale, 0.01f, 0.0f, 10.0f);
 				ImGui::TextDisabled("速度が速いパーティクルほど進行方向へ伸びる(HitSpark/WeaponClash等の速い表現向け)");
+			}
+			else if (layer.BillboardMode == ParticleBillboardMode::Beam)
+			{
+				ImGui::DragFloat("Beam Width", &layer.StretchScale, 0.005f, 0.0f, 5.0f);
+				ImGui::TextDisabled("中心(発生点)から両端に伸びる線。Shapeで速度を0にし、Size Start/Endで長さを制御する想定");
 			}
 		}
 
@@ -586,7 +653,12 @@ void EffectEditor::DrawPreviewWindow()
 		}
 	}
 
-	if (m_selected < 0 || m_selected >= (int)m_objects.size())
+	if (!m_previewedGroup.empty())
+	{
+		ImGui::SetCursorPos(ImVec2(10, 10));
+		ImGui::Text("Group : %s", m_previewedGroup.c_str());
+	}
+	else if (m_selected < 0 || m_selected >= (int)m_objects.size())
 	{
 		ImGui::SetCursorPos(ImVec2(10, 10));
 		ImGui::TextDisabled("エフェクトが選択されていません");
@@ -726,6 +798,135 @@ void EffectEditor::RefreshTextureFileList()
 	}
 }
 
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// グループ(複数エフェクトをまとめて1つの名前で発生させる為の定義)の管理・プレビュー用パネル
+//	m_groups自体はここでしか編集しない。メンバー名の実在チェックは行わず、
+//	m_objectsに実在しないメンバーは一覧で赤字表示するだけに留める
+//	(EffectDispatcher側の「実在確認はロード時、Emit解決はfindするだけ」という方針と揃えている)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void EffectEditor::DrawGroupsPanel()
+{
+	ImGui::Begin("Effect Groups");
+
+	static char newGroupNameBuf[128] = "";
+	ImGui::InputText("New Group Name", newGroupNameBuf, sizeof(newGroupNameBuf));
+	ImGui::SameLine();
+	if (ImGui::Button("+ Add Group"))
+	{
+		std::string groupName = newGroupNameBuf;
+		if (!groupName.empty() && m_groups.find(groupName) == m_groups.end())
+		{
+			m_groups[groupName] = {};
+			newGroupNameBuf[0] = '\0';
+		}
+	}
+
+	ImGui::Separator();
+
+	// ループ中にm_groups自体へキーの追加/削除を行うと反復子が壊れるので、
+	// 削除要求はここに溜めてループを抜けてから実行する(DrawLayerInspectorと同じ方針)
+	std::string groupToRemove;
+
+	for (auto& pair : m_groups)
+	{
+		const std::string& groupName = pair.first;
+		std::vector<std::string>& members = pair.second;
+
+		ImGui::PushID(groupName.c_str());
+
+		// AllowOverlapを付けないと、この後SameLineで重ねるボタンがヘッダにクリックを奪われて反応しない
+		bool open = ImGui::CollapsingHeader(groupName.c_str(), ImGuiTreeNodeFlags_AllowOverlap);
+
+		ImGui::SameLine();
+		if (ImGui::SmallButton("Play"))
+		{
+			// メンバーのうちm_objectsに実在するものだけ、それぞれの単体Play相当で再生する
+			for (const auto& memberName : members)
+			{
+				if (EffectObject* obj = FindObjectByName(memberName))
+				{
+					PlayPreview(*obj);
+				}
+			}
+			// Effect Previewウィンドウをこのグループ全員表示に切り替える(単体選択は解除)
+			m_previewedGroup = groupName;
+			m_selected = -1;
+		}
+		ImGui::SameLine();
+		if (ImGui::SmallButton("Stop"))
+		{
+			for (const auto& memberName : members)
+			{
+				if (EffectObject* obj = FindObjectByName(memberName))
+				{
+					StopPreview(*obj);
+				}
+			}
+		}
+		ImGui::SameLine();
+		if (ImGui::SmallButton("Delete Group"))
+		{
+			groupToRemove = groupName;
+		}
+
+		if (open)
+		{
+			int removeMemberIndex = -1;
+
+			for (int i = 0; i < (int)members.size(); i++)
+			{
+				ImGui::PushID(i);
+
+				const bool exists = (FindObjectByName(members[i]) != nullptr);
+				if (exists)
+				{
+					ImGui::Text("%s", members[i].c_str());
+				}
+				else
+				{
+					// m_objectsから消えた/リネームされたメンバー。保存はするが赤字で気付けるようにする
+					ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "%s (見つかりません)", members[i].c_str());
+				}
+
+				ImGui::SameLine();
+				if (ImGui::SmallButton("x")) { removeMemberIndex = i; }
+
+				ImGui::PopID();
+			}
+
+			if (removeMemberIndex >= 0)
+			{
+				members.erase(members.begin() + removeMemberIndex);
+			}
+
+			// 既存のm_objectsから、まだこのグループに入っていないものだけを選択肢として出す
+			if (ImGui::BeginCombo("+ Add Member", "選択..."))
+			{
+				for (auto& obj : m_objects)
+				{
+					bool alreadyIn = std::find(members.begin(), members.end(), obj.name) != members.end();
+					if (alreadyIn) { continue; }
+
+					if (ImGui::Selectable(obj.name.c_str()))
+					{
+						members.push_back(obj.name);
+					}
+				}
+				ImGui::EndCombo();
+			}
+		}
+
+		ImGui::PopID();
+	}
+
+	if (!groupToRemove.empty())
+	{
+		m_groups.erase(groupToRemove);
+	}
+
+	ImGui::End();
+}
+
 EffectObject* EffectEditor::FindObjectByName(const std::string& name)
 {
 	for (auto& obj : m_objects)
@@ -747,7 +948,7 @@ void EffectEditor::PlayPreview(EffectObject& obj)
 	obj.playing = true;
 	obj.paused = false;
 
-	obj.previewInstance.Play(obj.pos,{1,1,1});
+	obj.previewInstance.Play(obj.pos, { 1,1,1 });
 }
 
 void EffectEditor::StopPreview(EffectObject& obj)
@@ -815,6 +1016,17 @@ void EffectEditor::RemoveSelected()
 	m_selected = -1;
 }
 
+void EffectEditor::CopySelected()
+{
+	if (m_selected < 0 || m_selected >= (int)m_objects.size()) return;
+	EffectObject obj;
+	obj.name = m_objects[m_selected].name + std::string("_copy");
+	obj.params = m_objects[m_selected].params;
+	m_objects.push_back(std::move(obj));
+	m_selected = (int)m_objects.size() - 1;
+}
+
+
 void EffectEditor::Save(const std::string& path)
 {
 	EffectDataFile data;
@@ -830,6 +1042,8 @@ void EffectEditor::Save(const std::string& path)
 		def.Params = obj.params;
 		data.Effects.push_back(def);
 	}
+
+	data.Groups = m_groups;
 
 	if (!EffectDataLoader::Save(path, data))
 	{
@@ -876,6 +1090,8 @@ void EffectEditor::Load(const std::string& path)
 		obj.params = def.Params;
 		m_objects.push_back(std::move(obj));
 	}
+
+	m_groups = data.Groups;
 
 	m_selected = -1;
 	KdDebugGUI::Instance().AddLog("EffectEditor: 読み込みました %s\n", path.c_str());

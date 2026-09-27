@@ -68,8 +68,17 @@ VSOutput main(uint vertID : SV_VertexID, uint instID : SV_InstanceID)
 	float quadWidthLen = size;
 	float quadHeightLen = size;
 
-	// BillboardMode > 0.5 は Stretch(ParticleBillboardMode::Stretch相当)
-	if (p.BillboardMode > 0.5f)
+	if (p.BillboardMode > 1.5f)
+	{
+	// Beam：方向(Axis/baseDir)には一切依存せず、常に画面の水平方向へ伸ばす
+		quadUpAxis = float2(1, 0); // 伸びる方向 = 画面右方向(camRight)固定
+		quadRightAxis = float2(0, -1); // 直交方向。巻き順(背面カリング対策)を保つため(1,0)から90度回した値にしている
+
+	// 長さはsize(=SizeStart→SizeEnd補間済み)をそのまま使う。中心から±size/2で両端に伸びる
+		quadHeightLen = size;
+		quadWidthLen = p.StretchScale; // Beamでは「幅」として読み替える
+	}
+	else if (p.BillboardMode > 0.5f)
 	{
 		// 速度をスクリーン(camRight/camUp)平面へ投影する。
 		// camRight/camUp/カメラ視線方向は正規直交基底なので、この2成分が

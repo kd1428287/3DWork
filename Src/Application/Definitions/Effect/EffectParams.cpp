@@ -7,8 +7,19 @@ ParticleBuffer::EmitParameter DirectionalEmitShape::ToEmitParameter(
 	// 速度分布のみを埋める。Size/Life/ColorはParticleAppearance::ApplyTo()が上書きする
 	ParticleBuffer::EmitParameter p;
 	p.Position = worldPos;
-	p.VelocityMin = baseDir * DirScaleMin - OffsetMin;
-	p.VelocityMax = baseDir * DirScaleMax + OffsetMax;
+	p.Distribution = Distribution;
+
+	if (Distribution == ParticleEmitDistribution::RadialInPlane)
+	{
+		// 角度はGPU側(CS_Emit)が毎粒子ごとに乱数で決める。ここでは速度の大きさだけ渡す
+		p.RadialSpeedMin = RadialSpeedMin;
+		p.RadialSpeedMax = RadialSpeedMax;
+	}
+	else
+	{
+		p.VelocityMin = baseDir * DirScaleMin - OffsetMin;
+		p.VelocityMax = baseDir * DirScaleMax + OffsetMax;
+	}
 	return p;
 }
 
@@ -35,6 +46,7 @@ ParticleBuffer::EmitParameter GPUParticleLayer::ToEmitParameter(
 	Appearance.ApplyTo(p);
 	p.BillboardMode = BillboardMode;
 	p.StretchScale = StretchScale;
+	p.Axis = baseDir;	// Beam専用。Beam以外では未使用だが、常にセットしておいて問題ない
 	return p;
 }
 

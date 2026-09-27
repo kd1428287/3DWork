@@ -2,6 +2,7 @@
 
 #include "../../../Physics/Movement/MovementComponent.h"
 #include "../../../Physics/Movement/TweenMoveComponent.h"
+#include "../../../Graphics/Animation/RootMotionApplierComponent.h"
 
 void PlayerCombatMovementComponent::Awake()
 {
@@ -16,6 +17,8 @@ void PlayerCombatMovementComponent::Awake()
 	if (tweenMoveComponent_ == nullptr) {
 		tweenMoveComponent_ = GetOwner()->RequestAddComponent<TweenMoveComponent>();
 	}
+
+	rootMotionApplier_ = GetOwner()->GetComponent<RootMotionApplierComponent>();
 }
 
 void PlayerCombatMovementComponent::ApplyMovementState(MovementState state)
@@ -100,5 +103,51 @@ void PlayerCombatMovementComponent::CancelStepMove()
 {
 	if (tweenMoveComponent_ != nullptr) {
 		tweenMoveComponent_->SetEnabled(false);
+	}
+}
+
+void PlayerCombatMovementComponent::RequestRootMotionWarpTowardsTarget(GameObject* target,
+	float expectedDistance, float engageDistance, float minScale, float maxScale)
+{
+	if (rootMotionApplier_ == nullptr) return;
+
+	TransformComponent* transform = GetOwner()->GetComponent<TransformComponent>();
+	TransformComponent* targetTransform = (target != nullptr) ? target->GetComponent<TransformComponent>() : nullptr;
+	if (transform == nullptr || targetTransform == nullptr || expectedDistance <= kDirectionEpsilon) {
+		rootMotionApplier_->ClearRootMotionWarp(); // 対象なし: 素のルートモーションのまま
+		return;
+	}
+
+	Math::Vector3 toTarget = targetTransform->GetPosition() - transform->GetPosition();
+	toTarget.y = 0.0f;
+	const float distanceToTarget = toTarget.Length();
+	if (distanceToTarget <= kDirectionEpsilon) {
+		rootMotionApplier_->ClearRootMotionWarp();
+		return;
+	}
+	toTarget.Normalize();
+
+	// 向き: 現在の前方からtoTargetへの水平角度差をそのままYaw補正量にする
+	const float yawDiff = ComputeHorizontalAngleTo(transform->GetForward(), toTarget);
+	const Math::Quaternion warpRotation = Math::Quaternion::CreateFromAxisAngle(Math::Vector3::Up, yawDiff);
+
+	// 距離: engageDistanceを残して詰めたい距離と、クリップが素で進む想定距離との比
+	const float desiredDistance = std::max(0.0f, distanceToTarget - engageDistance);
+	const float scale = std::clamp(desiredDistance / expectedDistance, minScale, maxScale);
+
+	rootMotionApplier_->SetRootMotionWarp(warpRotation, scale);
+}
+
+void PlayerCombatMovementComponent::SetRootMotionScale(float scale)
+{
+	if (rootMotionApplier_ != nullptr) {
+		rootMotionApplier_->SetRootMotionWarp(Math::Quaternion::Identity, scale);
+	}
+}
+
+void PlayerCombatMovementComponent::ClearRootMotionWarp()
+{
+	if (rootMotionApplier_ != nullptr) {
+		rootMotionApplier_->ClearRootMotionWarp();
 	}
 }
