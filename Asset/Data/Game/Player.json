@@ -394,23 +394,23 @@
 				},
 				"stagger": {
 					"staggerSmall": {
-						"animationName": "Hit_B_Root",
-						"useRootMotion": false,
+						"animationName": "Hit_F_Root",
+						"useRootMotion": true,
 						"reactionStartFrame": 0,
-						"reactionEndFrame": 15,
+						"reactionEndFrame": 85,
 						"reactionBlendDuration": 0.1,
-						"recoveryEndFrame": 40,
+						"recoveryEndFrame": 141,
 						"recoveryDuration": 0.15,
 						"recoveryBlendDuration": 0.0,
 						"recoveryEvadeCancelStart": 0.05
 					},
 					"staggerLarge": {
 						"animationName": "Large_Hit_Root",
-						"useRootMotion": false,
+						"useRootMotion": true,
 						"reactionStartFrame": 0,
-						"reactionEndFrame": 40,
+						"reactionEndFrame": 185,
 						"reactionBlendDuration": 0.1,
-						"recoveryEndFrame": 100,
+						"recoveryEndFrame": 242,
 						"recoveryDuration": 0.6,
 						"recoveryBlendDuration": 0.0,
 						"recoveryEvadeCancelStart": 0.3

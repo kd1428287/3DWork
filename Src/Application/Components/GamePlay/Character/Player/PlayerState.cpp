@@ -330,13 +330,9 @@ void StateCharge::Update(PlayerStatusController* controller, float deltaTime) {
 void StateStagger::Enter(PlayerStatusController* controller) {
 	phase_ = Phase::Reaction;
 	elapsed_ = 0.0f;
-	KdDebugGUI::Instance().AddLog("Stagger");
 
 	const StaggerPhaseData& data = GetPhaseData(controller);
 
-	// Reaction秒数は攻撃側(hitStunSeconds/largeStaggerDuration等)が決めるため、
-	// アニメーションの再生速度もreactionDuration_に合わせて自動スケーリングする。
-	// クリップ内のreactionStartFrame〜reactionEndFrameだけを再生する。
 	controller->PlayAnimation(data.animationName, false, reactionDuration_,
 		static_cast<float>(data.reactionStartFrame), static_cast<float>(data.reactionEndFrame),
 		data.useRootMotion, data.reactionBlendDuration);
@@ -349,8 +345,6 @@ void StateStagger::Update(PlayerStatusController* controller, float deltaTime) {
 	if (phase_ == Phase::Reaction && elapsed_ >= reactionDuration_) {
 		phase_ = Phase::Recovery;
 		elapsed_ = 0.0f;
-		// 同じクリップの続き(reactionEndFrame〜recoveryEndFrame)を繋げて再生する
-		// (AttackDataの各phaseを繋げて再生するのと同じ考え方)。
 		controller->PlayAnimation(data.animationName, false, data.recoveryDuration,
 			static_cast<float>(data.reactionEndFrame), static_cast<float>(data.recoveryEndFrame),
 			data.useRootMotion, data.recoveryBlendDuration);
