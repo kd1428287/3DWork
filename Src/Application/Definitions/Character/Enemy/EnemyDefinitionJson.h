@@ -14,8 +14,11 @@
 // COMPONENT_PARAMS_DEFINE_TYPEの説明・理由はComponentParamsOrderedJson.hのコメントを参照。
 // ============================================================
 
-COMPONENT_PARAMS_DEFINE_TYPE(EnemyAttackDefinition,
-	name, attackData, minRange, maxRange, weight)
+COMPONENT_PARAMS_DEFINE_TYPE(EnemyAttackFacingData,
+	windupTurnSpeed, activeTurnSpeed)
+
+	COMPONENT_PARAMS_DEFINE_TYPE(EnemyAttackDefinition,
+		name, attackData, minRange, maxRange, weight, facing)
 
 	COMPONENT_PARAMS_DEFINE_TYPE(EnemyMovementAnimationNames,
 		idle, walk, run)

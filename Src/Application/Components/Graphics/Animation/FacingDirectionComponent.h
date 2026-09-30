@@ -17,7 +17,8 @@ public:
 	explicit FacingDirectionComponent(GameObject* owner,
 		float rotationSpeed = FacingDirectionConfig{}.rotationSpeed,
 		float moveThreshold = FacingDirectionConfig{}.moveThreshold)
-		: ComponentBase(owner), rotationSpeed_(rotationSpeed), moveThreshold_(moveThreshold) {}
+		: ComponentBase(owner), rotationSpeed_(rotationSpeed), moveThreshold_(moveThreshold) {
+	}
 
 	void SetConfig(const Config& config)
 	{
@@ -51,7 +52,12 @@ public:
 		lastMoveDirection_ = dir;
 		const Math::Quaternion targetRotation = LookRotationYawOnly(dir);
 
-		const float t = std::clamp(rotationSpeed_ * deltaTime, 0.0f, 1.0f);
+		// 目標方向オーバーライド中で、その呼び出しが回頭速度を指定していれば
+		// そちらを使う(攻撃ごとに向き直りの速さを変えたい敵用。未指定=0なら
+		// 従来通りrotationSpeed_)。
+		const float speed = (hasTargetOverride_ && targetOverrideRotationSpeed_ > 0.0f)
+			? targetOverrideRotationSpeed_ : rotationSpeed_;
+		const float t = std::clamp(speed * deltaTime, 0.0f, 1.0f);
 		transform_->SetRotation(Math::Quaternion::Slerp(transform_->GetRotation(), targetRotation, t));
 	}
 
@@ -66,16 +72,24 @@ public:
 
 	// 移動方向への自動追従より優先される、外部から明示した水平方向へ向く。
 	// PlayerFacingComponent::FaceTowards(攻撃対象/ロック対象への正対)から使う。
-	void SetTargetOverrideDirection(const Math::Vector3& horizontalDir)
+	// rotationSpeedOverrideを指定(>0)すると、このオーバーライドが有効な間だけ
+	// rotationSpeed_の代わりにその速さで向き直る(EnemyAIController::
+	// FaceTargetSmoothly、攻撃ごとの回頭速度用)。省略時は従来通り。
+	void SetTargetOverrideDirection(const Math::Vector3& horizontalDir, float rotationSpeedOverride = 0.0f)
 	{
 		if (horizontalDir.LengthSquared() <= kEpsilon) return;
 		targetOverrideDirection_ = horizontalDir;
 		targetOverrideDirection_.Normalize();
+		targetOverrideRotationSpeed_ = rotationSpeedOverride;
 		hasTargetOverride_ = true;
 	}
 
 	// override解除。移動方向への自動追従に戻す。
-	void ClearTargetOverrideDirection() { hasTargetOverride_ = false; }
+	void ClearTargetOverrideDirection()
+	{
+		hasTargetOverride_ = false;
+		targetOverrideRotationSpeed_ = 0.0f;
+	}
 
 private:
 	// Math::Vector3::Forward(TransformComponent::GetForward()が基準にしている
@@ -111,6 +125,7 @@ private:
 
 	bool hasTargetOverride_ = false;
 	Math::Vector3 targetOverrideDirection_{};
+	float targetOverrideRotationSpeed_ = 0.0f; // 0なら未指定(rotationSpeed_を使う)
 
 	float rotationSpeed_;
 	float moveThreshold_;

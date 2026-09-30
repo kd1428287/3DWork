@@ -4,7 +4,7 @@
 #include "Application/Definitions/Effect/EffectParams.h"
 #include "../../Effect/Particle/EffectInstance.h"
 #include "../../Effect/Common/KdAssetsTextureProvider.h"
-#include "../Common/KdPreviewPostProcess.h"
+#include "../Common/EditorPreviewViewport.h"
 #include <imgui.h>
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -175,50 +175,11 @@ private:
 
 	//=====================================================
 	// Effect Preview 専用ビューポート
-	//	EditorViewport(ゲーム画面をオフスクリーン→ImGui::Imageで表示するクラス)と
-	//	全く同じパターンを踏襲した、選択中エフェクト専用のミニビューポート。
-	//	ゲームのメインシーン・ゲームカメラとは完全に独立している。
+	//	専用カメラ・専用オフスクリーンでの描画/表示は共通クラスEditorPreviewViewportが担当する
+	//	(バッファ生成・RT退避復元・オービットカメラ・カラーグレード・ImGui表示)。
+	//	このクラスは「何を描くか」と注視点、ウィンドウ上のオーバーレイだけを持つ。
 	//=====================================================
-	struct PreviewViewport
-	{
-		std::shared_ptr<KdTexture>	Color;	// オフスクリーンのカラーバッファ
-		std::shared_ptr<KdTexture>	Depth;	// オフスクリーンのZバッファ
-
-		// カラーグレード除外マスク書き込み用の捨てRT(スロット1)。
-		// このプレビューはカラーグレード処理自体を通らないため中身は使わないが、
-		// Alphaブレンドのパーティクル(m_PS_Masked使用、SV_Target1へ書き込む)を
-		// 描画する際にスロット1が未バインドだとD3D11警告が出るため、
-		// 書き込み先として存在させるためだけに用意する
-		std::shared_ptr<KdTexture>	Mask;
-
-		int		Width = 0;
-		int		Height = 0;
-
-		ImVec2	ScreenPos = { 0,0 };	// ウィンドウ内、画像の左上スクリーン座標(将来ギズモ等を出す場合用)
-		ImVec2	ScreenSize = { 0,0 };	// ウィンドウ内、画像の表示サイズ
-
-		// ウィンドウの表示サイズに合わせてオフスクリーンバッファを作り直す(サイズ据え置きなら何もしない)
-		void Resize(int w, int h);
-	};
-
-	// プレビュー専用の簡易オービットカメラ。選択中エフェクトのpos(ワールド座標)を注視点とする
-	struct PreviewCamera
-	{
-		float Distance = 3.0f;
-		float Yaw = 0.0f;
-		float Pitch = 0.3f;
-
-		DirectX::SimpleMath::Matrix GetView(const DirectX::SimpleMath::Vector3& target) const;
-		DirectX::SimpleMath::Matrix GetProj(float aspect) const;
-	};
-
-	PreviewViewport	m_previewViewport;
-	PreviewCamera	m_previewCamera;
-
-	// プレビュー画面用の軽量ポストプロセス(現状カラーグレードのみ)。
-	// RenderPreviewViewport()の最後でm_previewViewport.Colorに対して適用し、
-	// DrawPreviewWindow()側はこちらの結果テクスチャを表示する
-	KdPreviewPostProcess	m_previewPostProcess;
+	EditorPreviewViewport	m_preview;
 
 	//=====================================================
 	// シングルトンパターン

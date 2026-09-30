@@ -356,18 +356,17 @@ void MapEditor::DrawGizmo()
 {
 	MapObject* selected = FindSelected();
 	if (!selected) { m_gizmoWasUsing = false; return; }
-	if (m_previewViewport.Width <= 0 || m_previewViewport.Height <= 0) { m_gizmoWasUsing = false; return; }
+	if (!m_preview.IsReady()) { m_gizmoWasUsing = false; return; }
 
 	ImGuizmo::SetOrthographic(false);
 	ImGuizmo::SetDrawlist();
 
-	const ImVec2& rectPos = m_previewViewport.ScreenPos;
-	const ImVec2& rectSize = m_previewViewport.ScreenSize;
+	const ImVec2& rectPos = m_preview.GetScreenPos();
+	const ImVec2& rectSize = m_preview.GetScreenSize();
 	ImGuizmo::SetRect(rectPos.x, rectPos.y, rectSize.x, rectSize.y);
 
-	DirectX::SimpleMath::Matrix view = m_previewCamera.GetView(GetPreviewTarget());
-	DirectX::SimpleMath::Matrix proj = m_previewCamera.GetProj(
-		(float)m_previewViewport.Width / (float)m_previewViewport.Height);
+	DirectX::SimpleMath::Matrix view = m_preview.GetViewMatrix(GetPreviewTarget());
+	DirectX::SimpleMath::Matrix proj = m_preview.GetProjMatrix();
 
 	MapObject& obj = *selected;
 
@@ -652,42 +651,7 @@ void MapEditor::DrawPlacedObjects()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void MapEditor::RenderPreviewViewport()
 {
-	if (!m_previewViewport.Color || !m_previewViewport.Depth) return;
-	if (m_previewViewport.Width <= 0 || m_previewViewport.Height <= 0) return;
-
-	ID3D11DeviceContext* context = KdDirect3D::Instance().WorkDevContext();
-
-	KdShaderManager::cbCamera savedCamera = KdShaderManager::Instance().GetCameraCB();
-
-	ID3D11RenderTargetView* savedRTV = nullptr;
-	ID3D11DepthStencilView* savedDSV = nullptr;
-	context->OMGetRenderTargets(1, &savedRTV, &savedDSV);
-
-	UINT savedVPNum = 1;
-	D3D11_VIEWPORT savedVP = {};
-	context->RSGetViewports(&savedVPNum, &savedVP);
-
-	ID3D11RenderTargetView* rtvs[] = { m_previewViewport.Color->WorkRTView() };
-	context->OMSetRenderTargets(1, rtvs, m_previewViewport.Depth->WorkDSView());
-
-	static const float clearColor[4] = { 0.1f, 0.1f, 0.12f, 1.0f };
-	context->ClearRenderTargetView(m_previewViewport.Color->WorkRTView(), clearColor);
-	context->ClearDepthStencilView(m_previewViewport.Depth->WorkDSView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-
-	D3D11_VIEWPORT vp = {};
-	vp.Width = (float)m_previewViewport.Width;
-	vp.Height = (float)m_previewViewport.Height;
-	vp.MinDepth = 0.0f;
-	vp.MaxDepth = 1.0f;
-	context->RSSetViewports(1, &vp);
-
-	DirectX::SimpleMath::Vector3 target = GetPreviewTarget();
-
-	DirectX::SimpleMath::Matrix view = m_previewCamera.GetView(target);
-	DirectX::SimpleMath::Matrix proj = m_previewCamera.GetProj(
-		(float)m_previewViewport.Width / (float)m_previewViewport.Height);
-
-	KdShaderManager::Instance().WriteCBCamera(view.Invert(), proj);
+	if (!m_preview.IsReady()) return;
 
 	// ※WorkAmbientController().Draw()はここでは呼ばない。
 	//   環境光・平行光のパラメータ自体は、このフレームの冒頭(Application::KdBeginDraw())で
@@ -695,28 +659,17 @@ void MapEditor::RenderPreviewViewport()
 	//   それどころか、Draw()内のWriteCBShadowArea()は無条件に呼ばれ、平行光の影生成エリアの
 	//   中心位置を「その時点のカメラ位置(cb7のCamPos)」から計算するため、直前で書き換えた
 	//   プレビュー用カメラの位置を基準に本編用のDirLight_mVPを上書きしてしまっていた
-	//   (cbCamera自体は関数末尾で退避・復元しているが、このDirLight_mVPは対象外だった)。
+	//   (cbCamera自体は共通クラス側で退避・復元しているが、このDirLight_mVPは対象外だった)。
 	//   環境光・平行光の色などは既存の値をそのまま使えばよいため、このDraw()呼び出しごと削除する。
-
-	KdShaderManager::Instance().m_StandardShader.BeginGenerateDepthMapFromLight();
-	DrawObjects();
-	KdShaderManager::Instance().m_StandardShader.EndGenerateDepthMapFromLight();
-	KdShaderManager::Instance().m_StandardShader.BeginLit();
-	DrawObjects();
-	KdShaderManager::Instance().m_StandardShader.EndLit();
-
-
-	KdShaderManager::Instance().WriteCBCamera(savedCamera.mView.Invert(), savedCamera.mProj);
-
-	context->OMSetRenderTargets(1, &savedRTV, savedDSV);
-	if (savedRTV) { savedRTV->Release(); }
-	if (savedDSV) { savedDSV->Release(); }
-
-	context->RSSetViewports(savedVPNum, &savedVP);
-
-	// 通常描画パイプライン(このプレビュー分の描画)が完全に終わった後、カラーグレードを適用する。
-	// ※Apply()内部は自前のRT/ビューポート退避・復元を行うため、ここでの追加の後始末は不要
-	m_previewPostProcess.Apply(m_previewViewport.Color);
+	m_preview.Render(GetPreviewTarget(), [this]()
+		{
+			KdShaderManager::Instance().m_StandardShader.BeginGenerateDepthMapFromLight();
+			DrawObjects();
+			KdShaderManager::Instance().m_StandardShader.EndGenerateDepthMapFromLight();
+			KdShaderManager::Instance().m_StandardShader.BeginLit();
+			DrawObjects();
+			KdShaderManager::Instance().m_StandardShader.EndLit();
+		});
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -724,120 +677,17 @@ void MapEditor::RenderPreviewViewport()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void MapEditor::DrawPreviewWindow()
 {
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-	ImGui::Begin("Map Preview", nullptr, ImGuiWindowFlags_NoMove);
-
-	ImVec2 regionSize = ImGui::GetContentRegionAvail();
-
-	if (regionSize.x >= 1.0f && regionSize.y >= 1.0f)
-	{
-		m_previewViewport.Resize((int)regionSize.x, (int)regionSize.y);
-	}
-
-	if (m_previewViewport.Color)
-	{
-		m_previewViewport.ScreenPos = ImGui::GetCursorScreenPos();
-		m_previewViewport.ScreenSize = regionSize;
-
-		// カラーグレード適用後の結果を表示する。リサイズ直後で結果がまだ無い場合のみ、
-		// 生のプレビュー画像にフォールバックする(次フレームには結果が揃う)
-		const std::shared_ptr<KdTexture>& displayTex =
-			m_previewPostProcess.GetResultTexture() ? m_previewPostProcess.GetResultTexture() : m_previewViewport.Color;
-
-		ImGui::Image((ImTextureID)displayTex->WorkSRView(), regionSize);
-
-		if (ImGui::IsItemHovered())
+	m_preview.DrawWindow("Map Preview", ImGuiWindowFlags_NoMove, [this]()
 		{
-			ImGuiIO& io = ImGui::GetIO();
+			// ギズモはプレビュー画像と同じウィンドウ内(ImGuizmo::SetDrawlist()が現在のウィンドウを使う為)で描く
+			DrawGizmo();
 
-			if (ImGui::IsMouseDragging(ImGuiMouseButton_Right))
+			if (m_objects.empty())
 			{
-				m_previewCamera.Yaw -= io.MouseDelta.x * 0.01f;
-				m_previewCamera.Pitch += io.MouseDelta.y * 0.01f;
-				m_previewCamera.Pitch = std::clamp(m_previewCamera.Pitch, -1.5f, 1.5f);
+				ImGui::SetCursorPos(ImVec2(10, 10));
+				ImGui::TextDisabled("配置されたオブジェクトがありません");
 			}
-
-			if (io.MouseWheel != 0.0f)
-			{
-				m_previewCamera.Distance -= io.MouseWheel * 0.5f;
-				m_previewCamera.Distance = std::clamp(m_previewCamera.Distance, 0.2f, 200.0f);
-			}
-		}
-
-		DrawGizmo();
-	}
-
-	if (m_objects.empty())
-	{
-		ImGui::SetCursorPos(ImVec2(10, 10));
-		ImGui::TextDisabled("配置されたオブジェクトがありません");
-	}
-
-	ImGui::End();
-	ImGui::PopStyleVar();
-}
-
-void MapEditor::PreviewViewport::Resize(int w, int h)
-{
-	if (w <= 0 || h <= 0) return;
-	if (w == Width && h == Height && Color && Depth) return;
-
-	Width = w;
-	Height = h;
-
-	{
-		D3D11_TEXTURE2D_DESC desc = {};
-		desc.Usage = D3D11_USAGE_DEFAULT;
-		desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-		desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-		desc.Width = (UINT)w;
-		desc.Height = (UINT)h;
-		desc.CPUAccessFlags = 0;
-		desc.MipLevels = 1;
-		desc.ArraySize = 1;
-		desc.SampleDesc.Count = 1;
-		desc.SampleDesc.Quality = 0;
-
-		Color = std::make_shared<KdTexture>();
-		Color->Create(desc);
-	}
-
-	{
-		D3D11_TEXTURE2D_DESC desc = {};
-		desc.Usage = D3D11_USAGE_DEFAULT;
-		desc.Format = DXGI_FORMAT_R24G8_TYPELESS;
-		desc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
-		desc.Width = (UINT)w;
-		desc.Height = (UINT)h;
-		desc.CPUAccessFlags = 0;
-		desc.MipLevels = 1;
-		desc.ArraySize = 1;
-		desc.SampleDesc.Count = 1;
-		desc.SampleDesc.Quality = 0;
-
-		Depth = std::make_shared<KdTexture>();
-		Depth->Create(desc);
-	}
-}
-
-DirectX::SimpleMath::Matrix MapEditor::PreviewCamera::GetView(const DirectX::SimpleMath::Vector3& target) const
-{
-	using namespace DirectX::SimpleMath;
-
-	float cosPitch = cosf(Pitch);
-	Vector3 offset(
-		Distance * cosPitch * sinf(Yaw),
-		Distance * sinf(Pitch),
-		Distance * cosPitch * cosf(Yaw));
-
-	Vector3 eye = target + offset;
-	return Matrix::CreateLookAt(eye, target, Vector3::Up);
-}
-
-DirectX::SimpleMath::Matrix MapEditor::PreviewCamera::GetProj(float aspect) const
-{
-	return DirectX::SimpleMath::Matrix::CreatePerspectiveFieldOfView(
-		DirectX::XMConvertToRadians(45.0f), aspect, 0.05f, 500.0f);
+		});
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -976,6 +826,15 @@ void MapEditor::Load(const std::string& path)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 MapEditor::MapEditor()
 {
+	// マップ全体を見渡す用途なので、遠景まで映し(FarZ)、離れた位置から始める(InitialDistance)
+	EditorPreviewViewport::Settings previewSettings;
+	previewSettings.UseMaskRT = false;
+	previewSettings.FarZ = 500.0f;
+	previewSettings.InitialDistance = 5.0f;
+	previewSettings.MaxDistance = 200.0f;
+	previewSettings.WheelSensitivity = 0.5f;
+	m_preview.Configure(previewSettings);
+
 	Load(m_filePathBuf);
 	LoadModelRegistry(m_registryPathBuf);
 }

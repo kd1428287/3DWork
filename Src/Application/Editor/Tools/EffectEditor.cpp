@@ -116,107 +116,51 @@ void EffectEditor::DrawPreviewParticles(ParticleDrawPass pass)
 	}
 }
 
-// 選択中の1エフェクトを、専用カメラ・専用オフスクリーンバッファへ描画する
+// 選択中の1エフェクト(またはプレビュー中グループの全メンバー)を、専用カメラ・専用バッファへ描画する
 void EffectEditor::RenderPreviewViewport()
 {
+	using namespace DirectX::SimpleMath;
+
 	// ウィンドウが一度も開かれておらずサイズが確定していない場合は何もしない
-	if (!m_previewViewport.Color || !m_previewViewport.Depth || !m_previewViewport.Mask) return;
-	if (m_previewViewport.Width <= 0 || m_previewViewport.Height <= 0) return;
+	if (!m_preview.IsReady()) return;
 
-	ID3D11DeviceContext* context = KdDirect3D::Instance().WorkDevContext();
-
-	// 退避
-	KdShaderManager::cbCamera savedCamera = KdShaderManager::Instance().GetCameraCB();
-
-	ID3D11RenderTargetView* savedRTVs[2] = { nullptr, nullptr };
-	ID3D11DepthStencilView* savedDSV = nullptr;
-	context->OMGetRenderTargets(2, savedRTVs, &savedDSV);
-
-	UINT savedVPNum = 1;
-	D3D11_VIEWPORT savedVP = {};
-	context->RSGetViewports(&savedVPNum, &savedVP);
-
-	// プレビュー用バッファへ切り替え・クリア
-	// ※スロット1(Mask)はカラーグレード処理を通らないこのプレビューでは中身を使わないが、
-	//   Alphaブレンドのパーティクル(m_PS_Masked)がSV_Target1へ書き込めるように必要
-	ID3D11RenderTargetView* rtvs[] = { m_previewViewport.Color->WorkRTView(), m_previewViewport.Mask->WorkRTView() };
-	context->OMSetRenderTargets(2, rtvs, m_previewViewport.Depth->WorkDSView());
-
-	static const float clearColor[4] = { 0.1f, 0.1f, 0.12f, 1.0f };
-	context->ClearRenderTargetView(m_previewViewport.Color->WorkRTView(), clearColor);
-	context->ClearRenderTargetView(m_previewViewport.Mask->WorkRTView(), kBlackColor);
-	context->ClearDepthStencilView(m_previewViewport.Depth->WorkDSView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-
-	D3D11_VIEWPORT vp = {};
-	vp.Width = (float)m_previewViewport.Width;
-	vp.Height = (float)m_previewViewport.Height;
-	vp.MinDepth = 0.0f;
-	vp.MaxDepth = 1.0f;
-	context->RSSetViewports(1, &vp);
-
-	const float aspect = (float)m_previewViewport.Width / (float)m_previewViewport.Height;
+	// 描画対象と注視点を決める。
+	// グループプレビュー中：実在するメンバー全員、注視点はそのposの平均値
+	// 単体選択中：選択中の1つ、注視点はそのpos。どちらも無ければ原点を見るだけで何も描かない
+	Vector3 target = { 0,0,0 };
+	std::vector<EffectObject*> drawTargets;
 
 	if (!m_previewedGroup.empty())
 	{
-		// グループプレビュー：メンバー全員を同じカメラで描画する。
-		// 注視点はメンバー(実在するものだけ)のposの平均値にする
 		auto groupIt = m_groups.find(m_previewedGroup);
 		if (groupIt != m_groups.end())
 		{
-			DirectX::SimpleMath::Vector3 center = { 0,0,0 };
-			int validCount = 0;
+			Vector3 sum = { 0,0,0 };
 			for (const auto& memberName : groupIt->second)
 			{
 				if (EffectObject* obj = FindObjectByName(memberName))
 				{
-					center += obj->pos;
-					validCount++;
+					sum += obj->pos;
+					drawTargets.push_back(obj);
 				}
 			}
-			if (validCount > 0) { center /= (float)validCount; }
-
-			DirectX::SimpleMath::Matrix view = m_previewCamera.GetView(center);
-			DirectX::SimpleMath::Matrix proj = m_previewCamera.GetProj(aspect);
-			KdShaderManager::Instance().WriteCBCamera(view.Invert(), proj);
-
-			for (const auto& memberName : groupIt->second)
-			{
-				if (EffectObject* obj = FindObjectByName(memberName))
-				{
-					if (obj->playing) { obj->previewInstance.Draw(); }
-				}
-			}
+			if (!drawTargets.empty()) { target = sum / (float)drawTargets.size(); }
 		}
 	}
 	else if (m_selected >= 0 && m_selected < (int)m_objects.size())
 	{
 		EffectObject& obj = m_objects[m_selected];
-
-		// プレビュー用カメラの適用
-		DirectX::SimpleMath::Matrix view = m_previewCamera.GetView(obj.pos);
-		DirectX::SimpleMath::Matrix proj = m_previewCamera.GetProj(aspect);
-
-		KdShaderManager::Instance().WriteCBCamera(view.Invert(), proj);
-
-		if (obj.playing)
-		{
-			obj.previewInstance.Draw();
-		}
+		target = obj.pos;
+		drawTargets.push_back(&obj);
 	}
 
-	// 復元
-	KdShaderManager::Instance().WriteCBCamera(savedCamera.mView.Invert(), savedCamera.mProj);
-
-	context->OMSetRenderTargets(2, savedRTVs, savedDSV);
-	if (savedRTVs[0]) { savedRTVs[0]->Release(); }
-	if (savedRTVs[1]) { savedRTVs[1]->Release(); }
-	if (savedDSV) { savedDSV->Release(); }
-
-	context->RSSetViewports(savedVPNum, &savedVP);
-
-	// 通常描画パイプライン(このプレビュー分の描画)が完全に終わった後、カラーグレードを適用する。
-	// ※Apply()内部は自前のRT/ビューポート退避・復元を行うため、ここでの追加の後始末は不要
-	m_previewPostProcess.Apply(m_previewViewport.Color);
+	m_preview.Render(target, [&]()
+		{
+			for (EffectObject* obj : drawTargets)
+			{
+				if (obj->playing) { obj->previewInstance.Draw(); }
+			}
+		});
 }
 
 void EffectEditor::DrawMainMenu()
@@ -610,62 +554,19 @@ void EffectEditor::DrawTexturePicker()
 
 void EffectEditor::DrawPreviewWindow()
 {
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-	ImGui::Begin("Effect Preview");
-
-	ImVec2 regionSize = ImGui::GetContentRegionAvail();
-
-	// ウィンドウサイズが変わったらオフスクリーンバッファを作り直す
-	if (regionSize.x >= 1.0f && regionSize.y >= 1.0f)
-	{
-		m_previewViewport.Resize((int)regionSize.x, (int)regionSize.y);
-	}
-
-	if (m_previewViewport.Color)
-	{
-		m_previewViewport.ScreenPos = ImGui::GetCursorScreenPos();
-		m_previewViewport.ScreenSize = regionSize;
-
-		// カラーグレード適用後の結果を表示する。リサイズ直後で結果がまだ無い場合のみ、
-		// 生のプレビュー画像にフォールバックする(次フレームには結果が揃う)
-		const std::shared_ptr<KdTexture>& displayTex =
-			m_previewPostProcess.GetResultTexture() ? m_previewPostProcess.GetResultTexture() : m_previewViewport.Color;
-
-		ImGui::Image((ImTextureID)displayTex->WorkSRView(), regionSize);
-
-		// 右ドラッグ：オービット回転、ホイール：ズーム
-		if (ImGui::IsItemHovered())
+	m_preview.DrawWindow("Effect Preview", 0, [this]()
 		{
-			ImGuiIO& io = ImGui::GetIO();
-
-			if (ImGui::IsMouseDragging(ImGuiMouseButton_Right))
+			if (!m_previewedGroup.empty())
 			{
-				m_previewCamera.Yaw -= io.MouseDelta.x * 0.01f;
-				m_previewCamera.Pitch += io.MouseDelta.y * 0.01f;
-				m_previewCamera.Pitch = std::clamp(m_previewCamera.Pitch, -1.5f, 1.5f);
+				ImGui::SetCursorPos(ImVec2(10, 10));
+				ImGui::Text("Group : %s", m_previewedGroup.c_str());
 			}
-
-			if (io.MouseWheel != 0.0f)
+			else if (m_selected < 0 || m_selected >= (int)m_objects.size())
 			{
-				m_previewCamera.Distance -= io.MouseWheel * 0.3f;
-				m_previewCamera.Distance = std::clamp(m_previewCamera.Distance, 0.2f, 50.0f);
+				ImGui::SetCursorPos(ImVec2(10, 10));
+				ImGui::TextDisabled("エフェクトが選択されていません");
 			}
-		}
-	}
-
-	if (!m_previewedGroup.empty())
-	{
-		ImGui::SetCursorPos(ImVec2(10, 10));
-		ImGui::Text("Group : %s", m_previewedGroup.c_str());
-	}
-	else if (m_selected < 0 || m_selected >= (int)m_objects.size())
-	{
-		ImGui::SetCursorPos(ImVec2(10, 10));
-		ImGui::TextDisabled("エフェクトが選択されていません");
-	}
-
-	ImGui::End();
-	ImGui::PopStyleVar();
+		});
 }
 
 // x軸：寿命の進行(左=Start / 右=End)
@@ -682,94 +583,6 @@ void EffectEditor::DrawColorRangeGradient(const ParticleAppearance& a, ImVec2 si
 
 	ImGui::GetWindowDrawList()->AddRectFilledMultiColor(p0, p1, topLeft, topRight, botRight, botLeft);
 	ImGui::Dummy(size); // レイアウト上の場所取り
-}
-
-void EffectEditor::PreviewViewport::Resize(int w, int h)
-{
-	if (w <= 0 || h <= 0) return;
-
-	// サイズが変わっていなければ作り直さない
-	if (w == Width && h == Height && Color && Depth && Mask) return;
-
-	Width = w;
-	Height = h;
-
-	// ----- カラーバッファ -----
-	{
-		D3D11_TEXTURE2D_DESC desc = {};
-		desc.Usage = D3D11_USAGE_DEFAULT;
-		desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-		desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-		desc.Width = (UINT)w;
-		desc.Height = (UINT)h;
-		desc.CPUAccessFlags = 0;
-		desc.MipLevels = 1;
-		desc.ArraySize = 1;
-		desc.SampleDesc.Count = 1;
-		desc.SampleDesc.Quality = 0;
-
-		Color = std::make_shared<KdTexture>();
-		Color->Create(desc);
-	}
-
-	// ----- Zバッファ -----
-	{
-		D3D11_TEXTURE2D_DESC desc = {};
-		desc.Usage = D3D11_USAGE_DEFAULT;
-		desc.Format = DXGI_FORMAT_R24G8_TYPELESS;
-		desc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
-		desc.Width = (UINT)w;
-		desc.Height = (UINT)h;
-		desc.CPUAccessFlags = 0;
-		desc.MipLevels = 1;
-		desc.ArraySize = 1;
-		desc.SampleDesc.Count = 1;
-		desc.SampleDesc.Quality = 0;
-
-		Depth = std::make_shared<KdTexture>();
-		Depth->Create(desc);
-	}
-
-	// ----- カラーグレード除外マスク書き込み用の捨てRT -----
-	//	このプレビューはカラーグレード処理を通らないため中身は使わないが、
-	//	Alphaブレンドのパーティクル(m_PS_Masked)がSV_Target1へ書き込めるように
-	//	スロット1として何かバインドしておく必要がある(単チャンネルで十分)
-	{
-		D3D11_TEXTURE2D_DESC desc = {};
-		desc.Usage = D3D11_USAGE_DEFAULT;
-		desc.Format = DXGI_FORMAT_R8_UNORM;
-		desc.BindFlags = D3D11_BIND_RENDER_TARGET;
-		desc.Width = (UINT)w;
-		desc.Height = (UINT)h;
-		desc.CPUAccessFlags = 0;
-		desc.MipLevels = 1;
-		desc.ArraySize = 1;
-		desc.SampleDesc.Count = 1;
-		desc.SampleDesc.Quality = 0;
-
-		Mask = std::make_shared<KdTexture>();
-		Mask->Create(desc);
-	}
-}
-
-DirectX::SimpleMath::Matrix EffectEditor::PreviewCamera::GetView(const DirectX::SimpleMath::Vector3& target) const
-{
-	using namespace DirectX::SimpleMath;
-
-	float cosPitch = cosf(Pitch);
-	Vector3 offset(
-		Distance * cosPitch * sinf(Yaw),
-		Distance * sinf(Pitch),
-		Distance * cosPitch * cosf(Yaw));
-
-	Vector3 eye = target + offset;
-	return Matrix::CreateLookAt(eye, target, Vector3::Up);
-}
-
-DirectX::SimpleMath::Matrix EffectEditor::PreviewCamera::GetProj(float aspect) const
-{
-	return DirectX::SimpleMath::Matrix::CreatePerspectiveFieldOfView(
-		DirectX::XMConvertToRadians(45.0f), aspect, 0.05f, 100.0f);
 }
 
 void EffectEditor::RefreshTextureFileList()
@@ -938,6 +751,15 @@ EffectObject* EffectEditor::FindObjectByName(const std::string& name)
 
 EffectEditor::EffectEditor()
 {
+	// パーティクルのAlphaブレンド用にMask RTが必要。カメラ設定はエフェクト単体の確認向け(近距離・狭い範囲)
+	EditorPreviewViewport::Settings previewSettings;
+	previewSettings.UseMaskRT = true;
+	previewSettings.FarZ = 100.0f;
+	previewSettings.InitialDistance = 3.0f;
+	previewSettings.MaxDistance = 50.0f;
+	previewSettings.WheelSensitivity = 0.3f;
+	m_preview.Configure(previewSettings);
+
 	Load(m_filePathBuf);
 }
 

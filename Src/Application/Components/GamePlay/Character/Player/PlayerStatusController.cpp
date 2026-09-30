@@ -98,7 +98,7 @@ void PlayerStatusController::HandleActionInput(PlayerInputComponent& input)
 		input.ConsumeCommand(ActionCommand::Evade, data.evadeDirection);
 		TryStartEvade(data);
 	}
-	else if (input.HasCommand(ActionCommand::Attack) && input.HasCommand(ActionCommand::Guard)
+	else if (input.HasCommand(ActionCommand::Attack) && input.IsGuardHeld()
 		&& CanStartAttack() && CanStartGuard()) {
 		// 同時押しは個別のAttack/Guardより優先し、両方消費してチャージ開始。
 		input.ConsumeCommand(ActionCommand::Attack);

@@ -4,7 +4,7 @@
 //    ImGuizmo は本ファイルでのみ使うため明示的にインクルードします。
 #include "../ThirdParty/ImGuizmo.h"
 #include "Application/Definitions/Map/MapData.h"
-#include "../Common/KdPreviewPostProcess.h"
+#include "../Common/EditorPreviewViewport.h"
 #include "../Common/ComponentInspector.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -194,45 +194,11 @@ private:
 
 	//=====================================================
 	// Map Preview 専用ビューポート
-	//	EditorViewport(ゲーム画面をオフスクリーン→ImGui::Imageで表示するクラス)や
-	//	EffectEditor::PreviewViewportと全く同じパターンを踏襲した、マップ全体プレビュー用の
-	//	ミニビューポート。ゲームのメインシーン・ゲームカメラとは完全に独立している。
+	//	専用カメラ・専用オフスクリーンでの描画/表示は共通クラスEditorPreviewViewportが担当する
+	//	(バッファ生成・RT退避復元・オービットカメラ・カラーグレード・ImGui表示)。
+	//	このクラスは「何を描くか」、注視点の決め方、ギズモ操作を持つ。
 	//=====================================================
-	struct PreviewViewport
-	{
-		std::shared_ptr<KdTexture>	Color;	// オフスクリーンのカラーバッファ
-		std::shared_ptr<KdTexture>	Depth;	// オフスクリーンのZバッファ
-
-		int		Width = 0;
-		int		Height = 0;
-
-		ImVec2	ScreenPos = { 0,0 };	// ウィンドウ内、画像の左上スクリーン座標
-		ImVec2	ScreenSize = { 0,0 };	// ウィンドウ内、画像の表示サイズ
-
-		// ウィンドウの表示サイズに合わせてオフスクリーンバッファを作り直す(サイズ据え置きなら何もしない)
-		void Resize(int w, int h);
-	};
-
-	// プレビュー専用の簡易オービットカメラ。
-	// 選択中オブジェクトがあればその pos を、無ければ配置済みオブジェクト全体の重心
-	// (オブジェクトが無ければ原点)を注視点とする
-	struct PreviewCamera
-	{
-		float Distance = 5.0f;
-		float Yaw = 0.0f;
-		float Pitch = 0.3f;
-
-		DirectX::SimpleMath::Matrix GetView(const DirectX::SimpleMath::Vector3& target) const;
-		DirectX::SimpleMath::Matrix GetProj(float aspect) const;
-	};
-
-	PreviewViewport	m_previewViewport;
-	PreviewCamera	m_previewCamera;
-
-	// プレビュー画面用の軽量ポストプロセス(現状カラーグレードのみ)。
-	// RenderPreviewViewport()の最後でm_previewViewport.Colorに対して適用し、
-	// DrawPreviewWindow()側はこちらの結果テクスチャを表示する
-	KdPreviewPostProcess	m_previewPostProcess;
+	EditorPreviewViewport	m_preview;
 
 	// プレビューカメラの注視点キャッシュ。ギズモ操作中(ImGuizmo::IsUsing()中)は
 	// 選択オブジェクトの座標そのものを注視点にせず、操作開始時点の値のまま固定する。

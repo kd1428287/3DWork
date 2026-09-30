@@ -386,7 +386,7 @@
 					"maxDamageScale": 2.0,
 					"loop": {
 						"duration": -1.0,
-						"animationName": "ChargeAttack_Loop_Root",
+						"animationName": "SPAttack04_Root",
 						"useRootMotion": false,
 						"blendDuration": 0.15,
 						"loop": true

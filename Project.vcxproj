@@ -402,6 +402,7 @@
     <ClInclude Include="Src\Application\Definitions\Prefab\Prefab.h" />
     <ClInclude Include="Src\Application\Definitions\UI\GaugeBarStyle.h" />
     <ClInclude Include="Src\Application\Editor\Common\ComponentInspector.h" />
+    <ClInclude Include="Src\Application\Editor\Common\EditorPreviewViewport.h" />
     <ClInclude Include="Src\Application\Editor\Common\EditorViewport.h" />
     <ClInclude Include="Src\Application\Editor\Common\KdPreviewPostProcess.h" />
     <ClInclude Include="Src\Application\Editor\EditorHost.h" />
@@ -533,6 +534,7 @@
     <ClCompile Include="Src\Application\Definitions\Loaders\PlayerAttackTableLoader.cpp" />
     <ClCompile Include="Src\Application\Definitions\Map\MapData.cpp" />
     <ClCompile Include="Src\Application\Editor\Common\ComponentInspector.cpp" />
+    <ClCompile Include="Src\Application\Editor\Common\EditorPreviewViewport.cpp" />
     <ClCompile Include="Src\Application\Editor\Common\EditorViewport.cpp" />
     <ClCompile Include="Src\Application\Editor\Common\KdPreviewPostProcess.cpp" />
     <ClCompile Include="Src\Application\Editor\EditorHost.cpp" />

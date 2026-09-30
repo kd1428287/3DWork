@@ -25,6 +25,22 @@
 // で行う(現時点ではデータを持たせるところまで)。
 // ============================================================
 
+// 攻撃中にターゲットへ向き直る速さ(攻撃ごとのデータ)。
+// 値の単位はFacingDirectionComponent::rotationSpeedと同じ(毎秒の補間率。
+// 大きいほど素早く向き直る)。Recoveryフェーズでは常に向き直らない
+// (隙を晒している間は振り向かない)。
+struct EnemyAttackFacingData
+{
+	// Windup中にターゲットへ滑らかに向き直る速さ。
+	// 0以下なら追従せず、開始時に一度だけ瞬時に正対して向きを固定する
+	// (旧実装と同じ挙動)。
+	float windupTurnSpeed = 6.0f;
+
+	// Active(判定発生中)に向き直る速さ。0なら追従しない
+	// (判定が出る瞬間に向きを確定させ、横へ動けば避けられる)。
+	float activeTurnSpeed = 0.0f;
+};
+
 // 攻撃1種類分のデータ。ダメージ/体幹ダメージ、windup/active/recoveryの
 // 3フェーズ構成、モーション制御、キャンセル設定等は汎用のAttackData
 // (CombatData.h、Player側のAttackDataと共通)にまとめてあり、ここには
@@ -41,6 +57,9 @@ struct EnemyAttackDefinition
 	float maxRange = 2.0f;
 
 	float weight = 1.0f;
+
+	// 攻撃中の向き制御(ターゲット追従の速さ)。
+	EnemyAttackFacingData facing;
 };
 
 // 常時ループする移動系アニメーションの名前。全敵種が必ず持つ役割

@@ -82,8 +82,8 @@
 					"WeaponClashFx"
 				],
 				"damageEffectName": "InkSplash",
-				"parryEffectName": "WeaponClashParry",
-				"blockEffectName": "WeaponClashBlock",
+				"parryEffectName": "ParryEffect",
+				"blockEffectName": "InkSplash",
 				"cameraShakeIntensity": 0.75,
 				"hitStopDelaySeconds": 0.0,
 				"hitStopDurationSeconds": 0.1,

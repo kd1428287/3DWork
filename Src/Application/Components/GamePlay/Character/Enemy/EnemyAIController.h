@@ -258,6 +258,35 @@ public:
 
 	void FaceHorizontalTarget(const Math::Vector3& targetPosition);
 
+	// 攻撃中、ターゲットへ滑らかに向き直る。毎フレーム呼んで目標方向を更新する
+	// (PlayerFacingComponent::FaceTowardsと同じく、FacingDirectionComponentの
+	// 目標方向オーバーライドを使う)。turnSpeedは攻撃ごとのデータ
+	// (EnemyAttackFacingData)。FacingDirectionComponentが無い敵は瞬時に正対する。
+	void FaceTargetSmoothly(const Math::Vector3& targetPosition, float turnSpeed) {
+		if (transform_ == nullptr) return;
+		if (facingDirectionComponent_ == nullptr) {
+			FaceHorizontalTarget(targetPosition);
+			return;
+		}
+
+		Math::Vector3 dir = targetPosition - transform_->GetPosition();
+		dir.y = 0.0f;
+		if (dir.LengthSquared() < 1e-6f) return;
+		dir.Normalize();
+
+		// 攻撃はルートモーションを使うため、移動用アニメの再生で自動追従が
+		// 止められたままの場合がある。追従する間は明示的に有効へ戻す。
+		facingDirectionComponent_->SetUpdateEnabled(true);
+		facingDirectionComponent_->SetTargetOverrideDirection(dir, turnSpeed);
+	}
+
+	// FaceTargetSmoothly()の追従を止め、移動方向への自動追従へ戻す。
+	void StopFacingTarget() {
+		if (facingDirectionComponent_ != nullptr) {
+			facingDirectionComponent_->ClearTargetOverrideDirection();
+		}
+	}
+
 	// 同じループアニメーションを毎フレーム再生し直さないための薄いラッパー。
 	void PlayAnimationIfChanged(const std::string& name, bool loop) {
 		if (name == currentAnimationName_) return;

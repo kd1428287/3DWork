@@ -7,6 +7,10 @@
 			"minRange": 0.0,
 			"maxRange": 3.0,
 			"weight": 2.0,
+			"facing": {
+				"windupTurnSpeed": 4.0,
+				"activeTurnSpeed": 0.0
+			},
 			"attackData": {
 				"damageData": {
 					"damage": 8.0,
@@ -62,6 +66,10 @@
 			"minRange": 0.0,
 			"maxRange": 3.5,
 			"weight": 1.5,
+			"facing": {
+				"windupTurnSpeed": 4.0,
+				"activeTurnSpeed": 0.0
+			},
 			"attackData": {
 				"damageData": {
 					"damage": 10.0,
@@ -117,6 +125,10 @@
 			"minRange": 0.0,
 			"maxRange": 4.5,
 			"weight": 1.0,
+			"facing": {
+				"windupTurnSpeed": 3.0,
+				"activeTurnSpeed": 0.0
+			},
 			"attackData": {
 				"damageData": {
 					"damage": 14.0,
@@ -172,6 +184,10 @@
 			"minRange": 0.0,
 			"maxRange": 4.0,
 			"weight": 1.0,
+			"facing": {
+				"windupTurnSpeed": 10.0,
+				"activeTurnSpeed": 0.0
+			},
 			"attackData": {
 				"damageData": {
 					"damage": 12.0,
@@ -230,6 +246,10 @@
 			"minRange": 5.0,
 			"maxRange": 9.0,
 			"weight": 1.0,
+			"facing": {
+				"windupTurnSpeed": 6.0,
+				"activeTurnSpeed": 0.0
+			},
 			"attackData": {
 				"damageData": {
 					"damage": 20.0,
