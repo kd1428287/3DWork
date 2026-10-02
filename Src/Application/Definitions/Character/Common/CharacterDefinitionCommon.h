@@ -66,4 +66,5 @@ struct MotionClipData
 	float		blendDuration	= 0.1f;
 	int			startFrame		= 0;
 	int			endFrame		= 0;
+	bool		isForce			= true;
 };

@@ -1,4 +1,4 @@
-#include "Application/main.h"
+﻿#include "Application/main.h"
 
 #include "EditorPreviewViewport.h"
 
@@ -12,6 +12,7 @@ bool EditorPreviewViewport::IsReady() const
 {
 	if (!m_viewport.Color || !m_viewport.Depth) { return false; }
 	if (m_settings.UseMaskRT && !m_viewport.Mask) { return false; }
+	if (m_settings.UseBrightRT && !m_viewport.Bright) { return false; }
 	return m_viewport.Width > 0 && m_viewport.Height > 0;
 }
 
@@ -50,26 +51,27 @@ void EditorPreviewViewport::Resize(int w, int h)
 
 	// サイズが変わっておらず、必要なバッファも揃っていれば作り直さない
 	const bool maskOk = !m_settings.UseMaskRT || m_viewport.Mask;
-	if (w == m_viewport.Width && h == m_viewport.Height && m_viewport.Color && m_viewport.Depth && maskOk) { return; }
+	const bool brightOk = !m_settings.UseBrightRT || m_viewport.Bright;
+	if (w == m_viewport.Width && h == m_viewport.Height && m_viewport.Color && m_viewport.Depth && maskOk && brightOk) { return; }
 
 	m_viewport.Width = w;
 	m_viewport.Height = h;
 
 	auto makeDesc = [&](DXGI_FORMAT format, UINT bindFlags)
-	{
-		D3D11_TEXTURE2D_DESC desc = {};
-		desc.Usage = D3D11_USAGE_DEFAULT;
-		desc.Format = format;
-		desc.BindFlags = bindFlags;
-		desc.Width = (UINT)w;
-		desc.Height = (UINT)h;
-		desc.CPUAccessFlags = 0;
-		desc.MipLevels = 1;
-		desc.ArraySize = 1;
-		desc.SampleDesc.Count = 1;
-		desc.SampleDesc.Quality = 0;
-		return desc;
-	};
+		{
+			D3D11_TEXTURE2D_DESC desc = {};
+			desc.Usage = D3D11_USAGE_DEFAULT;
+			desc.Format = format;
+			desc.BindFlags = bindFlags;
+			desc.Width = (UINT)w;
+			desc.Height = (UINT)h;
+			desc.CPUAccessFlags = 0;
+			desc.MipLevels = 1;
+			desc.ArraySize = 1;
+			desc.SampleDesc.Count = 1;
+			desc.SampleDesc.Quality = 0;
+			return desc;
+		};
 
 	m_viewport.Color = std::make_shared<KdTexture>();
 	m_viewport.Color->Create(makeDesc(DXGI_FORMAT_R8G8B8A8_UNORM, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE));
@@ -84,12 +86,21 @@ void EditorPreviewViewport::Resize(int w, int h)
 		m_viewport.Mask = std::make_shared<KdTexture>();
 		m_viewport.Mask->Create(makeDesc(DXGI_FORMAT_R8_UNORM, D3D11_BIND_RENDER_TARGET));
 	}
+
+	// Bloom元となるBright専用RT(加算描画のみ。SRVも持たせてGenerateBlurTexture()の入力に使う)
+	if (m_settings.UseBrightRT)
+	{
+		m_viewport.Bright = std::make_shared<KdTexture>();
+		m_viewport.Bright->Create(makeDesc(DXGI_FORMAT_R8G8B8A8_UNORM, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE));
+	}
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 専用カメラ・専用バッファへの描画。RT/ビューポート/カメラCBは退避し、終了時に復元する
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void EditorPreviewViewport::Render(const DirectX::SimpleMath::Vector3& target, const std::function<void()>& drawSceneFunc)
+void EditorPreviewViewport::Render(const DirectX::SimpleMath::Vector3& target,
+	const std::function<void()>& drawSceneFunc,
+	const std::function<void()>& drawBrightFunc)
 {
 	if (!IsReady()) { return; }
 
@@ -121,6 +132,10 @@ void EditorPreviewViewport::Render(const DirectX::SimpleMath::Vector3& target, c
 	{
 		context->ClearRenderTargetView(m_viewport.Mask->WorkRTView(), kBlackColor);
 	}
+	if (m_settings.UseBrightRT)
+	{
+		context->ClearRenderTargetView(m_viewport.Bright->WorkRTView(), kBlackColor);
+	}
 	context->ClearDepthStencilView(m_viewport.Depth->WorkDSView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
 	D3D11_VIEWPORT vp = {};
@@ -136,6 +151,28 @@ void EditorPreviewViewport::Render(const DirectX::SimpleMath::Vector3& target, c
 
 	if (drawSceneFunc) { drawSceneFunc(); }
 
+	// Bloom元となるBright専用RTへの加算描画(本編のBeginBright()/EndBright()と同じ考え方)。
+	// 深度は共有(既に描いたColor側と同じ被写体を対象にするので、Zバッファは引き継いでよい)
+	if (m_settings.UseBrightRT && drawBrightFunc)
+	{
+		ID3D11RenderTargetView* brightRTVs[2] = { m_viewport.Bright->WorkRTView(), nullptr };
+		UINT brightRTVCount = 1;
+		if (m_settings.UseMaskRT)
+		{
+			brightRTVs[1] = m_viewport.Mask->WorkRTView();
+			brightRTVCount = 2;
+		}
+		context->OMSetRenderTargets(brightRTVCount, brightRTVs, m_viewport.Depth->WorkDSView());
+
+		KdShaderManager::Instance().ChangeBlendState(KdBlendState::Add);
+		KdShaderManager::Instance().ChangeDepthStencilState(KdDepthStencilState::ZWriteDisable);
+
+		drawBrightFunc();
+
+		KdShaderManager::Instance().UndoDepthStencilState();
+		KdShaderManager::Instance().UndoBlendState();
+	}
+
 	// 復元
 	KdShaderManager::Instance().WriteCBCamera(savedCamera.mView.Invert(), savedCamera.mProj);
 
@@ -146,9 +183,9 @@ void EditorPreviewViewport::Render(const DirectX::SimpleMath::Vector3& target, c
 
 	context->RSSetViewports(savedVPNum, &savedVP);
 
-	// 描画が完全に終わった後にカラーグレードを適用する
+	// 描画が完全に終わった後にBloom→カラーグレードを適用する
 	// ※Apply()内部は自前のRT/ビューポート退避・復元を行うため、ここでの追加の後始末は不要
-	m_postProcess.Apply(m_viewport.Color);
+	m_postProcess.Apply(m_viewport.Color, m_settings.UseBrightRT ? m_viewport.Bright : nullptr);
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////

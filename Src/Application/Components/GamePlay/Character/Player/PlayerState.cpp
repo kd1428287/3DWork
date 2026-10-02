@@ -41,8 +41,6 @@ void StateAttack::Update(PlayerStatusController* controller, float deltaTime) {
 		phase_ = CombatState::AttackActive;
 		elapsed_ = 0.0f;
 
-		// Activeクリップがルートモーションなら、移動量そのものを対象へ向けて
-		// ワープ補正する。そうでなければ従来通りTweenで決め打ち移動する。
 		if (data.phaseData.active.useRootMotion) {
 			controller->RequestRootMotionWarpTowardsTarget(data.moveData.stepDistance, data.moveData.engageDistance,
 				kMinRootMotionWarpScale, kMaxRootMotionWarpScale);
@@ -333,6 +331,7 @@ void StateStagger::Enter(PlayerStatusController* controller) {
 
 	const StaggerPhaseData& data = GetPhaseData(controller);
 
+	controller->SetRootMotionScale(data.rootMotionScale);
 	controller->PlayAnimation(data.animationName, false, reactionDuration_,
 		static_cast<float>(data.reactionStartFrame), static_cast<float>(data.reactionEndFrame),
 		data.useRootMotion, data.reactionBlendDuration);
@@ -356,6 +355,7 @@ void StateStagger::Update(PlayerStatusController* controller, float deltaTime) {
 
 void StateStagger::Exit(PlayerStatusController* controller)
 {
+	controller->ClearRootMotionWarp();
 }
 
 bool StateStagger::CanStartEvade(const PlayerStatusController* controller) const {

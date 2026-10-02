@@ -69,11 +69,11 @@ struct EnemyAttackDefinition
 // 現状のBT実行層(ループ再生のみ)には不要なため、まずはLoop名だけを
 // 持つ簡易版とする。Start/Endのブレンドが必要になった時点で
 // Player側と同じ形へ拡張するかどうかを再検討すること。
-struct EnemyMovementAnimationNames
+struct EnemyMovementAnimationData
 {
-	std::string idle = "Idle";
-	std::string walk = "Walk";
-	std::string run = "Run";
+	MotionClipData idle;
+	MotionClipData walk;
+	MotionClipData run;
 };
 
 struct EnemyAIData
@@ -122,7 +122,7 @@ struct EnemyAIData
 	std::vector<EnemyAttackDefinition> gapCloserAttacks;
 
 	// 巡回/追跡/待機で使うループアニメーションの名前。
-	EnemyMovementAnimationNames movementAnimations;
+	EnemyMovementAnimationData movementAnimations;
 
 	// 単発の割り込み演出(被弾リアクション/大スタン/パリィされた時の
 	// リアクション/咆哮/死亡等)を論理名で引けるテーブル。

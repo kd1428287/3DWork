@@ -87,7 +87,7 @@ private:
 	// ルートモーション踏み込みの距離スケールをクランプする範囲。
 	// 敵が遠すぎる/近すぎる場合に不自然な速度で動くのを防ぐ安全弁で、
 	// 技ごとの調整値ではないためここに定数として持つ。
-	static constexpr float kMinRootMotionWarpScale = 0.5f;
+	static constexpr float kMinRootMotionWarpScale = 0.1f;
 	static constexpr float kMaxRootMotionWarpScale = 1.8f;
 };
 

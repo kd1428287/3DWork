@@ -82,8 +82,7 @@ void KdStandardShader::BeginUnLit()
 // 陰影なしオブジェクトの描画終了
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void KdStandardShader::EndUnLit()
-{
-}
+{}
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 影を生み出すオブジェクトの情報描画（光を遮る物体）
@@ -414,6 +413,51 @@ void KdStandardShader::DrawVertices(const std::vector<KdPolygon::Vertex>& vertic
 
 	KdShaderManager::Instance().UndoRasterizerState();
 	// 定数に変更があった場合は自動的に初期状態に戻す
+	if (m_dirtyCBObj)
+	{
+		ResetCBObject();
+	}
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 地面を描画（y=0の無限平面。BeginLit～EndLit間で呼ぶ
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void KdStandardShader::DrawGround(const KdMaterial& material, const Math::Vector3& center, float halfSize, float tileSize)
+{
+	if (m_dirtyCBObj)
+	{
+		m_cb0_Obj.Write();
+	}
+
+	// 頂点をワールド座標で直接持つので単位行列
+	m_cb1_Mesh.Work().mW = Math::Matrix::Identity;
+	m_cb1_Mesh.Write();
+
+	WriteMaterial(material, Math::Vector4::One, Math::Vector3::Zero);
+
+	// UVはワールドXZ基準：クアッドが追従してもテクスチャは流れない
+	const float x0 = center.x - halfSize, x1 = center.x + halfSize;
+	const float z0 = center.z - halfSize, z1 = center.z + halfSize;
+
+	KdPolygon::Vertex v[4];
+	v[0].pos = { x0, 0.0f, z0 };
+	v[1].pos = { x0, 0.0f, z1 };
+	v[2].pos = { x1, 0.0f, z0 };
+	v[3].pos = { x1, 0.0f, z1 };
+	for (auto& vtx : v)
+	{
+		vtx.normal = Math::Vector3::Up;
+		vtx.tangent = Math::Vector3::Right;
+		vtx.UV = { vtx.pos.x / tileSize, vtx.pos.z / tileSize };
+	}
+
+	// サンプラーはBeginLitのAnisotropic_Wrapをそのまま使う
+	KdShaderManager::Instance().ChangeRasterizerState(KdRasterizerState::CullNone);
+
+	KdDirect3D::Instance().DrawVertices(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP, 4, v, sizeof(KdPolygon::Vertex));
+
+	KdShaderManager::Instance().UndoRasterizerState();
+
 	if (m_dirtyCBObj)
 	{
 		ResetCBObject();

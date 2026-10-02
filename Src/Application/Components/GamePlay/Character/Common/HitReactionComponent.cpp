@@ -78,7 +78,7 @@ Math::Vector3 HitReactionComponent::ComputeSplatterReflection(GameObject* attack
 void HitReactionComponent::OnCollisionEnter(const Events::Collision::CollisionEnterEvent& e)
 {
 	if (query_ == nullptr) return;
-	if (e.selfShapeName != "HurtBox") return;
+	if (!e.SelfIs(ColliderCategory::HurtBox) || !e.OtherIs(ColliderCategory::HitBox))return;
 
 	AttackSourceComponent* attack = e.otherObject->GetComponent<AttackSourceComponent>();
 	if (attack == nullptr) return;

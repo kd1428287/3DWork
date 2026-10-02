@@ -346,6 +346,7 @@ struct StaggerPhaseData
 {
 	std::string animationName; // Reaction/Recovery共通の1本のクリップ
 	bool useRootMotion = false;
+	float rootMotionScale = 1.0f;
 
 	int reactionStartFrame = 0;
 	int reactionEndFrame = 0;     // ここまでがReaction(Recoveryはこの続きから再生する)

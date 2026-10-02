@@ -47,7 +47,7 @@ namespace nlohmann
 }
 
 COMPONENT_PARAMS_DEFINE_TYPE(MotionClipData,
-	animationName, loop, duration, useRootMotion, blendDuration, startFrame, endFrame)
+	animationName, loop, duration, useRootMotion, blendDuration, startFrame, endFrame, isForce)
 
 	COMPONENT_PARAMS_DEFINE_TYPE(AttackDamageData,
 		damage, knockbackPower, hitStunSeconds, postureDamage, chipDamageRatio, parryPostureDamage)

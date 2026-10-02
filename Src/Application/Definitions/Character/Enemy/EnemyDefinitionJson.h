@@ -20,7 +20,7 @@ COMPONENT_PARAMS_DEFINE_TYPE(EnemyAttackFacingData,
 	COMPONENT_PARAMS_DEFINE_TYPE(EnemyAttackDefinition,
 		name, attackData, minRange, maxRange, weight, facing)
 
-	COMPONENT_PARAMS_DEFINE_TYPE(EnemyMovementAnimationNames,
+	COMPONENT_PARAMS_DEFINE_TYPE(EnemyMovementAnimationData,
 		idle, walk, run)
 
 	COMPONENT_PARAMS_DEFINE_TYPE(EnemyAIData,

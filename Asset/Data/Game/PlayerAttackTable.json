@@ -22,10 +22,8 @@
 					"parryPostureDamage": 30.0
 				},
 				"moveData": {
-					"stepDistance": 1.0,
-					"stepDuration": 0.0,
-					"engageDistance": 1.2,
-					"stepDirection": [ 0.0, 0.0, 0.0 ]
+					"stepDistance": 3.0,
+					"engageDistance": 1.2
 				},
 				"phaseData": {
 					"windup": {
@@ -81,10 +79,8 @@
 					"parryPostureDamage": 30.0
 				},
 				"moveData": {
-					"stepDistance": 0.8,
-					"stepDuration": 0.0,
-					"engageDistance": 1.0,
-					"stepDirection": [ 0.0, 0.0, 0.0 ]
+					"stepDistance": 3.0,
+					"engageDistance": 1.2
 				},
 				"phaseData": {
 					"windup": {
@@ -140,10 +136,8 @@
 					"parryPostureDamage": 35.0
 				},
 				"moveData": {
-					"stepDistance": 0.8,
-					"stepDuration": 0.0,
-					"engageDistance": 1.0,
-					"stepDirection": [ 0.0, 0.0, 0.0 ]
+					"stepDistance": 3.0,
+					"engageDistance": 1.2
 				},
 				"phaseData": {
 					"windup": {
@@ -199,10 +193,8 @@
 					"parryPostureDamage": 35.0
 				},
 				"moveData": {
-					"stepDistance": 0.8,
-					"stepDuration": 0.0,
-					"engageDistance": 1.0,
-					"stepDirection": [ 0.0, 0.0, 0.0 ]
+					"stepDistance": 3.0,
+					"engageDistance": 1.2
 				},
 				"phaseData": {
 					"windup": {
@@ -258,10 +250,8 @@
 					"parryPostureDamage": 40.0
 				},
 				"moveData": {
-					"stepDistance": 1.0,
-					"stepDuration": 0.0,
-					"engageDistance": 1.0,
-					"stepDirection": [ 0.0, 0.0, 0.0 ]
+					"stepDistance": 3.0,
+					"engageDistance": 1.2
 				},
 				"phaseData": {
 					"windup": {
@@ -312,10 +302,8 @@
 					"parryPostureDamage": 60.0
 				},
 				"moveData": {
-					"stepDistance": 1.2,
-					"stepDuration": 0.0,
-					"engageDistance": 1.0,
-					"stepDirection": [ 0.0, 0.0, 0.0 ]
+					"stepDistance": 3.0,
+					"engageDistance": 1.2
 				},
 				"phaseData": {
 					"windup": {
@@ -364,10 +352,8 @@
 					"parryPostureDamage": 50.0
 				},
 				"moveData": {
-					"stepDistance": 1.5,
-					"stepDuration": 0.0,
-					"engageDistance": 1.0,
-					"stepDirection": [ 0.0, 0.0, 0.0 ]
+					"stepDistance": 3.0,
+					"engageDistance": 1.2
 				},
 				"phaseData": {
 					"windup": {

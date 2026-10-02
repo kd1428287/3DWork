@@ -981,6 +981,15 @@
     <ClInclude Include="Src\Application\Editor\Common\EditorPreviewViewport.h">
       <Filter>Src\Application\Editor\Common</Filter>
     </ClInclude>
+    <ClInclude Include="CharacterBodyComponent.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Physics\Collision\BodySurfaceQuery.h">
+      <Filter>Src\Application\Components\Physics\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Graphics\Render\GroundRenderComponent.h">
+      <Filter>Src\Application\Components\Graphics\Render</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -1300,6 +1309,9 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Editor\Common\EditorPreviewViewport.cpp">
       <Filter>Src\Application\Editor\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\Graphics\Render\GroundRenderComponent.cpp">
+      <Filter>Src\Application\Components\Graphics\Render</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

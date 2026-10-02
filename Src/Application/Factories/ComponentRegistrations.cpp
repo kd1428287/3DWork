@@ -96,7 +96,7 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 	COMPONENT_PARAMS_DEFINE_TYPE(HitReactionConfig, effectFlags, damageEffectName, parryEffectName, blockEffectName,
 		cameraShakeIntensity, hitStopDelaySeconds, hitStopDurationSeconds, guardKnockbackPower, largeStaggerDuration)
 	COMPONENT_PARAMS_DEFINE_TYPE(PlayerCombatMovementConfig, walkSpeed, runSpeed)
-	COMPONENT_PARAMS_DEFINE_TYPE(PlayerStatusControllerConfig, evade, guard,charge,stagger)
+	COMPONENT_PARAMS_DEFINE_TYPE(PlayerStatusControllerConfig, evade, guard, charge, stagger)
 	COMPONENT_PARAMS_DEFINE_TYPE(FootstepTrigger, phase, foot)
 
 	// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -136,10 +136,11 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 		struct ColliderParams
 	{
 		std::vector<ColliderShapeParams> shapes;
+		std::string						 bodyShapeName;
 		bool                             wireFrame = false;
 		bool                             ignoreParent = false;
 	};
-	COMPONENT_PARAMS_DEFINE_TYPE(ColliderParams, shapes, wireFrame, ignoreParent)
+	COMPONENT_PARAMS_DEFINE_TYPE(ColliderParams, shapes, bodyShapeName, wireFrame, ignoreParent)
 
 		struct PlayerAttackSelectorParams
 	{
@@ -298,6 +299,8 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 			entry->wantsStayEvent = s.wantsStayEvent;
 		}
 
+		collider->SetBodyShape(p.bodyShapeName);
+
 		if (ignoreTarget) collider->IgnoreCollisionWith(ignoreTarget);
 	}
 
@@ -342,6 +345,8 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 			DirectX::XMConvertToRadians(p.rotationEulerDeg.y),
 			DirectX::XMConvertToRadians(p.rotationEulerDeg.z)));
 		attach->SetLocalPositon(p.position);
+		// 持ち主(親)のscaleに追従させる
+		attach->SetScaleSource(Handle<TransformComponent>(RequireParent(ctx, "AttachToBone")->GetComponent<TransformComponent>()));
 	}
 
 	// 親がPlayerStatusController/EnemyAIControllerのいずれかを持つ場合は、自分を武器として登録する。

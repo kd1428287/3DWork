@@ -215,6 +215,7 @@
 						"isTrigger": true
 					}
 				],
+				"bodyShapeName" :  "Body",
 				"wireFrame": true
 			}
 		},
@@ -396,6 +397,7 @@
 					"staggerSmall": {
 						"animationName": "Hit_F_Root",
 						"useRootMotion": true,
+						"rootMotionScale" :  0.1,
 						"reactionStartFrame": 0,
 						"reactionEndFrame": 85,
 						"reactionBlendDuration": 0.1,

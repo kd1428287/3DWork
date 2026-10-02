@@ -60,6 +60,8 @@ private:
 		e.otherObject = other->GetOwner();
 		e.otherCollider = other;
 		e.otherShapeName = otherShape.name;
+		e.selfCategory = selfShape.categoryMask;  
+		e.otherCategory = otherShape.categoryMask;
 		e.hitResult = hitResult;
 		if (flipNormal) {
 			e.hitResult.hitNormal = -e.hitResult.hitNormal;
@@ -78,6 +80,8 @@ private:
 		e.otherObject = other->GetOwner();
 		e.otherCollider = other;
 		e.otherShapeName = otherShape.name;
+		e.selfCategory = selfShape.categoryMask; 
+		e.otherCategory = otherShape.categoryMask;
 		return e;
 	}
 
@@ -95,6 +99,8 @@ private:
 		e.otherObject = other->GetOwner();
 		e.otherCollider = other;
 		e.otherShapeName = otherShape.name;
+		e.selfCategory = selfShape.categoryMask;  
+		e.otherCategory = otherShape.categoryMask;
 		e.hitResult = hitResult;
 		if (flipNormal) {
 			e.hitResult.hitNormal = -e.hitResult.hitNormal;

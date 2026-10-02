@@ -23,7 +23,6 @@
 #include "../../../Graphics/Animation/FacingDirectionComponent.h"
 #include "../../../Graphics/Animation/ModelAnimatorComponent.h"
 
-#include "../Player/PlayerStatusController.h"
 #include "Application/Core/EventBus/Events/HealthEvents.h"
 
 
@@ -58,8 +57,7 @@ class EnemyAIController : public ComponentBase, public IMovementSource, public I
 {
 public:
 	EnemyAIController(GameObject* owner, const EnemyAIData& data, std::unique_ptr<IEnemyBehavior> behavior)
-		: ComponentBase(owner), data_(data), behavior_(std::move(behavior)) {
-	}
+		: ComponentBase(owner), data_(data), behavior_(std::move(behavior)) {}
 
 	void Awake() override
 	{

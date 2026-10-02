@@ -1,6 +1,6 @@
 {
 	"name": "enemy_warrock",
-	"scale": [ 1.0, 1.0, 1.0 ],
+	"scale": [ 2.0, 2.0, 2.0 ],
 	"components": [
 		{
 			"type": "ModelRender",
@@ -37,7 +37,6 @@
 		{
 			"type": "Collider",
 			"params": {
-				"wireFrame": true,
 				"shapes": [
 					{
 						"name": "HurtBox",
@@ -58,7 +57,9 @@
 						"capsuleEnd": [ 0.0, 1.5, 0.0 ],
 						"categoryMask": [ "Bump" ]
 					}
-				]
+				],
+				"bodyShapeName": "Body",
+				"wireFrame": true
 			}
 		},
 		{ "type": "GroundSensor" },
@@ -112,9 +113,27 @@
 					"attackIntervalDuration": 0.5,
 					"maintainDistance": 3.0,
 					"movementAnimations": {
-						"idle": "Idle",
-						"walk": "Run",
-						"run": "Run"
+						"idle": {
+							"animationName": "Idle",
+							"loop" :  true,
+							"useRootMotion": false,
+							"blendDuration": 0.1,
+							"isForce" :  false
+						},
+						"walk": {
+							"animationName": "Walk",
+							"loop": true,
+							"useRootMotion": false,
+							"blendDuration": 0.1,
+							"isForce": false
+						},
+						"run": {
+							"animationName": "Run",
+							"loop": true,
+							"useRootMotion": false,
+							"blendDuration": 0.1,
+							"isForce": false
+						}
 					},
 					"oneShotAnimations": {
 						"HitReaction": {
@@ -161,10 +180,10 @@
 							{
 								"name": "HitBox",
 								"shape": "Box",
-								"halfExtents": [ 2.0, 2.0, 2.0 ],
-								"offset": [ 1.0, 1.0, 0.0 ],
+								"halfExtents": [ 1.0, 1.0, 1.0 ],
+								"offset": [ 0.0, 0.0, 0.0 ],
 								"categoryMask": [ "HitBox" ],
-								"enabled": false,
+								"enabled": true,
 								"isTrigger": true
 							}
 						],
@@ -192,7 +211,7 @@
 								"name": "HitBox",
 								"shape": "Box",
 								"halfExtents": [ 2.0, 2.0, 2.0 ],
-								"offset": [ 1.0, 1.0, 0.0 ],
+								"offset": [ 1.0, 1.0, 1.0 ],
 								"categoryMask": [ "HitBox" ],
 								"enabled": false,
 								"isTrigger": true

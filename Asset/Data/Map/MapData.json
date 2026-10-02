@@ -260,6 +260,90 @@
         1.0,
         1.0
       ]
+    },
+    {
+      "components": [
+        {
+          "params": {
+            "animations": "",
+            "model": "Asset/Models/Terrains/CherryBlossum/Cherry_Blossom_Tree_a.gltf"
+          },
+          "type": "ModelRender"
+        },
+        {
+          "params": {
+            "bodyShapeName": "",
+            "ignoreParent": false,
+            "shapes": [
+              {
+                "categoryMask": [
+                  "HurtBox"
+                ],
+                "halfExtents": [
+                  0.5,
+                  0.5,
+                  0.5
+                ],
+                "isStatic": true,
+                "isTrigger": true,
+                "name": "shape0",
+                "offset": [
+                  0.0,
+                  1.0,
+                  0.0
+                ],
+                "shape": "Box",
+                "useDefaultCollideMask": true,
+                "wantsStayEvent": false
+              }
+            ],
+            "wireFrame": true
+          },
+          "type": "Collider"
+        },
+        {
+          "params": {},
+          "type": "LockOnTarget"
+        },
+        {
+          "params": {
+            "width": 0.019999999552965164
+          },
+          "type": "Outline"
+        },
+        {
+          "params": {
+            "blockEffectName": "",
+            "cameraShakeIntensity": 0.75,
+            "damageEffectName": "BloodSplatter",
+            "effectFlags": [],
+            "guardKnockbackPower": 2.0,
+            "hitStopDelaySeconds": 0.0,
+            "hitStopDurationSeconds": 0.10000000149011612,
+            "largeStaggerDuration": 0.6000000238418579,
+            "parryEffectName": ""
+          },
+          "type": "HitReaction"
+        }
+      ],
+      "id": 6,
+      "name": "Object6",
+      "pos": [
+        6.625677108764648,
+        0.0,
+        20.050573348999023
+      ],
+      "rotation": [
+        -0.0,
+        0.0,
+        -0.0,
+        1.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
     }
   ],
   "version": 2

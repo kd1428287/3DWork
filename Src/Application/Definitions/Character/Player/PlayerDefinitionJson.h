@@ -14,7 +14,7 @@ COMPONENT_PARAMS_DEFINE_TYPE(EvadeData,
 		justWindowDuration, start, loop, parry, hit, end, rootMotionScale)
 
 	COMPONENT_PARAMS_DEFINE_TYPE(StaggerPhaseData,
-		animationName, useRootMotion,
+		animationName, useRootMotion, rootMotionScale,
 		reactionStartFrame, reactionEndFrame, reactionBlendDuration,
 		recoveryEndFrame, recoveryDuration, recoveryBlendDuration, recoveryEvadeCancelStart)
 

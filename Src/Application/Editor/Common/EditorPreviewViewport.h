@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <functional>
 #include <imgui.h>
@@ -24,6 +24,7 @@ public:
 	struct Settings
 	{
 		bool	UseMaskRT = false;		// Alphaブレンドのパーティクル用の捨てRT(スロット1)が必要か
+		bool	UseBrightRT = false;	// Bloom用のBright(加算描画専用)RTが必要か(EffectEditorのみtrue)
 		float	FovDeg = 45.0f;
 		float	NearZ = 0.05f;
 		float	FarZ = 100.0f;
@@ -43,8 +44,12 @@ public:
 	bool IsReady() const;
 
 	// target(ワールド座標)を注視点にプレビュー用バッファへ描画する。
-	// drawSceneFuncの中では呼び出し側固有の描画だけを行う(RT/カメラの退避・復元は内部で行う)
-	void Render(const DirectX::SimpleMath::Vector3& target, const std::function<void()>& drawSceneFunc);
+	// drawSceneFunc … 通常のColorバッファへの描画(RT/カメラの退避・復元は内部で行う)
+	// drawBrightFunc … UseBrightRT時のみ使われる、Bloom元となるBright専用バッファへの加算描画。
+	//	本編のBeginBright()/EndBright()と同様、この呼び出しの間だけAddブレンドを既定にする
+	void Render(const DirectX::SimpleMath::Vector3& target,
+		const std::function<void()>& drawSceneFunc,
+		const std::function<void()>& drawBrightFunc = nullptr);
 
 	// ImGuiウィンドウを開き、結果画像の表示と右ドラッグ回転・ホイールズームを処理する。
 	// overlayFuncはウィンドウ内(画像表示の直後)で毎回呼ばれる。ギズモやテキスト表示用
@@ -66,6 +71,7 @@ private:
 		std::shared_ptr<KdTexture>	Color;
 		std::shared_ptr<KdTexture>	Depth;
 		std::shared_ptr<KdTexture>	Mask;	// UseMaskRT時のみ生成
+		std::shared_ptr<KdTexture>	Bright;	// UseBrightRT時のみ生成(Bloom元。加算描画専用)
 
 		int		Width = 0;
 		int		Height = 0;

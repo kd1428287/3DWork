@@ -198,7 +198,7 @@ public:
 		const Math::Vector4& col, const Math::Vector3& emissive);
 
 	// モデルデータ描画：アニメーションに非対応
-	void DrawModel(const KdModelData& rModel, const Math::Matrix& mWorld = Math::Matrix::Identity, 
+	void DrawModel(const KdModelData& rModel, const Math::Matrix& mWorld = Math::Matrix::Identity,
 		const Math::Color& colRate = kWhiteColor, const Math::Vector3& emissive = Math::Vector3::Zero);
 
 	// モデルワーク描画：アニメーションに対応
@@ -212,6 +212,10 @@ public:
 	// 任意の頂点群からなるポリゴンライン描画
 	void DrawVertices(const std::vector<KdPolygon::Vertex>& vertices, const Math::Matrix& mWorld = Math::Matrix::Identity,
 		const Math::Color& colRate = kWhiteColor);
+
+	// 地面描画(y=0の無限平面)：centerのXZに追従する巨大クアッドをワールド座標基準のUVでタイリングする
+	// ・halfSize … クアッド半径(フォグが飽和する距離以上にする) / tileSize … 1タイルのワールドサイズ
+	void DrawGround(const KdMaterial& material, const Math::Vector3& center, float halfSize, float tileSize);
 
 	//================================================
 	// 初期化・解放
@@ -268,7 +272,7 @@ private:
 
 	// 頂点入力レイアウト
 	ID3D11InputLayout* m_inputLayout = nullptr;
-	
+
 	// ピクセルシェーダー
 	ID3D11PixelShader* m_PS_Lit = nullptr;					// 陰影あり
 	ID3D11PixelShader* m_PS_UnLit = nullptr;				// 陰影なし

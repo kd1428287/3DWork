@@ -35,14 +35,14 @@ void EnemyAIController::UpdateTargetAcquisition()
 TransformComponent* EnemyAIController::FindPlayerTransform() const
 {
 	const SceneContext* context = GetOwner()->GetContext();
-	if (context == nullptr || context->objectManager == nullptr) return nullptr;
+	if (context == nullptr) return nullptr;
 
-	for (PlayerStatusController* player : context->objectManager->FindComponents<PlayerStatusController>()) {
-		if (TransformComponent* t = player->GetOwner()->GetComponent<TransformComponent>()) {
-			return t;
-		}
-	}
-	return nullptr;
+	// PlayerStatusController(Playerの内部実装)を直接探していたのをやめ、
+	// SceneContext::player(PlayerComponentが自己登録する弱参照)経由にした。
+	// activeCamera/lockedTargetと同じ「シーンに1つだけの既知の対象」の
+	// 扱いに揃え、EnemyAIControllerはPlayer側の具体クラスを一切知らずに済む。
+	GameObject* player = context->player.Resolve();
+	return (player != nullptr) ? player->GetComponent<TransformComponent>() : nullptr;
 }
 
 namespace

@@ -274,6 +274,7 @@
     <ClInclude Include="..\Library\tinygltf\stb_image.h" />
     <ClInclude Include="..\Library\tinygltf\stb_image_write.h" />
     <ClInclude Include="..\Library\tinygltf\tiny_gltf.h" />
+    <ClInclude Include="CharacterBodyComponent.h" />
     <ClInclude Include="Src\Application\Components\Core\AttachToSocketComponent.h" />
     <ClInclude Include="Src\Application\Components\Core\BoneSocketComponent.h" />
     <ClInclude Include="Src\Application\Components\Core\TransformComponent.h" />
@@ -320,6 +321,7 @@
     <ClInclude Include="Src\Application\Components\Graphics\Effect\FootDustComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Effect\SlashTrailComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Effect\SlowEffectComponent.h" />
+    <ClInclude Include="Src\Application\Components\Graphics\Render\GroundRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\ModelRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\Mod\ForceMaxDepthComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\Mod\SkyDomeEdgeFadeComponent.h" />
@@ -331,6 +333,7 @@
     <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\GaugeBarRenderer.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\GaugeWatcher.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\PlayerHudGaugeComponent.h" />
+    <ClInclude Include="Src\Application\Components\Physics\Collision\BodySurfaceQuery.h" />
     <ClInclude Include="Src\Application\Components\Physics\Collision\ColliderComponent.h" />
     <ClInclude Include="Src\Application\Components\Physics\Movement\DirectionTransformSource.h" />
     <ClInclude Include="Src\Application\Components\Physics\Movement\FollowCameraComponent.h" />
@@ -519,6 +522,7 @@
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerState.cpp" />
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerStatusController.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\Effect\FootDustComponent.cpp" />
+    <ClCompile Include="Src\Application\Components\Graphics\Render\GroundRenderComponent.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\Render\ModelRenderComponent.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\Render\Mod\ForceMaxDepthComponent.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\Render\Mod\SkyDomeEdgeFadeComponent.cpp" />

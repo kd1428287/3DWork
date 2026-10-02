@@ -14,6 +14,12 @@ namespace Events
 			ColliderComponent* otherCollider = nullptr;
 			std::string otherShapeName;
 
+			ColliderCategory selfCategory; 
+			ColliderCategory otherCategory;
+
+			bool SelfIs(ColliderCategory c) const { return Any(selfCategory & c); }
+			bool OtherIs(ColliderCategory c) const { return Any(otherCategory & c); }
+
 			// selfをotherから押し出す向き・めり込み量など。
 			// KdCollider::CollisionResultに相当する詳細情報。
 			// hitNormalは常に「self視点」(selfをotherから押し出す向き)になるよう
@@ -28,6 +34,13 @@ namespace Events
 			GameObject* otherObject = nullptr;
 			ColliderComponent* otherCollider = nullptr;
 			std::string otherShapeName;
+
+			ColliderCategory selfCategory;
+			ColliderCategory otherCategory;
+
+			bool SelfIs(ColliderCategory c) const { return Any(selfCategory & c); }
+			bool OtherIs(ColliderCategory c) const { return Any(otherCategory & c); }
+
 			CollisionMath::OverlapResult hitResult;
 		};
 
@@ -40,6 +53,12 @@ namespace Events
 			GameObject* otherObject = nullptr;
 			ColliderComponent* otherCollider = nullptr;
 			std::string otherShapeName;
+
+			ColliderCategory selfCategory;
+			ColliderCategory otherCategory;
+
+			bool SelfIs(ColliderCategory c) const { return Any(selfCategory & c); }
+			bool OtherIs(ColliderCategory c) const { return Any(otherCategory & c); }
 		};
 	}
 };

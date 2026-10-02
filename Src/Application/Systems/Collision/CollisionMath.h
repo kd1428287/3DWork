@@ -254,6 +254,33 @@ namespace CollisionMath
 		return SphereVsSphere(sphereCenter, sphereRadius, nearest, capsule.radius);
 	}
 
+	// 2つのカプセルの表面間距離。重なっていれば負(めり込み量)。
+	inline float CapsuleSurfaceDistance(const Capsule& a, const Capsule& b)
+	{
+		Math::Vector3 c1, c2;
+		ClosestPointSegmentSegment(a.start, a.end, b.start, b.end, c1, c2);
+		return (c2 - c1).Length() - a.radius - b.radius;
+	}
+
+	// 水平(XZ)面での表面間距離。直立カプセル前提で高低差を無視する(間合い用)。
+	inline float CapsuleSurfaceDistanceXZ(Capsule a, Capsule b)
+	{
+		a.start.y = a.end.y = 0.0f;
+		b.start.y = b.end.y = 0.0f;
+		return CapsuleSurfaceDistance(a, b);
+	}
+
+	// 点pに最も近いカプセル表面上の点。
+	// pが軸線上にある場合は向きが定まらないため、軸上の点をそのまま返す。
+	inline Math::Vector3 ClosestPointOnCapsuleSurface(const Capsule& c, const Math::Vector3& p)
+	{
+		const Math::Vector3 axisPoint = ClosestPointOnSegment(p, c.start, c.end);
+		const Math::Vector3 dir = p - axisPoint;
+		const float len = dir.Length();
+		if (len < 1e-6f) return axisPoint;
+		return axisPoint + dir * (c.radius / len);
+	}
+
 	// レイ vs Capsule。円柱の側面(無限円柱として交点を求め、線分の範囲内かで
 	// 絞り込む)+両端の半球(RayVsSphereをそのまま流用)、の3パーツに分けて
 	// 判定し、最も手前のヒットを採用する。
@@ -600,7 +627,7 @@ namespace CollisionMath
 	}
 
 	// OBB(回転を考慮するBOX)の判定
-	
+
 	// 実装方針:「一方のBOXのローカル座標系(回転を打ち消した空間)に
 	// 相手を持ち込んでから、既存のAABB用の関数を再利用する」という
 	// 手法を基本にしている。

@@ -154,11 +154,21 @@ void EffectEditor::RenderPreviewViewport()
 		drawTargets.push_back(&obj);
 	}
 
-	m_preview.Render(target, [&]()
+	// 本編のDrawLit/DrawBloomと同じく、Default(通常合成)とBright(Bloom用に加算描画)を
+	// 呼び分ける。EffectInstance::Draw()(無条件版)ではなくDraw(pass)を使うのがポイント
+	m_preview.Render(target,
+		[&]()
 		{
 			for (EffectObject* obj : drawTargets)
 			{
-				if (obj->playing) { obj->previewInstance.Draw(); }
+				if (obj->playing) { obj->previewInstance.Draw(ParticleDrawPass::Default); }
+			}
+		},
+		[&]()
+		{
+			for (EffectObject* obj : drawTargets)
+			{
+				if (obj->playing) { obj->previewInstance.Draw(ParticleDrawPass::Bright); }
 			}
 		});
 }
@@ -754,6 +764,7 @@ EffectEditor::EffectEditor()
 	// パーティクルのAlphaブレンド用にMask RTが必要。カメラ設定はエフェクト単体の確認向け(近距離・狭い範囲)
 	EditorPreviewViewport::Settings previewSettings;
 	previewSettings.UseMaskRT = true;
+	previewSettings.UseBrightRT = true;	// ParticleDrawPass::Bright(Bloom用)のプレビューに必要
 	previewSettings.FarZ = 100.0f;
 	previewSettings.InitialDistance = 3.0f;
 	previewSettings.MaxDistance = 50.0f;

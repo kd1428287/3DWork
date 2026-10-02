@@ -597,6 +597,19 @@ public:
 
 	const std::vector<CollisionShapeEntry>& GetShapes() const { return shapes_; }
 
+	// 胴体として扱う形状を名前で指定する。存在しない/Capsuleでなければfalse。
+	bool SetBodyShape(std::string_view name) {
+		const CollisionShapeEntry* entry = FindShape(name);
+		if (entry == nullptr || entry->shape != ColliderShape::Capsule) { return false; }
+		bodyShapeName_ = name;
+		return true;
+	}
+
+	// 胴体形状。未指定、または削除済みならnullptr。
+	const CollisionShapeEntry* FindBodyShape() const {
+		return bodyShapeName_.empty() ? nullptr : FindShape(bodyShapeName_);
+	}
+
 	// --- 参照 --------------------------------------------------------
 
 	Math::Vector3 GetWorldPosition() const {
@@ -734,6 +747,10 @@ private:
 
 	TransformComponent* transform_ = nullptr;
 	std::vector<CollisionShapeEntry> shapes_;
+
+	// 胴体として扱う形状の名前(空なら未指定)。実体ではなく名前で持つのは、
+	// shapes_の再確保でポインタが無効になるのを避けるため。
+	std::string bodyShapeName_;
 
 	// IsIgnoring()は毎フレームCollisionSystem::Update()のペアループから
 	// 呼ばれるため、std::vectorの線形探索ではなくunordered_setにして

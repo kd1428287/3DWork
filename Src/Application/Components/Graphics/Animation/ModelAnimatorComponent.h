@@ -38,7 +38,7 @@ public:
 		SetRootMotionEnabled(clip.useRootMotion);
 		SetBlendDuration(clip.blendDuration);
 		//Play(clip.animationName, clip.loop, clip.duration, clip.startFrame, clip.endFrame, (clip.startFrame != 0 && clip.endFrame != 0));
-		Play(clip.animationName, clip.loop, clip.duration, clip.startFrame, clip.endFrame, true);
+		Play(clip.animationName, clip.loop, clip.duration, clip.startFrame, clip.endFrame, clip.isForce);
 	}
 
 	// アニメーション名を指定して再生開始
