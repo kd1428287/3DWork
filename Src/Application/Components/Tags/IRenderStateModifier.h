@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 // ============================================================
 // ModelRenderComponentが描画直前に呼び出す、個別の描画パラメータ
@@ -30,4 +30,5 @@ public:
 	// (Start()時に収集された全modifierの数だけ)呼ばれる。
 	// ここでシェーダー側のSetXxx()を呼び、対応する定数バッファへ値を書き込む。
 	virtual void Apply(KdStandardShader& shader) const = 0;
+	virtual void Restore(KdStandardShader& shader) const {};
 };

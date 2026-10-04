@@ -82,7 +82,8 @@ void KdStandardShader::BeginUnLit()
 // 陰影なしオブジェクトの描画終了
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void KdStandardShader::EndUnLit()
-{}
+{
+}
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 影を生み出すオブジェクトの情報描画（光を遮る物体）
@@ -676,6 +677,10 @@ void KdStandardShader::ResetCBObject()
 	m_cb0_Obj.Work() = cbObject();
 
 	m_cb0_Obj.Write();
+
+	// スカイドームのフェード設定も初期値へ戻す
+	m_cb4_SkyDome.Work() = cbSkyDome();
+	m_cb4_SkyDome.Write();
 
 	m_dirtyCBObj = false;
 }

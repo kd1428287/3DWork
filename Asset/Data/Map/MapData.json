@@ -4,13 +4,6 @@
       "components": [
         {
           "params": {
-            "animations": "",
-            "model": "Asset/Models/Terrains/Ground/Terrain.gltf"
-          },
-          "type": "ModelRender"
-        },
-        {
-          "params": {
             "ignoreParent": false,
             "shapes": [
               {
@@ -19,9 +12,9 @@
                   "Ground"
                 ],
                 "halfExtents": [
-                  50.0,
+                  500.0,
                   0.5,
-                  50.0
+                  500.0
                 ],
                 "isStatic": true,
                 "isTrigger": false,
@@ -219,6 +212,12 @@
             "model": "Asset/Models/Terrains/Sakura/sakura_big.gltf"
           },
           "type": "ModelRender"
+        },
+        {
+          "params": {
+            "state": "CullNone"
+          },
+          "type": "RasterizerState"
         }
       ],
       "id": 4,
@@ -332,6 +331,32 @@
         6.625677108764648,
         0.0,
         20.050573348999023
+      ],
+      "rotation": [
+        -0.0,
+        0.0,
+        -0.0,
+        1.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "components": [
+        {
+          "params": {},
+          "type": "GroundRender"
+        }
+      ],
+      "id": 7,
+      "name": "Object7",
+      "pos": [
+        0.0,
+        1.3131661415100098,
+        0.0
       ],
       "rotation": [
         -0.0,

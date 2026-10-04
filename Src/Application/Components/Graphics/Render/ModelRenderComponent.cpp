@@ -87,4 +87,10 @@ void ModelRenderComponent::DrawModel()
 	}
 
 	shader.DrawModel(*model, transform_->GetWorldMatrix());
+
+
+	for (const IRenderStateModifier* modifier : modifiers_)
+	{
+		modifier->Restore(shader);
+	}
 }

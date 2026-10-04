@@ -324,6 +324,7 @@
     <ClInclude Include="Src\Application\Components\Graphics\Render\GroundRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\ModelRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\Mod\ForceMaxDepthComponent.h" />
+    <ClInclude Include="Src\Application\Components\Graphics\Render\Mod\RasterizerStateComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\Mod\SkyDomeEdgeFadeComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\OutlineRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\PolygonRenderComponent.h" />

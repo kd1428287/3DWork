@@ -161,6 +161,9 @@ public:
 		sd.EdgeFadeBottomY = bottomY;
 		sd.EdgeFadeTopY = topY;
 		m_cb4_SkyDome.Write();
+
+		// 描画後のResetCBObject()でフェード設定も初期値へ戻す
+		m_dirtyCBObj = true;
 	}
 
 	//================================================

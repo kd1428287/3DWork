@@ -17,6 +17,8 @@
 #include "Application/Components/Graphics/Render/ModelRenderComponent.h"
 #include "Application/Components/Graphics/Render/OutlineRenderComponent.h"
 #include "Application/Components/Graphics/Render/WireFrameComponent.h"
+#include "Application/Components/Graphics/Render/GroundRenderComponent.h"
+#include "Application/Components/Graphics/Render/Mod/RasterizerStateComponent.h"
 #include "Application/Components/Graphics/Effect/SlashTrailComponent.h"
 #include "Application/Components/Graphics/Effect/FootDustComponent.h"
 #include "Application/Components/Graphics/Animation/SkeletonComponent.h"
@@ -76,6 +78,14 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 	NLOHMANN_JSON_SERIALIZE_ENUM(FootSide, {
 		{ FootSide::Left, "Left" },
 		{ FootSide::Right, "Right" },
+		})
+
+		// KdRasterizerState: JSONではenum名の文字列で指定する。未知の値はCullNoneになる。
+	NLOHMANN_JSON_SERIALIZE_ENUM(KdRasterizerState, {
+		{ KdRasterizerState::CullNone, "CullNone" },
+		{ KdRasterizerState::CullFront, "CullFront" },
+		{ KdRasterizerState::CullBack, "CullBack" },
+		{ KdRasterizerState::WireFrame, "WireFrame" },
 		})
 
 		COMPONENT_PARAMS_DEFINE_TYPE(SkeletonConfig, model, animations)
@@ -155,6 +165,13 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 		std::string slot = "Main";
 	};
 	COMPONENT_PARAMS_DEFINE_TYPE(WeaponParams, slot)
+
+		// 描画中だけラスタライザステートを切り替えるMod。
+		struct RasterizerStateParams
+	{
+		KdRasterizerState state = KdRasterizerState::CullNone;
+	};
+	COMPONENT_PARAMS_DEFINE_TYPE(RasterizerStateParams, state)
 
 		// 親のボーンに追従するソケット用オブジェクトを、boneごとに生成する。
 		struct BoneSocketsParams
@@ -402,8 +419,12 @@ void RegisterAllComponents(ComponentRegistry& registry)
 	registry.Add<CameraTargetComponent>("CameraTarget");
 	registry.Add<SlashTrailComponent>("SlashTrail");
 	registry.Add<OutlineRenderComponent>("Outline");
+	registry.AddWithParams<RasterizerStateParams>("RasterizerState", [](BuildContext& ctx, const RasterizerStateParams& p) {
+		ctx.Add<RasterizerStateComponent>(p.state);
+		});
 	registry.AddWithParams<FootDustParams>("FootDust", BuildFootDust);
 	registry.AddRaw("WireFrame", [](BuildContext& ctx, const nlohmann::json&) { AddWireFrameOnce(ctx.self); });
+	registry.Add<GroundRenderComponent>("GroundRender");
 
 	// --- 物理・移動 ---
 	registry.AddWithParams<ColliderParams>("Collider", BuildCollider);

@@ -990,6 +990,9 @@
     <ClInclude Include="Src\Application\Components\Graphics\Render\GroundRenderComponent.h">
       <Filter>Src\Application\Components\Graphics\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Components\Graphics\Render\Mod\RasterizerStateComponent.h">
+      <Filter>Src\Application\Components\Graphics\Render\Mod</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
