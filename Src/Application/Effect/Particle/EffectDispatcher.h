@@ -58,6 +58,7 @@
 //   :
 //   dispatcher.Draw(KdParticleDrawPass::Lit);      // DrawLit内から
 //   dispatcher.Draw(KdParticleDrawPass::Bloom);    // DrawBloom内から
+//   dispatcher.DrawLiquid();                       // DrawLit内、Draw(Lit)の直後に
 //   :
 //   PublishEffectAttach(bus, "Torch_003", "TorchFire", torchPos);
 //   PublishEffectPositionUpdate(bus, "Torch_003", torchPos);
@@ -81,6 +82,10 @@ public:
 	void Update(float deltaTime);
 
 	void Draw(ParticleDrawPass pass);
+
+	// 液体表現(BlendMode=LiquidInk)のエフェクトをまとめて描画する(密度描画→ブラー→合成を1回で行う)。
+	// Lit描画中、Draw(Lit)の直後に1フレーム1回呼ぶ。液体エフェクトが無ければ何もしない
+	void DrawLiquid();
 
 	const std::string& GetEffectDataPath() const { return effectDataPath_; }
 

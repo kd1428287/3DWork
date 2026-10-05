@@ -71,6 +71,12 @@ public:
 	//	呼んでもらう想定(1つのエフェクトが両方のフラグを持てば、両方から描画される)
 	void Draw(ParticleDrawPass pass) const;
 
+	// 液体表現(BlendMode=LiquidInk)かどうか。trueのものはDraw(pass)では描画されない
+	bool IsLiquid() const { return params_.BlendMode == ParticleBlendMode::LiquidInk; }
+
+	// 液体表現の密度描画：EffectDispatcher::DrawLiquid()のBeginLiquid〜EndLiquidの間から呼ぶ
+	void DrawLiquid() const;
+
 	const GPUParticleParams& GetParams() const { return params_; }
 
 	bool IsInitialized() const { return particle_ != nullptr; }

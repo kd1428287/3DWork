@@ -19,6 +19,7 @@ public:
 	void Draw();
 	virtual void OnDrawEffects() {};
 	virtual void OnDrawBright() {};
+	virtual void OnDrawLiquid() {};
 	void DrawSprite();
 	void DrawDebug();
 

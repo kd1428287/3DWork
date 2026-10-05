@@ -1,56 +1,53 @@
 ﻿#pragma once
+#include <optional>
+#include <string>
+
 #include "AttackSourceComponent.h"
 #include "PostureComponent.h"
 #include "HealthComponent.h"
+#include "ShapeSurfaceQuery.h"
 #include "../../../Physics/Movement/VelocityComponent.h"
 #include "../../../Tags/IHitReactionQuery.h"
 #include "Application/Core/EventBus/Events/CollisionEvents.h"
 #include "Application/Definitions/Prefab/BitFlags.h" 
 
 class WeaponComponent;
+struct AttackHitContext;
 
 // ============================================================
-// 【HitReactionConfigへの統合について】
-// 以前はSetLargeStaggerDuration()という個別セッター1つと、
-// kGuardKnockbackPower/カメラシェイク強度/ヒットストップ秒数/被弾
-// エフェクト名等のハードコードされた値が混在していた。Enemy側で
-// このコンポーネントを使うにあたり、これらをHitReactionConfig
-// (Definitions/Character/Common/CharacterDefinitionCommon.h)へ
-// 一括化し、SetConfig()1回で注入する形にした。
-// デフォルト値は導入前のPlayer側の挙動をそのまま踏襲しているため、
-// Player側は何も変更しなくても従来通り動作する。
+// 状態(ヒット/ブロック/パリィ)ごとの反応設定。
+// SetConfig()で一括注入し、HitReactionConfigに3状態分を持たせる。
 // ============================================================
-
-enum class HitReactionFlags : uint32_t
+struct ReactionEventConfig
 {
-	None = 0,
-	CameraShake = 1u << 0, // 通常被弾時にカメラシェイクを発生させるか
-	HitStop = 1u << 1, // 通常被弾時にヒットストップを発生させるか
-	WeaponClashFx = 1u << 2, // ガード/パリィ時に鍔迫り合いエフェクトを出すか
-};
+	bool enableCameraShake = false;
+	bool enableHitStop = false;
+	bool enableEffect = true;
 
-template <>
-struct EnumFlagStringMap<HitReactionFlags> {
-	static constexpr std::pair<const char*, HitReactionFlags> entries[] = {
-		{ "CameraShake",   HitReactionFlags::CameraShake },
-		{ "HitStop",       HitReactionFlags::HitStop },
-		{ "WeaponClashFx", HitReactionFlags::WeaponClashFx },
-	};
+	std::string effectName = "";
+
+	// true: 衝突法線と反射ベクトルを合成した方向で出す(SpawnRefrectEffect)。
+	// false: 衝突法線方向で出す(SpawnNormalEffect)。
+	bool useReflectDirection = false;
+
+	// 反射エフェクトの合成比率。1.0で法線のみ、0.0で反射のみ。
+	float normalBlendRatio = 0.5f;
+
+	float cameraShakeIntensity = 0.0f;
+	float hitStopDurationSeconds = 0.0f;
+	float knockbackPower = 0.0f;
 };
 
 struct HitReactionConfig
 {
-	BitFlags<HitReactionFlags> effectFlags;
+	// 状態別のリアクション設定
+	ReactionEventConfig hit;
+	ReactionEventConfig block;
+	ReactionEventConfig parry;
 
-	std::string damageEffectName	= "BloodSplatter";
-	std::string parryEffectName		= "WeaponClashParry";
-	std::string blockEffectName		= "WeaponClashBlock";
-
-	float cameraShakeIntensity		= 0.75f;
-	float hitStopDelaySeconds		= 0.0f;
-	float hitStopDurationSeconds	= 0.1f;
-	float guardKnockbackPower		= 2.0f;
-	float largeStaggerDuration		= 0.6f;
+	// 共通または特殊な設定
+	float hitStopDelaySeconds = 0.0f;
+	float largeStaggerDuration = 0.6f;
 };
 
 class HitReactionComponent : public ComponentBase
@@ -66,16 +63,28 @@ public:
 	// パリィ/ガード/通常被弾のどれで判定するかを問い合わせる相手を登録する
 	void SetQuerySource(IHitReactionQuery* query) { query_ = query; }
 
-	// 被弾時、鍔迫り合いの火花エフェクトの発生元として使う自分の武器
+	// ブロック/パリィ時のエフェクト発生元として使う自分の武器
 	void SetWeapon(Handle<WeaponComponent> weapon) { weapon_ = weapon; }
 
 private:
-	void OnCollisionEnter(const Events::Collision::CollisionEnterEvent& e);
-	void SpawnWeaponClashEffect(GameObject* attackerWeaponObj, bool isParry);
-	void SpawnDamageEffect(GameObject* self, GameObject* attackerWeaponObj, const Math::Vector3& reflectDir);
+	// 攻撃側(WeaponComponent)から再通知されるヒット情報の受け口
+	void OnHit(const AttackHitContext& ctx);
+
+	// 状態別の演出(カメラシェイク/ヒットストップ/エフェクト)
+	void HitReaction(const ReactionEventConfig& config, const AttackHitContext& ctx);
+
+	// 反射エフェクト: 自武器上の最近点から、法線+反射の合成方向へ出す
+	void SpawnRefrectEffect(const ReactionEventConfig& config, const AttackHitContext& ctx);
+	// 通常エフェクト: 衝突点から、攻撃側へ向けた法線方向へ出す
+	void SpawnNormalEffect(const ReactionEventConfig& config, const AttackHitContext& ctx);
 
 	Math::Vector3 ComputeKnockbackDirection(GameObject* attacker) const;
-	Math::Vector3 ComputeSplatterReflection(GameObject* attacker, const Math::Vector3& hitNormal) const;
+	Math::Vector3 ComputeIncomingDirection(const AttackHitContext& ctx) const;
+	Math::Vector3 ComputeBodyHitNormal(const AttackHitContext& ctx, const Math::Vector3& incoming) const;
+	static Math::Vector3 BlendReflectDirection(const Math::Vector3& normal, const Math::Vector3& incoming, float normalBlendRatio);
+
+	// 自武器と攻撃側武器の最近点対。取れなければnullopt。
+	std::optional<ShapeSurfaceQuery::ClosestPair> FindWeaponClashPoints(const AttackHitContext& ctx) const;
 
 	IHitReactionQuery* query_ = nullptr;
 

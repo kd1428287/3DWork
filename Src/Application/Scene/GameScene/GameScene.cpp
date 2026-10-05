@@ -50,6 +50,7 @@ void GameScene::OnDrawEffects()
 {
 	effectDispatcher_->Draw(ParticleDrawPass::Default);
 	slashTrailDispatcher_->Draw(ParticleDrawPass::Default);
+	effectDispatcher_->DrawLiquid();
 }
 
 void GameScene::OnDrawBright()

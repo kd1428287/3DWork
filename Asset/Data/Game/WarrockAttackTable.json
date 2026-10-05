@@ -139,16 +139,16 @@
 					"parryPostureDamage": 30.0
 				},
 				"moveData": {
-					"stepDistance": 0.0,
+					"stepDistance": 2.0,
 					"stepDuration": 0.0,
-					"engageDistance": 1.5,
+					"engageDistance": 2.5,
 					"stepDirection": [ 0.0, 0.0, 0.0 ]
 				},
 				"phaseData": {
 					"windup": {
 						"duration": 1.66,
 						"animationName": "Punch_Left",
-						"useRootMotion": true,
+						"useRootMotion": false,
 						"blendDuration": 0.1,
 						"startFrame": 0,
 						"endFrame": 70
@@ -156,7 +156,7 @@
 					"active": {
 						"duration": 0.19,
 						"animationName": "Punch_Left",
-						"useRootMotion": true,
+						"useRootMotion": false,
 						"blendDuration": 0.0,
 						"startFrame": 70,
 						"endFrame": 90
@@ -164,7 +164,7 @@
 					"recovery": {
 						"duration": 0.65,
 						"animationName": "Punch_Left",
-						"useRootMotion": true,
+						"useRootMotion": false,
 						"blendDuration": 0.0,
 						"startFrame": 90,
 						"endFrame": 160

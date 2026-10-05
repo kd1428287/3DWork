@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include <optional>
+
 #include "../Effect/EffectParams.h"
 #include "Application/Core/EventBus/Events/EffectEvents.h"	// EffectId ※実際の配置パスに合わせて調整
 
@@ -25,6 +27,18 @@ struct EffectDefinition
 	DirectX::SimpleMath::Vector3	Scale = { 1,1,1 };
 };
 
+// 墨(BlendMode=LiquidInk)の質感パラメータ。全エフェクト共通の1セットで、JSONでは"liquidInk"キーに保存する。
+// 既定値はKdPostProcessShader::cbLiquidInfoと同じ値に揃えてある
+struct LiquidInkSettings
+{
+	DirectX::SimpleMath::Vector3	InkColor = { 0.10f, 0.10f, 0.11f };
+	DirectX::SimpleMath::Vector3	EdgeColor = { 0.01f, 0.01f, 0.01f };
+	float	Threshold = 0.35f;
+	float	Softness = 0.05f;
+	float	EdgeWidth = 0.15f;
+	float	HaloAlpha = 0.25f;
+};
+
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // エフェクト定義JSON全体(1ファイル分)のデータ
 // ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
@@ -44,6 +58,9 @@ struct EffectDataFile
 {
 	std::vector<EffectDefinition>	Effects;
 	std::unordered_map<std::string, std::vector<std::string>>	Groups;
+
+	// 墨の質感(全体設定)。JSONに"liquidInk"が無ければ未設定(反映も保存もしない)
+	std::optional<LiquidInkSettings>	LiquidInk;
 };
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -63,4 +80,8 @@ public:
 
 	// エフェクトデータ一式をpathへ書き出す
 	static bool Save(const std::string& path, const EffectDataFile& data);
+
+	// 墨の質感設定とポストプロセス側の現在値の受け渡し(Save前の取得 / Load後の反映用)
+	static LiquidInkSettings CaptureLiquidInk();
+	static void ApplyLiquidInk(const LiquidInkSettings& settings);
 };

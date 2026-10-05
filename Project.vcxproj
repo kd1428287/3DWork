@@ -293,6 +293,7 @@
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\HealthComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\HitReactionComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\PostureComponent.h" />
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\ShapeSurfaceQuery.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\WeaponComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\WeaponSetComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Enemy\EnemyActions.h" />
@@ -679,6 +680,9 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_LiquidInk.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_VS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>

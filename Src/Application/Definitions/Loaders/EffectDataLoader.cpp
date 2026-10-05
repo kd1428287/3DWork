@@ -10,12 +10,16 @@ static const char* BlendModeToString(ParticleBlendMode m)
 	{
 	case ParticleBlendMode::Add:   return "Add";
 	case ParticleBlendMode::Alpha: return "Alpha";
+	case ParticleBlendMode::Multiply: return "Multiply";
+	case ParticleBlendMode::LiquidInk: return "LiquidInk";
 	}
 	return "Add";
 }
 static ParticleBlendMode BlendModeFromString(const std::string& s)
 {
 	if (s == "Alpha") { return ParticleBlendMode::Alpha; }
+	if (s == "Multiply") { return ParticleBlendMode::Multiply; }
+	if (s == "LiquidInk") { return ParticleBlendMode::LiquidInk; }
 	return ParticleBlendMode::Add;
 }
 static const char* EmitModeToString(ParticleEmitMode m)
@@ -447,6 +451,39 @@ static std::unordered_map<std::string, std::vector<std::string>> GroupsFromJson(
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 墨の質感 ⇔ JSON( "liquidInk": { "inkColor":[r,g,b], "threshold":0.35, ... } )
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+static nlohmann::json LiquidInkToJson(const LiquidInkSettings& s)
+{
+	return nlohmann::json{
+		{ "inkColor",  { s.InkColor.x, s.InkColor.y, s.InkColor.z } },
+		{ "edgeColor", { s.EdgeColor.x, s.EdgeColor.y, s.EdgeColor.z } },
+		{ "threshold", s.Threshold },
+		{ "softness",  s.Softness },
+		{ "edgeWidth", s.EdgeWidth },
+		{ "haloAlpha", s.HaloAlpha },
+	};
+}
+
+static LiquidInkSettings LiquidInkFromJson(const nlohmann::json& j)
+{
+	LiquidInkSettings s;
+
+	TryReadVector3(j, "inkColor", s.InkColor);
+	TryReadVector3(j, "edgeColor", s.EdgeColor);
+	s.Threshold = j.value("threshold", s.Threshold);
+	s.Softness = j.value("softness", s.Softness);
+	s.EdgeWidth = j.value("edgeWidth", s.EdgeWidth);
+	s.HaloAlpha = j.value("haloAlpha", s.HaloAlpha);
+
+	// 0だとPSのsmoothstep端点が一致して未定義動作になるため、下限を設ける
+	s.Softness = std::max(s.Softness, 0.005f);
+	s.EdgeWidth = std::max(s.EdgeWidth, 0.01f);
+
+	return s;
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // エフェクトデータ一式の読み込み/書き出し
 //	JSON全体は { "effects": [...] } という形の1オブジェクト
 //	(以前あった専用の"weaponClash"キーは廃止。鍔迫り合いの火花もeffects配列内の
@@ -494,6 +531,19 @@ bool EffectDataLoader::Load(const std::string& path, EffectDataFile& out)
 			data.Groups = GroupsFromJson(j.at("groups"));
 		}
 
+		if (j.contains("liquidInk") && j.at("liquidInk").is_object())
+		{
+			// 壊れていても他のデータは読み込みたいので、ここだけ個別にcatchする
+			try
+			{
+				data.LiquidInk = LiquidInkFromJson(j.at("liquidInk"));
+			}
+			catch (const std::exception& e)
+			{
+				ReportLoadWarning("failed to parse liquidInk, skipped", e);
+			}
+		}
+
 		out = std::move(data);
 		return true;
 	}
@@ -521,6 +571,11 @@ bool EffectDataLoader::Save(const std::string& path, const EffectDataFile& data)
 			{ "groups",  GroupsToJson(data.Groups) },
 		};
 
+		if (data.LiquidInk)
+		{
+			j["liquidInk"] = LiquidInkToJson(*data.LiquidInk);
+		}
+
 		return JsonLoader::Save(path, j);
 	}
 	catch (const std::exception& e)
@@ -528,4 +583,33 @@ bool EffectDataLoader::Save(const std::string& path, const EffectDataFile& data)
 		ReportLoadWarning("Save() failed with an unexpected exception, aborted: " + path, e);
 		return false;
 	}
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 墨の質感：ポストプロセス側の現在値の取得 / 反映
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+LiquidInkSettings EffectDataLoader::CaptureLiquidInk()
+{
+	const auto& cb = KdShaderManager::Instance().m_postProcessShader.GetLiquidCB();
+
+	LiquidInkSettings s;
+	s.InkColor = cb.InkColor;
+	s.EdgeColor = cb.EdgeColor;
+	s.Threshold = cb.Threshold;
+	s.Softness = cb.Softness;
+	s.EdgeWidth = cb.EdgeWidth;
+	s.HaloAlpha = cb.HaloAlpha;
+	return s;
+}
+
+void EffectDataLoader::ApplyLiquidInk(const LiquidInkSettings& s)
+{
+	auto& cb = KdShaderManager::Instance().m_postProcessShader.WorkLiquidCB();
+
+	cb.InkColor = s.InkColor;
+	cb.EdgeColor = s.EdgeColor;
+	cb.Threshold = s.Threshold;
+	cb.Softness = s.Softness;
+	cb.EdgeWidth = s.EdgeWidth;
+	cb.HaloAlpha = s.HaloAlpha;
 }

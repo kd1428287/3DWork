@@ -11,6 +11,52 @@
 
 static const std::string kTextureAssetRoot = "Asset/Textures/Game/Effect/";
 
+// 再生中の液体エフェクトを、密度RTへまとめて描いて合成する(液体が無ければ何もしない)
+//	useSceneDepth：メインシーンへ合成するならtrue、プレビュー専用RTへ描くならfalse
+static void DrawLiquidObjects(const std::vector<EffectObject*>& targets, bool useSceneDepth)
+{
+	bool hasLiquid = false;
+	for (const EffectObject* obj : targets) { hasLiquid |= obj->playing && obj->previewInstance.IsLiquid(); }
+	if (!hasLiquid) { return; }
+
+	KdPostProcessShader& postProcess = KdShaderManager::Instance().m_postProcessShader;
+
+	postProcess.BeginLiquid(useSceneDepth);
+	for (const EffectObject* obj : targets) { if (obj->playing) { obj->previewInstance.DrawLiquid(); } }
+	postProcess.EndLiquid(LiquidStyle::Ink);
+}
+
+// 墨(LiquidInk)の質感パラメータ。全エフェクト共通の値で、JSONには保存されない
+static void DrawLiquidInkSettings()
+{
+	auto& cb = KdShaderManager::Instance().m_postProcessShader.WorkLiquidCB();
+
+	ImGui::Indent();
+	ImGui::TextDisabled("Liquid Ink(全エフェクト共通。Saveでeffectmap.jsonの\"liquidInk\"へ保存)");
+	ImGui::SliderFloat("Threshold", &cb.Threshold, 0.0f, 1.0f);
+	ImGui::SliderFloat("Softness", &cb.Softness, 0.005f, 0.3f);
+	ImGui::SliderFloat("Edge Width", &cb.EdgeWidth, 0.01f, 0.5f);
+	ImGui::SliderFloat("Halo Alpha", &cb.HaloAlpha, 0.0f, 1.0f);
+	ImGui::ColorEdit3("Ink Color", &cb.InkColor.x);
+	ImGui::ColorEdit3("Edge Color", &cb.EdgeColor.x);
+
+	// 調整した値をコードへ貼り付けられる形でコピーする(シーン初期化時に設定する用)
+	if (ImGui::Button("Copy as Code"))
+	{
+		char buf[768];
+		snprintf(buf, sizeof(buf),
+			"auto& liquid = KdShaderManager::Instance().m_postProcessShader.WorkLiquidCB();\n"
+			"liquid.Threshold = %.3ff;\nliquid.Softness = %.3ff;\nliquid.EdgeWidth = %.3ff;\nliquid.HaloAlpha = %.3ff;\n"
+			"liquid.InkColor = { %.3ff, %.3ff, %.3ff };\nliquid.EdgeColor = { %.3ff, %.3ff, %.3ff };\n",
+			cb.Threshold, cb.Softness, cb.EdgeWidth, cb.HaloAlpha,
+			cb.InkColor.x, cb.InkColor.y, cb.InkColor.z, cb.EdgeColor.x, cb.EdgeColor.y, cb.EdgeColor.z);
+		ImGui::SetClipboardText(buf);
+	}
+
+	ImGui::TextDisabled("粒のColorは密度として使う：ColorStart rgbを白寄り、Color rgbを黒にすると、寿命で縮んで消える");
+	ImGui::Unindent();
+}
+
 DirectX::SimpleMath::Matrix EffectObject::GetMatrix() const
 {
 	float m[16];
@@ -106,6 +152,14 @@ void EffectEditor::Update()
 // プレビュー中のGPUパーティクルを描画する
 void EffectEditor::DrawPreviewParticles(ParticleDrawPass pass)
 {
+	// 液体はDraw(pass)では描画されないため、Defaultのタイミングで他の粒子より先にまとめて描く
+	if (pass == ParticleDrawPass::Default)
+	{
+		std::vector<EffectObject*> targets;
+		for (auto& obj : m_objects) { targets.push_back(&obj); }
+		DrawLiquidObjects(targets, true);
+	}
+
 	for (auto& obj : m_objects)
 	{
 		// previewInstanceが未初期化(一度もPlayしていない)場合はDraw()側で何もしない
@@ -159,6 +213,8 @@ void EffectEditor::RenderPreviewViewport()
 	m_preview.Render(target,
 		[&]()
 		{
+			DrawLiquidObjects(drawTargets, false);
+
 			for (EffectObject* obj : drawTargets)
 			{
 				if (obj->playing) { obj->previewInstance.Draw(ParticleDrawPass::Default); }
@@ -291,7 +347,7 @@ void EffectEditor::DrawInspector()
 	ImGui::Text("Texture : %s", params.TexturePath.empty() ? "(None)" : params.TexturePath.c_str());
 
 	{
-		const char* blendLabels[] = { "Add", "Alpha", "Multiply" };
+		const char* blendLabels[] = { "Add", "Alpha", "Multiply", "LiquidInk" };
 		int blendIdx = static_cast<int>(params.BlendMode);
 
 		if (ImGui::Combo("Blend Mode", &blendIdx, blendLabels, IM_ARRAYSIZE(blendLabels)))
@@ -300,6 +356,13 @@ void EffectEditor::DrawInspector()
 		}
 
 		ImGui::TextDisabled("Alpha選択時、パーティクル同士の重なり順はソートされない(発生順のまま描画)");
+	}
+
+	const bool isLiquid = (params.BlendMode == ParticleBlendMode::LiquidInk);
+
+	if (isLiquid)
+	{
+		DrawLiquidInkSettings();
 	}
 
 	{
@@ -323,6 +386,7 @@ void EffectEditor::DrawInspector()
 			params.DrawPassFlags = flags;
 		}
 		ImGui::TextDisabled("両方チェックすると、通常描画とブルーム(発光)の両方に同時に描画される");
+		if (isLiquid) { ImGui::TextDisabled("LiquidInk時はこの設定を無視し、Defaultのタイミングで描画される"); }
 	}
 
 	ImGui::Separator();
@@ -878,6 +942,9 @@ void EffectEditor::Save(const std::string& path)
 
 	data.Groups = m_groups;
 
+	// 墨の質感(インスペクターで調整した全体設定)も一緒に保存する
+	data.LiquidInk = EffectDataLoader::CaptureLiquidInk();
+
 	if (!EffectDataLoader::Save(path, data))
 	{
 		KdDebugGUI::Instance().AddLog("EffectEditor: 保存に失敗 %s\n", path.c_str());
@@ -925,6 +992,8 @@ void EffectEditor::Load(const std::string& path)
 	}
 
 	m_groups = data.Groups;
+
+	if (data.LiquidInk) { EffectDataLoader::ApplyLiquidInk(*data.LiquidInk); }
 
 	m_selected = -1;
 	KdDebugGUI::Instance().AddLog("EffectEditor: 読み込みました %s\n", path.c_str());

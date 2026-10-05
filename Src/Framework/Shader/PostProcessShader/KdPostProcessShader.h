@@ -1,5 +1,11 @@
 ﻿#pragma once
 
+// 液体表現の質感の種類(合成PSの切り替え用。血・水はここへ追加する)
+enum class LiquidStyle
+{
+	Ink,
+};
+
 class KdPostProcessShader
 {
 public:
@@ -39,6 +45,12 @@ public:
 	void BeginBright();
 	void EndBright();
 
+	// 液体表現(密度RT→ブラー→しきい値合成)。BeginとEndの間で、液体用ParticleBufferをAddで描画する。
+	// 本編のシーンRT(MRT)がバインドされている3D描画中に呼ぶこと
+	// useSceneDepth=false：シーン深度を共有しない(エディタのプレビュー等、別RTへ描く場合)
+	void BeginLiquid(bool useSceneDepth = true);
+	void EndLiquid(LiquidStyle style = LiquidStyle::Ink);
+
 	void PostEffectProcess();
 
 	// エディタプレビュー等、本編以外の任意サイズテクスチャに対してカラーグレードのみを適用する。
@@ -77,6 +89,7 @@ private:
 	ID3D11PixelShader* m_PS_DoF = nullptr;
 	ID3D11PixelShader* m_PS_Bright = nullptr;
 	ID3D11PixelShader* m_PS_ColorGrade = nullptr;
+	ID3D11PixelShader* m_PS_LiquidInk = nullptr;
 
 	static const int kBlurSamplingRadius = 8;
 	static const int kLightBloomSamplingRadius = 4;
@@ -122,6 +135,20 @@ private:
 	};
 	KdConstantBuffer<cbColorGradeInfo> m_cb0_ColorGradeInfo;
 
+	struct cbLiquidInfo
+	{
+		Math::Vector3 InkColor = { 0.10f, 0.10f, 0.11f };	// 塊の中心の色(淡墨)
+		float Threshold = 0.35f;							// 密度のしきい値(大きいほど塊が痩せる)
+
+		Math::Vector3 EdgeColor = { 0.01f, 0.01f, 0.01f };	// 縁の色(濃墨)
+		float Softness = 0.05f;								// しきい値の境界の柔らかさ
+
+		float EdgeWidth = 0.15f;							// 縁として濃くなる密度の幅
+		float HaloAlpha = 0.25f;							// しきい値の外側に出す滲みの濃さ
+		float _blank[2] = { 0, 0 };
+	};
+	KdConstantBuffer<cbLiquidInfo> m_cb0_LiquidInfo;
+
 public:
 	//================================================
 	// 現在値の取得(GUI表示用)
@@ -130,6 +157,8 @@ public:
 	const cbDepthOfField& GetDoFCB()        const { return m_cb0_DoFInfo.Get(); }
 	const cbBrightFilter& GetBrightCB()     const { return m_cb0_BrightInfo.Get(); }
 	const cbColorGradeInfo& GetColorGradeCB() const { return m_cb0_ColorGradeInfo.Get(); }
+	const cbLiquidInfo& GetLiquidCB() const { return m_cb0_LiquidInfo.Get(); }
+	cbLiquidInfo& WorkLiquidCB() { return m_cb0_LiquidInfo.Work(); }
 
 private:
 	KdRenderTargetPack m_colorGradeRTPack; // 最終カラーグレーディング用RT
@@ -154,6 +183,11 @@ private:
 
 	KdRenderTargetChanger m_postEffectRTChanger;
 	KdRenderTargetChanger m_brightRTChanger;
+	KdRenderTargetChanger m_liquidRTChanger;
+
+	// 液体の密度RT(シーンの深度バッファを共有するためフル解像度)と、そのぼかし結果(半解像度)
+	KdRenderTargetPack	m_liquidDensityRTPack;
+	KdRenderTargetPack	m_liquidBlurRTPack;
 
 	Vertex m_screenVert[4];
 };

@@ -42,6 +42,7 @@ enum class ParticleBlendMode
 	Add,	// 加算合成(発光系の火花・炎向け)
 	Alpha,	// 半透明合成(煙・砂煙等、加算だと不自然になるもの向け)
 	Multiply,
+	LiquidInk,	// 墨の液体表現用：密度として描画し、ポストプロセス側でブラー+しきい値合成する(EffectDispatcher::DrawLiquid()で描画)
 };
 
 class ParticleBuffer

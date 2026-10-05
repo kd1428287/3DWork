@@ -165,9 +165,21 @@ void EffectInstance::Draw() const
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectInstance::Draw(ParticleDrawPass pass) const
 {
+	if (IsLiquid()) { return; }	// 液体はDrawLiquid()側でまとめて描画する
+
 	if (!KdHasDrawPassFlag(params_.DrawPassFlags, pass)) { return; }
 
 	Draw();
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 液体の密度描画：Addで密度RTへ描く(色ではなくR値が密度になる)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void EffectInstance::DrawLiquid() const
+{
+	if (!particle_ || !IsLiquid()) { return; }
+
+	particle_->Draw(texture_, params_.BlendMode);
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////

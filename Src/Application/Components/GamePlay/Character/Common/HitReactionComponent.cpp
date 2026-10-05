@@ -1,6 +1,14 @@
 ﻿#include "HitReactionComponent.h"
 #include "../Common/CharacterEvents.h"
 #include "WeaponComponent.h"
+#include <algorithm>
+#include "ShapeSurfaceQuery.h"
+
+namespace
+{
+	// 武器の判定形状名(WeaponComponent::SetHitBoxEnabledと同じ)。
+	constexpr const char* kWeaponShapeName = "HitBox";
+}
 
 void HitReactionComponent::Awake()
 {
@@ -10,8 +18,8 @@ void HitReactionComponent::Awake()
 	transform_ = GetOwner()->GetComponent<TransformComponent>();
 
 	EventBus& localBus = GetOwner()->GetLocalEventBus();
-	const SubscriptionId subscriptionId = localBus.Subscribe<Events::Collision::CollisionEnterEvent>(
-		[this](const Events::Collision::CollisionEnterEvent& e) { OnCollisionEnter(e); });
+	const SubscriptionId subscriptionId = localBus.Subscribe<AttackHitContext>(
+		[this](const AttackHitContext& e) { OnHit(e); });
 	subscriber_ = ScopedSubscriber(&localBus, subscriptionId);
 }
 
@@ -34,82 +42,151 @@ Math::Vector3 HitReactionComponent::ComputeKnockbackDirection(GameObject* attack
 	return dir;
 }
 
-Math::Vector3 HitReactionComponent::ComputeSplatterReflection(GameObject* attacker, const Math::Vector3& hitNormal) const
+Math::Vector3 HitReactionComponent::ComputeIncomingDirection(const AttackHitContext& ctx) const
 {
-	Math::Vector3 normal = hitNormal;
+	// 武器の振り方向。取れなければ攻撃者→自分。
+	Math::Vector3 incoming = ctx.lastValidSwingDir;
+	if (incoming.LengthSquared() < 1e-6f) {
+		return ComputeKnockbackDirection(ctx.attacker.Resolve());
+	}
+	incoming.Normalize();
+	return incoming;
+}
+
+Math::Vector3 HitReactionComponent::ComputeBodyHitNormal(
+	const AttackHitContext& ctx, const Math::Vector3& incoming) const
+{
+	// hitNormalは正規化済み。ゼロ(未設定)の場合のみ上向きで代用。
+	Math::Vector3 normal = ctx.hitResult.hitNormal;
 	if (normal.LengthSquared() < 1e-6f) {
 		normal = Math::Vector3(0.0f, 1.0f, 0.0f);
 	}
-	else {
-		normal.Normalize();
-	}
 
-	// 進行方向(攻撃者→自分)。取れなければ法線の逆をフォールバックに。
-	Math::Vector3 incoming = -normal;
-	if (attacker != nullptr && transform_ != nullptr) {
-		if (TransformComponent* attackerTransform = attacker->GetComponent<TransformComponent>()) {
-			Math::Vector3 toSelf = transform_->GetPosition() - attackerTransform->GetPosition();
-			if (toSelf.LengthSquared() > 1e-6f) {
-				toSelf.Normalize();
-				incoming = toSelf;
-			}
-		}
-	}
-
-	// 法線を攻撃者側へ向ける(hitNormalの符号規約に依存しないため)。
+	// 法線を攻撃側へ向け、hitNormalの符号規約に依存しないようにする。
 	if (incoming.Dot(normal) > 0.0f) {
 		normal = -normal;
 	}
+	return normal;
+}
 
-	// 進行方向から体内向き成分を除き、外向き法線を混ぜる。
-	constexpr float kOutwardBlend = 0.4f;
-	const Math::Vector3 tangent = incoming - normal * incoming.Dot(normal);
+Math::Vector3 HitReactionComponent::BlendReflectDirection(
+	const Math::Vector3& normal, const Math::Vector3& incoming, float normalBlendRatio)
+{
+	// 反射ベクトル r = d - 2(d·n)n を法線と合成する。
+	const Math::Vector3 reflect = incoming - normal * (2.0f * incoming.Dot(normal));
+	const float t = std::clamp(normalBlendRatio, 0.0f, 1.0f);
 
-	Math::Vector3 dir = tangent + normal * kOutwardBlend;
-	if (dir.LengthSquared() < 1e-6f) {
-		dir = normal;
-	}
-	else {
-		dir.Normalize();
-	}
+	Math::Vector3 dir = normal * t + reflect * (1.0f - t);
+	if (dir.LengthSquared() < 1e-6f) return normal;
+	dir.Normalize();
 	return dir;
 }
 
-void HitReactionComponent::OnCollisionEnter(const Events::Collision::CollisionEnterEvent& e)
+std::optional<ShapeSurfaceQuery::ClosestPair> HitReactionComponent::FindWeaponClashPoints(
+	const AttackHitContext& ctx) const
+{
+	GameObject* weaponObject = ctx.weaponObject.Resolve();
+	if (weaponObject == nullptr) return std::nullopt;
+
+	WeaponComponent* myWeapon = weapon_.Resolve();
+	if (myWeapon == nullptr) return std::nullopt;
+
+	ColliderComponent* myCollider = myWeapon->GetCollider();
+	ColliderComponent* attackerCollider = weaponObject->GetComponent<ColliderComponent>();
+	if (myCollider == nullptr || attackerCollider == nullptr) return std::nullopt;
+
+	const CollisionShapeEntry* myShape = myCollider->FindShape(kWeaponShapeName);
+	const CollisionShapeEntry* attackerShape = attackerCollider->FindShape(kWeaponShapeName);
+	if (myShape == nullptr || attackerShape == nullptr) return std::nullopt;
+
+	// 自武器上の、攻撃側武器に最も近い点(onA)と、その対応点(onB)。
+	return ShapeSurfaceQuery::ClosestPointsBetweenShapes(*myCollider, *myShape, *attackerCollider, *attackerShape);
+}
+
+void HitReactionComponent::SpawnRefrectEffect(const ReactionEventConfig& config, const AttackHitContext& ctx)
+{
+	if (config.effectName.empty()) return;
+
+	const Math::Vector3 incoming = ComputeIncomingDirection(ctx);
+
+	// 既定は衝突点と胴体法線。武器情報が取れたら上書きする。
+	Math::Vector3 pos = ctx.hitResult.hitPos;
+	Math::Vector3 normal = ComputeBodyHitNormal(ctx, incoming);
+
+	if (const auto clash = FindWeaponClashPoints(ctx)) {
+		pos = clash->onA;
+
+		// 武器同士が離れていれば、自武器→攻撃側の向きを法線にする。
+		Math::Vector3 toAttacker = clash->onB - clash->onA;
+		if (toAttacker.LengthSquared() > 1e-6f) {
+			toAttacker.Normalize();
+			normal = toAttacker;
+		}
+	}
+	else if (WeaponComponent* myWeapon = weapon_.Resolve()) {
+		if (TransformComponent* weaponTf = myWeapon->GetTransform()) {
+			pos = weaponTf->GetPosition();
+		}
+	}
+
+	const Math::Vector3 dir = BlendReflectDirection(normal, incoming, config.normalBlendRatio);
+	PublishGenericEffect(GetOwner()->GetSceneEventBus(), config.effectName, pos, dir);
+}
+
+void HitReactionComponent::SpawnNormalEffect(const ReactionEventConfig& config, const AttackHitContext& ctx)
+{
+	if (config.effectName.empty()) return;
+
+	// 衝突点から、攻撃側へ向けた法線方向へ出す。
+	const Math::Vector3 incoming = ComputeIncomingDirection(ctx);
+	const Math::Vector3 normal = ComputeBodyHitNormal(ctx, incoming);
+	PublishGenericEffect(GetOwner()->GetSceneEventBus(), config.effectName, ctx.hitResult.hitPos, normal);
+}
+
+void HitReactionComponent::HitReaction(const ReactionEventConfig& config, const AttackHitContext& ctx)
+{
+	EventBus& bus = *GetOwner()->GetContext()->eventBus;
+
+	if (config.enableCameraShake) {
+		PublishCameraShake(bus, config.cameraShakeIntensity);
+	}
+	if (config.enableHitStop) {
+		PublishHitStop(bus, config_.hitStopDelaySeconds, config.hitStopDurationSeconds);
+	}
+	if (config.enableEffect) {
+		// 反射を使う設定なら反射エフェクト、そうでなければ通常エフェクト。
+		if (config.useReflectDirection) SpawnRefrectEffect(config, ctx);
+		else                            SpawnNormalEffect(config, ctx);
+	}
+}
+
+void HitReactionComponent::OnHit(const AttackHitContext& ctx)
 {
 	if (query_ == nullptr) return;
-	if (!e.SelfIs(ColliderCategory::HurtBox) || !e.OtherIs(ColliderCategory::HitBox))return;
 
-	AttackSourceComponent* attack = e.otherObject->GetComponent<AttackSourceComponent>();
-	if (attack == nullptr) return;
+	AttackSourceComponent* attackSource = ctx.attackSource.Resolve();
+	if (attackSource == nullptr) return;
+	if (attackSource->IsAlreadyHit(Handle<GameObject>(GetOwner()))) return;
+	attackSource->Hit(Handle<GameObject>(GetOwner()));
 
-	// 多段ヒット防止。
-	if (attack->alreadyHit.count(GetOwner()) > 0) return;
-	attack->alreadyHit.insert(GetOwner());
-
-	GameObject* attacker = attack->ownerCharacter.Resolve();
-	const AttackDamageData& attackData = attack->GetAttackDamageData();
+	GameObject* attacker = ctx.attacker.Resolve();
+	const AttackDamageData& attackData = ctx.damageData;
 
 	if (query_->IsInParryWindow()) {
-		// パリィ成立: 攻撃側の体幹を削り、パリィされた通知を送る。
+		// パリィ成立: 攻撃側の体幹を削り、パリィ通知を送る。
 		if (attacker != nullptr) {
 			if (PostureComponent* attackerPosture = attacker->GetComponent<PostureComponent>()) {
 				attackerPosture->AddPostureDamage(attackData.parryPostureDamage);
 			}
 			attacker->GetLocalEventBus().Publish(AttackSourceComponent::ParriedEvent{});
 		}
-		if (config_.effectFlags.has(HitReactionFlags::WeaponClashFx)) {
-			SpawnWeaponClashEffect(e.otherObject, /*isParry=*/true);
-		}
+		HitReaction(config_.parry, ctx);
 
-		// 自分自身(パリィした側)にも成立を通知
 		query_->NotifyParrySuccess();
 	}
 	else if (query_->IsGuarding()) {
-		// 通常ブロック: 自分の体幹を削り、HPにも軽減済みのチップダメージを与える。
-		if (config_.effectFlags.has(HitReactionFlags::WeaponClashFx)) {
-			SpawnWeaponClashEffect(e.otherObject, /*isParry=*/false);
-		}
+		// ブロック: 体幹ダメージとHPのチップダメージ、ノックバック。
+		HitReaction(config_.block, ctx);
 
 		if (postureComponent_ != nullptr) {
 			postureComponent_->AddPostureDamage(attackData.postureDamage);
@@ -120,30 +197,21 @@ void HitReactionComponent::OnCollisionEnter(const Events::Collision::CollisionEn
 		if (healthComponent_ != nullptr) {
 			healthComponent_->TakeDamage(attackData.damage * attackData.chipDamageRatio);
 		}
-		// ガード時でもノックバックする。
 		if (velocityComponent_ != nullptr) {
-			velocityComponent_->AddImpulse(ComputeKnockbackDirection(attacker) * config_.guardKnockbackPower);
+			velocityComponent_->AddImpulse(ComputeKnockbackDirection(attacker) * config_.block.knockbackPower);
 		}
 
 		query_->NotifyGuardHit();
 	}
 	else {
-		// 通常被弾: ダメージ+体幹ダメージ+ノックバックを付与し、
-		// 体幹が壊れたかどうかで小さい/大きい反応に振り分ける。
+		// 通常被弾: ダメージ・ノックバック・体幹蓄積、体幹崩壊で大スタン。
 		if (healthComponent_ != nullptr) {
 			healthComponent_->TakeDamage(attackData.damage);
 		}
-
-		if (transform_ != nullptr) {
-			const Math::Vector3 reflectDir = ComputeSplatterReflection(attacker, e.hitResult.hitNormal);
-			SpawnDamageEffect(e.selfObject, e.otherObject, reflectDir);
-		}
-
 		if (velocityComponent_ != nullptr) {
 			velocityComponent_->AddImpulse(ComputeKnockbackDirection(attacker) * attackData.knockbackPower);
 		}
 
-		// 通常被弾でも体幹にダメージを蓄積する(ガード時とは異なり全ダメージ分)。
 		bool postureBroken = false;
 		if (postureComponent_ != nullptr) {
 			postureComponent_->AddPostureDamage(attackData.postureDamage);
@@ -153,63 +221,8 @@ void HitReactionComponent::OnCollisionEnter(const Events::Collision::CollisionEn
 			}
 		}
 
-		if (config_.effectFlags.has(HitReactionFlags::HitStop)) {
-			PublishHitStop(*GetOwner()->GetContext()->eventBus, config_.hitStopDelaySeconds, config_.hitStopDurationSeconds);
-		}
-		if (config_.effectFlags.has(HitReactionFlags::CameraShake)) {
-			PublishCameraShake(*GetOwner()->GetContext()->eventBus, config_.cameraShakeIntensity);
-		}
+		HitReaction(config_.hit, ctx);
 
 		query_->EnterStagger(postureBroken, postureBroken ? config_.largeStaggerDuration : attackData.hitStunSeconds);
 	}
-}
-
-void HitReactionComponent::SpawnWeaponClashEffect(GameObject* attackerWeaponObj, bool isParry)
-{
-	if (attackerWeaponObj == nullptr) return;
-
-	TransformComponent* attackerWeaponTransform = attackerWeaponObj->GetComponent<TransformComponent>();
-	if (attackerWeaponTransform == nullptr) return;
-
-	WeaponComponent* myWeapon = weapon_.Resolve();
-	if (myWeapon == nullptr) return;
-
-	ColliderComponent* myWeaponCollider = myWeapon->GetCollider();
-	if (myWeaponCollider == nullptr) return;
-
-	TransformComponent* myWeaponTransform = myWeapon->GetTransform();
-	if (myWeaponTransform == nullptr) return;
-
-	const Math::Vector3 clashPos =
-		(attackerWeaponTransform->GetPosition() + myWeaponTransform->GetPosition()) * 0.5f;
-
-	// 両武器の進行方向の差分を、火花が飛び散る基準方向として採用する簡易実装
-	// (正確な反射方向の計算はせず、それっぽく見える近似で済ませている。以前はEffectDispatcher::
-	//  OnWeaponClash()側にあった計算だが、鍔迫り合いの火花も通常のGenericEffectSpawnEventの
-	//  1つとして扱うことにしたため、Publish側であるここに移した)
-	Math::Vector3 baseDir = myWeaponTransform->GetForward() - attackerWeaponTransform->GetForward();
-	if (baseDir.LengthSquared() < 0.0001f) {
-		// 方向が定まらない(ほぼ同じ向き)場合は上向きにフォールバック
-		baseDir = Math::Vector3(0.0f, 1.0f, 0.0f);
-	}
-	baseDir.Normalize();
-
-	const std::string id = isParry ? config_.parryEffectName : config_.blockEffectName;
-	PublishGenericEffect(GetOwner()->GetSceneEventBus(), id, clashPos, baseDir);
-}
-
-void HitReactionComponent::SpawnDamageEffect(GameObject* self, GameObject* attackerWeaponObj, const Math::Vector3& reflectDir)
-{
-	if (attackerWeaponObj == nullptr) return;
-
-	TransformComponent* attackerWeaponTransform = attackerWeaponObj->GetComponent<TransformComponent>();
-	if (attackerWeaponTransform == nullptr) return;
-
-	TransformComponent* myTransform = self->GetComponent<TransformComponent>();
-	if (myTransform == nullptr) return;
-
-	const Math::Vector3 clashPos =
-		(attackerWeaponTransform->GetPosition() + myTransform->GetPosition()) * 0.5f;
-
-	PublishGenericEffect(GetOwner()->GetSceneEventBus(), config_.damageEffectName, clashPos, reflectDir);
 }

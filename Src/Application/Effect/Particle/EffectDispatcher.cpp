@@ -1,5 +1,6 @@
 ﻿#include "EffectDispatcher.h"
 #include "Application/Components/Tags/IRenderable.h"
+#include "Framework/Shader/KdShaderManager.h"	// ※実際のパスに合わせて要調整
 
 std::vector<EffectDispatcher*> EffectDispatcher::s_instances;
 std::mutex EffectDispatcher::s_instancesMutex;
@@ -46,6 +47,9 @@ bool EffectDispatcher::LoadData(const std::string& effectDataPath)
 {
 	EffectDataFile data;
 	if (!EffectDataLoader::Load(effectDataPath, data)) { return false; }
+
+	// 墨の質感はファイルに記載があれば全体設定として反映する(ホットリロード時も同様)
+	if (data.LiquidInk) { EffectDataLoader::ApplyLiquidInk(*data.LiquidInk); }
 
 	return LoadEffectData(data) && LoadGroupsData(data);
 }
@@ -94,7 +98,7 @@ bool EffectDispatcher::LoadGroupsData(const EffectDataFile& data)
 		groups_.emplace(key, std::move(validMembers));
 	}
 
-	return true; 
+	return true;
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -242,6 +246,26 @@ void EffectDispatcher::Draw(ParticleDrawPass pass)
 	{
 		pair.second.instance.Draw(pass);
 	}
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 液体描画：液体エフェクトを1つの密度RTへまとめて描き、ブラー+しきい値合成を1回だけ行う
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void EffectDispatcher::DrawLiquid()
+{
+	bool hasLiquid = false;
+	for (auto& pair : simpleEffects_) { hasLiquid |= pair.second.IsLiquid(); }
+	for (auto& pair : activeInstances_) { hasLiquid |= pair.second.instance.IsLiquid(); }
+	if (!hasLiquid) { return; }
+
+	KdPostProcessShader& postProcess = KdShaderManager::Instance().m_postProcessShader;
+
+	postProcess.BeginLiquid();
+
+	for (auto& pair : simpleEffects_) { pair.second.DrawLiquid(); }
+	for (auto& pair : activeInstances_) { pair.second.instance.DrawLiquid(); }
+
+	postProcess.EndLiquid(LiquidStyle::Ink);
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////

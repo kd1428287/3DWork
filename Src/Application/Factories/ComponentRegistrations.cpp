@@ -88,7 +88,7 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 		{ KdRasterizerState::WireFrame, "WireFrame" },
 		})
 
-		COMPONENT_PARAMS_DEFINE_TYPE(SkeletonConfig, model, animations)
+	COMPONENT_PARAMS_DEFINE_TYPE(SkeletonConfig, model, animations)
 
 	COMPONENT_PARAMS_DEFINE_TYPE(RootMotionConfig,
 		boneName, unitScale, forwardAxis, forwardSign, rightAxis, rightSign, extractRotation, yawSign)
@@ -103,8 +103,9 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 	COMPONENT_PARAMS_DEFINE_TYPE(GroundSensorConfig, footOffset, checkDistance)
 	COMPONENT_PARAMS_DEFINE_TYPE(PostureConfig, max, lowerLimit, regenPerSecond, regenDelaySeconds)
 	COMPONENT_PARAMS_DEFINE_TYPE(HealthConfig, max)
-	COMPONENT_PARAMS_DEFINE_TYPE(HitReactionConfig, effectFlags, damageEffectName, parryEffectName, blockEffectName,
-		cameraShakeIntensity, hitStopDelaySeconds, hitStopDurationSeconds, guardKnockbackPower, largeStaggerDuration)
+	COMPONENT_PARAMS_DEFINE_TYPE(ReactionEventConfig, enableCameraShake, enableHitStop, enableEffect,
+		effectName, cameraShakeIntensity, hitStopDurationSeconds, knockbackPower)
+	COMPONENT_PARAMS_DEFINE_TYPE(HitReactionConfig, hit, block, parry, hitStopDelaySeconds, largeStaggerDuration)
 	COMPONENT_PARAMS_DEFINE_TYPE(PlayerCombatMovementConfig, walkSpeed, runSpeed)
 	COMPONENT_PARAMS_DEFINE_TYPE(PlayerStatusControllerConfig, evade, guard, charge, stagger)
 	COMPONENT_PARAMS_DEFINE_TYPE(FootstepTrigger, phase, foot)
@@ -374,12 +375,16 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 		auto* weapon = ctx.Add<WeaponComponent>();
 		if (!ctx.parent) return;
 
-		if (auto* controller = ctx.parent->GetComponent<PlayerStatusController>()) {
-			controller->SetWeapon(Handle<WeaponComponent>(weapon));
+		if (auto* weaponSet = ctx.parent->GetComponent<WeaponSetComponent>()) {
+			weaponSet->RegisterWeapon(p.slot, Handle<WeaponComponent>(weapon));
 		}
-		else if (auto* enemy = ctx.parent->GetComponent<EnemyAIController>()) {
-			enemy->SetWeapon(p.slot, Handle<WeaponComponent>(weapon));
-		}
+
+		//if (auto* controller = ctx.parent->GetComponent<PlayerStatusController>()) {
+		//	controller->SetWeapon(Handle<WeaponComponent>(weapon));
+		//}
+		//else if (auto* enemy = ctx.parent->GetComponent<EnemyAIController>()) {
+		//	enemy->SetWeapon(p.slot, Handle<WeaponComponent>(weapon));
+		//}
 	}
 
 	// コンボ木は専用ファイルから読む。読み込みに失敗しても、空のテーブルでコンポーネントは追加する。
@@ -453,7 +458,7 @@ void RegisterAllComponents(ComponentRegistry& registry)
 
 	registry.AddRaw("AttackSource", [](BuildContext& ctx, const nlohmann::json&) {
 		GameObject* owner = RequireParent(ctx, "AttackSource");
-		ctx.Add<AttackSourceComponent>()->ownerCharacter = Handle<GameObject>(owner);
+		ctx.Add<AttackSourceComponent>()->SetOwner(Handle<GameObject>(owner));
 		});
 
 	registry.AddWithParams<TwoBoneIKParams>("TwoBoneIK", [](BuildContext& ctx, const TwoBoneIKParams& p) {

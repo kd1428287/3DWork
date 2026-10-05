@@ -83,6 +83,18 @@ bool KdPostProcessShader::Init()
 		}
 	}
 
+	{
+#include "KdPostProcessShader_PS_LiquidInk.shaderInc"
+
+		if (FAILED(KdDirect3D::Instance().WorkDev()->CreatePixelShader(
+			compiledBuffer, sizeof(compiledBuffer), nullptr, &m_PS_LiquidInk)))
+		{
+			assert(0 && "ピクセルシェーダー作成失敗(LiquidInk)");
+			Release();
+			return false;
+		}
+	}
+
 	m_cb0_BlurInfo.Create();
 
 	m_cb0_DoFInfo.Create();
@@ -90,6 +102,8 @@ bool KdPostProcessShader::Init()
 	m_cb0_BrightInfo.Create();
 
 	m_cb0_ColorGradeInfo.Create();
+
+	m_cb0_LiquidInfo.Create();
 
 	const std::shared_ptr<KdTexture>& backBuffer = KdDirect3D::Instance().GetBackBuffer();
 
@@ -123,6 +137,10 @@ bool KdPostProcessShader::Init()
 
 	m_colorGradeRTPack.CreateRenderTarget(backBuffer->GetWidth(), backBuffer->GetHeight());
 
+	// 液体の密度(深度共有のためフル解像度)と、そのぼかし結果(半解像度)
+	m_liquidDensityRTPack.CreateRenderTarget(backBuffer->GetWidth(), backBuffer->GetHeight());
+	m_liquidBlurRTPack.CreateRenderTarget(backBuffer->GetWidth() / 2, backBuffer->GetHeight() / 2);
+
 	// 画面全体に書き込む用の頂点情報
 	m_screenVert[0] = { {-1,-1,0}, {0, 1} };
 	m_screenVert[1] = { {-1, 1,0}, {0, 0} };
@@ -155,12 +173,14 @@ void KdPostProcessShader::Release()
 	KdSafeRelease(m_PS_Bright);
 
 	KdSafeRelease(m_PS_ColorGrade);
+	KdSafeRelease(m_PS_LiquidInk);
 
 
 	m_cb0_BlurInfo.Release();
 	m_cb0_DoFInfo.Release();
 	m_cb0_BrightInfo.Release();
 	m_cb0_ColorGradeInfo.Release();
+	m_cb0_LiquidInfo.Release();
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -224,6 +244,65 @@ void KdPostProcessShader::EndBright()
 	KdShaderManager::Instance().UndoBlendState();
 
 	m_brightRTChanger.UndoRenderTarget();
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 液体の密度RTへ切り替える(深度はシーンのものを共有。BeginBrightと同じ構成)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void KdPostProcessShader::BeginLiquid(bool useSceneDepth)
+{
+	m_liquidDensityRTPack.ClearTexture(kBlackColor);
+
+	ID3D11RenderTargetView* rtv = m_liquidDensityRTPack.m_RTTexture->WorkRTView();
+
+	ID3D11DepthStencilView* pDSV = (useSceneDepth && m_postEffectRTPack.m_ZBuffer) ? m_postEffectRTPack.m_ZBuffer->WorkDSView() : nullptr;
+
+	// 密度RT全体をNDC基準の画像として使う(出力先のサイズが違っても合成時のUVが一致する)
+	if (!m_liquidRTChanger.ChangeRenderTargets(&rtv, 1, pDSV, &m_liquidDensityRTPack.m_viewPort))
+	{
+		m_liquidRTChanger.UndoRenderTarget();
+	}
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 密度RTを元のRTへ戻し、ブラー→しきい値でシーンRTへ合成する
+//	合成先はカラー+カラーグレード除外マスクのMRT(AlphaMasked)。深度テストは密度描画時に済んでいる
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void KdPostProcessShader::EndLiquid(LiquidStyle style)
+{
+	m_liquidRTChanger.UndoRenderTarget();
+
+	ID3D11DeviceContext* DevCon = KdDirect3D::Instance().WorkDevContext();
+	if (!DevCon) { return; }
+
+	// スタイルごとの合成PS(血・水を足す時はここへcaseを追加する)
+	ID3D11PixelShader* pPS = nullptr;
+	switch (style)
+	{
+	case LiquidStyle::Ink: pPS = m_PS_LiquidInk; break;
+	}
+	if (!pPS) { return; }
+
+	// 密度を半解像度へぼかす(ダウンサンプルも兼ねる)
+	SetBlurToDevice();
+	GenerateBlurTexture(m_liquidDensityRTPack.m_RTTexture, m_liquidBlurRTPack.m_RTTexture, m_liquidBlurRTPack.m_viewPort, kBlurSamplingRadius);
+
+	m_cb0_LiquidInfo.Write();
+	DevCon->PSSetConstantBuffers(0, 1, m_cb0_LiquidInfo.GetAddress());
+
+	KdShaderManager& shaderMgr = KdShaderManager::Instance();
+	shaderMgr.SetPixelShader(pPS);
+
+	shaderMgr.ChangeSamplerState(KdSamplerState::Linear_Clamp);
+	shaderMgr.ChangeBlendState(KdBlendState::AlphaMasked);
+	shaderMgr.ChangeDepthStencilState(KdDepthStencilState::ZDisable);
+
+	// 出力先を切り替えず、現在のシーンRTへ全画面描画する
+	DrawTexture(&m_liquidBlurRTPack.m_RTTexture, 1, nullptr, nullptr);
+
+	shaderMgr.UndoDepthStencilState();
+	shaderMgr.UndoBlendState();
+	shaderMgr.UndoSamplerState();
 }
 
 void KdPostProcessShader::PostEffectProcess()

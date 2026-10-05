@@ -29,6 +29,7 @@ public:
 
 	// --- 共通アクセサ --------------------------------------------
 	GameObject* GetOwner() const { return owner_; }
+	//Handle<GameObject> GetOwnerHandle() const { return Handle<GameObject>(owner_); }
 
 	bool IsEnabled() const { return enabled_; }
 	void SetEnabled(bool enabled) { enabled_ = enabled; }

@@ -44,27 +44,23 @@ public:
 	};
 
 	
-	// この攻撃の持ち主(武器なら、武器を装備しているキャラクター本体)
-	// への弱参照。パリィ成立時、被弾側から見て「攻撃者本体の
-	// PostureComponentを削る」「攻撃者本体へParriedEventを発行する」ために
-	// 必要になる(otherObjectは武器自体のGameObjectであり、キャラクター
-	// 本体ではないため)。
-	// 生成側(PlayerFactory::CreateWeapon等)が明示的にセットすること。
-	// 未設定(Resolve()がnullptr)のままでも、その場合はパリィ処理側が
-	// 何もしないだけで安全に動作する。
-	Handle<GameObject> ownerCharacter;
-
-	// 1回の攻撃で同じ相手に多段ヒットさせたくない場合、ここに
-	// 既にヒットしたGameObjectを記録して、CollisionEnterEvent受信側
-	// (攻撃側のロジック)で判定に使う。HurtBox側の実装だけでは
-	// 多段ヒット防止はできないので、必要ならここを使う。
-	// 例: if (alreadyHit.contains(e.otherObject)) return;
-	std::unordered_set<GameObject*> alreadyHit;
+	
 
 	void SetAttackDamageData(AttackDamageData data) { damageData_ = data; }
+	void SetOwner(Handle<GameObject> owner) { ownerCharacter_ = owner; }
+	void Hit(GameObject* victim) { alreadyHit_.emplace(Handle<GameObject>(victim)); }
+	void Hit(Handle<GameObject> victim) { alreadyHit_.emplace(victim); }
+
 	const AttackDamageData& GetAttackDamageData() const { return damageData_; }
+	const GameObject* GetOwner()const { return ownerCharacter_.Resolve(); }
+	Handle<GameObject> GetOwnerHandle() { return ownerCharacter_; }
+	bool IsAlreadyHit(Handle<GameObject> victim) const { return alreadyHit_.contains(victim); }
+
+	void ClearHitLog() { alreadyHit_.clear(); }
 
 private:
 	AttackDamageData damageData_;
-
+	// この攻撃の持ち主(武器なら、武器を装備しているキャラクター本体)への弱参照
+	Handle<GameObject> ownerCharacter_;
+	std::unordered_set<Handle<GameObject>> alreadyHit_;
 };

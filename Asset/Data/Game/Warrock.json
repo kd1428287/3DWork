@@ -78,17 +78,34 @@
 		{
 			"type": "HitReaction",
 			"params": {
-				"effectFlags": [
-					"HitStop",
-					"WeaponClashFx"
-				],
-				"damageEffectName": "InkSplash",
-				"parryEffectName": "ParryEffect",
-				"blockEffectName": "InkSplash",
-				"cameraShakeIntensity": 0.75,
+				"hit": {
+					"enableCameraShake": false,
+					"enableHitStop": true,
+					"enableEffect": true,
+					"effectName": "InkHitEffect",
+					"useReflectDirection": false,
+					"cameraShakeIntensity": 1.0,
+					"hitStopDurationSeconds": 0.1
+				},
+				"block": {
+					"enableCameraShake": false,
+					"enableHitStop": true,
+					"enableEffect": true,
+					"effectName": "InkHitEffect",
+					"useReflectDirection": false,
+					"cameraShakeIntensity": 1.0,
+					"hitStopDurationSeconds": 0.1
+				},
+				"parry": {
+					"enableCameraShake": false,
+					"enableHitStop": true,
+					"enableEffect": true,
+					"effectName": "ParryEffect",
+					"useReflectDirection": true,
+					"cameraShakeIntensity": 1.0,
+					"hitStopDurationSeconds": 0.1
+				},
 				"hitStopDelaySeconds": 0.0,
-				"hitStopDurationSeconds": 0.1,
-				"guardKnockbackPower": 0.1,
 				"largeStaggerDuration": 0.6
 			}
 		},
@@ -115,10 +132,10 @@
 					"movementAnimations": {
 						"idle": {
 							"animationName": "Idle",
-							"loop" :  true,
+							"loop": true,
 							"useRootMotion": false,
 							"blendDuration": 0.1,
-							"isForce" :  false
+							"isForce": false
 						},
 						"walk": {
 							"animationName": "Walk",

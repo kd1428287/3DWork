@@ -301,18 +301,34 @@
 		{
 			"type": "HitReaction",
 			"params": {
-				"effectFlags": [
-					"CameraShake",
-					"HitStop",
-					"WeaponClashFx"
-				],
-				"damageEffectName": "BloodSplatter",
-				"parryEffectName": "ParryEffect",
-				"blockEffectName": "BlockEffect",
-				"cameraShakeIntensity": 0.75,
+				"hit": {
+					"enableCameraShake": true,
+					"enableHitStop": true,
+					"enableEffect": true,
+					"effectName": "BloodSplatter",
+					"useReflectDirection": false,
+					"cameraShakeIntensity": 1.0,
+					"hitStopDurationSeconds": 0.1
+				},
+				"block": {
+					"enableCameraShake": true,
+					"enableHitStop": true,
+					"enableEffect": true,
+					"effectName": "BlockEffect",
+					"useReflectDirection": true,
+					"cameraShakeIntensity": 0.8,
+					"hitStopDurationSeconds": 0.1
+				},
+				"parry": {
+					"enableCameraShake": false,
+					"enableHitStop": true,
+					"enableEffect": true,
+					"effectName": "ParryEffect",
+					"useReflectDirection": true,
+					"cameraShakeIntensity": 1.0,
+					"hitStopDurationSeconds": 0.05
+				},
 				"hitStopDelaySeconds": 0.0,
-				"hitStopDurationSeconds": 0.1,
-				"guardKnockbackPower": 2.0,
 				"largeStaggerDuration": 0.6
 			}
 		},
@@ -536,7 +552,8 @@
 					}
 				},
 				{
-					"type": "Weapon"
+					"type": "Weapon",
+					"params": { "slot": "Main" }
 				}
 			]
 		}
