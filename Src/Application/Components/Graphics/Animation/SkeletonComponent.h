@@ -70,14 +70,16 @@ public:
 		Math::Matrix localMat;
 		if (!TryGetBoneLocalMatrix(boneName, localMat)) { return false; }
 
-		// スケールの二重伝播を避けるためUnscaled行列を使う
-		Math::Matrix ownerMat = selfTransform_ ? selfTransform_->GetUnscaledMatrix() : Math::Matrix::Identity;
+		// モデルの描画と同じスケール込みの行列を使う(ボーン位置も拡大される)。
+		// 子へのスケールはAttachToSocketComponentがScaleSourceで別に与えるため二重にならない。
+		Math::Matrix ownerMat = selfTransform_ ? selfTransform_->GetWorldMatrix() : Math::Matrix::Identity;
 
 		outMatrix = localMat * ownerMat;
 		return true;
 	}
 
-	uint32_t GetBoneVersion() const { return boneVersion_; }
+	// 持ち主のTransform変更(スケール含む)でもソケットのキャッシュが更新されるよう合算する。
+	uint32_t GetBoneVersion() const { return boneVersion_ + (selfTransform_ ? selfTransform_->GetLocalVersion() : 0); }
 
 	KdModelWork& WorkModel() { return modelWork_; }
 

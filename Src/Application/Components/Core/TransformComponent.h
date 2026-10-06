@@ -33,6 +33,9 @@ public:
 	const Math::Quaternion& GetRotation() const { return rotation_; }
 	const Math::Vector3& GetScale()    const { return scale_; }
 
+	// 自身のSetPosition/Rotation/Scale等で進む変更カウンタ(他コンポーネントのキャッシュ無効化用)。
+	uint32_t GetLocalVersion() const { return localVersion_; }
+
 	// ---------------------------------------------------------------
 	// 差分操作（頻出するため用意）
 	// ---------------------------------------------------------------
@@ -66,6 +69,32 @@ public:
 	Math::Vector3 GetUp()      const { return Math::Vector3::Transform(Math::Vector3::Up, rotation_); }
 	Math::Vector3 GetRight()   const { return Math::Vector3::Transform(Math::Vector3::Right, rotation_); }
 
+	// ---------------------------------------------------------------
+	// ワールドスケール（ワールド行列から取り出すので、子クラスのスケール伝播も含む）
+	// GetScale()はローカル値。他コンポーネントが使うのはこちら。
+	// ---------------------------------------------------------------
+
+	Math::Vector3 GetWorldScale() const {
+		Math::Vector3 scale;
+		Math::Quaternion rotation;
+		Math::Vector3 translation;
+		// 分解に失敗したらローカルスケールで代用する(0スケールを返さない)。
+		if (!GetWorldMatrix().Decompose(scale, rotation, translation)) scale = scale_;
+		return { std::abs(scale.x), std::abs(scale.y), std::abs(scale.z) };
+	}
+
+	// 球/カプセル半径など、一様スケールで近似したい用途向け（最大成分）。
+	float GetMaxWorldScale() const {
+		const Math::Vector3 s = GetWorldScale();
+		return std::max({ s.x, s.y, s.z });
+	}
+
+	// 水平移動量の拡大率（XZの大きい方）。ルートモーションやステップ距離の補正用。
+	float GetHorizontalWorldScale() const {
+		const Math::Vector3 s = GetWorldScale();
+		return std::max(s.x, s.z);
+	}
+
 protected:
 	void MarkDirty() {
 		++localVersion_;
@@ -84,7 +113,7 @@ protected:
 		cachedUnscaledMatrix_ =
 			Math::Matrix::CreateFromQuaternion(rotation_)
 			* Math::Matrix::CreateTranslation(position_);
-		
+
 		cachedWorldMatrix_ =
 			Math::Matrix::CreateScale(scale_)
 			* Math::Matrix::CreateFromQuaternion(rotation_)

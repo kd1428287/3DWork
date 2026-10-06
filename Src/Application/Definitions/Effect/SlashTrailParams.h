@@ -41,9 +41,9 @@ struct SlashTrailParams
 	// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 	// 速度ベースの太さ変調(筆の力強さの演出)
 	// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-	float	SpeedWidthReference = 8.0f;
+	float	SpeedWidthReference = 14.0f;
 	float	MinSpeedWidthScale = 0.35f;
-	float	MaxSpeedWidthScale = 1.6f;
+	float	MaxSpeedWidthScale = 2.6f;
 	float	SpeedSmoothingAlpha = 0.25f;
 
 	// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -60,7 +60,7 @@ struct SlashTrailParams
 	//	  mod 1.0でタイリングする
 	// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 	bool	UseDistanceBasedUV = true;
-	float	UVTileLength = 1.f;
+	float	UVTileLength = 2.f;
 
 	// 距離ベースUVにおける「直近に記録されたサンプルから、現在の実際の剣先までの延長距離
 	// (tipOffset)」の平滑化係数(0より大きく1以下)。

@@ -71,7 +71,7 @@ void PlayerCombatMovementComponent::RequestStepMove(const Math::Vector3& directi
 	}
 
 	const Math::Vector3 from = transform->GetPosition();
-	const Math::Vector3 to = from + dir * distance;
+	const Math::Vector3 to = from + dir * (distance * lengthScale_);
 	tweenMoveComponent_->Play(from, to, duration);
 }
 
@@ -95,7 +95,8 @@ void PlayerCombatMovementComponent::RequestStepMoveTowardsTarget(GameObject* tar
 	// 中心ではなく、胴体の表面同士の間隔を基準に詰める距離を決める
 	const float gapToTarget = ComputeSurfaceGapXZ(GetOwner(), target, toTarget.Length());
 
-	const float closingDistance = std::min(stepDistance, std::max(0.0f, gapToTarget - engageDistance));
+	// 踏み込み距離・間合いはscale=1基準の値なので、生成時の拡大率を掛ける。
+	const float closingDistance = std::min(stepDistance * lengthScale_, std::max(0.0f, gapToTarget - engageDistance * lengthScale_));
 
 	if (closingDistance <= kDirectionEpsilon) {
 		return;
@@ -148,8 +149,10 @@ void PlayerCombatMovementComponent::RequestRootMotionWarpTowardsTarget(GameObjec
 
 	// 距離: 胴体の表面間隔からengageDistanceを残して詰めたい距離と、クリップが素で進む想定距離との比
 	const float gapToTarget = ComputeSurfaceGapXZ(GetOwner(), target, distanceToTarget);
-	const float desiredDistance = std::max(0.0f, gapToTarget - engageDistance);
-	const float scale = std::clamp(desiredDistance / expectedDistance, minScale, maxScale);
+	const float desiredDistance = std::max(0.0f, gapToTarget - engageDistance * lengthScale_);
+	// 想定距離はscale=1基準なので、ワールドの距離に直してから比を取る(ルートモーション側も拡大されるため)。
+	const float expectedWorldDistance = expectedDistance * lengthScale_;
+	const float scale = std::clamp(desiredDistance / expectedWorldDistance, minScale, maxScale);
 
 	rootMotionApplier_->SetRootMotionWarp(warpRotation, scale);
 }

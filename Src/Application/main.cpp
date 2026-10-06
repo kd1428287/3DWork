@@ -149,7 +149,7 @@ bool Application::Init(int w, int h)
 	//===================================================================
 	// ウィンドウ作成
 	//===================================================================
-	if (m_window.Create(w, h, "3D GameProgramming", "Window") == false) {
+	if (m_window.Create(w, h, "YuGenTyouBukuDen", "Window") == false) {
 		MessageBoxA(nullptr, "ウィンドウ作成に失敗", "エラー", MB_OK);
 		return false;
 	}
@@ -210,6 +210,9 @@ bool Application::Init(int w, int h)
 	// フォント初期化
 	//===================================================================
 	KdFontManager::Instance().Init(GetWindowHandle());
+	
+	KdFontManager::Instance().AddFontResource("Asset/Data/Font/衡山毛筆フォント.ttf");
+	KdFontManager::Instance().AddFont(0, L"衡山毛筆フォント", 32);
 
 	//===================================================================
 	// ゲーム固有の初期化
@@ -294,8 +297,8 @@ void Application::Execute()
 		m_fpsController.UpdateStartTime();
 		//KdDebugGUI::Instance().ClearLog();
 
-		std::string str = "3D_Action FPS: " + std::to_string(Application::Instance().GetNowFPS());
-		SetWindowTextA(m_window.GetWndHandle(), str.c_str());
+		std::wstring str = L"幽玄調伏伝 FPS: " + std::to_wstring(Application::Instance().GetNowFPS());
+		SetWindowTextW(m_window.GetWndHandle(), str.c_str());
 
 
 

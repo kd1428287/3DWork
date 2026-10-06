@@ -268,6 +268,9 @@
     <Filter Include="Src\Application\Components\Graphics\UI\Gauge">
       <UniqueIdentifier>{e2a632af-c05a-4898-8128-4e51243db10f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\Components\Graphics\UI\Text">
+      <UniqueIdentifier>{2eac7895-f9d8-47b6-af42-001e6f7c002d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -996,6 +999,12 @@
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\ShapeSurfaceQuery.h">
       <Filter>Src\Application\Components\GamePlay\Character\Common</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Components\Graphics\Render\SpriteRenderComponent.h">
+      <Filter>Src\Application\Components\Graphics\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Graphics\UI\Text\TextComponent.h">
+      <Filter>Src\Application\Components\Graphics\UI\Text</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -1318,6 +1327,9 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Components\Graphics\Render\GroundRenderComponent.cpp">
       <Filter>Src\Application\Components\Graphics\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\Graphics\UI\Text\TextComponent.cpp">
+      <Filter>Src\Application\Components\Graphics\UI\Text</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

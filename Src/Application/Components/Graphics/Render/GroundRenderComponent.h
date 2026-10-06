@@ -22,6 +22,6 @@ public:
 
 private:
 	KdMaterial material_;
-	float tileSize_ = 4.0f;
+	float tileSize_ = 4.f;
 	float halfSize_ = 2000.0f;
 };

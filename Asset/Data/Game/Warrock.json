@@ -1,6 +1,6 @@
 {
 	"name": "enemy_warrock",
-	"scale": [ 2.0, 2.0, 2.0 ],
+	"scale": [ 2, 2, 2 ],
 	"components": [
 		{
 			"type": "ModelRender",
@@ -11,7 +11,7 @@
 		},
 		{
 			"type": "Outline",
-			"params": { "width": 0.03 }
+			"params": { "width": 0.003 }
 		},
 		{
 			"type": "ModelAnimator",
@@ -59,7 +59,7 @@
 					}
 				],
 				"bodyShapeName": "Body",
-				"wireFrame": true
+				"wireFrame": false
 			}
 		},
 		{ "type": "GroundSensor" },

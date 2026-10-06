@@ -13,6 +13,9 @@ struct BuildContext
 	GameObject& self;
 	GameObject* parent = nullptr;
 
+	// 生成時点のこのオブジェクトのスケール(Prefabのscale)。scale=1基準のConfig値を実寸に直すのに使う。
+	Math::Vector3 OwnerScale() const;
+
 	// コンポーネントを追加する。同じ型が既にある場合は例外にする(登録では必ずこれを使う)。
 	template<typename T, typename G = GameObject, typename... Args>
 	T* Add(Args&&... args)
@@ -26,6 +29,17 @@ struct BuildContext
 // TがConfig型(T::Config)を持つかどうか。
 template<typename T, typename = void> struct HasConfig : std::false_type {};
 template<typename T> struct HasConfig<T, std::void_t<typename T::Config>> : std::true_type {};
+
+// ConfigがApplyScale(const Math::Vector3&)を持つかどうか。
+template<typename T, typename = void> struct HasApplyScale : std::false_type {};
+template<typename T> struct HasApplyScale<T, std::void_t<decltype(std::declval<T&>().ApplyScale(std::declval<const Math::Vector3&>()))>> : std::true_type {};
+
+// ApplyScaleを持つConfig/Paramsだけ、生成時に持ち主のスケールを掛ける(持たない型は何もしない)。
+template<typename C>
+void ApplyOwnerScale(C& config, const BuildContext& ctx)
+{
+	if constexpr (HasApplyScale<C>::value) config.ApplyScale(ctx.OwnerScale());
+}
 
 // Prefabの"type"名からコンポーネントの生成処理を引く表。登録はComponentRegistrations.cppに書く。
 class ComponentRegistry
@@ -44,7 +58,8 @@ public:
 		if constexpr (HasConfig<T>::value) {
 			using Config = typename T::Config;
 			Register(type, [](auto& ctx, const nlohmann::json& params) {
-				const Config config = params.get<Config>();
+				Config config = params.get<Config>();
+				ApplyOwnerScale(config, ctx);
 				ctx.template Add<T>()->SetConfig(config);
 				}, nlohmann::ordered_json(Config{}));
 		}
@@ -58,7 +73,9 @@ public:
 	void AddWithParams(const std::string& type, std::function<void(BuildContext&, const Params&)> build)
 	{
 		Register(type, [build](BuildContext& ctx, const nlohmann::json& params) {
-			build(ctx, params.get<Params>());
+			Params p = params.get<Params>();
+			ApplyOwnerScale(p, ctx);
+			build(ctx, p);
 			}, nlohmann::ordered_json(Params{}));
 	}
 

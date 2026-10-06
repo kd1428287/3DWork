@@ -9,6 +9,9 @@ struct GroundSensorConfig
 {
 	float footOffset = 0.0f;
 	float checkDistance = 0.15f;
+
+	// 生成時にレジストリから呼ばれる。scale=1基準の値を持ち主のスケール(Y)で実寸に直す。
+	void ApplyScale(const Math::Vector3& scale) { footOffset *= scale.y; checkDistance *= scale.y; }
 };
 
 // 足元にレイを飛ばして接地判定だけを行う

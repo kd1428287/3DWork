@@ -7,10 +7,19 @@ static bool isSJIS(char a)
 }
 
 // フォント作成
-static HFONT MakeFont(const std::string& fontName, int h, int angle)
+static std::wstring AnsiToWide(const std::string& s)
+{
+	if (s.empty()) return {};
+	const int len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), (int)s.size(), nullptr, 0);
+	std::wstring w(len, L'\0');
+	MultiByteToWideChar(CP_ACP, 0, s.c_str(), (int)s.size(), w.data(), len);
+	return w;
+}
+
+static HFONT MakeFont(const std::wstring& fontName, int h, int angle)
 {
 	HFONT hFont;
-	hFont = CreateFont(h,		//フォント高さ
+	hFont = CreateFontW(h,		//フォント高さ
 		0,						//文字幅
 		angle,					//テキストの角度
 		0,						//ベースラインとｘ軸との角度
@@ -42,16 +51,16 @@ void KdFontSprite::CreateFontTexture(HDC hdc, const std::string& text, int antiA
 		m_TexList.reserve(text.size());
 	}
 
-	while(1)
+	while (1)
 	{
 		uint16_t code = 0;
 
 		// 文字の最後
-		if(pT[0] == '\0')break;
+		if (pT[0] == '\0')break;
 
 		// 日本語判定
 		bool b2byte = false;
-		if(isSJIS(pT[0]))
+		if (isSJIS(pT[0]))
 		{
 			b2byte = true;
 			code = (BYTE)pT[0] << 8 | (BYTE)pT[1];
@@ -84,70 +93,70 @@ void KdFontSprite::CreateFontTexture(HDC hdc, const std::string& text, int antiA
 
 			int grad = 0; // 階調の最大値
 			int gradFlag = GGO_BITMAP;
-			switch(antiAliasing)
+			switch (antiAliasing)
 			{
-				case 0:
-					gradFlag = GGO_BITMAP;
-					break;
-				case 1:
-					gradFlag = GGO_GRAY2_BITMAP;
-					break;
-				case 2:
-					gradFlag = GGO_GRAY4_BITMAP;
-					break;
-				case 3:
-					gradFlag = GGO_GRAY8_BITMAP;
-					break;
+			case 0:
+				gradFlag = GGO_BITMAP;
+				break;
+			case 1:
+				gradFlag = GGO_GRAY2_BITMAP;
+				break;
+			case 2:
+				gradFlag = GGO_GRAY4_BITMAP;
+				break;
+			case 3:
+				gradFlag = GGO_GRAY8_BITMAP;
+				break;
 			}
 
-			switch(gradFlag)
+			switch (gradFlag)
 			{
-				case GGO_GRAY2_BITMAP:
-					grad =  4;
-					break;
-				case GGO_GRAY4_BITMAP:
-					grad = 16;
-					break;
-				case GGO_GRAY8_BITMAP:
-					grad = 64;
-					break;
+			case GGO_GRAY2_BITMAP:
+				grad = 4;
+				break;
+			case GGO_GRAY4_BITMAP:
+				grad = 16;
+				break;
+			case GGO_GRAY8_BITMAP:
+				grad = 64;
+				break;
 			}
 
 			//-------------------------------
 			// フォントビットマップ取得
 			//-------------------------------
 			TEXTMETRIC TM;
-			GetTextMetrics(hdc , &TM );
+			GetTextMetrics(hdc, &TM);
 			GLYPHMETRICS GM;
-			CONST MAT2 Mat = {{0,1},{0,0},{0,0},{0,1}};
+			CONST MAT2 Mat = { {0,1},{0,0},{0,0},{0,1} };
 			DWORD size = GetGlyphOutline(hdc, code, gradFlag, &GM, 0, NULL, &Mat);	// アンチエイリアスの時に、spaceとか0が返るのはなぜ…
 			std::unique_ptr<BYTE[]> ptr(new BYTE[size]);
 			GetGlyphOutline(hdc, code, gradFlag, &GM, size, ptr.get(), &Mat);
 
 
 			int addX = 0;
-			if(GM.gmptGlyphOrigin.x < 0)
+			if (GM.gmptGlyphOrigin.x < 0)
 			{
 				addX = -GM.gmptGlyphOrigin.x;
 				GM.gmptGlyphOrigin.x = 0;
 			}
 
 			// 文字サイズ
-			int texWidth				= GM.gmCellIncX;
-			int texHeight				= TM.tmHeight;
-			int fontWidth_Alignment4	= (GM.gmBlackBoxX + 3) / 4 * 4;
+			int texWidth = GM.gmCellIncX;
+			int texHeight = TM.tmHeight;
+			int fontWidth_Alignment4 = (GM.gmBlackBoxX + 3) / 4 * 4;
 
 			// 文字のバイト数
-			if(b2byte)data->Bytes		= 2;
-			else data->Bytes			= 1;
+			if (b2byte)data->Bytes = 2;
+			else data->Bytes = 1;
 
 			// 総幅加算
 			m_TotalWidth += texWidth;
 
 			static const int PIXEL_BYTES = 4;
 			// バッファ作成
-			std::unique_ptr<UINT> buf(new UINT[texWidth*texHeight]);
-			ZeroMemory(buf.get(), texWidth*texHeight*4);
+			std::unique_ptr<UINT> buf(new UINT[texWidth * texHeight]);
+			ZeroMemory(buf.get(), texWidth * texHeight * 4);
 
 			// フォント画像コピー
 			if (size > 0)
@@ -161,7 +170,7 @@ void KdFontSprite::CreateFontTexture(HDC hdc, const std::string& text, int antiA
 				if (gradFlag == GGO_BITMAP)
 				{
 					int iUseBYTEparLine = (1 + (GM.gmBlackBoxX / 32)) * 4; // 元絵の1行のバイト数
-					int total = GM.gmBlackBoxY*iUseBYTEparLine;
+					int total = GM.gmBlackBoxY * iUseBYTEparLine;
 					// 半分になってる場合
 					if ((unsigned)(total / 2) == size)
 					{
@@ -191,7 +200,7 @@ void KdFontSprite::CreateFontTexture(HDC hdc, const std::string& text, int antiA
 								int num = sx / 8;		// 何バイト目か
 								BYTE bit = sx % 8;		// 何ビット目か
 								BYTE mask = ((BYTE)1) << (7 - bit);
-								bytePos = num + sy*iUseBYTEparLine;
+								bytePos = num + sy * iUseBYTEparLine;
 								if (bytePos < (int)size)
 								{
 									BYTE Cur = ptr[bytePos];
@@ -203,7 +212,7 @@ void KdFontSprite::CreateFontTexture(HDC hdc, const std::string& text, int antiA
 								dy = (y + (TM.tmAscent - GM.gmptGlyphOrigin.y));
 								if (dx >= 0 && dx < texWidth && dy >= 0 && dy < texHeight)
 								{
-									buf.get()[dx + dy*texWidth] = (alpha << 24) | 0x00ffffff;
+									buf.get()[dx + dy * texWidth] = (alpha << 24) | 0x00ffffff;
 								}
 							}
 						}
@@ -223,7 +232,7 @@ void KdFontSprite::CreateFontTexture(HDC hdc, const std::string& text, int antiA
 							{
 								alpha = 0;
 
-								bytePos = sy*fontWidth_Alignment4 + sx;
+								bytePos = sy * fontWidth_Alignment4 + sx;
 								if (bytePos < (int)size)
 								{
 									alpha = ptr[bytePos] * 255 / grad;
@@ -233,7 +242,7 @@ void KdFontSprite::CreateFontTexture(HDC hdc, const std::string& text, int antiA
 								dy = (y + (TM.tmAscent - GM.gmptGlyphOrigin.y));
 								if (dx >= 0 && dx < texWidth && dy >= 0 && dy < texHeight)
 								{
-									buf.get()[dx + dy*texWidth] = (alpha << 24) | 0x00ffffff;
+									buf.get()[dx + dy * texWidth] = (alpha << 24) | 0x00ffffff;
 								}
 							}
 						}
@@ -255,7 +264,7 @@ void KdFontSprite::CreateFontTexture(HDC hdc, const std::string& text, int antiA
 		}
 
 		// 進める
-		if(b2byte)
+		if (b2byte)
 		{
 			pT += 2;
 		}
@@ -271,20 +280,20 @@ void KdFontManager::Init(HWND hWnd)
 {
 	m_LoadedFontMap.clear();
 
-	m_hWnd	= hWnd;
-	m_hDC	= GetDC(m_hWnd);
+	m_hWnd = hWnd;
+	m_hDC = GetDC(m_hWnd);
 }
 
 void KdFontManager::Release()
 {
-	for(auto& font : m_FontTbl)
+	for (auto& font : m_FontTbl)
 	{
 		DeleteObject(font.hFont);
 		font.hFont = nullptr;
 		font.CreatedFontDataTbl.fill(nullptr);
 	}
 
-	if(m_hDC)
+	if (m_hDC)
 	{
 		ReleaseDC(m_hWnd, m_hDC);
 	}
@@ -293,7 +302,12 @@ void KdFontManager::Release()
 
 void KdFontManager::AddFont(int fontNo, const std::string& fontName, int h)
 {
-	HFONT hFont = MakeFont(fontName.c_str(), h, 0);
+	AddFont(fontNo, AnsiToWide(fontName), h);
+}
+
+void KdFontManager::AddFont(int fontNo, const std::wstring& fontName, int h)
+{
+	HFONT hFont = MakeFont(fontName, h, 0);
 	m_FontTbl[fontNo].hFont = hFont;
 	m_FontTbl[fontNo].CreatedFontDataTbl.fill(nullptr);
 }
@@ -314,22 +328,32 @@ std::shared_ptr<KdFontSprite> KdFontManager::CreateFontTexture(int fontNo, const
 
 void KdFontManager::AddFontResource(const std::string& ttfFileName)
 {
+	AddFontResource(AnsiToWide(ttfFileName));
+}
+
+void KdFontManager::AddFontResource(const std::wstring& ttfFileName)
+{
 	// すでに存在
 	auto itFound = m_LoadedFontMap.find(ttfFileName);
-	if(itFound != m_LoadedFontMap.end())
+	if (itFound != m_LoadedFontMap.end())
 	{
 		return;
 	}
 
-	AddFontResourceEx(ttfFileName.c_str(), FR_PRIVATE, NULL);
+	// 読み込み失敗(戻り値0)は登録せず、デバッグ出力に残す
+	if (AddFontResourceExW(ttfFileName.c_str(), FR_PRIVATE, NULL) == 0)
+	{
+		OutputDebugStringW((L"AddFontResource failed: " + ttfFileName + L"\n").c_str());
+		return;
+	}
 
 	m_LoadedFontMap[ttfFileName] = 1;
 }
 
 void KdFontManager::RemoveAllFontResource()
 {
-	for(auto& node : m_LoadedFontMap)
+	for (auto& node : m_LoadedFontMap)
 	{
-		RemoveFontResourceEx(node.first.c_str(), FR_PRIVATE, NULL);
+		RemoveFontResourceExW(node.first.c_str(), FR_PRIVATE, NULL);
 	}
 }

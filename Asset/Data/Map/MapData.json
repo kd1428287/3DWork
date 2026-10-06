@@ -8,7 +8,6 @@
             "shapes": [
               {
                 "categoryMask": [
-                  "Bump",
                   "Ground"
                 ],
                 "halfExtents": [
@@ -130,85 +129,6 @@
         {
           "params": {
             "animations": "",
-            "model": "Asset/Models/Terrains/CherryBlossum/Cherry_Blossom_Tree_b.gltf"
-          },
-          "type": "ModelRender"
-        },
-        {
-          "params": {
-            "ignoreParent": false,
-            "shapes": [
-              {
-                "categoryMask": [
-                  "HurtBox"
-                ],
-                "collideMask": [
-                  "HitBox"
-                ],
-                "halfExtents": [
-                  0.5,
-                  0.5,
-                  0.5
-                ],
-                "isStatic": false,
-                "isTrigger": false,
-                "name": "HurtBox",
-                "offset": [
-                  0.0,
-                  0.5,
-                  0.0
-                ],
-                "shape": "Box",
-                "useDefaultCollideMask": false,
-                "wantsStayEvent": false
-              }
-            ],
-            "wireFrame": true
-          },
-          "type": "Collider"
-        },
-        {
-          "params": {
-            "blockEffectName": "WeaponClashBlock",
-            "cameraShakeIntensity": 0.75,
-            "damageEffectName": "BloodSplatter",
-            "effectFlags": [
-              "CameraShake",
-              "WeaponClashFx"
-            ],
-            "guardKnockbackPower": 2.0,
-            "hitStopDelaySeconds": 0.0,
-            "hitStopDurationSeconds": 0.10000000149011612,
-            "largeStaggerDuration": 0.6000000238418579,
-            "parryEffectName": "WeaponClashParry"
-          },
-          "type": "HitReaction"
-        }
-      ],
-      "id": 3,
-      "name": "Object3",
-      "pos": [
-        11.39613151550293,
-        0.0,
-        0.0
-      ],
-      "rotation": [
-        -0.0,
-        0.0,
-        -0.0,
-        1.0
-      ],
-      "scale": [
-        1.0,
-        1.0,
-        1.0
-      ]
-    },
-    {
-      "components": [
-        {
-          "params": {
-            "animations": "",
             "model": "Asset/Models/Terrains/Sakura/sakura_big.gltf"
           },
           "type": "ModelRender"
@@ -221,116 +141,11 @@
         }
       ],
       "id": 4,
-      "name": "Object4",
+      "name": "Sakura2",
       "pos": [
         0.0,
         0.0,
         -12.26057243347168
-      ],
-      "rotation": [
-        -0.0,
-        0.0,
-        -0.0,
-        1.0
-      ],
-      "scale": [
-        1.0,
-        1.0,
-        1.0
-      ]
-    },
-    {
-      "components": [],
-      "id": 5,
-      "name": "Object5",
-      "pos": [
-        0.0,
-        0.0,
-        0.0
-      ],
-      "rotation": [
-        0.0,
-        0.0,
-        0.0,
-        1.0
-      ],
-      "scale": [
-        1.0,
-        1.0,
-        1.0
-      ]
-    },
-    {
-      "components": [
-        {
-          "params": {
-            "animations": "",
-            "model": "Asset/Models/Terrains/CherryBlossum/Cherry_Blossom_Tree_a.gltf"
-          },
-          "type": "ModelRender"
-        },
-        {
-          "params": {
-            "bodyShapeName": "",
-            "ignoreParent": false,
-            "shapes": [
-              {
-                "categoryMask": [
-                  "HurtBox"
-                ],
-                "halfExtents": [
-                  0.5,
-                  0.5,
-                  0.5
-                ],
-                "isStatic": true,
-                "isTrigger": true,
-                "name": "shape0",
-                "offset": [
-                  0.0,
-                  1.0,
-                  0.0
-                ],
-                "shape": "Box",
-                "useDefaultCollideMask": true,
-                "wantsStayEvent": false
-              }
-            ],
-            "wireFrame": true
-          },
-          "type": "Collider"
-        },
-        {
-          "params": {},
-          "type": "LockOnTarget"
-        },
-        {
-          "params": {
-            "width": 0.019999999552965164
-          },
-          "type": "Outline"
-        },
-        {
-          "params": {
-            "blockEffectName": "",
-            "cameraShakeIntensity": 0.75,
-            "damageEffectName": "BloodSplatter",
-            "effectFlags": [],
-            "guardKnockbackPower": 2.0,
-            "hitStopDelaySeconds": 0.0,
-            "hitStopDurationSeconds": 0.10000000149011612,
-            "largeStaggerDuration": 0.6000000238418579,
-            "parryEffectName": ""
-          },
-          "type": "HitReaction"
-        }
-      ],
-      "id": 6,
-      "name": "Object6",
-      "pos": [
-        6.625677108764648,
-        0.0,
-        20.050573348999023
       ],
       "rotation": [
         -0.0,
@@ -362,6 +177,53 @@
         -0.0,
         0.0,
         -0.0,
+        1.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "components": [
+        {
+          "params": {
+            "align": "Left",
+            "antiAliasing": 3,
+            "color": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "fontNo": 0,
+            "screenPos": [
+              0.0,
+              0.0
+            ],
+            "space": "World",
+            "text": "こんにちは",
+            "worldOffset": [
+              0.0,
+              1.0,
+              0.0
+            ]
+          },
+          "type": "Text"
+        }
+      ],
+      "id": 8,
+      "name": "Object8",
+      "pos": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0,
         1.0
       ],
       "scale": [

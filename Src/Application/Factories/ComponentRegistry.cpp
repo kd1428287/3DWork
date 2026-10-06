@@ -1,6 +1,9 @@
 ﻿#include "ComponentRegistry.h"
 
 #include <algorithm>
+#include <cmath>
+
+#include "Application/Components/Core/TransformComponent.h"
 
 ComponentRegistry& ComponentRegistry::Instance()
 {
@@ -10,6 +13,15 @@ ComponentRegistry& ComponentRegistry::Instance()
 		return r;
 		}();
 	return registry;
+}
+
+Math::Vector3 BuildContext::OwnerScale() const
+{
+	const TransformComponent* transform = self.GetComponent<TransformComponent>();
+	if (transform == nullptr) return Math::Vector3::One;
+
+	const Math::Vector3& s = transform->GetScale();
+	return { std::abs(s.x), std::abs(s.y), std::abs(s.z) };
 }
 
 void ComponentRegistry::Build(BuildContext& ctx, const ComponentEntry& entry) const

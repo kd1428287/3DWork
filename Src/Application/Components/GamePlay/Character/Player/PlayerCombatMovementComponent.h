@@ -10,6 +10,9 @@ struct PlayerCombatMovementConfig
 {
 	float walkSpeed = 0.0f;
 	float runSpeed = 0.0f;
+
+	// 生成時にレジストリが設定する長さの倍率(JSONには出さない)。実行時に渡される踏み込み距離等に掛ける。
+	float lengthScale = 1.0f;
 };
 
 // ============================================================
@@ -39,7 +42,10 @@ public:
 
 	explicit PlayerCombatMovementComponent(GameObject* owner) : ComponentBase(owner) {}
 
-	void SetConfig(const Config& config) { SetMovementSpeeds(config.walkSpeed, config.runSpeed); }
+	void SetConfig(const Config& config) {
+		SetMovementSpeeds(config.walkSpeed, config.runSpeed);
+		lengthScale_ = config.lengthScale;
+	}
 
 	void Awake() override;
 
@@ -103,6 +109,9 @@ private:
 	//  中途半端な既定値をここに書いて黙って動いてしまう方が発見しづらい)。
 	float walkSpeed_ = 0.0f;
 	float runSpeed_ = 0.0f;
+
+	// 攻撃/回避の踏み込み距離・間合いに掛ける生成時の拡大率(データ値はscale=1基準)。
+	float lengthScale_ = 1.0f;
 
 	// ゼロ除算・方向未定義を避けるための数値的な安全マージン。
 	// デザイナーが調整する類の値ではないため、データ化はしない。

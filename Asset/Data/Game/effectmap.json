@@ -183,21 +183,21 @@
             "lifeMax": 0.800000011920929,
             "lifeMin": 0.4000000059604645,
             "offsetMax": [
-              1.0,
-              1.0,
-              1.0
+              0.10000000149011612,
+              0.10000000149011612,
+              0.10000000149011612
             ],
             "offsetMin": [
-              0.5,
-              0.10000000149011612,
-              0.5
+              0.05000000074505806,
+              0.009999999776482582,
+              0.05000000074505806
             ],
             "radialSpeedMax": 4.0,
             "radialSpeedMin": 1.0,
-            "sizeEndMax": 0.5,
-            "sizeEndMin": 0.10000000149011612,
-            "sizeMax": 0.5,
-            "sizeMin": 0.10000000149011612,
+            "sizeEndMax": 0.05000000074505806,
+            "sizeEndMin": 0.009999999776482582,
+            "sizeMax": 0.05000000074505806,
+            "sizeMin": 0.009999999776482582,
             "stretchScale": 0.0
           }
         ],
@@ -398,7 +398,7 @@
               1.0
             ],
             "count": 100,
-            "dirScaleMax": 1.0,
+            "dirScaleMax": 2.0,
             "dirScaleMin": 0.10000000149011612,
             "distribution": "Directional",
             "lifeMax": 0.5,
@@ -447,21 +447,21 @@
               0.30000001192092896,
               1.0
             ],
-            "count": 100,
+            "count": 200,
             "dirScaleMax": 0.0,
             "dirScaleMin": 0.0,
             "distribution": "Directional",
             "lifeMax": 0.4000000059604645,
             "lifeMin": 0.30000001192092896,
             "offsetMax": [
-              5.0,
-              5.0,
-              5.0
+              9.0,
+              9.0,
+              9.0
             ],
             "offsetMin": [
-              4.0,
-              4.0,
-              4.0
+              7.0,
+              7.0,
+              7.0
             ],
             "radialSpeedMax": 4.0,
             "radialSpeedMin": 1.0,
@@ -497,11 +497,11 @@
               0.09227219223976135,
               1.0
             ],
-            "count": 200,
-            "dirScaleMax": 6.0,
+            "count": 400,
+            "dirScaleMax": 10.0,
             "dirScaleMin": 2.0,
             "distribution": "Directional",
-            "lifeMax": 0.6000000238418579,
+            "lifeMax": 2.0,
             "lifeMin": 0.4000000059604645,
             "offsetMax": [
               5.0,
@@ -522,7 +522,7 @@
             "stretchScale": 1.0
           }
         ],
-        "maxParticleNum": 800,
+        "maxParticleNum": 2000,
         "texture": "circle.png"
       },
       "pos": [
@@ -824,14 +824,14 @@
             "lifeMax": 0.6000000238418579,
             "lifeMin": 0.44999998807907104,
             "offsetMax": [
-              2.0,
-              2.0,
-              2.0
+              4.0,
+              4.0,
+              4.0
             ],
             "offsetMin": [
-              2.0,
-              2.0,
-              2.0
+              4.0,
+              4.0,
+              4.0
             ],
             "radialSpeedMax": 4.0,
             "radialSpeedMin": 1.0,
@@ -874,14 +874,14 @@
             "lifeMax": 0.6000000238418579,
             "lifeMin": 0.44999998807907104,
             "offsetMax": [
-              4.0,
-              4.5,
-              4.0
+              8.0,
+              8.5,
+              8.0
             ],
             "offsetMin": [
-              4.0,
+              8.0,
               0.5,
-              4.0
+              8.0
             ],
             "radialSpeedMax": 4.0,
             "radialSpeedMin": 1.0,
@@ -924,14 +924,14 @@
             "lifeMax": 0.6000000238418579,
             "lifeMin": 0.44999998807907104,
             "offsetMax": [
-              2.0,
-              2.0,
-              2.0
+              4.0,
+              4.0,
+              4.0
             ],
             "offsetMin": [
-              2.0,
-              2.0,
-              2.0
+              4.0,
+              4.0,
+              4.0
             ],
             "radialSpeedMax": 4.0,
             "radialSpeedMin": 1.0,
@@ -1052,9 +1052,9 @@
               1.0,
               1.0
             ],
-            "count": 40,
-            "dirScaleMax": 3.0,
-            "dirScaleMin": 0.5,
+            "count": 100,
+            "dirScaleMax": 8.0,
+            "dirScaleMin": 4.0,
             "distribution": "Directional",
             "lifeMax": 0.800000011920929,
             "lifeMin": 0.5,

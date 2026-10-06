@@ -1,22 +1,6 @@
 ﻿#pragma once
 #include "../../Tags/IPolygonRenderSource.h"
 
-// ============================================================
-// KdPolygon系の描画のみを担当する汎用レンダラー。
-// ModelRenderComponentとは完全に独立した、ポリゴン専用の描画コンポーネント。
-//
-// 自前でリストを持たず、毎回GetOwner()->GetTagged<IPolygonRenderSource>()を
-// 使って「同じGameObject上でIPolygonRenderSourceを実装している
-// コンポーネント」をGameObjectのタグレジストリから取得する。
-// 登録/解除はGameObject::AddComponent/RemoveComponent側で自動的に
-// 行われるため、このクラスはリストの整合性を一切気にしなくてよい
-// (前回案のAddMaterial/RemoveMaterialのような手動管理は不要)。
-//
-// 1つのGameObjectに複数のポリゴン系素材が乗っていても、それらを
-// まとめて描画できる。将来別のポリゴン系エフェクト
-// (仮称: RibbonPolygonComponent等)が増えても、そちらが
-// IPolygonRenderSourceを実装するだけで、このクラスは無改造で使える。
-// ============================================================
 class PolygonRenderComponent : public ComponentBase, public IRenderable {
 public:
 	explicit PolygonRenderComponent(GameObject* owner)

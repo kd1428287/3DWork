@@ -39,6 +39,15 @@ void GameScene::OnUpdate(float deltaTime)
 {
 	// systemManager_の実行順にまとめたので、ここにはそこに乗らない
 	// GameScene固有の処理(例: クリア判定など)だけを書く
+
+	auto tex = KdFontManager::Instance().CreateFontTexture(0, "こんにちは", 3);
+
+	float x = 3, y = 3;
+	for (auto& ch : tex->GetTexList())
+	{
+		KdShaderManager::Instance().m_spriteShader.DrawTex(ch->FontTex, x, y);
+		x += ch->FontTex->GetInfo().Width;
+	}
 }
 
 void GameScene::OnPreDraw(float deltaTime)
@@ -134,5 +143,6 @@ void GameScene::Init()
 	KdShaderManager::Instance().m_postProcessShader.SetSaturation(0.85f);     // 彩度低め
 	KdShaderManager::Instance().m_postProcessShader.SetTemperature(-0.3f);   // ★わずかに寒色（青み）を寄せて鉄や血の冷たさを演出
 	KdShaderManager::Instance().m_postProcessShader.SetTint(-0.15f);          // ★ごくわずかに緑に寄せて、古びた日本的・和風の空気感を作る
+	
 	
 }

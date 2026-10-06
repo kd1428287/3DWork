@@ -329,12 +329,14 @@
     <ClInclude Include="Src\Application\Components\Graphics\Render\Mod\SkyDomeEdgeFadeComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\OutlineRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\PolygonRenderComponent.h" />
+    <ClInclude Include="Src\Application\Components\Graphics\Render\SpriteRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\WireFrameComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\EnemyWorldGaugeComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\GaugeBar.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\GaugeBarRenderer.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\GaugeWatcher.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\PlayerHudGaugeComponent.h" />
+    <ClInclude Include="Src\Application\Components\Graphics\UI\Text\TextComponent.h" />
     <ClInclude Include="Src\Application\Components\Physics\Collision\BodySurfaceQuery.h" />
     <ClInclude Include="Src\Application\Components\Physics\Collision\ColliderComponent.h" />
     <ClInclude Include="Src\Application\Components\Physics\Movement\DirectionTransformSource.h" />
@@ -530,6 +532,7 @@
     <ClCompile Include="Src\Application\Components\Graphics\Render\Mod\SkyDomeEdgeFadeComponent.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\Render\OutlineRenderComponent.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\Render\WireFrameComponent.cpp" />
+    <ClCompile Include="Src\Application\Components\Graphics\UI\Text\TextComponent.cpp" />
     <ClCompile Include="Src\Application\Core\Scene\SceneManager.cpp" />
     <ClCompile Include="Src\Application\Definitions\Effect\EffectParams.cpp" />
     <ClCompile Include="Src\Application\Definitions\Loaders\AttackDataLoader.cpp" />

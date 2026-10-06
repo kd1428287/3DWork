@@ -59,6 +59,7 @@
 // UI(配置フォルダは実際の場所に合わせて調整)
 #include "Application/Components/Graphics/UI/Gauge/PlayerHudGaugeComponent.h"
 #include "Application/Components/Graphics/UI/Gauge/EnemyWorldGaugeComponent.h"
+#include "Application/Components/Graphics/UI/Text/TextComponent.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // コンポーネントのConfigのJSON変換。キー名はメンバ名と同じで、未指定のキーは初期値になる。
@@ -88,7 +89,20 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 		{ KdRasterizerState::WireFrame, "WireFrame" },
 		})
 
-	COMPONENT_PARAMS_DEFINE_TYPE(SkeletonConfig, model, animations)
+		// TextComponent::Space: JSONでは"Screen"/"World"で指定する。未知の値はScreenになる。
+	NLOHMANN_JSON_SERIALIZE_ENUM(TextComponent::Space, {
+		{ TextComponent::Space::Screen, "Screen" },
+		{ TextComponent::Space::World, "World" },
+		})
+
+		// TextComponent::Align: JSONでは"Left"/"Center"/"Right"で指定する。未知の値はLeftになる。
+	NLOHMANN_JSON_SERIALIZE_ENUM(TextComponent::Align, {
+		{ TextComponent::Align::Left, "Left" },
+		{ TextComponent::Align::Center, "Center" },
+		{ TextComponent::Align::Right, "Right" },
+		})
+
+		COMPONENT_PARAMS_DEFINE_TYPE(SkeletonConfig, model, animations)
 
 	COMPONENT_PARAMS_DEFINE_TYPE(RootMotionConfig,
 		boneName, unitScale, forwardAxis, forwardSign, rightAxis, rightSign, extractRotation, yawSign)
@@ -397,6 +411,54 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 		ctx.Add<PlayerAttackSelector>()->SetAttackTable(table);
 	}
 
+	// 文字列表示。textはUTF-8で書き、読み込み時にShift-JISへ変換する。
+	// screenPosはScreenなら画面座標、Worldなら投影後のピクセルオフセット。colorはRGBA。
+	struct TextParams
+	{
+		std::string text;
+		int         fontNo = 0;
+		int         antiAliasing = 3;
+
+		TextComponent::Space space = TextComponent::Space::Screen;
+		TextComponent::Align align = TextComponent::Align::Left;
+
+		std::array<float, 4> color = { 1.0f, 1.0f, 1.0f, 1.0f };
+		std::array<float, 2> screenPos = { 0.0f, 0.0f };
+		Math::Vector3        worldOffset = { 0.0f, 0.0f, 0.0f };
+	};
+	COMPONENT_PARAMS_DEFINE_TYPE(TextParams, text, fontNo, antiAliasing, space, align, color, screenPos, worldOffset)
+
+		// UTF-8をShift-JIS(CP932)へ変換する。変換できない文字は'?'になる。
+		std::string JsonUtf8ToSjis(const std::string& utf8)
+	{
+		if (utf8.empty()) return {};
+
+		const int wlen = MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), (int)utf8.size(), nullptr, 0);
+		if (wlen <= 0) return utf8;
+		std::wstring wide(wlen, L'\0');
+		MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), (int)utf8.size(), wide.data(), wlen);
+
+		const int len = WideCharToMultiByte(932, 0, wide.c_str(), wlen, nullptr, 0, nullptr, nullptr);
+		if (len <= 0) return utf8;
+		std::string sjis(len, '\0');
+		WideCharToMultiByte(932, 0, wide.c_str(), wlen, sjis.data(), len, nullptr, nullptr);
+		return sjis;
+	}
+
+	void BuildText(BuildContext& ctx, const TextParams& p)
+	{
+		auto* text = ctx.Add<TextComponent>();
+		text->SetFontNo(p.fontNo);
+		text->SetAntiAliasing(p.antiAliasing);
+		text->SetText(JsonUtf8ToSjis(p.text));
+		text->SetSpace(p.space);
+		text->SetAlign(p.align);
+		text->SetColor(Math::Color(p.color[0], p.color[1], p.color[2], p.color[3]));
+		text->SetScreenPos(Math::Vector2(p.screenPos[0], p.screenPos[1]));
+		// ワールドのオフセットはscale=1基準。モデルの拡大率に合わせる。
+		text->SetWorldOffset(p.worldOffset * ctx.OwnerScale());
+	}
+
 	// 親の敵をターゲットにした頭上ゲージUIを組み立てる。
 	void BuildEnemyWorldGauge(BuildContext& ctx, const nlohmann::json&)
 	{
@@ -404,6 +466,16 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 	}
 
 }  // namespace
+
+namespace
+{
+	// 生成時のスケールのうち水平(XZ)の拡大率。速度や水平距離をモデルの大きさに合わせる。
+	float HorizontalScale(const BuildContext& ctx)
+	{
+		const Math::Vector3 s = ctx.OwnerScale();
+		return std::max(s.x, s.z);
+	}
+}
 
 // 新しいコンポーネントは、ここに登録を足せばPrefab/マップのtypeから使える。
 //   Add<T>          : T::Config(と SetConfig)を持つ型はparamsを自動で読む。持たない型はそのまま追加する
@@ -417,11 +489,21 @@ void RegisterAllComponents(ComponentRegistry& registry)
 		skeleton->SetConfig(config);
 		ctx.Add<ModelRenderComponent>();
 		});
-	registry.Add<ModelAnimatorComponent>("ModelAnimator");
+	registry.AddWithParams<ModelAnimatorConfig>("ModelAnimator", [](BuildContext& ctx, const ModelAnimatorConfig& config) {
+		// ルートモーションの移動量をモデルの拡大率(水平)に合わせる。
+		ModelAnimatorConfig scaled = config;
+		scaled.rootMotion.unitScale *= HorizontalScale(ctx);
+		ctx.Add<ModelAnimatorComponent>()->SetConfig(scaled);
+		});
 	registry.Add<RootMotionApplierComponent>("RootMotionApplier");
 	registry.Add<FacingDirectionComponent>("FacingDirection");
 	registry.Add<FollowCameraComponent>("FollowCamera");
-	registry.Add<CameraTargetComponent>("CameraTarget");
+	registry.AddWithParams<CameraTargetConfig>("CameraTarget", [](BuildContext& ctx, const CameraTargetConfig& config) {
+		// 注視点のオフセットはscale=1基準。モデルの拡大率に合わせる。
+		CameraTargetConfig scaled = config;
+		scaled.offset *= ctx.OwnerScale();
+		ctx.Add<CameraTargetComponent>()->SetConfig(scaled);
+		});
 	registry.Add<SlashTrailComponent>("SlashTrail");
 	registry.Add<OutlineRenderComponent>("Outline");
 	registry.AddWithParams<RasterizerStateParams>("RasterizerState", [](BuildContext& ctx, const RasterizerStateParams& p) {
@@ -440,7 +522,10 @@ void RegisterAllComponents(ComponentRegistry& registry)
 
 	registry.AddWithParams<MovementConfig>("Movement", [](BuildContext& ctx, const MovementConfig& config) {
 		auto* movement = ctx.Add<MovementComponent>();
-		movement->SetConfig(config);
+		// 速度はscale=1基準。インプレースのアニメの歩幅に合わせて拡大率を掛ける(足滑り防止)。
+		MovementConfig scaled = config;
+		scaled.speed *= HorizontalScale(ctx);
+		movement->SetConfig(scaled);
 		// IMovementSourceはTAG_INTERFACESに無く、Awakeのタグ検索では拾えないため、PlayerInputを明示的に接続する。
 		if (auto* input = ctx.self.GetComponent<PlayerInputComponent>()) movement->SetMovementSource(input);
 		});
@@ -472,7 +557,15 @@ void RegisterAllComponents(ComponentRegistry& registry)
 	registry.Add<PlayerFacingComponent>("PlayerFacing");
 	registry.Add<PlayerMovementAnimationComponent>("PlayerMovementAnimation");
 	registry.Add<PlayerStatusController>("PlayerStatusController");
-	registry.Add<PlayerCombatMovementComponent>("PlayerCombatMovement");
+	registry.AddWithParams<PlayerCombatMovementConfig>("PlayerCombatMovement", [](BuildContext& ctx, const PlayerCombatMovementConfig& config) {
+		// 速度と、踏み込み距離など実行時に渡される距離の両方をモデルの拡大率に合わせる。
+		const float scale = HorizontalScale(ctx);
+		PlayerCombatMovementConfig scaled = config;
+		scaled.walkSpeed *= scale;
+		scaled.runSpeed *= scale;
+		scaled.lengthScale = scale;
+		ctx.Add<PlayerCombatMovementComponent>()->SetConfig(scaled);
+		});
 	registry.AddWithParams<PlayerAttackSelectorParams>("PlayerAttackSelector", BuildPlayerAttackSelector);
 
 	// --- Enemy ---
@@ -483,4 +576,5 @@ void RegisterAllComponents(ComponentRegistry& registry)
 	// PlayerHudGaugeは独立Prefab(Hud.json)で生成し、ctx->playerを追う。EnemyWorldGaugeは敵Prefabの子として使う。
 	registry.Add<PlayerHudGaugeComponent>("PlayerHudGauge");
 	registry.AddRaw("EnemyWorldGauge", BuildEnemyWorldGauge);
+	registry.AddWithParams<TextParams>("Text", BuildText);
 }
