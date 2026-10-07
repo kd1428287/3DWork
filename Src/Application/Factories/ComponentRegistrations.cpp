@@ -59,6 +59,7 @@
 // UI(配置フォルダは実際の場所に合わせて調整)
 #include "Application/Components/Graphics/UI/Gauge/PlayerHudGaugeComponent.h"
 #include "Application/Components/Graphics/UI/Gauge/EnemyWorldGaugeComponent.h"
+#include "Application/Components/Graphics/UI/UITransformComponent.h"
 #include "Application/Components/Graphics/UI/Text/TextComponent.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -89,10 +90,10 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 		{ KdRasterizerState::WireFrame, "WireFrame" },
 		})
 
-		// TextComponent::Space: JSONでは"Screen"/"World"で指定する。未知の値はScreenになる。
-	NLOHMANN_JSON_SERIALIZE_ENUM(TextComponent::Space, {
-		{ TextComponent::Space::Screen, "Screen" },
-		{ TextComponent::Space::World, "World" },
+		// UITransformComponent::Space: JSONでは"Screen"/"World"で指定する。未知の値はScreenになる。
+	NLOHMANN_JSON_SERIALIZE_ENUM(UITransformComponent::Space, {
+		{ UITransformComponent::Space::Screen, "Screen" },
+		{ UITransformComponent::Space::World, "World" },
 		})
 
 		// TextComponent::Align: JSONでは"Left"/"Center"/"Right"で指定する。未知の値はLeftになる。
@@ -411,22 +412,49 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 		ctx.Add<PlayerAttackSelector>()->SetAttackTable(table);
 	}
 
-	// 文字列表示。textはUTF-8で書き、読み込み時にShift-JISへ変換する。
-	// screenPosはScreenなら画面座標、Worldなら投影後のピクセルオフセット。colorはRGBA。
+	// UI用の座標。spaceがWorldのときはTransformの位置を投影した点が基準(位置はUITransformに任せる)。
+	// anchor/pivotは0～1の割合、position/sizeはピクセル、rotationは度数法。worldOffsetは所有者のscaleに合わせる。
+	struct UITransformParams
+	{
+		UITransformComponent::Space space = UITransformComponent::Space::Screen;
+
+		std::array<float, 2> anchor = { 0.5f, 0.5f };
+		std::array<float, 2> pivot = { 0.5f, 0.5f };
+		std::array<float, 2> position = { 0.0f, 0.0f };
+		std::array<float, 2> size = { 0.0f, 0.0f };
+		std::array<float, 2> scale = { 1.0f, 1.0f };
+		float                rotation = 0.0f;
+		Math::Vector3        worldOffset = { 0.0f, 0.0f, 0.0f };
+	};
+	COMPONENT_PARAMS_DEFINE_TYPE(UITransformParams, space, anchor, pivot, position, size, scale, rotation, worldOffset)
+
+		void BuildUITransform(BuildContext& ctx, const UITransformParams& p)
+	{
+		auto* ui = ctx.Add<UITransformComponent>();
+		ui->SetSpace(p.space);
+		ui->SetAnchor(Math::Vector2(p.anchor[0], p.anchor[1]));
+		ui->SetPivot(Math::Vector2(p.pivot[0], p.pivot[1]));
+		ui->SetPosition(Math::Vector2(p.position[0], p.position[1]));
+		ui->SetSize(Math::Vector2(p.size[0], p.size[1]));
+		ui->SetScale(Math::Vector2(p.scale[0], p.scale[1]));
+		ui->SetRotation(p.rotation);
+		// ワールドのオフセットはscale=1基準。モデルの拡大率に合わせる。
+		ui->SetWorldOffset(p.worldOffset * ctx.OwnerScale());
+	}
+
+	// 文字列表示。textはUTF-8で書き、読み込み時にShift-JISへ変換する。colorはRGBA。
+	// 位置・pivot・拡大率は、同じオブジェクトのUITransformで指定する(必須)。
 	struct TextParams
 	{
 		std::string text;
 		int         fontNo = 0;
 		int         antiAliasing = 3;
 
-		TextComponent::Space space = TextComponent::Space::Screen;
 		TextComponent::Align align = TextComponent::Align::Left;
 
 		std::array<float, 4> color = { 1.0f, 1.0f, 1.0f, 1.0f };
-		std::array<float, 2> screenPos = { 0.0f, 0.0f };
-		Math::Vector3        worldOffset = { 0.0f, 0.0f, 0.0f };
 	};
-	COMPONENT_PARAMS_DEFINE_TYPE(TextParams, text, fontNo, antiAliasing, space, align, color, screenPos, worldOffset)
+	COMPONENT_PARAMS_DEFINE_TYPE(TextParams, text, fontNo, antiAliasing, align, color)
 
 		// UTF-8をShift-JIS(CP932)へ変換する。変換できない文字は'?'になる。
 		std::string JsonUtf8ToSjis(const std::string& utf8)
@@ -451,12 +479,8 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 		text->SetFontNo(p.fontNo);
 		text->SetAntiAliasing(p.antiAliasing);
 		text->SetText(JsonUtf8ToSjis(p.text));
-		text->SetSpace(p.space);
 		text->SetAlign(p.align);
 		text->SetColor(Math::Color(p.color[0], p.color[1], p.color[2], p.color[3]));
-		text->SetScreenPos(Math::Vector2(p.screenPos[0], p.screenPos[1]));
-		// ワールドのオフセットはscale=1基準。モデルの拡大率に合わせる。
-		text->SetWorldOffset(p.worldOffset * ctx.OwnerScale());
 	}
 
 	// 親の敵をターゲットにした頭上ゲージUIを組み立てる。
@@ -576,5 +600,6 @@ void RegisterAllComponents(ComponentRegistry& registry)
 	// PlayerHudGaugeは独立Prefab(Hud.json)で生成し、ctx->playerを追う。EnemyWorldGaugeは敵Prefabの子として使う。
 	registry.Add<PlayerHudGaugeComponent>("PlayerHudGauge");
 	registry.AddRaw("EnemyWorldGauge", BuildEnemyWorldGauge);
+	registry.AddWithParams<UITransformParams>("UITransform", BuildUITransform);
 	registry.AddWithParams<TextParams>("Text", BuildText);
 }

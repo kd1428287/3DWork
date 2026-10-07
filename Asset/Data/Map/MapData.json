@@ -57,60 +57,104 @@
         {
           "params": {
             "animations": "",
-            "model": "Asset/Models/Terrains/CherryBlossum/Cherry_Blossom_Tree_c.gltf"
+            "model": "Asset/Models/Terrains/Stage/Stage.gltf"
           },
           "type": "ModelRender"
         },
         {
           "params": {
+            "bodyShapeName": "",
             "ignoreParent": false,
             "shapes": [
               {
                 "categoryMask": [
-                  "HitBox"
-                ],
-                "collideMask": [
-                  "HurtBox"
+                  "Bump",
+                  "Ground"
                 ],
                 "halfExtents": [
                   0.5,
-                  0.5,
+                  0.10000000149011612,
                   0.5
                 ],
-                "isStatic": false,
+                "isStatic": true,
                 "isTrigger": false,
                 "name": "shape0",
                 "offset": [
                   0.0,
-                  0.5,
+                  0.0,
                   0.0
                 ],
                 "shape": "Box",
-                "useDefaultCollideMask": false,
+                "useDefaultCollideMask": true,
                 "wantsStayEvent": false
               }
             ],
             "wireFrame": true
           },
           "type": "Collider"
-        },
-        {
-          "params": {},
-          "type": "AttackSource"
-        },
-        {
-          "params": {
-            "width": 0.019999999552965164
-          },
-          "type": "Outline"
         }
       ],
-      "id": 2,
-      "name": "Sakura",
+      "id": 9,
+      "name": "Stage",
       "pos": [
-        10.45106029510498,
-        0.12603825330734253,
-        -4.867675304412842
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotation": [
+        0.0,
+        0.9999998807907104,
+        0.0,
+        -1.1920928955078125e-07
+      ],
+      "scale": [
+        50.0,
+        25.0,
+        50.0
+      ]
+    },
+    {
+      "components": [
+        {
+          "params": {},
+          "type": "GroundRender"
+        }
+      ],
+      "id": 10,
+      "name": "Object10",
+      "pos": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "components": [
+        {
+          "params": {
+            "animations": "",
+            "model": "Asset/Models/Character/Kachujin/kachujin.gltf"
+          },
+          "type": "ModelRender"
+        }
+      ],
+      "id": 11,
+      "name": "Object11",
+      "pos": [
+        0.0,
+        2.345635414123535,
+        0.0
       ],
       "rotation": [
         -0.0,
@@ -129,23 +173,17 @@
         {
           "params": {
             "animations": "",
-            "model": "Asset/Models/Terrains/Sakura/sakura_big.gltf"
+            "model": "Asset/Models/Character/Kachujin/kachujin.gltf"
           },
           "type": "ModelRender"
-        },
-        {
-          "params": {
-            "state": "CullNone"
-          },
-          "type": "RasterizerState"
         }
       ],
-      "id": 4,
-      "name": "Sakura2",
+      "id": 12,
+      "name": "Object12",
       "pos": [
         0.0,
-        0.0,
-        -12.26057243347168
+        4.098996639251709,
+        -0.12959341704845428
       ],
       "rotation": [
         -0.0,
@@ -154,82 +192,9 @@
         1.0
       ],
       "scale": [
-        1.0,
-        1.0,
-        1.0
-      ]
-    },
-    {
-      "components": [
-        {
-          "params": {},
-          "type": "GroundRender"
-        }
-      ],
-      "id": 7,
-      "name": "Object7",
-      "pos": [
-        0.0,
-        1.3131661415100098,
-        0.0
-      ],
-      "rotation": [
-        -0.0,
-        0.0,
-        -0.0,
-        1.0
-      ],
-      "scale": [
-        1.0,
-        1.0,
-        1.0
-      ]
-    },
-    {
-      "components": [
-        {
-          "params": {
-            "align": "Left",
-            "antiAliasing": 3,
-            "color": [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ],
-            "fontNo": 0,
-            "screenPos": [
-              0.0,
-              0.0
-            ],
-            "space": "World",
-            "text": "こんにちは",
-            "worldOffset": [
-              0.0,
-              1.0,
-              0.0
-            ]
-          },
-          "type": "Text"
-        }
-      ],
-      "id": 8,
-      "name": "Object8",
-      "pos": [
-        0.0,
-        0.0,
-        0.0
-      ],
-      "rotation": [
-        0.0,
-        0.0,
-        0.0,
-        1.0
-      ],
-      "scale": [
-        1.0,
-        1.0,
-        1.0
+        0.30000001192092896,
+        0.30000001192092896,
+        0.30000001192092896
       ]
     }
   ],

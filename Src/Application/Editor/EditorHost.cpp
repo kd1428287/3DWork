@@ -9,6 +9,7 @@
 #include "Tools/EffectEditor.h"
 #include "Tools/ShaderTuningEditor.h"
 #include "Tools/BTEditor.h"
+#include "Tools/UIEditor.h"
 
 // DockBuilder系APIを使うために必要(公式にも初期配置構築の定番として使われる内部ヘッダ)
 // ※旧KdDebugGUI.cppから移設。ドッキングレイアウトはエディタ固有の関心事のためこちらに置く
@@ -63,13 +64,15 @@ void EditorHost::RenderPreviewViewports()
 {
 	// 無効な間は、プレビュー描画のコストも払わない
 	if (!m_enabled) { return; }
-	
+
 	KdShaderManager::Instance().ChangeRasterizerState(KdRasterizerState::CullNone);
 
 	// エフェクトプレビュー専用ビューポートへの描画
 	EffectEditor::Instance().RenderPreviewViewport();
 	// マッププレビュー
 	MapEditor::Instance().RenderPreviewViewport();
+	// UIプレビュー
+	UIEditor::Instance().RenderPreviewViewport();
 
 	KdShaderManager::Instance().UndoRasterizerState();
 }
@@ -109,6 +112,9 @@ void EditorHost::Draw()
 
 		// BTエディタ
 		BTEditor::Instance().Update();
+
+		// UIエディタ
+		UIEditor::Instance().Update();
 	}
 
 	// ここより上にImGuiの描画はする事(EndFrame内でImGui::Render()を呼ぶため)

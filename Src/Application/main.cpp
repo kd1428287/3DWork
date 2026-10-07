@@ -1,6 +1,7 @@
 ﻿#include "main.h"
 
 #include "Core/Scene/SceneManager.h"
+#include "Systems/SelectableManager.h"
 
 #include "Editor/EditorHost.h"
 
@@ -42,6 +43,9 @@ void Application::KdBeginUpdate()
 {
 	// 入力状況の更新
 	KdInputManager::Instance().Update();
+
+	// UIのホバー・決定・キー移動(入力更新の直後、シーン更新の前に1回だけ呼ぶ)
+	SelectableManager::Instance().Update();
 
 	// 空間環境の更新
 	KdShaderManager::Instance().WorkAmbientController().Update();
@@ -149,7 +153,7 @@ bool Application::Init(int w, int h)
 	//===================================================================
 	// ウィンドウ作成
 	//===================================================================
-	if (m_window.Create(w, h, "YuGenTyouBukuDen", "Window") == false) {
+	if (m_window.Create(w, h, "YugenTyoubukuDen", "Window") == false) {
 		MessageBoxA(nullptr, "ウィンドウ作成に失敗", "エラー", MB_OK);
 		return false;
 	}
@@ -210,7 +214,7 @@ bool Application::Init(int w, int h)
 	// フォント初期化
 	//===================================================================
 	KdFontManager::Instance().Init(GetWindowHandle());
-	
+
 	KdFontManager::Instance().AddFontResource("Asset/Data/Font/衡山毛筆フォント.ttf");
 	KdFontManager::Instance().AddFont(0, L"衡山毛筆フォント", 32);
 
@@ -232,6 +236,13 @@ bool Application::Init(int w, int h)
 	keyboardDevice->AddButton("Pause", new KdInputButtonForWindows({ 'T' }));
 	keyboardDevice->AddButton("Editor", new KdInputButtonForWindows({ VK_F1 }));
 	keyboardDevice->AddButton("Lock", new KdInputButtonForWindows({ VK_MBUTTON }));
+
+	// UI操作用(SelectableManagerが参照する。名前を変える場合はSetButtonNamesも合わせる)
+	keyboardDevice->AddButton("UIConfirm", new KdInputButtonForWindows({ VK_LBUTTON, VK_RETURN, 'Z' }));
+	keyboardDevice->AddButton("UIUp", new KdInputButtonForWindows({ 'W', VK_UP }));
+	keyboardDevice->AddButton("UIDown", new KdInputButtonForWindows({ 'S', VK_DOWN }));
+	keyboardDevice->AddButton("UILeft", new KdInputButtonForWindows({ 'A', VK_LEFT }));
+	keyboardDevice->AddButton("UIRight", new KdInputButtonForWindows({ 'D', VK_RIGHT }));
 
 	std::string buff;
 	for (int i = 0; i < 10; i++)

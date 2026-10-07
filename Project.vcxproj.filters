@@ -271,6 +271,9 @@
     <Filter Include="Src\Application\Components\Graphics\UI\Text">
       <UniqueIdentifier>{2eac7895-f9d8-47b6-af42-001e6f7c002d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\Components\Graphics\UI\Button">
+      <UniqueIdentifier>{4272f5ef-aca0-410a-8eff-b90a12ae5274}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -1005,6 +1008,21 @@
     <ClInclude Include="Src\Application\Components\Graphics\UI\Text\TextComponent.h">
       <Filter>Src\Application\Components\Graphics\UI\Text</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Components\Graphics\UI\UITransformComponent.h">
+      <Filter>Src\Application\Components\Graphics\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\UI\UIData.h">
+      <Filter>Src\Application\Definitions\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Editor\Tools\UIEditor.h">
+      <Filter>Src\Application\Editor\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Graphics\UI\Button\SelectableComponent.h">
+      <Filter>Src\Application\Components\Graphics\UI\Button</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Systems\SelectableManager.h">
+      <Filter>Src\Application\Systems</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -1330,6 +1348,18 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Components\Graphics\UI\Text\TextComponent.cpp">
       <Filter>Src\Application\Components\Graphics\UI\Text</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\Graphics\UI\UITransformComponent.cpp">
+      <Filter>Src\Application\Components\Graphics\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Editor\Tools\UIEditor.cpp">
+      <Filter>Src\Application\Editor\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\Graphics\UI\Button\SelectableComponent.cpp">
+      <Filter>Src\Application\Components\Graphics\UI\Button</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Systems\SelectableManager.cpp">
+      <Filter>Src\Application\Systems</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

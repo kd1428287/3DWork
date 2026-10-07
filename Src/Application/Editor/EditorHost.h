@@ -2,7 +2,7 @@
 
 //============================================================
 // EditorHost
-//	・エディタ関連(EditorViewport / MapEditor / EffectEditor / ShaderTuningEditor / BTEditor)への
+//	・エディタ関連(EditorViewport / MapEditor / EffectEditor / ShaderTuningEditor / BTEditor / UIEditor)への
 //	  唯一の窓口。Applicationやmain.cppはこのクラス以外のエディタ関連クラスを直接知らない。
 //	・KdDebugGUIはImGuiのインフラ(Context生成/破棄、フレーム境界)のみを提供し、
 //	  「何を描くか(ドッキングレイアウト、各ツールのUpdate)」の判断は全てこちらが持つ。
@@ -22,7 +22,7 @@ public:
 	//=====================================================
 	// エディタ表示の有効/無効(唯一のスイッチ)
 	//	・falseの間は、Draw()内のドッキングUI一式とRenderPreviewViewports()
-	//	  (エフェクト/マッププレビュー)が丸ごとスキップされ、BeginSceneDraw()も
+	//	  (エフェクト/マップ/UIプレビュー)が丸ごとスキップされ、BeginSceneDraw()も
 	//	  ゲーム画面をオフスクリーンを経由せずバックバッファへ直接描画する側に回る。
 	//	  (ImGui自体のBeginFrame/EndFrameは継続して呼ばれるため、ImGui内部状態が壊れる心配はない)
 	//=====================================================
@@ -52,7 +52,7 @@ public:
 private:
 	EditorHost() {}
 
-	bool m_enabled = false;	
+	bool m_enabled = false;
 };
 
 #else

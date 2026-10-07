@@ -1,32 +1,11 @@
-#include "Framework/KdFramework.h"
+﻿#include "Framework/KdFramework.h"
 
 #include "TextComponent.h"
+#include "Application/Components/Graphics/UI/UITransformComponent.h"
 
-namespace
+void TextComponent::Awake()
 {
-	Math::Matrix s_view = Math::Matrix::Identity;
-	Math::Matrix s_proj = Math::Matrix::Identity;
-
-	// ワールド座標を2D描画用の座標(中心原点・Y上向き)へ変換。カメラの後ろならfalse
-	bool ProjectToScreen(const Math::Vector3& world, Math::Vector2& out)
-	{
-		UINT num = 1;
-		D3D11_VIEWPORT vp;
-		KdDirect3D::Instance().WorkDevContext()->RSGetViewports(&num, &vp);
-
-		Math::Vector4 clip = Math::Vector4::Transform(Math::Vector4(world.x, world.y, world.z, 1.0f), s_view * s_proj);
-		if (clip.w <= 0.0f) return false;
-
-		out.x = clip.x / clip.w * vp.Width * 0.5f;
-		out.y = clip.y / clip.w * vp.Height * 0.5f;
-		return true;
-	}
-}
-
-void TextComponent::SetCamera(const Math::Matrix& view, const Math::Matrix& proj)
-{
-	s_view = view;
-	s_proj = proj;
+	ui_ = GetOwner()->GetComponent<UITransformComponent>();
 }
 
 void TextComponent::SetText(const std::string& text)
@@ -84,37 +63,58 @@ void TextComponent::Rebuild()
 
 void TextComponent::DrawSprite()
 {
-	if (m_dirty) Rebuild();
-
-	// 基準座標。Worldの場合はTransform位置を投影し、ピクセルオフセットを足す
-	Math::Vector2 base = m_screenPos;
-	if (m_space == Space::World)
+	// UITransformがAwake後に追加された場合に備えて、ここでも探す
+	if (!ui_) ui_ = GetOwner()->GetComponent<UITransformComponent>();
+	if (!ui_)
 	{
-		if (!transform_) return;
-
-		Math::Vector2 sp;
-		if (!ProjectToScreen(transform_->GetPosition() + m_worldOffset, sp)) return;
-		base += sp;
+		if (!m_warned)
+		{
+			m_warned = true;
+			OutputDebugStringA("TextComponent: UITransformComponent is required\n");
+		}
+		return;
 	}
+
+	if (m_dirty) Rebuild();
+	if (m_lines.empty()) return;
+
+	Math::Vector2 base;
+	if (!ui_->Resolve(base)) return;
+
+	const Math::Vector2 scale = ui_->GetScale();
+	const Math::Vector2 pivot = ui_->GetPivot();
+
+	// 文字ブロックの大きさ(拡大率適用後)
+	const float lineH = m_lineHeight * scale.y;
+	float blockW = 0.0f;
+	for (auto& line : m_lines) blockW = std::max(blockW, line->GetTotalWidth() * scale.x);
+	const float blockH = lineH * (float)m_lines.size();
+
+	// pivotがブロックのどこかを基準点に合わせる。Y上向きなので上端はbase.y + blockH*(1-pivot.y)
+	const float left = base.x - blockW * pivot.x;
+	float y = base.y + blockH * (1.0f - pivot.y) - lineH;
 
 	auto& shader = KdShaderManager::Instance().m_spriteShader;
 
-	// Y軸は上向きなので、1行目の上端を基準に行ごとにYを減らす
-	float y = base.y - m_lineHeight;
 	for (auto& line : m_lines)
 	{
-		float x = base.x;
-		if (m_align == Align::Center)		x -= line->GetTotalWidth() * 0.5f;
-		else if (m_align == Align::Right)	x -= (float)line->GetTotalWidth();
+		const float lineW = line->GetTotalWidth() * scale.x;
+
+		float x = left;
+		if (m_align == Align::Center)		x += (blockW - lineW) * 0.5f;
+		else if (m_align == Align::Right)	x += blockW - lineW;
 
 		for (auto& ch : line->GetTexList())
 		{
 			if (!ch->FontTex) continue;
 
+			const float w = ch->FontTex->GetInfo().Width * scale.x;
+			const float h = ch->FontTex->GetInfo().Height * scale.y;
+
 			// pivot(0,0)で左下基準になる
-			shader.DrawTex(ch->FontTex.get(), (int)x, (int)y, nullptr, &m_color, Math::Vector2(0.0f, 0.0f));
-			x += (float)ch->FontTex->GetInfo().Width;
+			shader.DrawTex(ch->FontTex.get(), (int)x, (int)y, (int)(w + 0.5f), (int)(h + 0.5f), nullptr, &m_color, Math::Vector2(0.0f, 0.0f));
+			x += w;
 		}
-		y -= m_lineHeight;
+		y -= lineH;
 	}
 }

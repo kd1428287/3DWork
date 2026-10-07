@@ -1,7 +1,6 @@
 {
 	"name": "player",
-	"pos": [0,100,1],
-
+	"positon": [0,20,0],
 	"components": [
 		{ "type": "Player" },
 		{

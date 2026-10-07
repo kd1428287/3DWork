@@ -331,12 +331,14 @@
     <ClInclude Include="Src\Application\Components\Graphics\Render\PolygonRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\SpriteRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\WireFrameComponent.h" />
+    <ClInclude Include="Src\Application\Components\Graphics\UI\Button\SelectableComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\EnemyWorldGaugeComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\GaugeBar.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\GaugeBarRenderer.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\GaugeWatcher.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\PlayerHudGaugeComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Text\TextComponent.h" />
+    <ClInclude Include="Src\Application\Components\Graphics\UI\UITransformComponent.h" />
     <ClInclude Include="Src\Application\Components\Physics\Collision\BodySurfaceQuery.h" />
     <ClInclude Include="Src\Application\Components\Physics\Collision\ColliderComponent.h" />
     <ClInclude Include="Src\Application\Components\Physics\Movement\DirectionTransformSource.h" />
@@ -408,6 +410,7 @@
     <ClInclude Include="Src\Application\Definitions\Prefab\BitFlags.h" />
     <ClInclude Include="Src\Application\Definitions\Prefab\Prefab.h" />
     <ClInclude Include="Src\Application\Definitions\UI\GaugeBarStyle.h" />
+    <ClInclude Include="Src\Application\Definitions\UI\UIData.h" />
     <ClInclude Include="Src\Application\Editor\Common\ComponentInspector.h" />
     <ClInclude Include="Src\Application\Editor\Common\EditorPreviewViewport.h" />
     <ClInclude Include="Src\Application\Editor\Common\EditorViewport.h" />
@@ -424,6 +427,7 @@
     <ClInclude Include="Src\Application\Editor\Tools\EffectEditor.h" />
     <ClInclude Include="Src\Application\Editor\Tools\MapEditor.h" />
     <ClInclude Include="Src\Application\Editor\Tools\ShaderTuningEditor.h" />
+    <ClInclude Include="Src\Application\Editor\Tools\UIEditor.h" />
     <ClInclude Include="Src\Application\Effect\Common\ITextureProvider.h" />
     <ClInclude Include="Src\Application\Effect\Common\KdAssetsTextureProvider.h" />
     <ClInclude Include="Src\Application\Effect\Particle\EffectDispatcher.h" />
@@ -460,6 +464,7 @@
     <ClInclude Include="Src\Application\Systems\GamePlay\GameInputSystem.h" />
     <ClInclude Include="Src\Application\Systems\GamePlay\TimeScaleSystem.h" />
     <ClInclude Include="Src\Application\Systems\InputSystem.h" />
+    <ClInclude Include="Src\Application\Systems\SelectableManager.h" />
     <ClInclude Include="Src\Application\Systems\SystemManager.h" />
     <ClInclude Include="Src\Framework\Direct3D\KdMaterial.h" />
     <ClInclude Include="Src\Framework\Direct3D\Polygon\KdPolygon.h" />
@@ -532,7 +537,9 @@
     <ClCompile Include="Src\Application\Components\Graphics\Render\Mod\SkyDomeEdgeFadeComponent.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\Render\OutlineRenderComponent.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\Render\WireFrameComponent.cpp" />
+    <ClCompile Include="Src\Application\Components\Graphics\UI\Button\SelectableComponent.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\UI\Text\TextComponent.cpp" />
+    <ClCompile Include="Src\Application\Components\Graphics\UI\UITransformComponent.cpp" />
     <ClCompile Include="Src\Application\Core\Scene\SceneManager.cpp" />
     <ClCompile Include="Src\Application\Definitions\Effect\EffectParams.cpp" />
     <ClCompile Include="Src\Application\Definitions\Loaders\AttackDataLoader.cpp" />
@@ -556,6 +563,7 @@
     <ClCompile Include="Src\Application\Editor\Tools\EffectEditor.cpp" />
     <ClCompile Include="Src\Application\Editor\Tools\MapEditor.cpp" />
     <ClCompile Include="Src\Application\Editor\Tools\ShaderTuningEditor.cpp" />
+    <ClCompile Include="Src\Application\Editor\Tools\UIEditor.cpp" />
     <ClCompile Include="Src\Application\Effect\Common\KdAssetsTextureProvider.cpp" />
     <ClCompile Include="Src\Application\Effect\Particle\EffectDispatcher.cpp" />
     <ClCompile Include="Src\Application\Effect\Particle\EffectInstance.cpp" />
@@ -574,6 +582,7 @@
     <ClCompile Include="Src\Application\Scene\GameScene\GameScene.cpp" />
     <ClCompile Include="Src\Application\Scene\ResultScene\ResultScene.cpp" />
     <ClCompile Include="Src\Application\Scene\TitleScene\TitleScene.cpp" />
+    <ClCompile Include="Src\Application\Systems\SelectableManager.cpp" />
     <ClCompile Include="Src\Framework\Direct3D\KdMaterial.cpp">
       <SubType>
       </SubType>
