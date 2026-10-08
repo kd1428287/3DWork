@@ -1,6 +1,7 @@
 ﻿#include "Application/main.h"
 
 #include "UIEditor.h"
+#include "Application/Factories/ComponentRegistry.h"
 
 #include "imgui_internal.h"
 
@@ -14,8 +15,11 @@
 // プレビューRTの最大サイズ(これを超える基準解像度は実描画しない)
 static constexpr float kMaxRefSize = 4096.0f;
 
+// UI用テクスチャの置き場(登録一覧のパスはここからの相対)
+static const std::string kTextureRoot = "Asset/Textures/UI/";
+
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 初期ドックレイアウト: 左Hierarchy / 右Inspector / 下UI Editor / 中央Canvas
+// 初期ドックレイアウト: 左Hierarchy / 右Inspector / 下UI Editor+UI Assets / 中央Canvas
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 static void SetupUIDockLayout(ImGuiID dockspaceId, const ImVec2& size)
 {
@@ -38,24 +42,9 @@ static void SetupUIDockLayout(ImGuiID dockspaceId, const ImVec2& size)
 	ImGui::DockBuilderFinish(dockspaceId);
 }
 
-// params用の入力ヘルパー
-static void EditStringParam(nlohmann::json& params, const char* label, const char* key)
-{
-	char buf[256];
-	strncpy_s(buf, sizeof(buf), params.value(key, std::string()).c_str(), _TRUNCATE);
-	if (ImGui::InputText(label, buf, sizeof(buf))) { params[key] = std::string(buf); }
-}
-
-static void EditFloatParam(nlohmann::json& params, const char* label, const char* key, float def)
-{
-	float v = params.value(key, def);
-	if (ImGui::DragFloat(label, &v, 0.5f, 1.0f, 512.0f, "%.0f")) { params[key] = v; }
-}
-
-// UI用テクスチャの置き場(登録一覧のパスはここからの相対)
-static const std::string kTextureRoot = "Asset/Textures/UI/";
-
-// パス文字列はエディタ内・JSON・ImGuiではUTF-8で持つ。以下は変換用
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 文字コード変換。エディタ内・JSON・ImGuiはUTF-8で持ち、既存ローダーに渡す時だけ変換する
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 static std::wstring Utf8ToWide(const std::string& s)
 {
 	if (s.empty()) return std::wstring();
@@ -74,14 +63,13 @@ static std::string WideToUtf8(const std::wstring& w)
 	return s;
 }
 
-// 既存ローダー(KdFileExistence/KdAssets/KdTexture::Load)に渡す、ANSI(日本語環境ならCP932)のパス
-static std::string Utf8ToNative(const std::string& utf8)
+static std::string Utf8ToCodepage(const std::string& utf8, UINT codepage)
 {
 	const std::wstring w = Utf8ToWide(utf8);
 	if (w.empty()) return std::string();
-	const int n = WideCharToMultiByte(CP_ACP, 0, w.c_str(), (int)w.size(), nullptr, 0, nullptr, nullptr);
+	const int n = WideCharToMultiByte(codepage, 0, w.c_str(), (int)w.size(), nullptr, 0, nullptr, nullptr);
 	std::string s(n, '\0');
-	WideCharToMultiByte(CP_ACP, 0, w.c_str(), (int)w.size(), &s[0], n, nullptr, nullptr);
+	WideCharToMultiByte(codepage, 0, w.c_str(), (int)w.size(), &s[0], n, nullptr, nullptr);
 	return s;
 }
 
@@ -108,6 +96,19 @@ static void DrawThumb(const KdTexture* tex, float box)
 	const ImVec2 sz = aspect >= 1.0f ? ImVec2(box, box / aspect) : ImVec2(box * aspect, box);
 	const ImVec2 q(p.x + (box - sz.x) * 0.5f, p.y + (box - sz.y) * 0.5f);
 	dl->AddImage((ImTextureID)(intptr_t)tex->GetSRView(), q, ImVec2(q.x + sz.x, q.y + sz.y));
+}
+
+// レジストリの初期値でコンポーネントを作る(未登録の型はparamsが空になる)
+static ComponentEntry MakeEntry(const std::string& type)
+{
+	ComponentEntry entry;
+	entry.type = type;
+	entry.params = nlohmann::json::object();
+	if (const auto* defaults = ComponentRegistry::Instance().FindDefaultParams(type))
+	{
+		entry.params = *defaults;
+	}
+	return entry;
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -152,6 +153,9 @@ void UIEditor::CollectVisibleOrder(UIId parentId, std::vector<UIId>& out, int de
 	}
 }
 
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// テキスト・テクスチャ・矩形
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 std::shared_ptr<KdTexture> UIEditor::GetTexture(const std::string& path)
 {
 	if (path.empty()) return nullptr;
@@ -160,7 +164,7 @@ std::shared_ptr<KdTexture> UIEditor::GetTexture(const std::string& path)
 	if (it != m_texCache.end()) return it->second;
 
 	// 失敗はキャッシュしない(後からファイルを置いても拾えるように)。キャッシュキーはUTF-8、ローダーにはANSIを渡す
-	const std::string native = Utf8ToNative(path);
+	const std::string native = Utf8ToCodepage(path, CP_ACP);
 	if (!KdFileExistence(native)) return nullptr;
 
 	std::shared_ptr<KdTexture> tex = KdAssets::Instance().m_textures.GetData(native);
@@ -168,22 +172,97 @@ std::shared_ptr<KdTexture> UIEditor::GetTexture(const std::string& path)
 	return tex;
 }
 
+// TextComponent::Rebuild()と同じ手順。KdFontManagerはShift-JISで受け取る
+const UIEditor::TextBlock* UIEditor::GetTextBlock(int fontNo, int antiAliasing, const std::string& textUtf8)
+{
+	fontNo = std::clamp(fontNo, 0, 9);
+	antiAliasing = std::clamp(antiAliasing, 0, 3);
+
+	const std::string key = std::to_string(fontNo) + "|" + std::to_string(antiAliasing) + "|" + textUtf8;
+
+	auto it = m_textCache.find(key);
+	if (it != m_textCache.end()) return &it->second;
+
+	// 編集中の文字列ごとに増えるので、溜まりすぎたら捨てる
+	if (m_textCache.size() > 256) { m_textCache.clear(); }
+
+	const std::string sjis = Utf8ToCodepage(textUtf8, 932);
+
+	TextBlock block;
+	size_t start = 0;
+	while (true)
+	{
+		const size_t end = sjis.find('\n', start);
+		std::string line = sjis.substr(start, end == std::string::npos ? std::string::npos : end - start);
+		if (!line.empty() && line.back() == '\r') line.pop_back();
+
+		auto sprite = KdFontManager::Instance().CreateFontTexture(fontNo, line, antiAliasing);
+		if (sprite)
+		{
+			for (auto& ch : sprite->GetTexList())
+			{
+				if (ch->FontTex) block.lineHeight = (std::max)(block.lineHeight, (float)ch->FontTex->GetInfo().Height);
+			}
+			block.lines.push_back(sprite);
+		}
+
+		if (end == std::string::npos) break;
+		start = end + 1;
+	}
+
+	return &(m_textCache[key] = std::move(block));
+}
+
+DirectX::SimpleMath::Vector2 UIEditor::GetIntrinsicSize(const UIElement& e)
+{
+	UILayout l;
+	if (!ReadUILayout(e, l)) return DirectX::SimpleMath::Vector2(0.0f, 0.0f);
+
+	// 文字: 文字ブロックの大きさ(TextComponent::DrawSpriteと同じ計算)
+	if (const ComponentEntry* t = e.Find("Text"))
+	{
+		const TextBlock* tb = GetTextBlock(t->params.value("fontNo", 0), t->params.value("antiAliasing", 3),
+			t->params.value("text", std::string()));
+		if (!tb || tb->lines.empty()) return DirectX::SimpleMath::Vector2(0.0f, 0.0f);
+
+		float w = 0.0f;
+		for (auto& line : tb->lines) { w = (std::max)(w, line->GetTotalWidth() * l.scale.x); }
+		return DirectX::SimpleMath::Vector2(w, tb->lineHeight * l.scale.y * (float)tb->lines.size());
+	}
+
+	// 画像: テクスチャの大きさ
+	if (const ComponentEntry* i = e.Find("UIImage"))
+	{
+		if (const std::shared_ptr<KdTexture> tex = GetTexture(i->params.value("texture", std::string())))
+		{
+			return DirectX::SimpleMath::Vector2(tex->GetWidth() * l.scale.x, tex->GetHeight() * l.scale.y);
+		}
+	}
+
+	return DirectX::SimpleMath::Vector2(0.0f, 0.0f);
+}
+
+bool UIEditor::GetElementRect(const UIElement& e, UIRect& out)
+{
+	UILayout l;
+	if (!ReadUILayout(e, l) || l.world) return false;
+
+	DirectX::SimpleMath::Vector2 s(l.size.x * l.scale.x, l.size.y * l.scale.y);
+	if (l.size.x == 0.0f && l.size.y == 0.0f) { s = GetIntrinsicSize(e); }
+	if (s.x <= 0.0f || s.y <= 0.0f) return false;
+
+	out = ResolveUIBox(l, m_refSize, s);
+	return true;
+}
+
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // Undo / Redo
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void UIEditor::PushUndo(const UIElement* before)
+void UIEditor::PushUndo()
 {
 	UndoState state;
 	state.elements = m_elements;
 	state.selectedId = m_selectedId;
-
-	if (before)
-	{
-		for (auto& e : state.elements)
-		{
-			if (e.id == before->id) { e = *before; break; }
-		}
-	}
 
 	m_undoStack.push_back(std::move(state));
 	if (m_undoStack.size() > kMaxUndoDepth)
@@ -279,9 +358,9 @@ void UIEditor::Update()
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // プレビューの実描画
-//	基準解像度のオフスクリーンへKdSpriteShaderで描く。スプライト座標系は
-//	「画面中央が原点・Y上向き」なので、UIの左上原点・Y下向きから変換する。
-//	Textは(サイズ指定できないDrawFontを避け)Canvas側でImGuiが重ね描きする
+//	基準解像度のオフスクリーンへKdSpriteShaderで描く。UIImage・Textはゲーム側の
+//	コンポーネント(UIImageComponent / TextComponent)と同じ計算で、座標も同じ
+//	「画面中央が原点・Y上向き」で描く
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void UIEditor::RenderPreviewViewport()
 {
@@ -319,6 +398,84 @@ void UIEditor::RenderPreviewViewport()
 	// 描画
 	KdSpriteShader& spr = KdShaderManager::Instance().m_spriteShader;
 
+	// UIImageComponent::DrawSprite()と同じ
+	auto drawImage = [&](const UIElement& e, const UILayout& l)
+		{
+			const ComponentEntry* c = e.Find("UIImage");
+			if (!c) return;
+
+			const std::shared_ptr<KdTexture> tex = GetTexture(c->params.value("texture", std::string()));
+
+			DirectX::SimpleMath::Vector2 size(l.size.x * l.scale.x, l.size.y * l.scale.y);
+			if (size.x == 0.0f && size.y == 0.0f && tex)
+			{
+				size = DirectX::SimpleMath::Vector2(tex->GetWidth() * l.scale.x, tex->GetHeight() * l.scale.y);
+			}
+			if (size.x <= 0.0f || size.y <= 0.0f) return;
+
+			const DirectX::SimpleMath::Vector2 base = ResolveUIBase(l, m_refSize);
+			const DirectX::SimpleMath::Vector2 min = base - DirectX::SimpleMath::Vector2(size.x * l.pivot.x, size.y * l.pivot.y);
+
+			const DirectX::SimpleMath::Vector4 cv = UIDataDetail::ReadVec4(c->params, "color", DirectX::SimpleMath::Vector4(1, 1, 1, 1));
+			const Math::Color color(cv.x, cv.y, cv.z, cv.w);
+
+			if (tex)
+			{
+				spr.DrawTex(tex.get(), (int)min.x, (int)min.y, (int)(size.x + 0.5f), (int)(size.y + 0.5f), nullptr, &color, Math::Vector2(0.0f, 0.0f));
+			}
+			else
+			{
+				spr.DrawBox((int)(min.x + size.x * 0.5f), (int)(min.y + size.y * 0.5f),
+					(int)(size.x * 0.5f), (int)(size.y * 0.5f), &color, true);
+			}
+		};
+
+	// TextComponent::DrawSprite()と同じ
+	auto drawText = [&](const UIElement& e, const UILayout& l)
+		{
+			const ComponentEntry* t = e.Find("Text");
+			if (!t) return;
+
+			const TextBlock* tb = GetTextBlock(t->params.value("fontNo", 0), t->params.value("antiAliasing", 3),
+				t->params.value("text", std::string()));
+			if (!tb || tb->lines.empty()) return;
+
+			const DirectX::SimpleMath::Vector4 cv = UIDataDetail::ReadVec4(t->params, "color", DirectX::SimpleMath::Vector4(1, 1, 1, 1));
+			const Math::Color color(cv.x, cv.y, cv.z, cv.w);
+			const std::string align = t->params.value("align", std::string("Left"));
+
+			const DirectX::SimpleMath::Vector2 base = ResolveUIBase(l, m_refSize);
+
+			const float lineH = tb->lineHeight * l.scale.y;
+			float blockW = 0.0f;
+			for (auto& line : tb->lines) { blockW = (std::max)(blockW, line->GetTotalWidth() * l.scale.x); }
+			const float blockH = lineH * (float)tb->lines.size();
+
+			const float left = base.x - blockW * l.pivot.x;
+			float y = base.y + blockH * (1.0f - l.pivot.y) - lineH;
+
+			for (auto& line : tb->lines)
+			{
+				const float lineW = line->GetTotalWidth() * l.scale.x;
+
+				float x = left;
+				if (align == "Center")		x += (blockW - lineW) * 0.5f;
+				else if (align == "Right")	x += blockW - lineW;
+
+				for (auto& ch : line->GetTexList())
+				{
+					if (!ch->FontTex) continue;
+
+					const float cw = ch->FontTex->GetInfo().Width * l.scale.x;
+					const float chh = ch->FontTex->GetInfo().Height * l.scale.y;
+
+					spr.DrawTex(ch->FontTex.get(), (int)x, (int)y, (int)(cw + 0.5f), (int)(chh + 0.5f), nullptr, &color, Math::Vector2(0.0f, 0.0f));
+					x += cw;
+				}
+				y -= lineH;
+			}
+		};
+
 	KdShaderManager::Instance().ChangeBlendState(KdBlendState::Alpha);
 	spr.Begin();
 
@@ -328,30 +485,13 @@ void UIEditor::RenderPreviewViewport()
 	for (UIId id : order)
 	{
 		const UIElement* e = FindElement(id);
-		if (!e || e->type == "Text") continue;
+		if (!e) continue;
 
-		const UIRect r = ResolveUIRect(m_elements, *e, m_refSize);
-		const Math::Color col(e->color.x, e->color.y, e->color.z, e->color.w);
+		UILayout l;
+		if (!ReadUILayout(*e, l) || l.world) continue;
 
-		// 左上原点Y下向き → 中央原点Y上向き(矩形の左下を基準にする)
-		const float left = r.min.x - m_refSize.x * 0.5f;
-		const float bottom = m_refSize.y * 0.5f - (r.min.y + r.size.y);
-
-		std::shared_ptr<KdTexture> tex;
-		if (e->type == "Image") { tex = GetTexture(e->params.value("texture", std::string())); }
-
-		if (tex)
-		{
-			spr.DrawTex(tex.get(), (int)std::lround(left), (int)std::lround(bottom),
-				(int)std::lround(r.size.x), (int)std::lround(r.size.y), nullptr, &col, Math::Vector2(0.0f, 0.0f));
-		}
-		else
-		{
-			const float hw = r.size.x * 0.5f;
-			const float hh = r.size.y * 0.5f;
-			spr.DrawBox((int)std::lround(left + hw), (int)std::lround(bottom + hh),
-				(int)std::lround(hw), (int)std::lround(hh), &col, true);
-		}
+		drawImage(*e, l);
+		drawText(*e, l);
 	}
 
 	spr.End();
@@ -425,7 +565,11 @@ void UIEditor::DrawHierarchyNode(UIId id)
 	if (children.empty()) flags |= ImGuiTreeNodeFlags_Leaf;
 	if (m_selectedId == id) flags |= ImGuiTreeNodeFlags_Selected;
 
-	std::string label = "[" + e->type + "] " + e->name + "##" + std::to_string(id);
+	// UITransform以外で最初のコンポーネント名を種別として表示する
+	std::string tag = "-";
+	for (auto& c : e->components) { if (c.type != "UITransform") { tag = c.type; break; } }
+
+	const std::string label = "[" + tag + "] " + e->name + "##" + std::to_string(id);
 
 	if (!e->visible) ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
 	const bool open = ImGui::TreeNodeEx(label.c_str(), flags);
@@ -482,7 +626,7 @@ void UIEditor::DrawHierarchy()
 	for (auto& e : m_elements) { if (e.parentId == kInvalidUIId) roots.push_back(e.id); }
 	for (UIId id : roots) { DrawHierarchyNode(id); }
 
-	// 空き領域へのドロップで画面直下へ戻す
+	// 空き領域へのドロップで最上位へ戻す
 	const ImVec2 avail = ImGui::GetContentRegionAvail();
 	ImGui::InvisibleButton("##rootdrop", ImVec2(avail.x, avail.y > 24.0f ? avail.y : 24.0f));
 	if (ImGui::BeginDragDropTarget())
@@ -506,7 +650,7 @@ void UIEditor::DrawHierarchy()
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// インスペクター(選択中要素の編集)
+// インスペクター(名前 + MapEditorと同じコンポーネント編集)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void UIEditor::DrawInspector()
 {
@@ -517,81 +661,39 @@ void UIEditor::DrawInspector()
 	if (!e)
 	{
 		ImGui::TextDisabled("要素が選択されていません");
-		m_inspectorEditing = false;
 		ImGui::End();
 		return;
 	}
 
-	const UIElement before = *e;
-
 	char nameBuf[128];
 	strncpy_s(nameBuf, sizeof(nameBuf), e->name.c_str(), _TRUNCATE);
 	if (ImGui::InputText("Name", nameBuf, sizeof(nameBuf))) { e->name = nameBuf; }
+	if (ImGui::IsItemActivated()) { PushUndo(); }
 
-	static const char* kTypes[] = { "Image", "Text", "Button" };
-	int typeIdx = 0;
-	for (int i = 0; i < 3; ++i) { if (e->type == kTypes[i]) typeIdx = i; }
-	if (ImGui::Combo("Type", &typeIdx, kTypes, 3)) { e->type = kTypes[typeIdx]; }
+	ImGui::Checkbox("Visible (Editor)", &e->visible);
+	if (ImGui::IsItemActivated()) { PushUndo(); }
 
 	if (const UIElement* parent = FindElement(e->parentId))
 	{
 		ImGui::Text("Parent : %s", parent->name.c_str());
 	}
-	else
+
+	// 表示に必要な条件のヒント
+	UILayout l;
+	if (!ReadUILayout(*e, l))
 	{
-		ImGui::TextDisabled("Parent : (画面直下)");
+		ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.3f, 1.0f), "UITransformが無いため表示されません");
+	}
+	else if (l.world)
+	{
+		ImGui::TextDisabled("Space=Worldはエディタでは表示できません");
 	}
 
-	ImGui::Checkbox("Visible", &e->visible);
-
-	ImGui::SeparatorText("Rect");
-	ImGui::DragFloat2("Anchor", &e->anchor.x, 0.01f, 0.0f, 1.0f, "%.2f");
-	ImGui::DragFloat2("Pivot", &e->pivot.x, 0.01f, 0.0f, 1.0f, "%.2f");
-	ImGui::DragFloat2("Position", &e->pos.x, 1.0f, -8192.0f, 8192.0f, "%.0f");
-	ImGui::DragFloat2("Size", &e->size.x, 1.0f, 1.0f, 8192.0f, "%.0f");
-	ImGui::ColorEdit4("Color", &e->color.x);
-
-	ImGui::SeparatorText("Params");
-	if (!e->params.is_object()) { e->params = nlohmann::json::object(); }
-
-	if (e->type == "Image")
-	{
-		EditStringParam(e->params, "Texture", "texture");
-
-		const std::shared_ptr<KdTexture> tex = GetTexture(e->params.value("texture", std::string()));
-		DrawThumb(tex.get(), 64.0f);
-		ImGui::SameLine();
-		ImGui::BeginGroup();
-		if (tex)
-		{
-			ImGui::Text("%u x %u", tex->GetWidth(), tex->GetHeight());
-			if (ImGui::Button("Fit Size"))
-			{
-				e->size = DirectX::SimpleMath::Vector2((float)tex->GetWidth(), (float)tex->GetHeight());
-			}
-			ImGui::SameLine();
-		}
-		else
-		{
-			ImGui::TextDisabled("(未読み込み)");
-		}
-		if (ImGui::Button("Clear")) { e->params["texture"] = ""; }
-		ImGui::EndGroup();
-	}
-	else
-	{
-		EditStringParam(e->params, "Text", "text");
-		EditFloatParam(e->params, "Font Size", "fontSize", 32.0f);
-		if (e->type == "Button") { EditStringParam(e->params, "Action", "action"); }
-	}
-
-	// 変更があった最初の1回だけUndoを積む(ドラッグ中の連続変更は1操作として扱う)
-	if (!(before == *e))
-	{
-		if (!m_inspectorEditing) { PushUndo(&before); }
-		m_inspectorEditing = true;
-	}
-	if (!ImGui::IsAnyItemActive()) { m_inspectorEditing = false; }
+	ImGui::Separator();
+	ComponentInspector::DrawList(
+		e->components,
+		[this]() { PushUndo(); },
+		[](const std::string&) {});
 
 	ImGui::End();
 }
@@ -599,7 +701,7 @@ void UIEditor::DrawInspector()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // キャンバス(実描画プレビュー + ギズモ操作)
 //	ホイール:ズーム / 中ボタンドラッグ:パン / 左ドラッグ:選択・移動(Shiftで軸固定)
-//	/ 四辺・四隅のハンドルでリサイズ。水色の●=アンカー位置、橙の○=ピボット位置
+//	/ 四辺・四隅のハンドルでリサイズ(sizeを持つ要素のみ)。水色の●=アンカー位置、橙の○=ピボット位置
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void UIEditor::DrawCanvas()
 {
@@ -660,11 +762,20 @@ void UIEditor::DrawCanvas()
 	const ImVec2 origin(canvasPos.x + m_canvasPan.x, canvasPos.y + m_canvasPan.y);
 	auto toScreen = [&](const Vector2& p) { return ImVec2(origin.x + p.x * zoom, origin.y + p.y * zoom); };
 	auto toRef = [&](const ImVec2& s) { return Vector2((s.x - origin.x) / zoom, (s.y - origin.y) / zoom); };
-	auto screenRect = [&](const UIElement& e, ImVec2& p0, ImVec2& p1)
+	// 要素の画面上の矩形。表示できない要素はfalse
+	auto elementRect = [&](const UIElement& e, ImVec2& p0, ImVec2& p1)
 		{
-			const UIRect r = ResolveUIRect(m_elements, e, m_refSize);
+			UIRect r;
+			if (!GetElementRect(e, r)) return false;
 			p0 = toScreen(r.min);
 			p1 = toScreen(r.min + r.size);
+			return true;
+		};
+	// sizeを持つ要素だけリサイズできる(文字・画像の自動サイズは対象外)
+	auto isResizable = [](const UIElement& e)
+		{
+			UILayout l;
+			return ReadUILayout(e, l) && !l.world && (l.size.x != 0.0f || l.size.y != 0.0f);
 		};
 	// ハンドルの画面座標(hx,hy は -1/0/1)
 	auto handlePoint = [](const ImVec2& p0, const ImVec2& p1, int hx, int hy)
@@ -692,15 +803,14 @@ void UIEditor::DrawCanvas()
 		constexpr float kHandleHit = 7.0f;
 
 		UIElement* sel = FindSelected();
-		if (sel && sel->visible)
+		ImVec2 sp0, sp1;
+		if (sel && sel->visible && isResizable(*sel) && elementRect(*sel, sp0, sp1))
 		{
-			ImVec2 p0, p1;
-			screenRect(*sel, p0, p1);
 			for (int i = 0; i < 9 && m_dragMode == DragMode::None; ++i)
 			{
 				const int hx = i % 3 - 1, hy = i / 3 - 1;
 				if (hx == 0 && hy == 0) continue;
-				const ImVec2 hp = handlePoint(p0, p1, hx, hy);
+				const ImVec2 hp = handlePoint(sp0, sp1, hx, hy);
 				if (std::fabs(mp.x - hp.x) <= kHandleHit && std::fabs(mp.y - hp.y) <= kHandleHit)
 				{
 					m_dragMode = DragMode::Resize;
@@ -718,24 +828,28 @@ void UIEditor::DrawCanvas()
 				const UIElement* e = FindElement(*it);
 				if (!e) continue;
 				ImVec2 p0, p1;
-				screenRect(*e, p0, p1);
+				if (!elementRect(*e, p0, p1)) continue;
 				if (mp.x >= p0.x && mp.x <= p1.x && mp.y >= p0.y && mp.y <= p1.y) { picked = *it; break; }
 			}
 			m_selectedId = picked;
 			if (picked != kInvalidUIId) { m_dragMode = DragMode::Move; }
 		}
 
-		if (UIElement* e = FindSelected(); e && m_dragMode != DragMode::None)
+		UIRect r;
+		if (UIElement* e = FindSelected(); e && m_dragMode != DragMode::None && GetElementRect(*e, r))
 		{
-			const UIRect r = ResolveUIRect(m_elements, *e, m_refSize);
 			m_dragStartMin = r.min;
 			m_dragStartSize = r.size;
 			m_dragStartMouse = toRef(mp);
 			m_dragMoved = false;
 		}
+		else
+		{
+			m_dragMode = DragMode::None;
+		}
 	}
 
-	// ドラッグ中: 開始時点からの累積移動量で矩形を求め、pos/sizeへ逆算して書き込む
+	// ドラッグ中: 開始時点からの累積移動量で矩形を求め、UITransformのposition/sizeへ逆算して書き込む
 	if (m_dragMode != DragMode::None)
 	{
 		UIElement* e = FindSelected();
@@ -777,7 +891,7 @@ void UIEditor::DrawCanvas()
 				UIRect rect;
 				rect.min = mn;
 				rect.size = mx - mn;
-				ApplyUIRect(*e, ResolveParentRect(m_elements, *e, m_refSize), rect);
+				ApplyUIRect(*e, m_refSize, rect, m_dragMode == DragMode::Resize);
 			}
 		}
 	}
@@ -791,62 +905,56 @@ void UIEditor::DrawCanvas()
 	const ImVec2 screenMax = toScreen(m_refSize);
 	dl->AddRectFilled(screenMin, screenMax, IM_COL32(52, 52, 60, 255));
 
-	// 実描画プレビュー(Image/Buttonの矩形・テクスチャ)。未描画の間は下の簡易表示で代用する
-	const bool realPreview = m_previewRendered && m_previewTex.WorkSRView() != nullptr;
-	if (realPreview)
+	// 実描画プレビュー(UIImage・Text)。RenderPreviewViewport()が呼ばれるまでは背景のみ
+	if (m_previewRendered && m_previewTex.WorkSRView() != nullptr)
 	{
 		dl->AddImage((ImTextureID)(intptr_t)m_previewTex.WorkSRView(), screenMin, screenMax);
 	}
 	dl->AddRect(screenMin, screenMax, IM_COL32(130, 130, 140, 255));
 
+	// 各要素の範囲(Selectableは水色=当たり判定の範囲)
 	for (UIId id : order)
 	{
 		const UIElement* e = FindElement(id);
-		if (!e) continue;
-
 		ImVec2 p0, p1;
-		screenRect(*e, p0, p1);
+		if (!e || !elementRect(*e, p0, p1)) continue;
 
-		const ImU32 col = ImGui::ColorConvertFloat4ToU32(ImVec4(e->color.x, e->color.y, e->color.z, e->color.w));
-		const float fontSize = e->params.value("fontSize", 32.0f) * zoom;
-		const std::string text = e->params.value("text", std::string());
-
-		if (e->type == "Text")
-		{
-			dl->AddText(ImGui::GetFont(), fontSize, p0, col, text.c_str());
-			continue;
-		}
-
-		if (!realPreview) { dl->AddRectFilled(p0, p1, col); }
-
-		if (e->type == "Button")
-		{
-			const ImVec2 ts = ImGui::GetFont()->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, text.c_str());
-			const ImVec2 tp((p0.x + p1.x - ts.x) * 0.5f, (p0.y + p1.y - ts.y) * 0.5f);
-			dl->AddText(ImGui::GetFont(), fontSize, tp, IM_COL32(255, 255, 255, 255), text.c_str());
-		}
+		const bool selectable = e->Find("Selectable") != nullptr;
+		dl->AddRect(p0, p1, selectable ? IM_COL32(80, 200, 255, 110) : IM_COL32(255, 255, 255, 40));
 	}
 
 	// 選択枠・リサイズハンドル・アンカー/ピボット
 	if (const UIElement* sel = FindSelected(); sel && sel->visible)
 	{
 		ImVec2 p0, p1;
-		screenRect(*sel, p0, p1);
-		dl->AddRect(p0, p1, IM_COL32(255, 210, 60, 255), 0.0f, 0, 2.0f);
-
-		for (int i = 0; i < 9; ++i)
+		if (elementRect(*sel, p0, p1))
 		{
-			const int hx = i % 3 - 1, hy = i / 3 - 1;
-			if (hx == 0 && hy == 0) continue;
-			const ImVec2 hp = handlePoint(p0, p1, hx, hy);
-			dl->AddRectFilled(ImVec2(hp.x - 4.0f, hp.y - 4.0f), ImVec2(hp.x + 4.0f, hp.y + 4.0f),
-				IM_COL32(255, 210, 60, 255));
+			dl->AddRect(p0, p1, IM_COL32(255, 210, 60, 255), 0.0f, 0, 2.0f);
+
+			if (isResizable(*sel))
+			{
+				for (int i = 0; i < 9; ++i)
+				{
+					const int hx = i % 3 - 1, hy = i / 3 - 1;
+					if (hx == 0 && hy == 0) continue;
+					const ImVec2 hp = handlePoint(p0, p1, hx, hy);
+					dl->AddRectFilled(ImVec2(hp.x - 4.0f, hp.y - 4.0f), ImVec2(hp.x + 4.0f, hp.y + 4.0f),
+						IM_COL32(255, 210, 60, 255));
+				}
+			}
 		}
 
-		const UIRect pr = ResolveParentRect(m_elements, *sel, m_refSize);
-		const UIRect r = ResolveUIRect(m_elements, *sel, m_refSize);
-		dl->AddCircleFilled(toScreen(pr.min + pr.size * sel->anchor), 5.0f, IM_COL32(80, 200, 255, 255));
-		dl->AddCircle(toScreen(r.min + r.size * sel->pivot), 6.0f, IM_COL32(255, 140, 60, 255), 12, 2.0f);
+		UILayout l;
+		if (ReadUILayout(*sel, l) && !l.world)
+		{
+			// anchorは画面基準・Y上向き。エディタ座標(Y下向き)へ直して表示する
+			dl->AddCircleFilled(toScreen(Vector2(l.anchor.x * m_refSize.x, (1.0f - l.anchor.y) * m_refSize.y)),
+				5.0f, IM_COL32(80, 200, 255, 255));
+
+			const Vector2 base = ResolveUIBase(l, m_refSize);
+			dl->AddCircle(toScreen(Vector2(base.x + m_refSize.x * 0.5f, m_refSize.y * 0.5f - base.y)),
+				6.0f, IM_COL32(255, 140, 60, 255), 12, 2.0f);
+		}
 	}
 
 	char info[128];
@@ -861,33 +969,39 @@ void UIEditor::DrawCanvas()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 要素の追加/削除/付け替え/並び替え
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void UIEditor::AddElement(const std::string& type)
+void UIEditor::AddElement(const std::string& preset)
 {
 	PushUndo();
 
 	UIElement e;
 	e.id = m_nextId++;
-	e.type = type;
-	e.name = type + std::to_string(e.id);
-	e.pos = { 50.0f, 50.0f };
+	e.name = preset + std::to_string(e.id);
 
 	// 選択中の要素があれば、その兄弟として追加する
 	if (const UIElement* sel = FindSelected()) { e.parentId = sel->parentId; }
 
-	if (type == "Image")
+	ComponentEntry transform = MakeEntry("UITransform");
+
+	if (preset == "Image")
 	{
-		e.params = { {"texture", ""} };
+		transform.params["size"] = { 100.0f, 100.0f };
+		e.components = { transform, MakeEntry("UIImage") };
 	}
-	else if (type == "Text")
+	else if (preset == "Text")
 	{
-		e.size = { 200.0f, 40.0f };
-		e.params = { {"text", "Text"}, {"fontSize", 32.0f} };
+		// sizeは0のまま(文字ブロックの大きさになる)
+		ComponentEntry text = MakeEntry("Text");
+		text.params["text"] = "Text";
+		e.components = { transform, text };
 	}
 	else
 	{
-		e.size = { 200.0f, 60.0f };
-		e.color = { 0.25f, 0.25f, 0.32f, 1.0f };
-		e.params = { {"text", "Button"}, {"fontSize", 32.0f}, {"action", ""} };
+		// ボタン: sizeが当たり判定の範囲。文字は同じ基準点・pivotで中央揃えにする
+		transform.params["size"] = { 200.0f, 60.0f };
+		ComponentEntry text = MakeEntry("Text");
+		text.params["text"] = "Button";
+		text.params["align"] = "Center";
+		e.components = { transform, MakeEntry("Selectable"), text };
 	}
 
 	m_selectedId = e.id;
@@ -927,11 +1041,7 @@ void UIEditor::Reparent(UIId id, UIId newParentId)
 	if (newParentId != kInvalidUIId && (newParentId == id || IsDescendant(newParentId, id))) return;
 
 	PushUndo();
-
-	// 見た目の位置を保ったまま親を変える
-	const UIRect rect = ResolveUIRect(m_elements, *e, m_refSize);
-	e->parentId = newParentId;
-	ApplyUIRect(*e, ResolveParentRect(m_elements, *e, m_refSize), rect);
+	e->parentId = newParentId;	// 座標は画面基準なので、付け替えても見た目は変わらない
 }
 
 void UIEditor::MoveSibling(UIId id, int dir)
@@ -988,7 +1098,7 @@ bool UIEditor::Load(const std::string& path)
 		return false;
 	}
 
-	// 存在しない親を指す要素は画面直下へ戻す
+	// 存在しない親を指す要素は最上位へ戻す
 	for (auto& e : file.elements)
 	{
 		if (e.parentId == kInvalidUIId) continue;
@@ -1009,6 +1119,7 @@ bool UIEditor::Load(const std::string& path)
 	m_redoStack.clear();
 	m_dragMode = DragMode::None;
 	m_texCache.clear();
+	m_textCache.clear();
 
 	FILETIME writeTime;
 	if (JsonLoader::GetLastWriteTime(path, writeTime)) { m_lastWriteTime = writeTime; }
@@ -1048,7 +1159,7 @@ UIEditor::UIEditor()
 // テクスチャの登録・選択・利用
 //	登録一覧(JSON)の持ち方・ファイルダイアログはMapEditorのアセット登録と同じ、
 //	フォルダ走査の拡張子判定はEffectEditorと同じ。選択したテクスチャは
-//	選択中のImage要素のtextureへ書き込まれ、Canvasのプレビューにそのまま反映される
+//	選択中の要素のUIImageのtextureへ書き込まれる(UIImageが無ければ追加する)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void UIEditor::DrawAssetPicker()
 {
@@ -1074,16 +1185,39 @@ void UIEditor::DrawAssetPicker()
 	ImGui::Separator();
 
 	UIElement* sel = FindSelected();
-	const bool canAssign = sel && sel->type == "Image";
 
-	if (canAssign)
+	if (sel)
 	{
-		const std::string current = sel->params.value("texture", std::string());
+		std::string current;
+		if (const ComponentEntry* img = sel->Find("UIImage")) { current = img->params.value("texture", std::string()); }
+
 		ImGui::Text("Current : %s", current.empty() ? "(None)" : current.c_str());
+
+		if (!current.empty())
+		{
+			ImGui::SameLine();
+			if (ImGui::SmallButton("Fit Size"))
+			{
+				const std::shared_ptr<KdTexture> tex = GetTexture(current);
+				UILayout l;
+				if (tex && ReadUILayout(*sel, l))
+				{
+					PushUndo();
+					l.size = DirectX::SimpleMath::Vector2((float)tex->GetWidth(), (float)tex->GetHeight());
+					WriteUILayout(*sel, l);
+				}
+			}
+			ImGui::SameLine();
+			if (ImGui::SmallButton("Clear"))
+			{
+				PushUndo();
+				sel->Find("UIImage")->params["texture"] = "";
+			}
+		}
 	}
 	else
 	{
-		ImGui::TextDisabled("Image要素を選択してクリックで割り当て / Canvasへドラッグで新規配置");
+		ImGui::TextDisabled("要素を選択してクリックで割り当て(UIImageが無ければ追加) / Canvasへドラッグで新規配置");
 	}
 
 	ImGui::Separator();
@@ -1113,11 +1247,17 @@ void UIEditor::DrawAssetPicker()
 			{
 				m_selectedAsset = i;
 
-				if (canAssign)
+				if (sel)
 				{
 					PushUndo();
-					if (!sel->params.is_object()) { sel->params = nlohmann::json::object(); }
-					sel->params["texture"] = FullTexturePath(rel);
+
+					ComponentEntry* image = sel->Find("UIImage");
+					if (!image)
+					{
+						sel->components.push_back(MakeEntry("UIImage"));
+						image = &sel->components.back();
+					}
+					image->params["texture"] = FullTexturePath(rel);
 				}
 			}
 
@@ -1273,15 +1413,20 @@ void UIEditor::AddImageFromTexture(const std::string& fullPath, const DirectX::S
 	UIElement* e = FindSelected();
 	if (!e) return;
 
-	e->params["texture"] = fullPath;
+	if (ComponentEntry* image = e->Find("UIImage")) { image->params["texture"] = fullPath; }
+
+	UILayout l;
+	if (!ReadUILayout(*e, l)) return;
+
 	if (const std::shared_ptr<KdTexture> tex = GetTexture(fullPath))
 	{
-		e->size = DirectX::SimpleMath::Vector2((float)tex->GetWidth(), (float)tex->GetHeight());
+		l.size = DirectX::SimpleMath::Vector2((float)tex->GetWidth(), (float)tex->GetHeight());
 	}
+	WriteUILayout(*e, l);
 
 	// ドロップ位置が矩形の中心になるように配置する
 	UIRect rect;
-	rect.size = e->size;
-	rect.min = center - e->size * 0.5f;
-	ApplyUIRect(*e, ResolveParentRect(m_elements, *e, m_refSize), rect);
+	rect.size = DirectX::SimpleMath::Vector2(l.size.x * l.scale.x, l.size.y * l.scale.y);
+	rect.min = center - rect.size * 0.5f;
+	ApplyUIRect(*e, m_refSize, rect, false);
 }

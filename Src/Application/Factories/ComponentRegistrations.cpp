@@ -61,6 +61,8 @@
 #include "Application/Components/Graphics/UI/Gauge/EnemyWorldGaugeComponent.h"
 #include "Application/Components/Graphics/UI/UITransformComponent.h"
 #include "Application/Components/Graphics/UI/Text/TextComponent.h"
+#include "Application/Components/Graphics/UI/Image/UIImageComponent.h"
+#include "Application/Components/Graphics/UI/Button/SelectableComponent.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // コンポーネントのConfigのJSON変換。キー名はメンバ名と同じで、未指定のキーは初期値になる。
@@ -118,7 +120,7 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 	COMPONENT_PARAMS_DEFINE_TYPE(GroundSensorConfig, footOffset, checkDistance)
 	COMPONENT_PARAMS_DEFINE_TYPE(PostureConfig, max, lowerLimit, regenPerSecond, regenDelaySeconds)
 	COMPONENT_PARAMS_DEFINE_TYPE(HealthConfig, max)
-	COMPONENT_PARAMS_DEFINE_TYPE(ReactionEventConfig, enableCameraShake, enableHitStop, enableEffect,
+	COMPONENT_PARAMS_DEFINE_TYPE(ReactionEventConfig, enableCameraShake, enableHitStop, enableEffect,enableDistortion,
 		effectName, cameraShakeIntensity, hitStopDurationSeconds, knockbackPower)
 	COMPONENT_PARAMS_DEFINE_TYPE(HitReactionConfig, hit, block, parry, hitStopDelaySeconds, largeStaggerDuration)
 	COMPONENT_PARAMS_DEFINE_TYPE(PlayerCombatMovementConfig, walkSpeed, runSpeed)
@@ -483,6 +485,54 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 		text->SetColor(Math::Color(p.color[0], p.color[1], p.color[2], p.color[3]));
 	}
 
+	// 画像表示。textureはUTF-8のパスで書き、読み込み時にShift-JISへ変換する。空なら単色の矩形になる。
+	// 位置・pivot・拡大率は、同じオブジェクトのUITransformで指定する(必須)。sizeが0ならテクスチャの大きさで表示する。
+	struct UIImageParams
+	{
+		std::string          texture;
+		std::array<float, 4> color = { 1.0f, 1.0f, 1.0f, 1.0f };
+	};
+	COMPONENT_PARAMS_DEFINE_TYPE(UIImageParams, texture, color)
+
+		void BuildUIImage(BuildContext& ctx, const UIImageParams& p)
+	{
+		auto* image = ctx.Add<UIImageComponent>();
+		image->SetColor(Math::Color(p.color[0], p.color[1], p.color[2], p.color[3]));
+		image->SetTexture(JsonUtf8ToSjis(p.texture));
+	}
+
+	// 選択できるUI(ボタンなど)。当たり判定は、同じオブジェクトのUITransformの矩形(必須)。
+	// onXxxは各タイミングで発行するアクションID(空なら何もしない)。clickParamはonClickに添えるparam。
+	struct SelectableParams
+	{
+		bool        interactable = true;
+		int         layer = 0;
+		int         group = 0;
+
+		std::string onHoverEnter;
+		std::string onHoverExit;
+		std::string onSelect;
+		std::string onDeselect;
+		std::string onClick;
+		std::string clickParam;
+	};
+	COMPONENT_PARAMS_DEFINE_TYPE(SelectableParams, interactable, layer, group,
+		onHoverEnter, onHoverExit, onSelect, onDeselect, onClick, clickParam)
+
+		void BuildSelectable(BuildContext& ctx, const SelectableParams& p)
+	{
+		auto* selectable = ctx.Add<SelectableComponent>();
+		selectable->SetInteractable(p.interactable);
+		selectable->SetLayer(p.layer);
+		selectable->SetGroup(p.group);
+
+		if (!p.onHoverEnter.empty()) selectable->AddAction(UITrigger::HoverEnter, p.onHoverEnter);
+		if (!p.onHoverExit.empty())  selectable->AddAction(UITrigger::HoverExit, p.onHoverExit);
+		if (!p.onSelect.empty())     selectable->AddAction(UITrigger::Select, p.onSelect);
+		if (!p.onDeselect.empty())   selectable->AddAction(UITrigger::Deselect, p.onDeselect);
+		if (!p.onClick.empty())      selectable->AddAction(UITrigger::Click, p.onClick, p.clickParam);
+	}
+
 	// 親の敵をターゲットにした頭上ゲージUIを組み立てる。
 	void BuildEnemyWorldGauge(BuildContext& ctx, const nlohmann::json&)
 	{
@@ -602,4 +652,6 @@ void RegisterAllComponents(ComponentRegistry& registry)
 	registry.AddRaw("EnemyWorldGauge", BuildEnemyWorldGauge);
 	registry.AddWithParams<UITransformParams>("UITransform", BuildUITransform);
 	registry.AddWithParams<TextParams>("Text", BuildText);
+	registry.AddWithParams<UIImageParams>("UIImage", BuildUIImage);
+	registry.AddWithParams<SelectableParams>("Selectable", BuildSelectable);
 }

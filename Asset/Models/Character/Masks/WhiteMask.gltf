@@ -11,14 +11,31 @@
 		{
 			"name":"Scene",
 			"nodes":[
-				0
+				1
 			]
 		}
 	],
 	"nodes":[
 		{
+			"name":"Nose",
+			"rotation":[
+				-0.7071068286895752,
+				0,
+				0,
+				0.7071068286895752
+			],
+			"translation":[
+				0,
+				0.13472270965576172,
+				-0.3854849636554718
+			]
+		},
+		{
+			"children":[
+				0
+			],
 			"mesh":0,
-			"name":"tripo_6965568d_215b_40d3_86a3_9acbf212abe5",
+			"name":"WhiteMask",
 			"rotation":[
 				0.7071068286895752,
 				0,
@@ -39,7 +56,7 @@
 					]
 				}
 			},
-			"name":"tripo_6965568d_215b_40d3_86a3_9acbf212abe5",
+			"name":"WhiteMask",
 			"pbrMetallicRoughness":{
 				"baseColorTexture":{
 					"index":0
@@ -51,7 +68,7 @@
 	],
 	"meshes":[
 		{
-			"name":"tripo_6965568d_215b_40d3_86a3_9acbf212abe5",
+			"name":"WhiteMask",
 			"primitives":[
 				{
 					"attributes":{
@@ -74,8 +91,8 @@
 	"images":[
 		{
 			"mimeType":"image/jpeg",
-			"name":"white+mask+3d+model_basecolor",
-			"uri":"white%2Bmask%2B3d%2Bmodel_basecolor.jpg"
+			"name":"WhiteMask_basecolor",
+			"uri":"WhiteMask_basecolor.jpg"
 		}
 	],
 	"accessors":[

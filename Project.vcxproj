@@ -337,6 +337,7 @@
     <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\GaugeBarRenderer.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\GaugeWatcher.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\PlayerHudGaugeComponent.h" />
+    <ClInclude Include="Src\Application\Components\Graphics\UI\Image\UIImageComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Text\TextComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\UITransformComponent.h" />
     <ClInclude Include="Src\Application\Components\Physics\Collision\BodySurfaceQuery.h" />
@@ -491,6 +492,7 @@
     <ClInclude Include="Src\Framework\Shader\GPUParticle\ParticleBuffer.h" />
     <ClInclude Include="Src\Framework\Shader\KdAmbientController.h" />
     <ClInclude Include="Src\Framework\Shader\KdRenderTargetChange.h" />
+    <ClInclude Include="Src\Framework\Shader\PerlinNoiseGPU.h" />
     <ClInclude Include="Src\Framework\Shader\SlashTrailShader\SlashTrailShader.h" />
     <ClInclude Include="Src\Framework\Shader\SlashTrailShader\SlashTrailRenderer.h" />
     <ClInclude Include="Src\Framework\Shader\StandardShader\KdStandardShader.h" />
@@ -538,6 +540,7 @@
     <ClCompile Include="Src\Application\Components\Graphics\Render\OutlineRenderComponent.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\Render\WireFrameComponent.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\UI\Button\SelectableComponent.cpp" />
+    <ClCompile Include="Src\Application\Components\Graphics\UI\Image\UIImageComponent.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\UI\Text\TextComponent.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\UI\UITransformComponent.cpp" />
     <ClCompile Include="Src\Application\Core\Scene\SceneManager.cpp" />
@@ -639,6 +642,7 @@
     <None Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_node_editor_internal.inl" />
     <None Include="Src\Framework\Shader\GPUParticle\inc_GPUParticleShader.hlsli" />
     <None Include="Src\Framework\Shader\inc_KdCommon.hlsli" />
+    <None Include="Src\Framework\Shader\PerlinNoise.hlsli" />
     <None Include="Src\Framework\Shader\PostProcessShader\inc_KdPostProcessShader.hlsli" />
     <None Include="Src\Framework\Shader\SpriteShader\inc_KdSpriteShader.hlsli" />
     <None Include="Src\Framework\Shader\StandardShader\inc_KdSkyDomeShader.hlsli" />
@@ -686,6 +690,9 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_Distortion.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_DoF.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>

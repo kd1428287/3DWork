@@ -173,7 +173,7 @@
         {
           "params": {
             "animations": "",
-            "model": "Asset/Models/Character/Kachujin/kachujin.gltf"
+            "model": "Asset/Models/Character/Masks/DemonMask.gltf"
           },
           "type": "ModelRender"
         }
@@ -195,6 +195,35 @@
         0.30000001192092896,
         0.30000001192092896,
         0.30000001192092896
+      ]
+    },
+    {
+      "components": [
+        {
+          "params": {
+            "animations": "",
+            "model": "Asset/Models/Character/Masks/DemonMask.gltf"
+          },
+          "type": "ModelRender"
+        }
+      ],
+      "id": 13,
+      "name": "DemonMask",
+      "pos": [
+        0.10122694075107574,
+        5.044363498687744,
+        -19.128625869750977
+      ],
+      "rotation": [
+        0.0,
+        1.0,
+        0.0,
+        -1.192093321833454e-07
+      ],
+      "scale": [
+        0.9999995231628418,
+        1.0,
+        0.9999995231628418
       ]
     }
   ],

@@ -1,8 +1,8 @@
 ﻿#include "Framework/KdFramework.h"
 
 #include "SelectableManager.h"
-#include "Application/Components/Graphics/UI/Button/SelectableComponent.h"
 #include "Application/Components/Graphics/UI/UITransformComponent.h"
+#include "Application/Components/Graphics/UI/Button/SelectableComponent.h"
 #include "Application/main.h"
 
 void SelectableManager::Register(SelectableComponent* sel)
@@ -15,6 +15,41 @@ void SelectableManager::Unregister(SelectableComponent* sel)
 	list_.erase(std::remove(list_.begin(), list_.end(), sel), list_.end());
 	if (hovered_ == sel) hovered_ = nullptr;
 	if (pressed_ == sel) pressed_ = nullptr;
+}
+
+void SelectableManager::RegisterAction(const std::string& id, ActionPublisher publisher)
+{
+	publishers_[id] = std::move(publisher);
+}
+
+void SelectableManager::UnregisterAction(const std::string& id)
+{
+	publishers_.erase(id);
+}
+
+void SelectableManager::Post(UITrigger trigger, const UIAction& action)
+{
+	queue_.push_back({ trigger, action });
+}
+
+void SelectableManager::Dispatch()
+{
+	// 配信中に積まれたものは次回のUpdateで処理する
+	std::vector<Pending> pending;
+	pending.swap(queue_);
+
+	for (const auto& p : pending)
+	{
+		// 型付きイベントの発行処理が登録されていれば先に呼ぶ
+		auto it = publishers_.find(p.action.id);
+		if (it != publishers_.end())
+		{
+			ActionPublisher fn = it->second;
+			fn(p.action.param);
+		}
+
+		GLOBALEVENT.Publish(UIActionEvent(p.trigger, p.action.id, p.action.param));
+	}
 }
 
 void SelectableManager::SetActiveGroup(int group)
@@ -93,6 +128,7 @@ void SelectableManager::Update()
 	{
 		ClearHoverAndPress();
 		hasPrevMouse_ = false;
+		Dispatch();
 		return;
 	}
 
@@ -153,4 +189,6 @@ void SelectableManager::Update()
 		pressed_ = nullptr;
 		target->Release(!mouseMode_ || hovered_ == target);
 	}
+
+	Dispatch();
 }

@@ -1,6 +1,6 @@
-#pragma once
+﻿#pragma once
 
-#include <functional>
+#include "Application/Systems/SelectableManager.h"
 
 class UITransformComponent;
 
@@ -33,8 +33,7 @@ public:
 	{
 		if (!interactable_ || hovered_ == hovered) return;
 		hovered_ = hovered;
-		if (hovered_ && onHoverEnter) onHoverEnter();
-		if (!hovered_ && onHoverExit) onHoverExit();
+		Notify(hovered_ ? UITrigger::HoverEnter : UITrigger::HoverExit);
 	}
 
 	// 選択状態にする。他の選択中UIは自動で解除される
@@ -44,7 +43,7 @@ public:
 		if (s_current) s_current->Deselect();
 		selected_ = true;
 		s_current = this;
-		if (onSelect) onSelect();
+		Notify(UITrigger::Select);
 	}
 
 	void Deselect()
@@ -53,7 +52,7 @@ public:
 		selected_ = false;
 		pressed_ = false;
 		if (s_current == this) s_current = nullptr;
-		if (onDeselect) onDeselect();
+		Notify(UITrigger::Deselect);
 	}
 
 	// 押下開始。離した時に範囲内なら決定される
@@ -72,7 +71,7 @@ public:
 	// キー・パッドの決定ボタン用。即座にonClickを呼ぶ
 	void Submit()
 	{
-		if (interactable_ && onClick) onClick();
+		if (interactable_) Notify(UITrigger::Click);
 	}
 
 	//===========================================
@@ -140,18 +139,23 @@ public:
 	// 現在選択中のUI。無ければnullptr
 	static SelectableComponent* GetCurrent() { return s_current; }
 
-	//===========================================
-	// イベント(必要なものだけ設定する)
-	//===========================================
-
-	std::function<void()> onHoverEnter;
-	std::function<void()> onHoverExit;
-	std::function<void()> onSelect;
-	std::function<void()> onDeselect;
-	std::function<void()> onClick;
+	// 発火タイミングごとのアクション(データから設定する)。同じタイミングに複数追加でき、追加順に配信される
+	void AddAction(UITrigger trigger, const std::string& id, const std::string& param = "")
+	{
+		actions_[(int)trigger].push_back({ id, param });
+	}
+	void ClearActions(UITrigger trigger) { actions_[(int)trigger].clear(); }
+	const std::vector<UIAction>& GetActions(UITrigger trigger) const { return actions_[(int)trigger]; }
 
 private:
+	// SelectableManagerのキューへ積む。実際の発行はUpdate末尾
+	void Notify(UITrigger trigger) const
+	{
+		for (const auto& action : actions_[(int)trigger]) SelectableManager::Instance().Post(trigger, action);
+	}
+
 	UITransformComponent* ui_ = nullptr;
+	std::vector<UIAction> actions_[(int)UITrigger::Count];
 
 	bool interactable_ = true;
 	bool hovered_ = false;

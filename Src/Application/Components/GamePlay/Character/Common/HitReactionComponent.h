@@ -23,6 +23,7 @@ struct ReactionEventConfig
 	bool enableCameraShake = false;
 	bool enableHitStop = false;
 	bool enableEffect = true;
+	bool enableDistortion = false;
 
 	std::string effectName = "";
 

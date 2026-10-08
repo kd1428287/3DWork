@@ -11,14 +11,31 @@
 		{
 			"name":"Scene",
 			"nodes":[
-				0
+				1
 			]
 		}
 	],
 	"nodes":[
 		{
+			"name":"Nose",
+			"rotation":[
+				-0.7071068286895752,
+				0,
+				0,
+				0.7071068286895752
+			],
+			"translation":[
+				0,
+				0.10174853354692459,
+				-0.31465089321136475
+			]
+		},
+		{
+			"children":[
+				0
+			],
 			"mesh":0,
-			"name":"tripo_node_509fd966-4106-4abf-bdf2-510782da9e3e",
+			"name":"DemonMask",
 			"rotation":[
 				0.7071068286895752,
 				0,
@@ -39,7 +56,7 @@
 					]
 				}
 			},
-			"name":"tripo_node_509fd966-4106-4abf-bdf2-510782da9e3e_material",
+			"name":"DemonMask_Material",
 			"pbrMetallicRoughness":{
 				"baseColorTexture":{
 					"index":0
@@ -51,7 +68,7 @@
 	],
 	"meshes":[
 		{
-			"name":"tripo_node_509fd966-4106-4abf-bdf2-510782da9e3e",
+			"name":"DemonMask",
 			"primitives":[
 				{
 					"attributes":{
@@ -73,9 +90,9 @@
 	],
 	"images":[
 		{
-			"mimeType":"image/jpeg",
-			"name":"demon+mask+3d+model_basecolor",
-			"uri":"demon%2Bmask%2B3d%2Bmodel_basecolor.jpg"
+			"mimeType":"image/png",
+			"name":"DemonMask_basecolor",
+			"uri":"DemonMask_basecolor.png"
 		}
 	],
 	"accessors":[

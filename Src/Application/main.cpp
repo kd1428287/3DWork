@@ -130,6 +130,8 @@ void Application::Draw()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void Application::PostDraw()
 {
+	KdShaderManager::Instance().m_postProcessShader.UpdateDistortion(GetDeltaTime());
+
 	// 画面のぼかしや被写界深度処理の実施
 	KdShaderManager::Instance().m_postProcessShader.PostEffectProcess();
 
