@@ -9,10 +9,6 @@
 // 宛先は各GameObjectのローカルバス
 class CollisionEventPublisher {
 public:
-	using CollisionEnterEvent = Events::Collision::CollisionEnterEvent;
-	using CollisionExitEvent = Events::Collision::CollisionExitEvent;
-	using CollisionStayEvent = Events::Collision::CollisionStayEvent;
-
 	static void PublishEnter(
 		ColliderComponent* a, const CollisionShapeEntry& shapeA,
 		ColliderComponent* b, const CollisionShapeEntry& shapeB,
@@ -48,12 +44,12 @@ public:
 	}
 
 private:
-	static CollisionEnterEvent MakeEnterEvent(
+	static Events::CollisionEnterEvent MakeEnterEvent(
 		ColliderComponent* self, const CollisionShapeEntry& selfShape,
 		ColliderComponent* other, const CollisionShapeEntry& otherShape,
 		const CollisionMath::OverlapResult& hitResult, bool flipNormal) {
 
-		CollisionEnterEvent e;
+		Events::CollisionEnterEvent e;
 		e.selfObject = self->GetOwner();
 		e.selfCollider = self;
 		e.selfShapeName = selfShape.name;
@@ -69,11 +65,11 @@ private:
 		return e;
 	}
 
-	static CollisionExitEvent MakeExitEvent(
+	static Events::CollisionExitEvent MakeExitEvent(
 		ColliderComponent* self, const CollisionShapeEntry& selfShape,
 		ColliderComponent* other, const CollisionShapeEntry& otherShape) {
 
-		CollisionExitEvent e;
+		Events::CollisionExitEvent e;
 		e.selfObject = self->GetOwner();
 		e.selfCollider = self;
 		e.selfShapeName = selfShape.name;
@@ -85,14 +81,14 @@ private:
 		return e;
 	}
 
-	static CollisionStayEvent MakeStayEvent(
+	static Events::CollisionStayEvent MakeStayEvent(
 		ColliderComponent* self, const CollisionShapeEntry& selfShape,
 		ColliderComponent* other, const CollisionShapeEntry& otherShape,
 		const CollisionMath::OverlapResult& hitResult, bool flipNormal) {
 
 		// フィールド構成はCollisionEnterEventと同一。型を分けているのは
 		// 購読側がEnter/Stayを別々に選べるようにするため。
-		CollisionStayEvent e;
+		Events::CollisionStayEvent e;
 		e.selfObject = self->GetOwner();
 		e.selfCollider = self;
 		e.selfShapeName = selfShape.name;

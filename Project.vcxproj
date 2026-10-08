@@ -364,6 +364,8 @@
     <ClInclude Include="Src\Application\Core\EventBus\Events\CollisionEvents.h" />
     <ClInclude Include="Src\Application\Core\EventBus\Events\EffectEvents.h" />
     <ClInclude Include="Src\Application\Core\EventBus\Events\Event.h" />
+    <ClInclude Include="Src\Application\Core\EventBus\Events\HealthEvents.h" />
+    <ClInclude Include="Src\Application\Core\EventBus\Events\PostureEvents.h" />
     <ClInclude Include="Src\Application\Core\EventBus\Events\SceneEvents.h" />
     <ClInclude Include="Src\Application\Core\EventBus\Events\SlashTrailEvents.h" />
     <ClInclude Include="Src\Application\Core\EventBus\Events\TimeScaleEvents.h" />

@@ -1,64 +1,65 @@
 ﻿#pragma once
 
+#include "Event.h"
+#include <string>
+
+class GameObject;
+class ColliderComponent;
+
 namespace Events
 {
-	namespace Collision
+	struct CollisionEnterEvent : public Event
 	{
-		struct CollisionEnterEvent : public Event
-		{
-			GameObject* selfObject = nullptr;
-			ColliderComponent* selfCollider = nullptr;
-			std::string selfShapeName;
+		GameObject* selfObject = nullptr;
+		ColliderComponent* selfCollider = nullptr;
+		std::string selfShapeName;
 
-			GameObject* otherObject = nullptr;
-			ColliderComponent* otherCollider = nullptr;
-			std::string otherShapeName;
+		GameObject* otherObject = nullptr;
+		ColliderComponent* otherCollider = nullptr;
+		std::string otherShapeName;
 
-			ColliderCategory selfCategory; 
-			ColliderCategory otherCategory;
+		ColliderCategory selfCategory;
+		ColliderCategory otherCategory;
 
-			bool SelfIs(ColliderCategory c) const { return Any(selfCategory & c); }
-			bool OtherIs(ColliderCategory c) const { return Any(otherCategory & c); }
+		bool SelfIs(ColliderCategory c) const { return Any(selfCategory & c); }
+		bool OtherIs(ColliderCategory c) const { return Any(otherCategory & c); }
 
-			// selfをotherから押し出す向き・めり込み量など。
-			// KdCollider::CollisionResultに相当する詳細情報。
-			// hitNormalは常に「self視点」(selfをotherから押し出す向き)になるよう
-			// CollisionSystem側で調整済み。
-			CollisionMath::OverlapResult hitResult;
-		};
+		CollisionMath::OverlapResult hitResult;
+	};
 
-		struct CollisionStayEvent : Event {
-			GameObject* selfObject = nullptr;
-			ColliderComponent* selfCollider = nullptr;
-			std::string selfShapeName;
-			GameObject* otherObject = nullptr;
-			ColliderComponent* otherCollider = nullptr;
-			std::string otherShapeName;
+	struct CollisionStayEvent : public Event
+	{
+		GameObject* selfObject = nullptr;
+		ColliderComponent* selfCollider = nullptr;
+		std::string selfShapeName;
 
-			ColliderCategory selfCategory;
-			ColliderCategory otherCategory;
+		GameObject* otherObject = nullptr;
+		ColliderComponent* otherCollider = nullptr;
+		std::string otherShapeName;
 
-			bool SelfIs(ColliderCategory c) const { return Any(selfCategory & c); }
-			bool OtherIs(ColliderCategory c) const { return Any(otherCategory & c); }
+		ColliderCategory selfCategory;
+		ColliderCategory otherCategory;
 
-			CollisionMath::OverlapResult hitResult;
-		};
+		bool SelfIs(ColliderCategory c) const { return Any(selfCategory & c); }
+		bool OtherIs(ColliderCategory c) const { return Any(otherCategory & c); }
 
-		struct CollisionExitEvent : public Event
-		{
-			GameObject* selfObject = nullptr;
-			ColliderComponent* selfCollider = nullptr;
-			std::string selfShapeName;
+		CollisionMath::OverlapResult hitResult;
+	};
 
-			GameObject* otherObject = nullptr;
-			ColliderComponent* otherCollider = nullptr;
-			std::string otherShapeName;
+	struct CollisionExitEvent : public Event
+	{
+		GameObject* selfObject = nullptr;
+		ColliderComponent* selfCollider = nullptr;
+		std::string selfShapeName;
 
-			ColliderCategory selfCategory;
-			ColliderCategory otherCategory;
+		GameObject* otherObject = nullptr;
+		ColliderComponent* otherCollider = nullptr;
+		std::string otherShapeName;
 
-			bool SelfIs(ColliderCategory c) const { return Any(selfCategory & c); }
-			bool OtherIs(ColliderCategory c) const { return Any(otherCategory & c); }
-		};
-	}
-};
+		ColliderCategory selfCategory;
+		ColliderCategory otherCategory;
+
+		bool SelfIs(ColliderCategory c) const { return Any(selfCategory & c); }
+		bool OtherIs(ColliderCategory c) const { return Any(otherCategory & c); }
+	};
+}

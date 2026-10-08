@@ -8,23 +8,21 @@ public:
 	explicit TimeScaleSystem(EventBus& bus, ObjectManager& objManager)
 		: eventBus_(bus), objManager_(objManager)
 	{
-		using namespace Events::TimeScale;
+		subscriptions_.push_back(ScopedSubscriber(&eventBus_,
+			eventBus_.Subscribe<Events::SetGlobalTimeScaleEvent>(
+				[this](const Events::SetGlobalTimeScaleEvent& e) { OnSetGlobalTimeScale(e); })));
 
 		subscriptions_.push_back(ScopedSubscriber(&eventBus_,
-			eventBus_.Subscribe<SetGlobalTimeScaleEvent>(
-				[this](const SetGlobalTimeScaleEvent& e) { OnSetGlobalTimeScale(e); })));
+			eventBus_.Subscribe<Events::SetMaskTimeScaleEvent>(
+				[this](const Events::SetMaskTimeScaleEvent& e) { OnSetMaskTimeScale(e); })));
 
 		subscriptions_.push_back(ScopedSubscriber(&eventBus_,
-			eventBus_.Subscribe<SetMaskTimeScaleEvent>(
-				[this](const SetMaskTimeScaleEvent& e) { OnSetMaskTimeScale(e); })));
+			eventBus_.Subscribe<Events::SetObjectTimeScaleEvent>(
+				[this](const Events::SetObjectTimeScaleEvent& e) { OnSetObjectTimeScale(e); })));
 
 		subscriptions_.push_back(ScopedSubscriber(&eventBus_,
-			eventBus_.Subscribe<SetObjectTimeScaleEvent>(
-				[this](const SetObjectTimeScaleEvent& e) { OnSetObjectTimeScale(e); })));
-
-		subscriptions_.push_back(ScopedSubscriber(&eventBus_,
-			eventBus_.Subscribe<CancelTimeScaleRequestEvent>(
-				[this](const CancelTimeScaleRequestEvent& e) { OnCancelRequest(e); })));
+			eventBus_.Subscribe<Events::CancelTimeScaleRequestEvent>(
+				[this](const Events::CancelTimeScaleRequestEvent& e) { OnCancelRequest(e); })));
 	}
 
 	void Update(float dt)
@@ -77,7 +75,7 @@ private:
 
 	// --- イベントハンドラ ---------------------------------------------
 
-	void OnSetGlobalTimeScale(const Events::TimeScale::SetGlobalTimeScaleEvent& e)
+	void OnSetGlobalTimeScale(const Events::SetGlobalTimeScaleEvent& e)
 	{
 		const uint64_t id = IssueRequestId();
 		globalRequests_.push_back({ id, e.timeScale, e.duration });
@@ -86,7 +84,7 @@ private:
 		e.issuedRequestId = id;
 	}
 
-	void OnSetMaskTimeScale(const Events::TimeScale::SetMaskTimeScaleEvent& e)
+	void OnSetMaskTimeScale(const Events::SetMaskTimeScaleEvent& e)
 	{
 		const uint64_t id = IssueRequestId();
 		maskRequests_[e.mask].push_back({ id, e.timeScale, e.duration });
@@ -95,7 +93,7 @@ private:
 		NotifyIssued(id);
 	}
 
-	void OnSetObjectTimeScale(const Events::TimeScale::SetObjectTimeScaleEvent& e)
+	void OnSetObjectTimeScale(const Events::SetObjectTimeScaleEvent& e)
 	{
 		if (!e.target.IsValid()) return;
 
@@ -106,7 +104,7 @@ private:
 		NotifyIssued(id);
 	}
 
-	void OnCancelRequest(const Events::TimeScale::CancelTimeScaleRequestEvent& e)
+	void OnCancelRequest(const Events::CancelTimeScaleRequestEvent& e)
 	{
 		CancelRequest(e.requestId);
 	}
@@ -117,7 +115,7 @@ private:
 
 	void NotifyIssued(uint64_t id)
 	{
-		Events::TimeScale::TimeScaleRequestIssuedEvent issued;
+		Events::TimeScaleRequestIssuedEvent issued;
 		issued.requestId = id;
 		eventBus_.Publish(issued);
 	}

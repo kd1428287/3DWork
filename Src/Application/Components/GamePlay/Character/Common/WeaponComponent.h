@@ -30,8 +30,8 @@ public:
 		trail_ = GetOwner()->GetComponent<SlashTrailComponent>(); // 無い部位(素手等)もあるためnullptr許容
 
 		EventBus& localBus = GetOwner()->GetLocalEventBus();
-		const SubscriptionId subscriptionId = localBus.Subscribe<Events::Collision::CollisionEnterEvent>(
-			[this](const Events::Collision::CollisionEnterEvent& e) { OnCollisionEnter(e); });
+		const SubscriptionId subscriptionId = localBus.Subscribe<Events::CollisionEnterEvent>(
+			[this](const Events::CollisionEnterEvent& e) { OnCollisionEnter(e); });
 		subscriber_ = ScopedSubscriber(&localBus, subscriptionId);
 	}
 
@@ -83,7 +83,7 @@ public:
 
 	void SetAttackDamageData(AttackDamageData info) { attackSource_->SetAttackDamageData(info); }
 
-	void OnCollisionEnter(const Events::Collision::CollisionEnterEvent& e)
+	void OnCollisionEnter(const Events::CollisionEnterEvent& e)
 	{
 		if (!e.SelfIs(ColliderCategory::HitBox) || !e.OtherIs(ColliderCategory::HurtBox))return;
 

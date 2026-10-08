@@ -99,8 +99,8 @@ public:
 		EventBus& localBus = GetOwner()->GetLocalEventBus();
 
 		if (healthComponent_ != nullptr) {
-			const SubscriptionId diedId = localBus.Subscribe<HealthDiedEvent>(
-				[this](const HealthDiedEvent&) { OnDied(); });
+			const SubscriptionId diedId = localBus.Subscribe<Events::HealthDiedEvent>(
+				[this](const Events::HealthDiedEvent&) { OnDied(); });
 			diedSubscriber_ = ScopedSubscriber(&localBus, diedId);
 		}
 

@@ -1023,6 +1023,12 @@
     <ClInclude Include="Src\Application\Systems\SelectableManager.h">
       <Filter>Src\Application\Systems</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Core\EventBus\Events\HealthEvents.h">
+      <Filter>Src\Application\Core\EventBus\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Core\EventBus\Events\PostureEvents.h">
+      <Filter>Src\Application\Core\EventBus\Events</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">

@@ -9,15 +9,15 @@
 
 void SceneManager::Init()
 {
-	SubscriptionId id = GLOBALEVENT.Subscribe<Events::Scene::SceneChangeRequestEvent>(
-		[this](const Events::Scene::SceneChangeRequestEvent& e)
+	SubscriptionId id = GLOBALEVENT.Subscribe<Events::SceneChangeRequestEvent>(
+		[this](const Events::SceneChangeRequestEvent& e)
 		{
 			SetNextScene(e.nextScene);
 		});
 	sceneChangeSub_ = std::make_unique<ScopedSubscriber>(&GLOBALEVENT, id);
 
-	id = GLOBALEVENT.Subscribe<Events::Scene::ReloadingSceneEvent>(
-		[this](const Events::Scene::ReloadingSceneEvent& e)
+	id = GLOBALEVENT.Subscribe<Events::ReloadingSceneEvent>(
+		[this](const Events::ReloadingSceneEvent& e)
 		{
 			ChangeScene(currentSceneType_);
 		});

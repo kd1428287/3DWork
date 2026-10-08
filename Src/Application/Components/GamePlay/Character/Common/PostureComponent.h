@@ -66,7 +66,7 @@ public:
 
 private:
 	void PublishChanged() {
-		PostureChangedEvent e;
+		Events::PostureChangedEvent e;
 		e.source = Handle<GameObject>(GetOwner());
 		e.ratio = GetRatio();
 		GetOwner()->GetContext()->eventBus->Publish(e);

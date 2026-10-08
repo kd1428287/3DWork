@@ -12,6 +12,6 @@ void ResultScene::OnUpdate(float /*deltaTime*/)
 	// クリック(Attack)でTitleSceneへの遷移をリクエストする。
 	if (KdInputManager::Instance().IsPress("Attack"))
 	{
-		GLOBALEVENT.Publish(Events::Scene::SceneChangeRequestEvent{ SceneType::Title });
+		GLOBALEVENT.Publish(Events::SceneChangeRequestEvent{ SceneType::Title });
 	}
 }

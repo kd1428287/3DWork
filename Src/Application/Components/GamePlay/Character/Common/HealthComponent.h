@@ -29,7 +29,7 @@ public:
 
 		if (current_ <= 0.0f) {
 			died_ = true;
-			HealthDiedEvent e;
+			Events::HealthDiedEvent e;
 			e.source = Handle<GameObject>(GetOwner());
 			GetOwner()->GetContext()->eventBus->Publish(e);
 			GetOwner()->GetLocalEventBus().Publish(e);
@@ -67,7 +67,7 @@ private:
 	// HPが変化するAPIの末尾で必ず呼び、HealthChangedEventを発行する
 	void PublishChanged() {
 
-		PublishHealthChangeEvent(*GetOwner()->GetContext()->eventBus, Handle<GameObject>(GetOwner()), GetRatio());
+		Events::PublishHealthChangeEvent(*GetOwner()->GetContext()->eventBus, Handle<GameObject>(GetOwner()), GetRatio());
 	}
 
 	float max_;

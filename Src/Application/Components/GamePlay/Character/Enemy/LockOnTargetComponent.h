@@ -22,8 +22,8 @@ public:
 		// HealthComponentのDiedEvent購読で死亡時に自動解除する
 		if (GetOwner()->HasComponent<HealthComponent>()) {
 			EventBus& localBus = GetOwner()->GetLocalEventBus();
-			const SubscriptionId id = localBus.Subscribe<HealthDiedEvent>(
-				[this](const HealthDiedEvent&) { isLockable_ = false; });
+			const SubscriptionId id = localBus.Subscribe<Events::HealthDiedEvent>(
+				[this](const Events::HealthDiedEvent&) { isLockable_ = false; });
 			subscriber_ = ScopedSubscriber(&localBus, id);
 		}
 	}

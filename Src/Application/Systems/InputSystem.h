@@ -22,11 +22,11 @@ public:
 			
 			if (flg)
 			{
-				PublishPause(eventBus_, pauseID_);
+				Events::PublishPause(eventBus_, pauseID_);
 			} 
 			else
 			{
-				PublishPauseCancel(eventBus_, pauseID_);
+				Events::PublishPauseCancel(eventBus_, pauseID_);
 			}
 
 		}

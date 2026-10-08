@@ -43,7 +43,7 @@ public:
 		Math::Vector3 worldTip = Math::Vector3::Transform(tip_, worldMat);
 		Math::Vector3 worldBase = Math::Vector3::Transform(base_, worldMat);
 
-		PublishSlashTrailPositionUpdate(
+		Events::PublishSlashTrailPositionUpdate(
 			*GetOwner()->GetContext()->eventBus, instanceKey_, worldTip, worldBase);
 	}
 
@@ -59,14 +59,14 @@ public:
 	{
 		if (emitting_) return;
 		emitting_ = true;
-		PublishSlashTrailBegin(*GetOwner()->GetContext()->eventBus, instanceKey_, trailName_);
+		Events::PublishSlashTrailBegin(*GetOwner()->GetContext()->eventBus, instanceKey_, trailName_);
 	}
 
 	void StopEmit()
 	{
 		if (!emitting_) return;
 		emitting_ = false;
-		PublishSlashTrailEnd(*GetOwner()->GetContext()->eventBus, instanceKey_);
+		Events::PublishSlashTrailEnd(*GetOwner()->GetContext()->eventBus, instanceKey_);
 	}
 
 private:

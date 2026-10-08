@@ -17,23 +17,23 @@ bool EffectDispatcher::Init(EventBus& bus, const std::string& effectDataPath)
 
 	subscriptions_.emplace_back(
 		&bus,
-		bus.Subscribe<Events::Effect::GenericEffectSpawnEvent>(
-			[this](const Events::Effect::GenericEffectSpawnEvent& e) { OnGenericEffectSpawn(e); }));
+		bus.Subscribe<Events::GenericEffectSpawnEvent>(
+			[this](const Events::GenericEffectSpawnEvent& e) { OnGenericEffectSpawn(e); }));
 
 	subscriptions_.emplace_back(
 		&bus,
-		bus.Subscribe<Events::Effect::EffectAttachSpawnEvent>(
-			[this](const Events::Effect::EffectAttachSpawnEvent& e) { OnEffectAttachSpawn(e); }));
+		bus.Subscribe<Events::EffectAttachSpawnEvent>(
+			[this](const Events::EffectAttachSpawnEvent& e) { OnEffectAttachSpawn(e); }));
 
 	subscriptions_.emplace_back(
 		&bus,
-		bus.Subscribe<Events::Effect::EffectPositionUpdateEvent>(
-			[this](const Events::Effect::EffectPositionUpdateEvent& e) { OnEffectPositionUpdate(e); }));
+		bus.Subscribe<Events::EffectPositionUpdateEvent>(
+			[this](const Events::EffectPositionUpdateEvent& e) { OnEffectPositionUpdate(e); }));
 
 	subscriptions_.emplace_back(
 		&bus,
-		bus.Subscribe<Events::Effect::EffectDetachEvent>(
-			[this](const Events::Effect::EffectDetachEvent& e) { OnEffectDetach(e); }));
+		bus.Subscribe<Events::EffectDetachEvent>(
+			[this](const Events::EffectDetachEvent& e) { OnEffectDetach(e); }));
 
 	{
 		std::lock_guard<std::mutex> lock(s_instancesMutex);
@@ -271,25 +271,25 @@ void EffectDispatcher::DrawLiquid()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 以下、イベントハンドラ：pendingEvents_へ積むだけ。simpleEffects_/activeInstances_には触れない
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void EffectDispatcher::OnGenericEffectSpawn(const Events::Effect::GenericEffectSpawnEvent& e)
+void EffectDispatcher::OnGenericEffectSpawn(const Events::GenericEffectSpawnEvent& e)
 {
 	std::lock_guard<std::mutex> lock(pendingMutex_);
 	pendingEvents_.push_back(PendingSpawn{ e.Id, e.Position, e.Direction });
 }
 
-void EffectDispatcher::OnEffectAttachSpawn(const Events::Effect::EffectAttachSpawnEvent& e)
+void EffectDispatcher::OnEffectAttachSpawn(const Events::EffectAttachSpawnEvent& e)
 {
 	std::lock_guard<std::mutex> lock(pendingMutex_);
 	pendingEvents_.push_back(PendingAttach{ e.InstanceKey, e.EffectName, e.Position });
 }
 
-void EffectDispatcher::OnEffectPositionUpdate(const Events::Effect::EffectPositionUpdateEvent& e)
+void EffectDispatcher::OnEffectPositionUpdate(const Events::EffectPositionUpdateEvent& e)
 {
 	std::lock_guard<std::mutex> lock(pendingMutex_);
 	pendingEvents_.push_back(PendingPositionUpdate{ e.InstanceKey, e.Position });
 }
 
-void EffectDispatcher::OnEffectDetach(const Events::Effect::EffectDetachEvent& e)
+void EffectDispatcher::OnEffectDetach(const Events::EffectDetachEvent& e)
 {
 	std::lock_guard<std::mutex> lock(pendingMutex_);
 	pendingEvents_.push_back(PendingDetach{ e.InstanceKey });

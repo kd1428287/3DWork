@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Application/Core/EventBus/Events/HealthEvents.h"
 #include "Application/Core/EventBus/Events/PostureEvents.h"
 #include "../../../GamePlay/Character/Common/HealthComponent.h"
@@ -32,20 +32,20 @@ public:
 			}
 		}
 
-		healthSub_ = ScopedSubscriber(bus, bus->Subscribe<HealthChangedEvent>(
-			[this](const HealthChangedEvent& e) {
+		healthSub_ = ScopedSubscriber(bus, bus->Subscribe<Events::HealthChangedEvent>(
+			[this](const Events::HealthChangedEvent& e) {
 				if (e.source != target_) return;
 				healthRatio_ = e.ratio;
 			}));
 
-		postureSub_ = ScopedSubscriber(bus, bus->Subscribe<PostureChangedEvent>(
-			[this](const PostureChangedEvent& e) {
+		postureSub_ = ScopedSubscriber(bus, bus->Subscribe<Events::PostureChangedEvent>(
+			[this](const Events::PostureChangedEvent& e) {
 				if (e.source != target_) return;
 				postureRatio_ = e.ratio;
 			}));
 
-		diedSub_ = ScopedSubscriber(bus, bus->Subscribe<HealthDiedEvent>(
-			[this](const HealthDiedEvent& e) {
+		diedSub_ = ScopedSubscriber(bus, bus->Subscribe<Events::HealthDiedEvent>(
+			[this](const Events::HealthDiedEvent& e) {
 				if (e.source != target_) return;
 				if (onDied_) onDied_();
 			}));

@@ -20,5 +20,5 @@ void FootDustComponent::OnFootstep(const FootstepEvent& event)
 
 	// Directionは使わないため未指定({0,0,0})のまま渡す
 	// (EffectEvents.hのコメント通り、方向を使わないエフェクトではこれでよい)。
-	PublishGenericEffect(*GetOwner()->GetContext()->eventBus, effectId_, socket->GetWorldMatrix().Translation());
+	Events::PublishGenericEffect(*GetOwner()->GetContext()->eventBus, effectId_, socket->GetWorldMatrix().Translation());
 }

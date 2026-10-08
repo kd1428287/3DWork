@@ -130,7 +130,7 @@ void HitReactionComponent::SpawnRefrectEffect(const ReactionEventConfig& config,
 	}
 
 	const Math::Vector3 dir = BlendReflectDirection(normal, incoming, config.normalBlendRatio);
-	PublishGenericEffect(GetOwner()->GetSceneEventBus(), config.effectName, pos, dir);
+	Events::PublishGenericEffect(GetOwner()->GetSceneEventBus(), config.effectName, pos, dir);
 }
 
 void HitReactionComponent::SpawnNormalEffect(const ReactionEventConfig& config, const AttackHitContext& ctx)
@@ -140,7 +140,7 @@ void HitReactionComponent::SpawnNormalEffect(const ReactionEventConfig& config, 
 	// 衝突点から、攻撃側へ向けた法線方向へ出す。
 	const Math::Vector3 incoming = ComputeIncomingDirection(ctx);
 	const Math::Vector3 normal = ComputeBodyHitNormal(ctx, incoming);
-	PublishGenericEffect(GetOwner()->GetSceneEventBus(), config.effectName, ctx.hitResult.hitPos, normal);
+	Events::PublishGenericEffect(GetOwner()->GetSceneEventBus(), config.effectName, ctx.hitResult.hitPos, normal);
 }
 
 void HitReactionComponent::HitReaction(const ReactionEventConfig& config, const AttackHitContext& ctx)
@@ -148,10 +148,10 @@ void HitReactionComponent::HitReaction(const ReactionEventConfig& config, const 
 	EventBus& bus = *GetOwner()->GetContext()->eventBus;
 
 	if (config.enableCameraShake) {
-		PublishCameraShake(bus, config.cameraShakeIntensity);
+		Events::PublishCameraShake(bus, config.cameraShakeIntensity);
 	}
 	if (config.enableHitStop) {
-		PublishHitStop(bus, config_.hitStopDelaySeconds, config.hitStopDurationSeconds);
+		Events::PublishHitStop(bus, config_.hitStopDelaySeconds, config.hitStopDurationSeconds);
 	}
 	if (config.enableEffect) {
 		// 反射を使う設定なら反射エフェクト、そうでなければ通常エフェクト。
