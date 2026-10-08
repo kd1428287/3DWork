@@ -6,7 +6,7 @@
 		{
 			"type": "ModelRender",
 			"params": {
-				"model": "Asset/Models/Character/Kachujin/kachujin.gltf",
+				"model": "Asset/Models/Character/Kachujin/kachujin.glb",
 				"animations": "Asset/Animations/Character"
 			}
 		},
