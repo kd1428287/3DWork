@@ -95,6 +95,18 @@ bool KdPostProcessShader::Init()
 		}
 	}
 
+	{
+#include "KdPostProcessShader_PS_Distortion.shaderInc"
+
+		if (FAILED(KdDirect3D::Instance().WorkDev()->CreatePixelShader(
+			compiledBuffer, sizeof(compiledBuffer), nullptr, &m_PS_Distortion)))
+		{
+			assert(0 && "ピクセルシェーダー作成失敗(Distortion)");
+			Release();
+			return false;
+		}
+	}
+
 	m_cb0_BlurInfo.Create();
 
 	m_cb0_DoFInfo.Create();
@@ -104,6 +116,8 @@ bool KdPostProcessShader::Init()
 	m_cb0_ColorGradeInfo.Create();
 
 	m_cb0_LiquidInfo.Create();
+
+	m_cb0_DistortionInfo.Create();
 
 	const std::shared_ptr<KdTexture>& backBuffer = KdDirect3D::Instance().GetBackBuffer();
 
@@ -141,6 +155,10 @@ bool KdPostProcessShader::Init()
 	m_liquidDensityRTPack.CreateRenderTarget(backBuffer->GetWidth(), backBuffer->GetHeight());
 	m_liquidBlurRTPack.CreateRenderTarget(backBuffer->GetWidth() / 2, backBuffer->GetHeight() / 2);
 
+	// ディストーション適用後の画像。衝撃波の円形補正用に縦横比も渡す
+	m_distortionRTPack.CreateRenderTarget(backBuffer->GetWidth(), backBuffer->GetHeight());
+	m_cb0_DistortionInfo.Work().Aspect = static_cast<float>(backBuffer->GetWidth()) / backBuffer->GetHeight();
+
 	// 画面全体に書き込む用の頂点情報
 	m_screenVert[0] = { {-1,-1,0}, {0, 1} };
 	m_screenVert[1] = { {-1, 1,0}, {0, 0} };
@@ -174,6 +192,7 @@ void KdPostProcessShader::Release()
 
 	KdSafeRelease(m_PS_ColorGrade);
 	KdSafeRelease(m_PS_LiquidInk);
+	KdSafeRelease(m_PS_Distortion);
 
 
 	m_cb0_BlurInfo.Release();
@@ -181,6 +200,7 @@ void KdPostProcessShader::Release()
 	m_cb0_BrightInfo.Release();
 	m_cb0_ColorGradeInfo.Release();
 	m_cb0_LiquidInfo.Release();
+	m_cb0_DistortionInfo.Release();
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -305,6 +325,113 @@ void KdPostProcessShader::EndLiquid(LiquidStyle style)
 	shaderMgr.UndoSamplerState();
 }
 
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 衝撃波の発生(画面UV指定)。空きが無ければ最も進行した1つを上書きする
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void KdPostProcessShader::AddShockwave(const Math::Vector2& centerUV, float duration, float maxRadius, float strength)
+{
+	if (duration <= 0.0f) { return; }
+
+	ShockwaveInstance* pSlot = nullptr;
+	float maxProgress = -1.0f;
+
+	for (ShockwaveInstance& s : m_shockwaves)
+	{
+		if (!s.Active) { pSlot = &s; break; }
+
+		float progress = s.Age / s.Duration;
+		if (progress > maxProgress)
+		{
+			maxProgress = progress;
+			pSlot = &s;
+		}
+	}
+
+	pSlot->Center = centerUV;
+	pSlot->Age = 0.0f;
+	pSlot->Duration = duration;
+	pSlot->MaxRadius = maxRadius;
+	pSlot->Strength = strength;
+	pSlot->Active = true;
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 衝撃波の発生(ワールド座標指定)。カメラの背後なら何もしない
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void KdPostProcessShader::AddShockwaveWorld(const Math::Vector3& worldPos, float duration, float maxRadius, float strength)
+{
+	const KdShaderManager::cbCamera& cam = KdShaderManager::Instance().GetCameraCB();
+
+	Math::Vector4 clip = Math::Vector4::Transform(Math::Vector4(worldPos.x, worldPos.y, worldPos.z, 1.0f), cam.mView * cam.mProj);
+	if (clip.w <= 0.0f) { return; }
+
+	// NDC(-1〜1、Yは上が正)→画面UV(0〜1、Vは下が正)
+	Math::Vector2 uv;
+	uv.x = clip.x / clip.w * 0.5f + 0.5f;
+	uv.y = 0.5f - clip.y / clip.w * 0.5f;
+
+	AddShockwave(uv, duration, maxRadius, strength);
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 経過時間から各衝撃波の半径と強さを算出して定数バッファへ反映する
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void KdPostProcessShader::UpdateDistortion(float deltaTime)
+{
+	cbDistortionInfo& cb = m_cb0_DistortionInfo.Work();
+
+	int num = 0;
+
+	for (ShockwaveInstance& s : m_shockwaves)
+	{
+		if (!s.Active) { continue; }
+
+		s.Age += deltaTime;
+
+		float t = s.Age / s.Duration;
+		if (t >= 1.0f)
+		{
+			s.Active = false;
+			continue;
+		}
+
+		// 半径は最初に速く広がって減速、強さは2乗で素早く減衰
+		float inv = 1.0f - t;
+		float radius = s.MaxRadius * (1.0f - inv * inv * inv);
+		float strength = s.Strength * inv * inv;
+
+		cb.Shockwave[num] = Math::Vector4(s.Center.x, s.Center.y, radius, strength);
+		++num;
+	}
+
+	cb.ShockwaveNum = num;
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// カラーグレード済みの画像へ衝撃波の歪みと色収差を適用して m_distortionRTPack に描画
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void KdPostProcessShader::DistortionProcess()
+{
+	ID3D11DeviceContext* DevCon = KdDirect3D::Instance().WorkDevContext();
+	if (!DevCon) { return; }
+
+	m_cb0_DistortionInfo.Write();
+	DevCon->PSSetConstantBuffers(0, 1, m_cb0_DistortionInfo.GetAddress());
+
+	KdShaderManager& shaderMgr = KdShaderManager::Instance();
+	if (shaderMgr.SetVertexShader(m_VS))
+	{
+		DevCon->IASetInputLayout(m_inputLayout);
+	}
+	shaderMgr.SetPixelShader(m_PS_Distortion);
+
+	shaderMgr.ChangeSamplerState(KdSamplerState::Linear_Clamp);
+
+	DrawTexture(&m_colorGradeRTPack.m_RTTexture, 1, m_distortionRTPack.m_RTTexture, &m_distortionRTPack.m_viewPort);
+
+	shaderMgr.UndoSamplerState();
+}
+
 void KdPostProcessShader::PostEffectProcess()
 {
 	m_postEffectRTChanger.UndoRenderTarget();
@@ -314,7 +441,16 @@ void KdPostProcessShader::PostEffectProcess()
 	DepthOfFieldProcess();
 	ColorGradeProcess();
 
-	KdShaderManager::Instance().m_spriteShader.DrawTex(m_colorGradeRTPack.m_RTTexture.get(), 0, 0);
+	// 衝撃波が無い間は全画面コピーを省いてカラーグレード結果をそのまま使う
+	std::shared_ptr<KdTexture> finalTex = m_colorGradeRTPack.m_RTTexture;
+
+	if (m_cb0_DistortionInfo.Get().ShockwaveNum > 0)
+	{
+		DistortionProcess();
+		finalTex = m_distortionRTPack.m_RTTexture;
+	}
+
+	KdShaderManager::Instance().m_spriteShader.DrawTex(finalTex.get(), 0, 0);
 }
 
 void KdPostProcessShader::LightBloomProcess()

@@ -51,6 +51,16 @@ public:
 	void BeginLiquid(bool useSceneDepth = true);
 	void EndLiquid(LiquidStyle style = LiquidStyle::Ink);
 
+	// 衝撃波(パリィ等)。centerUVは0〜1の画面座標、maxRadiusは画面の高さに対する比率
+	void AddShockwave(const Math::Vector2& centerUV, float duration, float maxRadius, float strength);
+	// ワールド座標指定版(カメラの背後なら何もしない)
+	void AddShockwaveWorld(const Math::Vector3& worldPos, float duration, float maxRadius, float strength);
+	// 毎フレームPostEffectProcess()より前に呼ぶ(渡すdeltaTimeでヒットストップの影響を制御)
+	void UpdateDistortion(float deltaTime);
+
+	void SetShockwaveWidth(float width) { m_cb0_DistortionInfo.Work().ShockwaveWidth = width; }
+	void SetChromaticAmount(float amount) { m_cb0_DistortionInfo.Work().ChromaticAmount = amount; }
+
 	void PostEffectProcess();
 
 	// エディタプレビュー等、本編以外の任意サイズテクスチャに対してカラーグレードのみを適用する。
@@ -70,6 +80,7 @@ private:
 	void LightBloomProcess();
 	void DepthOfFieldProcess();
 	void ColorGradeProcess();
+	void DistortionProcess();
 
 	void CreateBlurOffsetList(std::vector<Math::Vector3>& dstInfo, const std::shared_ptr<KdTexture>& spSrcTex, int samplingSize, const Math::Vector2& dir);
 
@@ -90,6 +101,7 @@ private:
 	ID3D11PixelShader* m_PS_Bright = nullptr;
 	ID3D11PixelShader* m_PS_ColorGrade = nullptr;
 	ID3D11PixelShader* m_PS_LiquidInk = nullptr;
+	ID3D11PixelShader* m_PS_Distortion = nullptr;
 
 	static const int kBlurSamplingRadius = 8;
 	static const int kLightBloomSamplingRadius = 4;
@@ -149,6 +161,30 @@ private:
 	};
 	KdConstantBuffer<cbLiquidInfo> m_cb0_LiquidInfo;
 
+	static const int kMaxShockwave = 4;
+	struct cbDistortionInfo
+	{
+		float ChromaticAmount = 0.6f;	// 歪みの強い場所ほどRGBをずらす割合
+		float ShockwaveWidth = 0.08f;	// リングの幅(画面の高さに対する比率)
+		float Aspect = 1.0f;			// 画面の幅/高さ(円形補正用)
+		int   ShockwaveNum = 0;			// 有効な衝撃波の数
+
+		Math::Vector4 Shockwave[kMaxShockwave];	// xy=中心UV z=現在の半径 w=現在の強さ
+	};
+	KdConstantBuffer<cbDistortionInfo> m_cb0_DistortionInfo;
+
+	// 発生中の衝撃波(経過時間から半径と強さを毎フレーム算出する)
+	struct ShockwaveInstance
+	{
+		Math::Vector2 Center;
+		float Age = 0.0f;
+		float Duration = 0.0f;
+		float MaxRadius = 0.0f;
+		float Strength = 0.0f;
+		bool  Active = false;
+	};
+	ShockwaveInstance m_shockwaves[kMaxShockwave];
+
 public:
 	//================================================
 	// 現在値の取得(GUI表示用)
@@ -159,6 +195,7 @@ public:
 	const cbColorGradeInfo& GetColorGradeCB() const { return m_cb0_ColorGradeInfo.Get(); }
 	const cbLiquidInfo& GetLiquidCB() const { return m_cb0_LiquidInfo.Get(); }
 	cbLiquidInfo& WorkLiquidCB() { return m_cb0_LiquidInfo.Work(); }
+	const cbDistortionInfo& GetDistortionCB() const { return m_cb0_DistortionInfo.Get(); }
 
 private:
 	KdRenderTargetPack m_colorGradeRTPack; // 最終カラーグレーディング用RT
@@ -188,6 +225,9 @@ private:
 	// 液体の密度RT(シーンの深度バッファを共有するためフル解像度)と、そのぼかし結果(半解像度)
 	KdRenderTargetPack	m_liquidDensityRTPack;
 	KdRenderTargetPack	m_liquidBlurRTPack;
+
+	// ディストーション適用後の最終画像(衝撃波が有効な間だけ使う)
+	KdRenderTargetPack	m_distortionRTPack;
 
 	Vertex m_screenVert[4];
 };

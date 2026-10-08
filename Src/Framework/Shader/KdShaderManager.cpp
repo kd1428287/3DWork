@@ -41,6 +41,14 @@ void KdShaderManager::Init()
 	KdDirect3D::Instance().WorkDevContext()->PSSetConstantBuffers(9, 1, m_cb9_Light.GetAddress());
 
 	//============================================
+	// 共通リソース
+	//============================================
+
+	// Perlinノイズの順列テーブル:全シェーダー共通のスロットへ常時バインド
+	m_perlinNoiseGPU.Init(KdDirect3D::Instance().WorkDev());
+	BindPerlinNoise();
+
+	//============================================
 	// パイプラインステート関係
 	//============================================
 	//深度ステンシルステート作成（奥行情報の使い方・手前にあるものを無視して描画したりできる
@@ -91,6 +99,15 @@ void KdShaderManager::Init()
 	}
 
 	m_ambientController.Init();
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// Perlin順列テーブルをPS/CSの共通スロットへバインド
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void KdShaderManager::BindPerlinNoise()
+{
+	m_perlinNoiseGPU.BindPS(KdDirect3D::Instance().WorkDevContext(), PerlinPermSlot);
+	m_perlinNoiseGPU.BindCS(KdDirect3D::Instance().WorkDevContext(), PerlinPermSlot);
 }
 
 
@@ -506,6 +523,8 @@ void KdShaderManager::Release()
 	m_postProcessShader.Release();
 	m_spriteShader.Release();
 	m_slashTrailShader.Release();
+
+	m_perlinNoiseGPU.Release();
 
 	m_cb7_Camera.Release();
 	m_cb8_Fog.Release();

@@ -5,14 +5,14 @@
 #include "SpriteShader/KdSpriteShader.h"
 #include "SlashTrailShader/SlashTrailShader.h"	// トレイル(斬撃の軌跡)描画用シェーダー
 #include "GPUParticle/GPUParticleShader.h"		// GPUパーティクル描画用シェーダー
+#include "PerlinNoiseGPU.h"			// Perlin順列テーブルのGPU転送(全シェーダー共有)
 
 // 点光源データ
 struct PointLight
 {
 	PointLight() {}
 	PointLight(const Math::Vector3& color, float radius, const Math::Vector3& pos, int isBright)
-		:Color(color), Radius(radius), Pos(pos), IsBright(isBright) {
-	}
+		:Color(color), Radius(radius), Pos(pos), IsBright(isBright) {}
 
 	Math::Vector3 Color;	// 色
 	float	Radius = 0.0f;	// 半径
@@ -216,6 +216,14 @@ public:
 
 	bool IsPixelArtStyle() const { return m_pixelArtStyle; }
 
+	// Perlin順列テーブルのtレジスタ番号(PerlinNoise.hlsliのPERLIN_PERM_SLOTと一致させる)
+	static constexpr UINT PerlinPermSlot = 10;
+
+	const PerlinNoiseGPU& GetPerlinNoiseGPU() const { return m_perlinNoiseGPU; }
+
+	// SRVを外された場合の再バインド用(通常はInit()で一度バインドすれば足りる)
+	void BindPerlinNoise();
+
 	const KdAmbientController& GetAmbientController() const { return m_ambientController; }
 	KdAmbientController& WorkAmbientController() { return m_ambientController; }
 
@@ -238,6 +246,9 @@ private:
 	KdConstantBuffer<cBright>	m_cb9_Light;
 
 	KdAmbientController m_ambientController;
+
+	// Perlinノイズの順列テーブル(PS/CSから共通スロットで参照)
+	PerlinNoiseGPU m_perlinNoiseGPU;
 
 	bool m_pixelArtStyle = true;
 

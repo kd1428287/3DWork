@@ -3,11 +3,7 @@
 #include "Application/Core/Math/PerlinNoise.h"
 
 // カメラシェイクを計算だけする
-// --- ノイズについて -----------------------------------------------
-// SampleNoise()は複数周波数のsin波を重ねただけの簡易実装。
-// 「ランダムっぽい滑らかな揺れ」としては十分機能するが、より自然な
-// 揺れが欲しくなったらこの関数だけをPerlin/Simplexノイズに差し替える
-// 想定(呼び出し側のインターフェースは変わらない)。
+// ノイズはPerlinNoise::Shared()のfbmを使う(軸ごとにY座標をずらして無相関化)。
 class CameraShakeComponent : public ComponentBase {
 public:
 	explicit CameraShakeComponent(GameObject* owner) : ComponentBase(owner) {}
@@ -51,25 +47,21 @@ public:
 	void SetRotationAmplitude(const Math::Vector3& amplitude) { rotAmplitude_ = amplitude; } // ラジアン
 
 private:
-	// 軸ごとに違う位相のノイズが必要なため、axisSeedで位相をずらした
-	// 2つのsin波を重ねる。本格的なPerlin/Simplexノイズへの差し替えは
-	// この関数の中身だけで完結する。
+	// X=時間、Y=軸ごとのオフセットで2D fbmを引く。小数オフセットは格子点(値0)を避けるため。
 	float SampleNoise(int axisSeed, float t) const {
-		const float freq = noiseFrequency_;
-		return std::sin(t * freq * 1.0f + axisSeed * 37.1f) * 0.6f
-			 + std::sin(t * freq * 2.7f + axisSeed * 91.7f) * 0.4f;
+		const Math::Vector2 pos(t * noiseFrequency_, axisSeed * 31.7f);
+		return PerlinNoise::Shared().fbm(pos, 2) * noiseGain_;
 	}
 
 	float time_ = 0.0f;
 	float trauma_ = 0.0f;
-	float traumaDecayPerSecond_ = 1.5f; 
-	float noiseFrequency_ = 12.0f;    
+	float traumaDecayPerSecond_ = 1.5f;
+	float noiseFrequency_ = 12.0f;
+	float noiseGain_ = 1.6f; // Perlinは±1に届きにくいため振幅を補正
 
-	Math::Vector3 posAmplitude_{ 0.05f, 0.05f, 0.0f }; 
-	Math::Vector3 rotAmplitude_{ 0.1f, 0.1f, 0.15f }; 
+	Math::Vector3 posAmplitude_{ 0.05f, 0.05f, 0.0f };
+	Math::Vector3 rotAmplitude_{ 0.1f, 0.1f, 0.15f };
 
 	Math::Vector3    posOffset_{};
 	Math::Quaternion rotOffset_ = Math::Quaternion::Identity;
-
-	std::unique_ptr<PerlinNoise> noise_ = nullptr;
 };

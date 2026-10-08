@@ -274,6 +274,9 @@
     <Filter Include="Src\Application\Components\Graphics\UI\Button">
       <UniqueIdentifier>{4272f5ef-aca0-410a-8eff-b90a12ae5274}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\Components\Graphics\UI\Image">
+      <UniqueIdentifier>{b67833e6-3aac-4ceb-86f8-cb7c58251465}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -1023,11 +1026,11 @@
     <ClInclude Include="Src\Application\Systems\SelectableManager.h">
       <Filter>Src\Application\Systems</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Core\EventBus\Events\HealthEvents.h">
-      <Filter>Src\Application\Core\EventBus\Events</Filter>
+    <ClInclude Include="Src\Framework\Shader\PerlinNoiseGPU.h">
+      <Filter>Src\Framework\Shader</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Core\EventBus\Events\PostureEvents.h">
-      <Filter>Src\Application\Core\EventBus\Events</Filter>
+    <ClInclude Include="Src\Application\Components\Graphics\UI\Image\UIImageComponent.h">
+      <Filter>Src\Application\Components\Graphics\UI\Image</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1367,6 +1370,9 @@
     <ClCompile Include="Src\Application\Systems\SelectableManager.cpp">
       <Filter>Src\Application\Systems</Filter>
     </ClCompile>
+    <ClCompile Include="Src\Application\Components\Graphics\UI\Image\UIImageComponent.cpp">
+      <Filter>Src\Application\Components\Graphics\UI\Image</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Src\Framework\Shader\inc_KdCommon.hlsli">
@@ -1401,6 +1407,9 @@
     </None>
     <None Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_node_editor_internal.inl">
       <Filter>Src\Application\Editor\ThirdParty\imgui-node-editor</Filter>
+    </None>
+    <None Include="Src\Framework\Shader\PerlinNoise.hlsli">
+      <Filter>Src\Framework\Shader</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -1468,6 +1477,9 @@
       <Filter>Src\Framework\Shader\SlashTrailShader</Filter>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_LiquidInk.hlsl">
+      <Filter>Src\Framework\Shader\PostProcessShader</Filter>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_Distortion.hlsl">
       <Filter>Src\Framework\Shader\PostProcessShader</Filter>
     </FxCompile>
   </ItemGroup>

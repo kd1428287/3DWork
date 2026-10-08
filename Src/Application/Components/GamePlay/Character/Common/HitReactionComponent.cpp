@@ -158,6 +158,10 @@ void HitReactionComponent::HitReaction(const ReactionEventConfig& config, const 
 		if (config.useReflectDirection) SpawnRefrectEffect(config, ctx);
 		else                            SpawnNormalEffect(config, ctx);
 	}
+	if (config.enableDistortion)
+	{
+		KdShaderManager::Instance().m_postProcessShader.AddShockwaveWorld(ctx.hitResult.hitPos, 0.45f, 0.7f, 0.03f);
+	}
 }
 
 void HitReactionComponent::OnHit(const AttackHitContext& ctx)

@@ -4,10 +4,15 @@
 #include <memory>
 #include <unordered_map>
 #include "Application/Definitions/UI/UIData.h"
+#include "../Common/ComponentInspector.h"
+
+class KdFontSprite;
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // UIエディタ本体(HUD・メニュー共通。画面ごとに1つのJSONを編集する)
-//	KdDebugGUI::GuiProcess() の中から Update() を呼び出して使用する
+//	KdDebugGUI::GuiProcess() の中から Update() を呼び出して使用する。
+//	UI要素はMapEditorと同じ components 方式(UITransform / Text / UIImage / Selectable など)で、
+//	座標・文字・画像はゲーム側のコンポーネントと同じ規則で解決・描画する
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 class UIEditor
 {
@@ -18,7 +23,7 @@ public:
 
 	// 基準解像度のオフスクリーンへ、実際のKdSpriteShaderでUIを描画する(UI Canvasに表示される)。
 	//	3D描画パス側から1フレームに1回、KdSpriteShaderのBegin～End外で呼ぶこと。
-	//	呼び出し前後でRT/ビューポートは退避・復元する。未呼び出しの間はCanvasが簡易表示になる
+	//	呼び出し前後でRT/ビューポートは退避・復元する
 	void RenderPreviewViewport();
 
 	// 編集中の要素一覧(読み取り専用)
@@ -44,8 +49,26 @@ private:
 	// 親を辿って表示される要素だけを、描画順(親→子、兄弟は配列順)で集める
 	void CollectVisibleOrder(UIId parentId, std::vector<UIId>& out, int depth = 0) const;
 
+	//=====================================================
+	// テキスト・テクスチャ(TextComponent / UIImageと同じ手順でプレビューに使う)
+	//=====================================================
+	struct TextBlock
+	{
+		std::vector<std::shared_ptr<KdFontSprite>>	lines;
+		float										lineHeight = 0.0f;
+	};
+
+	// 文字列(UTF-8)から、行ごとのフォントスプライトを作る。同じ内容はキャッシュする
+	const TextBlock* GetTextBlock(int fontNo, int antiAliasing, const std::string& textUtf8);
+
 	// プレビュー用テクスチャ取得。読み込めたものだけキャッシュする(失敗時はnullptr)
 	std::shared_ptr<KdTexture> GetTexture(const std::string& path);
+
+	// UITransformのsizeが0の要素(文字・画像)が自分で持つ大きさ(拡大率適用後)
+	DirectX::SimpleMath::Vector2 GetIntrinsicSize(const UIElement& e);
+
+	// 要素の矩形(エディタ座標)。UITransformが無い・Worldの要素や、大きさ0の要素はfalse
+	bool GetElementRect(const UIElement& e, UIRect& out);
 
 	// テクスチャ登録一覧(MapEditorのアセット登録と同じ方式。JSONに保存される)
 	void LoadTextureRegistry(const std::string& path);
@@ -58,7 +81,8 @@ private:
 	// 指定テクスチャのImage要素を、基準解像度上のcenterを中心に新規追加する(サイズはテクスチャに合わせる)
 	void AddImageFromTexture(const std::string& fullPath, const DirectX::SimpleMath::Vector2& center);
 
-	void AddElement(const std::string& type);
+	// presetは"Image" / "Text" / "Button"。それぞれのコンポーネント構成で要素を追加する
+	void AddElement(const std::string& preset);
 	void RemoveSelected();
 	void Reparent(UIId id, UIId newParentId);
 	void MoveSibling(UIId id, int dir);	// dir: -1=前へ(奥へ) / +1=後ろへ(手前へ)
@@ -77,8 +101,7 @@ private:
 	std::vector<UndoState>	m_undoStack;
 	std::vector<UndoState>	m_redoStack;
 
-	// beforeを渡すと、その要素だけ変更前の値に戻した状態を積む
-	void PushUndo(const UIElement* before = nullptr);
+	void PushUndo();
 	void Undo();
 	void Redo();
 
@@ -96,9 +119,6 @@ private:
 	// UIエディタのいずれかのウィンドウにフォーカスがあるか(他エディタとのショートカット二重発火を防ぐ)
 	bool	m_hasFocus = false;
 
-	// Inspector編集中は1操作=1回だけUndoを積むためのフラグ
-	bool	m_inspectorEditing = false;
-
 	// Hierarchyのドラッグ&ドロップによる親子付け替え(描画後にまとめて適用)
 	bool	m_hasPendingReparent = false;
 	UIId	m_pendingReparentId = kInvalidUIId;
@@ -111,6 +131,7 @@ private:
 	bool		m_previewRendered = false;	// RenderPreviewViewport()が1度でも描けたか
 
 	std::unordered_map<std::string, std::shared_ptr<KdTexture>>	m_texCache;
+	std::unordered_map<std::string, TextBlock>					m_textCache;
 
 	// 登録済みテクスチャ一覧(Asset/Textures/UI/ からの相対パス)
 	std::vector<std::string>	m_textureFileList;
