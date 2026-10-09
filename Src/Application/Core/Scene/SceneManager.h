@@ -58,7 +58,7 @@ private:
 	std::unordered_map<SceneType, SceneFactory> factories_;
 
 	// 現在のシーンの種類を保持している変数
-	SceneType currentSceneType_ = SceneType::Game;
+	SceneType currentSceneType_ = SceneType::Title;
 
 	// 遷移の予約(未予約ならnullopt)。開始シーンもこの経路で生成する
 	std::optional<SceneType> pending_;

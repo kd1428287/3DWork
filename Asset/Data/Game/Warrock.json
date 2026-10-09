@@ -158,8 +158,9 @@
 							"duration": 0.4
 						},
 						"BigStagger": {
-							"animationName": "Smashed",
-							"duration": 3.0
+							"animationName": "Knockback",
+							"duration": 3.0,
+							"useRootMotion": true
 						},
 						"Parried": {
 							"animationName": "Hit_High",

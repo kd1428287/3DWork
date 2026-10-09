@@ -105,6 +105,8 @@ void BaseScene::DrawSprite()
 		objManager_->DrawSprite();
 
 		KdShaderManager::Instance().m_spriteShader.SetMatrix(Math::Matrix::Identity);
+
+		OnDrawSprite();
 	}
 	KdShaderManager::Instance().m_spriteShader.End();
 }

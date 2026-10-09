@@ -496,6 +496,7 @@
     <ClInclude Include="Src\Framework\Shader\KdAmbientController.h" />
     <ClInclude Include="Src\Framework\Shader\KdRenderTargetChange.h" />
     <ClInclude Include="Src\Framework\Shader\PerlinNoiseGPU.h" />
+    <ClInclude Include="Src\Framework\Shader\PostProcessShader\FluidSimulator.h" />
     <ClInclude Include="Src\Framework\Shader\SlashTrailShader\SlashTrailShader.h" />
     <ClInclude Include="Src\Framework\Shader\SlashTrailShader\SlashTrailRenderer.h" />
     <ClInclude Include="Src\Framework\Shader\StandardShader\KdStandardShader.h" />
@@ -579,7 +580,6 @@
     <ClCompile Include="Src\Application\Factories\Common\CameraFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\ComponentRegistrations.cpp" />
     <ClCompile Include="Src\Application\Factories\ComponentRegistry.cpp" />
-    <ClCompile Include="Src\Application\Factories\GamePlay\Character\EnemyFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\GamePlay\Character\PlayerFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\GamePlay\Map\TerrainFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\PrefabCatalog.cpp" />
@@ -617,6 +617,7 @@
     <ClCompile Include="Src\Framework\Shader\GPUParticle\ParticleBuffer.cpp" />
     <ClCompile Include="Src\Framework\Shader\KdAmbientController.cpp" />
     <ClCompile Include="Src\Framework\Shader\KdRenderTargetChange.cpp" />
+    <ClCompile Include="Src\Framework\Shader\PostProcessShader\FluidSimulator.cpp" />
     <ClCompile Include="Src\Framework\Shader\SlashTrailShader\SlashTrailShader.cpp" />
     <ClCompile Include="Src\Framework\Shader\SlashTrailShader\SlashTrailRenderer.cpp" />
     <ClCompile Include="Src\Framework\Shader\StandardShader\KdStandardShader.cpp" />
@@ -676,6 +677,9 @@
     <FxCompile Include="Src\Framework\Shader\GPUParticle\GPUParticle_VS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdFluid_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_Blur.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>

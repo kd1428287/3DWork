@@ -266,7 +266,7 @@ bool Application::Init(int w, int h)
 	// 軸の登録: "Look" アクションにマウスの移動量を割り当て
 	auto lookAxis = std::make_shared<KdInputAxisForWindowsMouse>();
 	keyboardDevice->AddAxis("Look", lookAxis);
-	lookAxis->SetConfineToWindowCenter(true);
+	//lookAxis->SetConfineToWindowCenter(true);
 
 	auto controllerDevice = std::make_unique<KdInputCollector>();
 

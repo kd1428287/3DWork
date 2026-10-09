@@ -108,6 +108,8 @@ void GameScene::BuildWorld()
 
 void GameScene::BuildSystems()
 {
+	KdInputManager::Instance().SetAxisConfineToWindowCenter("Look", true);
+
 	cameraSystem_ = std::make_unique<CameraSystem>(*objManager_);
 
 	inputSystem_ = std::make_unique<InputSystem>(*localBus_);

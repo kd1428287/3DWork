@@ -1041,6 +1041,9 @@
     <ClInclude Include="Src\Application\Factories\PrefabCatalog.h">
       <Filter>Src\Application\Factories</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Framework\Shader\PostProcessShader\FluidSimulator.h">
+      <Filter>Src\Framework\Shader\PostProcessShader</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -1238,9 +1241,6 @@
     <ClCompile Include="Src\Application\Editor\Tools\ShaderTuningEditor.cpp">
       <Filter>Src\Application\Editor\Tools</Filter>
     </ClCompile>
-    <ClCompile Include="Src\Application\Factories\GamePlay\Character\EnemyFactory.cpp">
-      <Filter>Src\Application\Factories\GamePlay\Character</Filter>
-    </ClCompile>
     <ClCompile Include="Src\Application\Factories\GamePlay\Character\PlayerFactory.cpp">
       <Filter>Src\Application\Factories\GamePlay\Character</Filter>
     </ClCompile>
@@ -1385,6 +1385,9 @@
     <ClCompile Include="Src\Application\Factories\PrefabCatalog.cpp">
       <Filter>Src\Application\Factories</Filter>
     </ClCompile>
+    <ClCompile Include="Src\Framework\Shader\PostProcessShader\FluidSimulator.cpp">
+      <Filter>Src\Framework\Shader\PostProcessShader</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Src\Framework\Shader\inc_KdCommon.hlsli">
@@ -1495,6 +1498,9 @@
       <Filter>Src\Framework\Shader\PostProcessShader</Filter>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_Surface.hlsl">
+      <Filter>Src\Framework\Shader\PostProcessShader</Filter>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdFluid_PS.hlsl">
       <Filter>Src\Framework\Shader\PostProcessShader</Filter>
     </FxCompile>
   </ItemGroup>

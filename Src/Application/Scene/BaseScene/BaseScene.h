@@ -41,6 +41,7 @@ protected:
 	virtual void OnDrawEffects() {}
 	virtual void OnDrawBright() {}
 	virtual void OnDrawLiquid() {}
+	virtual void OnDrawSprite() {}
 
 	bool LoadUI(const std::string& path);
 
