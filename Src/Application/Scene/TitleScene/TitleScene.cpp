@@ -5,10 +5,8 @@
 
 #include "Application/Core/EventBus/Events/SceneEvents.h"
 
-void TitleScene::Init()
+void TitleScene::OnEnter()
 {
-	BaseScene::Init();
-
 	GameObject* logo = objManager_->Instantiate("TitleLogo");
 	logo->AddComponent<TransformComponent>()->SetScale({ 1.4f,1.4f,1.4f });
 

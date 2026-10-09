@@ -223,14 +223,12 @@ bool Application::Init(int w, int h)
 	//===================================================================
 	// ゲーム固有の初期化
 	//===================================================================
-	// カーソルを消す(エディタ表示中は"Pause"入力でShowCursor(TRUE)に切り替わる)
-	ShowCursor(false);
+	ShowCursolEnable(false);
 
 	// Input
-	// 1. キーボード用のコレクターを作成
 	auto keyboardDevice = std::make_unique<KdInputCollector>();
 
-	// ボタンの登録: "Jump" アクションに [スペースキー] を割り当て
+	// ボタンの登録
 	keyboardDevice->AddButton("Evade", new KdInputButtonForWindows(VK_SPACE));
 	keyboardDevice->AddButton("Attack", new KdInputButtonForWindows({ 'Z', VK_LBUTTON }));
 	keyboardDevice->AddButton("Guard", new KdInputButtonForWindows({ VK_RBUTTON }));

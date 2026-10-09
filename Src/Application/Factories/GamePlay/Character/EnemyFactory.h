@@ -1,36 +1,16 @@
-﻿#pragma once
+#pragma once
 
-#include "Application/Definitions/Prefab/Prefab.h"
+#include "Application/Factories/PrefabCatalog.h"
 
-class GameObject;
-class ObjectManager;
-
-// ============================================================
-// データ駆動のEnemyFactory(Prefab版)。
-//
-// PlayerFactoryと同じく、実際の組み立ては全てPrefabFactory/
-// ComponentRegistryへ委譲する。EnemyFactory自身は
-// 「enemyId → Prefab定義ファイルパス」の対応表を持ち、コンストラクタで
-// 一括読み込みしておくだけの薄い窓口になる。
-//
-// 敵種ごとの見た目・当たり判定・AI設定(EnemyAIData)は全てPrefabの
-// JSONファイル側に記述する(旧EnemyDefinitionは不要)。
-// ============================================================
-class EnemyFactory {
+// 旧EnemyFactoryの呼び出し側を残すための互換窓口。呼び出し側をPrefabCatalogへ移したら削除する。
+class EnemyFactory : public PrefabCatalog {
 public:
-	// definitionPathsは enemyId → Prefab JSONファイルパス の対応表。
-	explicit EnemyFactory(const std::unordered_map<std::string, std::string>& definitionPaths);
-	~EnemyFactory() = default;
+	using PrefabCatalog::PrefabCatalog;
 
-	// コピー・ムーブ禁止(旧EnemyFactoryと同じ方針)。
-	EnemyFactory(const EnemyFactory&) = delete;
-	EnemyFactory& operator=(const EnemyFactory&) = delete;
+	GameObject* CreateEnemy(ObjectManager& objectManager, const std::string& enemyId, const Math::Vector3& position) const
+	{
+		return Spawn(objectManager, enemyId, position);
+	}
 
-	// 登録済みのenemyIdからGameObjectを生成する。未登録ならnullptr。
-	GameObject* CreateEnemy(ObjectManager& objectManager, const std::string& enemyId, const Math::Vector3& position) const;
-
-	bool IsKnownEnemy(const std::string& enemyId) const;
-
-private:
-	std::unordered_map<std::string, PrefabDefinition> definitions_;
+	bool IsKnownEnemy(const std::string& enemyId) const { return Contains(enemyId); }
 };

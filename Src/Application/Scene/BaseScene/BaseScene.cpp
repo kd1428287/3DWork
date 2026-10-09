@@ -1,9 +1,38 @@
 ﻿#include "BaseScene.h"
 #include "Application/main.h"
 #include "Application/Editor/Tools/MapEditor.h"
+#include "Application/Factories/PrefabFactory.h"
 
 BaseScene::BaseScene() = default;
 BaseScene::~BaseScene() = default;
+
+void BaseScene::Enter()
+{
+	if (entered_) return;
+	entered_ = true;
+
+	localBus_ = std::make_unique<EventBus>();
+	objManager_ = std::make_unique<ObjectManager>(localBus_.get());
+	systemManager_ = std::make_unique<SystemManager>();
+
+	// 最低限保証しておく(派生のOnEnter()で再設定されることがある)
+	systemManager_->SetExecutionOrder(
+		[this](float dt) { objManager_->PreUpdate(dt); },
+		[this](float dt) { objManager_->Update(dt); },
+		[this](float dt) { objManager_->PostUpdate(dt); }
+	);
+
+	OnEnter();
+}
+
+void BaseScene::Exit()
+{
+	if (!entered_ || exited_) return;
+	exited_ = true;
+
+	// 基盤はここでは壊さない(デストラクタが派生メンバ → 基底メンバの順で破棄する)
+	OnExit();
+}
 
 void BaseScene::Update(float deltaTime)
 {
@@ -91,15 +120,14 @@ void BaseScene::DrawDebug()
 	KdShaderManager::Instance().m_StandardShader.EndUnLit();
 }
 
-void BaseScene::Init()
+bool BaseScene::LoadUI(const std::string& path)
 {
-	systemManager_ = std::make_unique<SystemManager>();
-	localBus_ = std::make_unique<EventBus>();
-	objManager_ = std::make_unique<ObjectManager>(localBus_.get());
-	// 最低限保証しておく
-	systemManager_->SetExecutionOrder(
-		[this](float dt) { objManager_->PreUpdate(dt); },
-		[this](float dt) { objManager_->Update(dt); },
-		[this](float dt) { objManager_->PostUpdate(dt); }
-	);
+	// Enter()前はobjManager_が無いので生成できない
+	if (!objManager_) return false;
+
+	PrefabDefinition def;
+	if (!PrefabFactory::LoadFromFile(path, def)) return false;
+
+	PrefabFactory::Create(*objManager_, def);
+	return true;
 }

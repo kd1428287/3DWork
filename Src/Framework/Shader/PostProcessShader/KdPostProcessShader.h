@@ -61,6 +61,21 @@ public:
 	void SetShockwaveWidth(float width) { m_cb0_DistortionInfo.Work().ShockwaveWidth = width; }
 	void SetChromaticAmount(float amount) { m_cb0_DistortionInfo.Work().ChromaticAmount = amount; }
 
+	// 質感テクスチャ(グレー、0.5=変化なし。nullptrで無効)
+	void SetSurfaceTexture(std::shared_ptr<KdTexture> tex) { m_surfaceTex = tex; }
+	void SetSurfaceIntensity(float intensity) { m_cb0_SurfaceInfo.Work().Intensity = intensity; }
+	// 質感が効く明るさの範囲(low以下で最大、high以上で消える)
+	void SetSurfaceLumaRange(float low, float high) { m_cb0_SurfaceInfo.Work().LumaLow = low; m_cb0_SurfaceInfo.Work().LumaHigh = high; }
+	void SetSurfaceTransform(const Math::Vector2& tiling, const Math::Vector2& offset)
+	{
+		m_cb0_SurfaceInfo.Work().Tiling = tiling;
+		m_cb0_SurfaceInfo.Work().Offset = offset;
+	}
+	// intervalごとにOffsetをランダムに切り替える(0で無効)
+	void SetSurfaceJitter(float interval) { m_surfaceJitterInterval = interval; }
+	// 毎フレームPostEffectProcess()より前に呼ぶ(ジッター用)
+	void UpdateSurface(float deltaTime);
+
 	void PostEffectProcess();
 
 	// エディタプレビュー等、本編以外の任意サイズテクスチャに対してカラーグレードのみを適用する。
@@ -81,6 +96,7 @@ private:
 	void DepthOfFieldProcess();
 	void ColorGradeProcess();
 	void DistortionProcess();
+	void SurfaceProcess(const std::shared_ptr<KdTexture>& srcTex);
 
 	void CreateBlurOffsetList(std::vector<Math::Vector3>& dstInfo, const std::shared_ptr<KdTexture>& spSrcTex, int samplingSize, const Math::Vector2& dir);
 
@@ -102,6 +118,7 @@ private:
 	ID3D11PixelShader* m_PS_ColorGrade = nullptr;
 	ID3D11PixelShader* m_PS_LiquidInk = nullptr;
 	ID3D11PixelShader* m_PS_Distortion = nullptr;
+	ID3D11PixelShader* m_PS_Surface = nullptr;
 
 	static const int kBlurSamplingRadius = 8;
 	static const int kLightBloomSamplingRadius = 4;
@@ -173,6 +190,18 @@ private:
 	};
 	KdConstantBuffer<cbDistortionInfo> m_cb0_DistortionInfo;
 
+	struct cbSurfaceInfo
+	{
+		Math::Vector2 Tiling = { 1.0f, 1.0f };
+		Math::Vector2 Offset = { 0.0f, 0.0f };
+
+		float Intensity = 0.5f;
+		float LumaLow = 0.4f;
+		float LumaHigh = 1.2f;
+		float _blank = 0.0f;
+	};
+	KdConstantBuffer<cbSurfaceInfo> m_cb0_SurfaceInfo;
+
 	// 発生中の衝撃波(経過時間から半径と強さを毎フレーム算出する)
 	struct ShockwaveInstance
 	{
@@ -196,6 +225,8 @@ public:
 	const cbLiquidInfo& GetLiquidCB() const { return m_cb0_LiquidInfo.Get(); }
 	cbLiquidInfo& WorkLiquidCB() { return m_cb0_LiquidInfo.Work(); }
 	const cbDistortionInfo& GetDistortionCB() const { return m_cb0_DistortionInfo.Get(); }
+	const cbSurfaceInfo& GetSurfaceCB() const { return m_cb0_SurfaceInfo.Get(); }
+	cbSurfaceInfo& WorkSurfaceCB() { return m_cb0_SurfaceInfo.Work(); }
 
 private:
 	KdRenderTargetPack m_colorGradeRTPack; // 最終カラーグレーディング用RT
@@ -228,6 +259,13 @@ private:
 
 	// ディストーション適用後の最終画像(衝撃波が有効な間だけ使う)
 	KdRenderTargetPack	m_distortionRTPack;
+
+	// 質感合成後の最終画像と、合成する質感テクスチャ
+	KdRenderTargetPack m_surfaceRTPack;
+	std::shared_ptr<KdTexture> m_surfaceTex;
+
+	float m_surfaceJitterInterval = 0.0f;
+	float m_surfaceJitterTimer = 0.0f;
 
 	Vertex m_screenVert[4];
 };

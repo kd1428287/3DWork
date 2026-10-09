@@ -40,6 +40,10 @@ public:
 	int		GetMaxFPS()			const { return m_fpsController.m_maxFps; }
 	float	GetDeltaTime()		const { return m_fpsController.GetDeltaTime(); }
 
+	void ShowCursolEnable(bool enable) {
+		if (m_showCursol != enable)ShowCursor(enable); m_showCursol = enable;
+	}
+
 	// 現在の起動モードを取得(他クラスからモードで分岐したい場合用)
 	AppMode GetAppMode() const { return m_appMode; }
 
@@ -76,6 +80,8 @@ private:
 
 	// ゲーム終了フラグ trueで終了する (メインスレッドのみが書き込む)
 	std::atomic<bool>	m_endFlag = false;
+
+	bool				m_showCursol = true;
 
 	// 起動時に選択されたモード(SelectStartupModeで決定され、以降は読み取り専用として扱う)
 	AppMode				m_appMode = AppMode::Undecided;

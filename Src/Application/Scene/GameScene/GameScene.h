@@ -2,10 +2,6 @@
 
 #include"../BaseScene/BaseScene.h"
 
-class PlayerFactory;
-class EnemyFactory;
-class CameraFactory;
-class TerrainFactory;
 class EffectDispatcher;
 class SlashTrailDispatcher;
 
@@ -25,18 +21,21 @@ public:
 
 private:
 
-	// BaseScene::Updateは非virtualになったため、シーン固有の処理はこちらに書く
+	// BaseScene::Updateは非virtualなので、シーン固有の処理はこちらに書く
 	// (systemManager_->Update()が終わった後に呼ばれる)
 	void OnUpdate(float deltaTime) override;
 	void OnPreDraw(float deltaTime) override;
 	void OnDrawEffects() override;
 	void OnDrawBright() override;
-	void Init()  override;
 
-	std::unique_ptr<PlayerFactory> playerFactory_ = nullptr;
-	std::unique_ptr<EnemyFactory> enemyFactory_ = nullptr;
-	std::unique_ptr<CameraFactory> cameraFactory_ = nullptr;
-	std::unique_ptr<TerrainFactory> terrainFactory_ = nullptr;
+	// SceneManagerがEnter()経由で呼ぶ。コンストラクタからは呼ばない
+	void OnEnter() override;
+
+	// OnEnter()の内訳。呼び出し順に依存があるので順番を変えない
+	void BuildWorld();
+	void BuildSystems();
+	void SetupEnvironment();
+
 	std::unique_ptr<EffectDispatcher> effectDispatcher_ = nullptr;
 	std::unique_ptr<SlashTrailDispatcher> slashTrailDispatcher_ = nullptr;
 	std::unique_ptr<InputSystem> inputSystem_ = nullptr;

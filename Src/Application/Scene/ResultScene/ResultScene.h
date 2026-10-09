@@ -1,17 +1,18 @@
-#pragma once
+﻿#pragma once
 
 #include"../BaseScene/BaseScene.h"
 
 class ResultScene : public BaseScene
 {
-public :
+public:
 
-	ResultScene()  { Init(); }
-	~ResultScene() {}
+	ResultScene() = default;
+	~ResultScene() override = default;
 
-private :
+private:
 
-	void Init()  override;
+	// SceneManagerがEnter()経由で呼ぶ。コンストラクタからは呼ばない
+	void OnEnter() override;
 
 	// Attack入力でTitleSceneへ遷移する
 	void OnUpdate(float deltaTime) override;

@@ -26,9 +26,9 @@ public:
 	//	  ゲーム画面をオフスクリーンを経由せずバックバッファへ直接描画する側に回る。
 	//	  (ImGui自体のBeginFrame/EndFrameは継続して呼ばれるため、ImGui内部状態が壊れる心配はない)
 	//=====================================================
-	void SetEnabled(bool enabled) { m_enabled = enabled; }
+	void SetEnabled(bool enabled);
 	bool IsEnabled() const { return m_enabled; }
-	void ToggleEnabled() { m_enabled = !m_enabled; }
+	void ToggleEnabled() {  SetEnabled(!IsEnabled()); }
 
 	// アプリケーション初期化時に一度だけ呼ぶ(内部でKdDebugGUI::GuiInitを呼ぶ)
 	void Init(int w, int h);

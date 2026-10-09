@@ -2,9 +2,9 @@
 #include "Application/main.h"
 #include "Application/Core/EventBus/Events/SceneEvents.h"
 
-void ResultScene::Init()
+void ResultScene::OnEnter()
 {
-	BaseScene::Init();
+	// 固有の初期化はまだ無い(基盤は構築済み)
 }
 
 void ResultScene::OnUpdate(float /*deltaTime*/)

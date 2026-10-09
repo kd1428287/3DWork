@@ -1032,6 +1032,15 @@
     <ClInclude Include="Src\Application\Components\Graphics\UI\Image\UIImageComponent.h">
       <Filter>Src\Application\Components\Graphics\UI\Image</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Core\EventBus\Events\PostureEvents.h">
+      <Filter>Src\Application\Core\EventBus\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Core\EventBus\Events\HealthEvents.h">
+      <Filter>Src\Application\Core\EventBus\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Factories\PrefabCatalog.h">
+      <Filter>Src\Application\Factories</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -1373,6 +1382,9 @@
     <ClCompile Include="Src\Application\Components\Graphics\UI\Image\UIImageComponent.cpp">
       <Filter>Src\Application\Components\Graphics\UI\Image</Filter>
     </ClCompile>
+    <ClCompile Include="Src\Application\Factories\PrefabCatalog.cpp">
+      <Filter>Src\Application\Factories</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Src\Framework\Shader\inc_KdCommon.hlsli">
@@ -1480,6 +1492,9 @@
       <Filter>Src\Framework\Shader\PostProcessShader</Filter>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_Distortion.hlsl">
+      <Filter>Src\Framework\Shader\PostProcessShader</Filter>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_Surface.hlsl">
       <Filter>Src\Framework\Shader\PostProcessShader</Filter>
     </FxCompile>
   </ItemGroup>

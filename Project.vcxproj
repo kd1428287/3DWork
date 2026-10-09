@@ -450,6 +450,7 @@
     <ClInclude Include="Src\Application\Factories\GamePlay\Character\EnemyFactory.h" />
     <ClInclude Include="Src\Application\Factories\GamePlay\Character\PlayerFactory.h" />
     <ClInclude Include="Src\Application\Factories\GamePlay\Map\TerrainFactory.h" />
+    <ClInclude Include="Src\Application\Factories\PrefabCatalog.h" />
     <ClInclude Include="Src\Application\Factories\PrefabFactory.h" />
     <ClInclude Include="Src\Application\main.h" />
     <ClInclude Include="Src\Application\Scene\BaseScene\BaseScene.h" />
@@ -581,6 +582,7 @@
     <ClCompile Include="Src\Application\Factories\GamePlay\Character\EnemyFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\GamePlay\Character\PlayerFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\GamePlay\Map\TerrainFactory.cpp" />
+    <ClCompile Include="Src\Application\Factories\PrefabCatalog.cpp" />
     <ClCompile Include="Src\Application\Factories\PrefabFactory.cpp" />
     <ClCompile Include="Src\Application\main.cpp" />
     <ClCompile Include="Src\Application\Scene\BaseScene\BaseScene.cpp" />
@@ -703,6 +705,9 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_LiquidInk.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_Surface.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_VS.hlsl">

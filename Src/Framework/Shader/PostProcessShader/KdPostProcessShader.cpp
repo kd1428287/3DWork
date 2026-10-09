@@ -107,6 +107,18 @@ bool KdPostProcessShader::Init()
 		}
 	}
 
+	{
+#include "KdPostProcessShader_PS_Surface.shaderInc"
+
+		if (FAILED(KdDirect3D::Instance().WorkDev()->CreatePixelShader(
+			compiledBuffer, sizeof(compiledBuffer), nullptr, &m_PS_Surface)))
+		{
+			assert(0 && "ピクセルシェーダー作成失敗(Surface)");
+			Release();
+			return false;
+		}
+	}
+
 	m_cb0_BlurInfo.Create();
 
 	m_cb0_DoFInfo.Create();
@@ -118,6 +130,8 @@ bool KdPostProcessShader::Init()
 	m_cb0_LiquidInfo.Create();
 
 	m_cb0_DistortionInfo.Create();
+
+	m_cb0_SurfaceInfo.Create();
 
 	const std::shared_ptr<KdTexture>& backBuffer = KdDirect3D::Instance().GetBackBuffer();
 
@@ -159,6 +173,9 @@ bool KdPostProcessShader::Init()
 	m_distortionRTPack.CreateRenderTarget(backBuffer->GetWidth(), backBuffer->GetHeight());
 	m_cb0_DistortionInfo.Work().Aspect = static_cast<float>(backBuffer->GetWidth()) / backBuffer->GetHeight();
 
+	// 質感合成後の画像
+	m_surfaceRTPack.CreateRenderTarget(backBuffer->GetWidth(), backBuffer->GetHeight());
+
 	// 画面全体に書き込む用の頂点情報
 	m_screenVert[0] = { {-1,-1,0}, {0, 1} };
 	m_screenVert[1] = { {-1, 1,0}, {0, 0} };
@@ -193,6 +210,7 @@ void KdPostProcessShader::Release()
 	KdSafeRelease(m_PS_ColorGrade);
 	KdSafeRelease(m_PS_LiquidInk);
 	KdSafeRelease(m_PS_Distortion);
+	KdSafeRelease(m_PS_Surface);
 
 
 	m_cb0_BlurInfo.Release();
@@ -201,6 +219,9 @@ void KdPostProcessShader::Release()
 	m_cb0_ColorGradeInfo.Release();
 	m_cb0_LiquidInfo.Release();
 	m_cb0_DistortionInfo.Release();
+	m_cb0_SurfaceInfo.Release();
+
+	m_surfaceTex.reset();
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -432,6 +453,49 @@ void KdPostProcessShader::DistortionProcess()
 	shaderMgr.UndoSamplerState();
 }
 
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 質感テクスチャを明暗として合成して m_surfaceRTPack に描画
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void KdPostProcessShader::SurfaceProcess(const std::shared_ptr<KdTexture>& srcTex)
+{
+	ID3D11DeviceContext* DevCon = KdDirect3D::Instance().WorkDevContext();
+	if (!DevCon) { return; }
+
+	m_cb0_SurfaceInfo.Write();
+	DevCon->PSSetConstantBuffers(0, 1, m_cb0_SurfaceInfo.GetAddress());
+
+	KdShaderManager& shaderMgr = KdShaderManager::Instance();
+	if (shaderMgr.SetVertexShader(m_VS))
+	{
+		DevCon->IASetInputLayout(m_inputLayout);
+	}
+	shaderMgr.SetPixelShader(m_PS_Surface);
+
+	shaderMgr.ChangeSamplerState(KdSamplerState::Linear_Clamp);
+
+	// t0=シーン画像 t1=質感
+	std::shared_ptr<KdTexture> srcTexList[2] = { srcTex, m_surfaceTex };
+	DrawTexture(srcTexList, 2, m_surfaceRTPack.m_RTTexture, &m_surfaceRTPack.m_viewPort);
+
+	shaderMgr.UndoSamplerState();
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 一定間隔で質感の位置をずらす(画面に貼り付いて見えるのを防ぐ)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void KdPostProcessShader::UpdateSurface(float deltaTime)
+{
+	if (m_surfaceJitterInterval <= 0.0f) { return; }
+
+	m_surfaceJitterTimer += deltaTime;
+	if (m_surfaceJitterTimer < m_surfaceJitterInterval) { return; }
+	m_surfaceJitterTimer = 0.0f;
+
+	cbSurfaceInfo& cb = m_cb0_SurfaceInfo.Work();
+	cb.Offset.x = static_cast<float>(rand()) / RAND_MAX;
+	cb.Offset.y = static_cast<float>(rand()) / RAND_MAX;
+}
+
 void KdPostProcessShader::PostEffectProcess()
 {
 	m_postEffectRTChanger.UndoRenderTarget();
@@ -448,6 +512,13 @@ void KdPostProcessShader::PostEffectProcess()
 	{
 		DistortionProcess();
 		finalTex = m_distortionRTPack.m_RTTexture;
+	}
+
+	// 質感未設定または強さ0の間はパスごと省く
+	if (m_surfaceTex && m_cb0_SurfaceInfo.Get().Intensity > 0.0f)
+	{
+		SurfaceProcess(finalTex);
+		finalTex = m_surfaceRTPack.m_RTTexture;
 	}
 
 	KdShaderManager::Instance().m_spriteShader.DrawTex(finalTex.get(), 0, 0);

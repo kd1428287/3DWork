@@ -816,7 +816,7 @@ void MapEditor::Load(const std::string& path)
 	m_redoStack.clear();
 
 	// 現在のシーンを再生成させる
-	//GLOBALEVENT.Publish(Events::Scene::ReloadingSceneEvent());
+	GLOBALEVENT.Publish(Events::ReloadingSceneEvent());
 
 	KdDebugGUI::Instance().AddLog("MapEditor: 読み込みました %s\n", path.c_str());
 }

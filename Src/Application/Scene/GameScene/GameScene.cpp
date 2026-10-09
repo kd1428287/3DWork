@@ -15,8 +15,6 @@
 #include "Application/Factories/GamePlay/Character/EnemyFactory.h"
 #include "Application/Factories/GamePlay/Map/TerrainFactory.h"
 #include "Application/Factories/Common/CameraFactory.h"
-#include "Application/Factories/PrefabFactory.h"
-
 
 // definitions
 #include "Application/Definitions/Loaders/MapLoader.h"
@@ -28,10 +26,7 @@
 #include "Application/Components/Graphics/Animation/ModelAnimatorComponent.h"
 #include "Application/Components/Graphics/Render/ModelRenderComponent.h"
 
-GameScene::GameScene()
-{
-	Init();
-}
+GameScene::GameScene() = default;
 
 GameScene::~GameScene() = default;
 
@@ -68,47 +63,53 @@ void GameScene::OnDrawBright()
 	slashTrailDispatcher_->Draw(ParticleDrawPass::Bright);
 }
 
-
-void GameScene::Init()
+void GameScene::OnEnter()
 {
-	BaseScene::Init();
+	BuildWorld();
+	BuildSystems();
+	SetupEnvironment();
+}
 
-	// factory
-	terrainFactory_ = std::make_unique<TerrainFactory>();
-	//auto* terrain = terrainFactory_->CreateTerrain(*objManager_, 0);
-	auto* skydome = terrainFactory_->CreateSkydome(*objManager_, 0);
-	auto loader = std::make_unique<MapLoader>();
+void GameScene::BuildWorld()
+{
+	// 地形・マップ
+	TerrainFactory terrainFactory;
+	terrainFactory.CreateSkydome(*objManager_, 0);
 
-	loader->LoadMapFromJson("Asset/Data/Map/MapData.json", *objManager_, *terrainFactory_);
+	MapLoader loader;
+	loader.LoadMapFromJson("Asset/Data/Map/MapData.json", *objManager_, terrainFactory);
 
+	// 以降のオブジェクト生成より先にバスを購読させる(元の生成順を維持)
 	slashTrailDispatcher_ = std::make_unique<SlashTrailDispatcher>();
 	slashTrailDispatcher_->Init(*localBus_);
 	SlashTrailParams params;
 	slashTrailDispatcher_->RegisterDefinition("Sword", params);
 
-	std::unordered_map<std::string, std::string> map;
-	map["Warrock"] = "Asset/Data/Game/Warrock.json";
-	enemyFactory_ = std::make_unique<EnemyFactory>(map);
+	// 敵
+	std::unordered_map<std::string, std::string> enemyDefs;
+	enemyDefs["Warrock"] = "Asset/Data/Game/Warrock.json";
+	EnemyFactory enemyFactory(enemyDefs);
 
-	if (enemyFactory_->IsKnownEnemy("Warrock"))
+	if (enemyFactory.IsKnownEnemy("Warrock"))
 	{
-		enemyFactory_->CreateEnemy(*objManager_, "Warrock", Math::Vector3(10, 0, 5.f));
+		enemyFactory.CreateEnemy(*objManager_, "Warrock", Math::Vector3(10, 0, 5.f));
 	}
 
-	playerFactory_ = std::make_unique<PlayerFactory>();
-	auto* player = playerFactory_->CreatePlayer(*objManager_, "Asset/Data/Game/Player.json");
+	// プレイヤーとカメラ
+	PlayerFactory playerFactory;
+	auto* player = playerFactory.CreatePlayer(*objManager_, "Asset/Data/Game/Player.json");
 
-	cameraFactory_ = std::make_unique<CameraFactory>();
-	auto* camera = cameraFactory_->CreateCamera(*objManager_, player);
+	CameraFactory cameraFactory;
+	cameraFactory.CreateCamera(*objManager_, player);
 
-	PrefabDefinition def;
-	if (PrefabFactory::LoadFromFile("Asset/Data/Game/Hud.json", def)) {
-		PrefabFactory::Create(*objManager_, def);
-	}
+	// UI
+	LoadUI("Asset/Data/Game/Hud.json");
+}
 
+void GameScene::BuildSystems()
+{
 	cameraSystem_ = std::make_unique<CameraSystem>(*objManager_);
 
-	// system
 	inputSystem_ = std::make_unique<InputSystem>(*localBus_);
 
 	colliderRegistry_ = std::make_unique<ColliderRegistry>();
@@ -119,6 +120,7 @@ void GameScene::Init()
 
 	timeScaleSystem_ = std::make_unique<TimeScaleSystem>(*localBus_, *objManager_);
 
+	// 更新順はここで一括管理する
 	systemManager_->SetExecutionOrder(
 		[this](float dt) { inputSystem_->Update(dt); },
 		[this](float dt) { timeScaleSystem_->Update(dt); },
@@ -130,19 +132,33 @@ void GameScene::Init()
 		[this](float dt) { objManager_->PostUpdate(dt); },
 		[this](float dt) { objManager_->Flush(); }
 	);
+}
 
-	KdShaderManager::Instance().m_postProcessShader.SetFarClippingDistance(50.f);
-	KdShaderManager::Instance().m_postProcessShader.SetFocusRange(0, 50.0f);
-	KdShaderManager::Instance().WorkAmbientController().SetDirLightShadowArea(Math::Vector2(100.f, 100.f), 100);
-	KdShaderManager::Instance().WorkAmbientController().AddPointLight(Math::Vector3(1.0f, 1.0f, 1.0f), 10.0f, Math::Vector3(0, 0, 0), false);
-	KdShaderManager::Instance().WorkAmbientController().SetFogEnable(false, true);
-	KdShaderManager::Instance().WorkAmbientController().SetheightFog({0.9f,0.9f,0.9f}, 80.f, -10.f, 100.f);
-	KdShaderManager::Instance().WorkAmbientController().SetAmbientLight(Math::Vector4(1.0f,1.0f,1.0f, 0.25f));
-	KdShaderManager::Instance().m_postProcessShader.SetExposure(1.05f);
-	KdShaderManager::Instance().m_postProcessShader.SetContrast(1.25f);       // コントラスト強め
-	KdShaderManager::Instance().m_postProcessShader.SetSaturation(0.85f);     // 彩度低め
-	KdShaderManager::Instance().m_postProcessShader.SetTemperature(-0.3f);   // ★わずかに寒色（青み）を寄せて鉄や血の冷たさを演出
-	KdShaderManager::Instance().m_postProcessShader.SetTint(-0.15f);          // ★ごくわずかに緑に寄せて、古びた日本的・和風の空気感を作る
-	
-	
+void GameScene::SetupEnvironment()
+{
+	auto& post = KdShaderManager::Instance().m_postProcessShader;
+	auto& ambient = KdShaderManager::Instance().WorkAmbientController();
+
+	// ライト・フォグ
+	ambient.SetDirLightShadowArea(Math::Vector2(100.f, 100.f), 100);
+	ambient.AddPointLight(Math::Vector3(1.0f, 1.0f, 1.0f), 10.0f, Math::Vector3(0, 0, 0), false);
+	ambient.SetFogEnable(false, true);
+	ambient.SetheightFog({ 0.9f, 0.9f, 0.9f }, 80.f, -10.f, 100.f);
+	ambient.SetAmbientLight(Math::Vector4(1.0f, 1.0f, 1.0f, 0.25f));
+
+	// ポストプロセス(寒色寄り・低彩度・高コントラストで、鉄や血の冷たさと古びた和風の空気感を出す)
+	post.SetFarClippingDistance(50.f);
+	post.SetFocusRange(0, 50.0f);
+	post.SetExposure(1.05f);
+	post.SetContrast(1.25f);
+	post.SetSaturation(0.85f);
+	post.SetTemperature(-0.3f);
+	post.SetTint(-0.15f);
+
+	// 画面全体に重ねる質感テクスチャ(約0.15秒ごとに位置を切り替える)
+	post.SetSurfaceTexture(KdAssets::Instance().m_textures.GetData("Asset/Textures/Game/p0028_l.png"));
+	post.SetSurfaceIntensity(0.6f);
+	post.SetSurfaceLumaRange(0.4f, 1.2f);
+	post.SetSurfaceTransform({ 2.0f, 2.0f }, { 0, 0 });
+	post.SetSurfaceJitter(0.15f);
 }

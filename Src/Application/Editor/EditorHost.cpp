@@ -48,6 +48,13 @@ static void SetupDefaultDockLayout(ImGuiID dockspaceId)
 	ImGui::DockBuilderFinish(dockspaceId);
 }
 
+void EditorHost::SetEnabled(bool enabled)
+{
+	m_enabled = enabled;
+	KdInputManager::Instance().SetAxisConfineToWindowCenter("Look", !m_enabled);
+	Application::Instance().ShowCursolEnable(m_enabled);
+}
+
 void EditorHost::Init(int w, int h)
 {
 	KdDebugGUI::Instance().GuiInit(w, h);

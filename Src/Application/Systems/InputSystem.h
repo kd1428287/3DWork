@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "Application/Editor/EditorHost.h"
+#include "Application/main.h"
 #include "Application/Editor/Common/EditorViewPort.h"
 #include "Application/Core/EventBus/Events/TimeScaleEvents.h"
 
@@ -13,14 +14,7 @@ public:
 	{
 		if (KdInputManager::Instance().IsPress("Editor")) 
 		{
-			flg = !flg;
-
-			KdInputManager::Instance().SetAxisConfineToWindowCenter("Look", !flg);
-			
-			// エディタOFF中(プレイ中)はカーソルを隠し、ON中(編集中)は表示する
-			ShowCursor(flg);
-			
-			if (flg)
+			if (EditorHost::Instance().IsEnabled())
 			{
 				Events::PublishPause(eventBus_, pauseID_);
 			} 
@@ -35,6 +29,4 @@ public:
 private:
 	EventBus& eventBus_;
 	uint64_t pauseID_ = 0;
-
-	bool flg = false;
 };
