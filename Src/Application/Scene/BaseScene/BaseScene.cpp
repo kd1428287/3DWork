@@ -98,6 +98,9 @@ void BaseScene::Draw()
 
 void BaseScene::DrawSprite()
 {
+	// 画面全体の背景は、スプライトより先に描く
+	OnDrawBackground();
+
 	// ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
 	// 2Dの描画はこの間で行う
 	KdShaderManager::Instance().m_spriteShader.Begin();
@@ -105,8 +108,6 @@ void BaseScene::DrawSprite()
 		objManager_->DrawSprite();
 
 		KdShaderManager::Instance().m_spriteShader.SetMatrix(Math::Matrix::Identity);
-
-		OnDrawSprite();
 	}
 	KdShaderManager::Instance().m_spriteShader.End();
 }

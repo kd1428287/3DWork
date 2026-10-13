@@ -69,11 +69,7 @@ void TitleScene::OnPreDraw(float deltaTime)
 	fluid_.Step(deltaTime);
 }
 
-void TitleScene::OnDrawSprite()
+void TitleScene::OnDrawBackground()
 {
-	// R16Fなので赤く出る
-	std::shared_ptr<KdTexture> tex = fluid_.GetDensityTexture();
-	if (!tex) { return; }
-
-	KdShaderManager::Instance().m_spriteShader.DrawTex(tex.get(), 0, 0, 640, 360);
+	fluid_.Draw();
 }

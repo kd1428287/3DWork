@@ -38,6 +38,40 @@ struct VSOutput
 #define PASS_CURL				6
 #define PASS_VORTICITY_FORCE	7
 #define PASS_DIFFUSE			8
+#define PASS_DISPLAY			9
+
+// 墨の見た目の調整値
+static const float3 PAPER_COLOR = float3(0.93, 0.91, 0.86);	// 紙の色(生成り)
+static const float  PAPER_GRAIN = 0.06;						// 紙のざらつきの強さ
+static const float  INK_ABSORB  = 3.5;						// 墨の濃さ(大きいほど濃度1で黒に近づく)
+static const float  INK_MOTTLE  = 0.25;						// 紙の繊維による墨のムラ
+static const float  INK_EDGE    = 0.35;						// 墨だまりの縁の締まり
+
+float Hash(float2 p)
+{
+	p = frac(p * float2(123.34, 456.21));
+	p += dot(p, p + 45.32);
+
+	return frac(p.x * p.y);
+}
+
+float ValueNoise(float2 p)
+{
+	float2 i = floor(p);
+	float2 f = frac(p);
+	float2 u = f * f * (3.0 - 2.0 * f);
+
+	return lerp(lerp(Hash(i), Hash(i + float2(1, 0)), u.x),
+				lerp(Hash(i + float2(0, 1)), Hash(i + float2(1, 1)), u.x), u.y);
+}
+
+// 紙のざらつき(粗いムラから細かい繊維まで重ねる)。0〜1
+float PaperNoise(float2 uv)
+{
+	float2 p = uv * float2(g_aspect, 1.0);
+
+	return 0.5 * ValueNoise(p * 40.0) + 0.3 * ValueNoise(p * 160.0) + 0.2 * ValueNoise(p * 640.0);
+}
 
 // 入力位置を中心にしたガウス分布(円形になるよう縦横比を補正)
 float SplatWeight(float2 uv)
@@ -151,6 +185,29 @@ float4 main(VSOutput In) : SV_Target0
 		float a = min(g_diffusion * g_dt, 0.25);
 
 		return float4(c + a * (sum - 4.0 * c), 0.0, 0.0, 1.0);
+	}
+
+	if (g_pass == PASS_DISPLAY)
+	{
+		// t0 = 濃度(格子を線形補間で画面サイズへ拡大して読む)
+		float d = g_tex0.Sample(g_smp, uv).x;
+
+		float grain = PaperNoise(uv);
+
+		float3 paper = PAPER_COLOR * (1.0 + (grain - 0.5) * PAPER_GRAIN);
+
+		// 墨は紙の繊維になじむので、濃度に細かいムラを与える
+		d *= 1.0 + (grain - 0.5) * INK_MOTTLE;
+
+		// 濃いほど光を吸収する。青を少し残して、青みのある墨色にする
+		float3 ink = exp(-d * INK_ABSORB * float3(1.0, 1.0, 0.9));
+
+		// 濃度の変化が急な所(墨だまりの縁)を少し暗くする
+		float2 grad = float2(g_tex0.Sample(g_smp, uv + dx).x - g_tex0.Sample(g_smp, uv - dx).x,
+							 g_tex0.Sample(g_smp, uv + dy).x - g_tex0.Sample(g_smp, uv - dy).x);
+		ink *= 1.0 - INK_EDGE * saturate(length(grad) * 8.0);
+
+		return float4(paper * ink, 1.0);
 	}
 
 	// PASS_SPLAT_DENSITY：重ねるほど濃くなるが1は超えない

@@ -21,8 +21,8 @@ private:
 	// 流体はGPUへ描画するため、Updateではなく描画フェーズで進める
 	void OnPreDraw(float deltaTime) override;
 
-	// 確認用の密度RT表示(ステップ6の表示シェーダーで置き換える)
-	void OnDrawSprite() override;
+	// 流体の背景を、スプライトより先に画面全体へ描く
+	void OnDrawBackground() override;
 
 	// カーソルの移動を流体への入力にする
 	void AddCursorSplat();

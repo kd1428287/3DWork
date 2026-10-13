@@ -1,5 +1,30 @@
 ﻿#include "FluidSimulator.h"
 
+namespace
+{
+	// 現在バインドされているRT(0番)のサイズを取得する
+	bool GetBoundRTSize(ID3D11DeviceContext* devCon, float& width, float& height)
+	{
+		Microsoft::WRL::ComPtr<ID3D11RenderTargetView> rtv;
+		devCon->OMGetRenderTargets(1, rtv.GetAddressOf(), nullptr);
+		if (!rtv) { return false; }
+
+		Microsoft::WRL::ComPtr<ID3D11Resource> resource;
+		rtv->GetResource(resource.GetAddressOf());
+
+		Microsoft::WRL::ComPtr<ID3D11Texture2D> texture;
+		if (FAILED(resource.As(&texture))) { return false; }
+
+		D3D11_TEXTURE2D_DESC desc;
+		texture->GetDesc(&desc);
+
+		width = static_cast<float>(desc.Width);
+		height = static_cast<float>(desc.Height);
+
+		return true;
+	}
+}
+
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // シェーダーとRTの生成
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -91,6 +116,54 @@ void FluidSimulator::Release()
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 濃度を墨と紙の見た目に変換して、現在のレンダーターゲット全体へ描く
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void FluidSimulator::Draw()
+{
+	if (!m_PS) { return; }
+
+	KdShaderManager& shaderMgr = KdShaderManager::Instance();
+	ID3D11DeviceContext* devCon = KdDirect3D::Instance().WorkDevContext();
+
+	BindPipeline();
+
+	// 直前の描画で小さなビューポートが残っていても、描画先の全面に描く
+	UINT numVP = 1;
+	D3D11_VIEWPORT oldVP = {};
+	devCon->RSGetViewports(&numVP, &oldVP);
+
+	float width = 0.0f, height = 0.0f;
+	bool changedVP = GetBoundRTSize(devCon, width, height);
+	if (changedVP)
+	{
+		D3D11_VIEWPORT vp = { 0.0f, 0.0f, width, height, 0.0f, 1.0f };
+		devCon->RSSetViewports(1, &vp);
+	}
+
+	shaderMgr.ChangeSamplerState(KdSamplerState::Linear_Clamp);
+	shaderMgr.ChangeDepthStencilState(KdDepthStencilState::ZDisable);
+
+	DrawQuad(Pass::Display, m_density.Read().m_RTTexture.get(), nullptr);
+
+	shaderMgr.UndoDepthStencilState();
+	shaderMgr.UndoSamplerState();
+
+	if (changedVP) { devCon->RSSetViewports(1, &oldVP); }
+}
+
+void FluidSimulator::BindPipeline()
+{
+	ID3D11DeviceContext* devCon = KdDirect3D::Instance().WorkDevContext();
+
+	if (KdShaderManager::Instance().SetVertexShader(m_VS))
+	{
+		devCon->IASetInputLayout(m_inputLayout);
+	}
+	KdShaderManager::Instance().SetPixelShader(m_PS);
+	devCon->PSSetConstantBuffers(0, 1, m_cb.GetAddress());
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 1フレーム分のシミュレーション
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void FluidSimulator::Step(float deltaTime)
@@ -102,14 +175,8 @@ void FluidSimulator::Step(float deltaTime)
 	}
 
 	KdShaderManager& shaderMgr = KdShaderManager::Instance();
-	ID3D11DeviceContext* devCon = KdDirect3D::Instance().WorkDevContext();
 
-	if (shaderMgr.SetVertexShader(m_VS))
-	{
-		devCon->IASetInputLayout(m_inputLayout);
-	}
-	shaderMgr.SetPixelShader(m_PS);
-	devCon->PSSetConstantBuffers(0, 1, m_cb.GetAddress());
+	BindPipeline();
 
 	// 既定のサンプラーは補間なしのため、線形補間+端クランプへ切り替える
 	shaderMgr.ChangeSamplerState(KdSamplerState::Linear_Clamp);
@@ -117,6 +184,7 @@ void FluidSimulator::Step(float deltaTime)
 	float dt = std::clamp(deltaTime, kMinDeltaTime, kMaxDeltaTime);
 	m_cb.Work().DeltaTime = dt;
 
+	UpdateIdle(dt);
 	ApplySplats(dt);
 
 	// 速度の自己移流 → 渦度強調 → 圧力投影で非圧縮にする → 密度を移流して滲ませる
@@ -180,6 +248,38 @@ void FluidSimulator::Diffuse(FluidDoubleRT& field)
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// アイドル時の自動入力：入力が一定時間途絶えたら、ゆっくり動く墨を時々落とす
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void FluidSimulator::UpdateIdle(float dt)
+{
+	// このフレームに入力があれば、待ち時間をやり直す
+	if (!m_splats.empty())
+	{
+		m_idleTime = 0.0f;
+		m_dropTimer = 0.0f;
+		return;
+	}
+
+	m_idleTime += dt;
+	if (m_idleTime < kIdleDelay) { return; }
+
+	m_dropTimer -= dt;
+	if (m_dropTimer > 0.0f) { return; }
+
+	m_dropTimer = Rand(kIdleIntervalMin, kIdleIntervalMax);
+
+	// 画面の端を避けた位置に、ランダムな向きの初速で落とす
+	Math::Vector2 pos = { Rand(0.15f, 0.85f), Rand(0.15f, 0.85f) };
+	float angle = Rand(0.0f, DirectX::XM_2PI);
+	float speed = Rand(kIdleSpeedMin, kIdleSpeedMax);
+
+	// 速度[texel/秒]がspeedになる移動量(ApplySplatsで移動量÷dtへ戻される)
+	Math::Vector2 delta = { std::cos(angle) * speed * dt / m_simWidth, std::sin(angle) * speed * dt / m_simHeight };
+
+	m_splats.push_back({ pos, delta, Rand(kIdleRadiusMin, kIdleRadiusMax), kIdleDensity });
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 墨の入力を記録する(反映は次のStep())
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void FluidSimulator::AddSplat(const Math::Vector2& posUV, const Math::Vector2& deltaUV, float radius, float density)
@@ -237,13 +337,20 @@ void FluidSimulator::Splat(FluidDoubleRT& field, Pass pass, const Math::Vector2&
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void FluidSimulator::DrawPass(Pass pass, KdTexture* src0, KdTexture* src1, KdRenderTargetPack& dst)
 {
+	KdRenderTargetChanger rtChanger;
+	if (!rtChanger.ChangeRenderTarget(dst)) { return; }
+
+	DrawQuad(pass, src0, src1);
+
+	rtChanger.UndoRenderTarget();
+}
+
+void FluidSimulator::DrawQuad(Pass pass, KdTexture* src0, KdTexture* src1)
+{
 	ID3D11DeviceContext* devCon = KdDirect3D::Instance().WorkDevContext();
 
 	m_cb.Work().Pass = static_cast<int>(pass);
 	m_cb.Write();
-
-	KdRenderTargetChanger rtChanger;
-	if (!rtChanger.ChangeRenderTarget(dst)) { return; }
 
 	if (src0) { devCon->PSSetShaderResources(0, 1, src0->WorkSRViewAddress()); }
 	if (src1) { devCon->PSSetShaderResources(1, 1, src1->WorkSRViewAddress()); }
@@ -253,6 +360,4 @@ void FluidSimulator::DrawPass(Pass pass, KdTexture* src0, KdTexture* src1, KdRen
 	// 次のパスで書き込み先になるRTがSRVに残らないよう外す
 	ID3D11ShaderResourceView* nullSRV[2] = {};
 	devCon->PSSetShaderResources(0, 2, nullSRV);
-
-	rtChanger.UndoRenderTarget();
 }

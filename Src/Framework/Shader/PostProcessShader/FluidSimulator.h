@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include <random>
+
 // 読み書きを交互に入れ替えるRTのペア
 struct FluidDoubleRT
 {
@@ -45,6 +47,9 @@ public:
 	//	radius        … 画面の高さに対する比率
 	void AddSplat(const Math::Vector2& posUV, const Math::Vector2& deltaUV, float radius, float density);
 
+	// 濃度を墨と紙の見た目に変換し、現在のレンダーターゲット全体へ描く(背景用)
+	void Draw();
+
 	std::shared_ptr<KdTexture> GetDensityTexture() { return m_density.Read().m_RTTexture; }
 
 private:
@@ -60,6 +65,7 @@ private:
 		Curl,
 		VorticityForce,
 		Diffuse,
+		Display,
 	};
 
 	struct Vertex
@@ -107,24 +113,45 @@ private:
 	// fieldを隣のマスとなじませる(墨の滲み)
 	void Diffuse(FluidDoubleRT& field);
 
+	// 入力が途絶えている間、墨を時々自動で落とす
+	void UpdateIdle(float dt);
+
 	// 溜めた入力を速度と濃度へ加える
 	void ApplySplats(float dt);
 
 	// fieldの1点(ガウス分布)へvalueを加える
 	void Splat(FluidDoubleRT& field, Pass pass, const Math::Vector2& posUV, float radius, const Math::Vector3& value);
 
+	// VS・PS・定数バッファをデバイスへ設定する
+	void BindPipeline();
+
 	// src0/src1をt0/t1に渡して、dstへ全画面描画する(srcはnullptr可)
 	void DrawPass(Pass pass, KdTexture* src0, KdTexture* src1, KdRenderTargetPack& dst);
 
+	float Rand(float lo, float hi) { return std::uniform_real_distribution<float>(lo, hi)(m_rng); }
+
+	// 描画先は切り替えず、現在のレンダーターゲットへ全画面描画する
+	void DrawQuad(Pass pass, KdTexture* src0, KdTexture* src1);
+
 	static constexpr float kMinDeltaTime = 1.0f / 240.0f;
 	static constexpr float kMaxDeltaTime = 1.0f / 30.0f;
-	static constexpr float kVelocityDissipation = 0.5f;	// 毎秒の減衰率
-	static constexpr float kDensityDissipation = 0.05f;
+	static constexpr float kVelocityDissipation = 0.75f;	// 毎秒の減衰率
+	static constexpr float kDensityDissipation = 0.25f;
 	static constexpr float kDensityDiffusion = 6.0f;	// texel²/秒
 	static constexpr float kVorticity = 8.0f;			// 1/秒
 	static constexpr float kMaxSplatSpeed = 600.0f;		// texel/秒
 	static constexpr int   kMaxSplatSubdivision = 16;
 	static constexpr int   kJacobiIterations = 20;
+
+	// 入力が途絶えた時の自動入力
+	static constexpr float kIdleDelay = 2.0f;		// 入力が途絶えてから始めるまでの秒数
+	static constexpr float kIdleIntervalMin = 1.5f;	// 墨を落とす間隔(秒)
+	static constexpr float kIdleIntervalMax = 3.5f;
+	static constexpr float kIdleSpeedMin = 60.0f;		// 落とした墨の初速(texel/秒)
+	static constexpr float kIdleSpeedMax = 140.0f;
+	static constexpr float kIdleRadiusMin = 0.04f;	// 画面の高さに対する比率
+	static constexpr float kIdleRadiusMax = 0.08f;
+	static constexpr float kIdleDensity = 0.5f;
 
 	ID3D11VertexShader* m_VS = nullptr;
 	ID3D11InputLayout* m_inputLayout = nullptr;
@@ -139,6 +166,10 @@ private:
 	KdRenderTargetPack m_curl;			// 速度場の渦度
 
 	std::vector<SplatRequest> m_splats;
+
+	std::mt19937	m_rng{ std::random_device{}() };
+	float			m_idleTime = 0.0f;	// 入力が無い状態が続いている時間
+	float			m_dropTimer = 0.0f;	// 次に墨を落とすまでの残り時間
 
 	int		m_simWidth = 0;
 	int		m_simHeight = 0;
