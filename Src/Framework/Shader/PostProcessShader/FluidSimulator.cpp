@@ -52,10 +52,15 @@ bool FluidSimulator::Init(int simWidth)
 
 	m_velocity.Create(m_simWidth, m_simHeight, DXGI_FORMAT_R16G16_FLOAT);
 	m_density.Create(m_simWidth, m_simHeight, DXGI_FORMAT_R16_FLOAT);
+	m_pressure.Create(m_simWidth, m_simHeight, DXGI_FORMAT_R16_FLOAT);
+	m_divergence.CreateRenderTarget(m_simWidth, m_simHeight, false, DXGI_FORMAT_R16_FLOAT);
+	m_curl.CreateRenderTarget(m_simWidth, m_simHeight, false, DXGI_FORMAT_R16_FLOAT);
 
 	cbFluid& cb = m_cb.Work();
 	cb.TexelSize = { 1.0f / m_simWidth, 1.0f / m_simHeight };
 	cb.Aspect = aspect;
+	cb.Diffusion = kDensityDiffusion;
+	cb.Vorticity = kVorticity;
 
 	// 画面全体に書き込む用の頂点
 	m_screenVert[0] = { {-1,-1,0}, {0, 1} };
@@ -65,6 +70,7 @@ bool FluidSimulator::Init(int simWidth)
 
 	m_velocity.Clear();
 	m_density.Clear();
+	m_pressure.Clear();
 
 	return true;
 }
@@ -79,6 +85,9 @@ void FluidSimulator::Release()
 
 	m_velocity.Release();
 	m_density.Release();
+	m_pressure.Release();
+	m_divergence.m_RTTexture.reset();
+	m_curl.m_RTTexture.reset();
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -110,9 +119,12 @@ void FluidSimulator::Step(float deltaTime)
 
 	ApplySplats(dt);
 
-	// 速度の自己移流 → 密度を速度で移流(ステップ4でこの間に圧力投影が入る)
+	// 速度の自己移流 → 渦度強調 → 圧力投影で非圧縮にする → 密度を移流して滲ませる
 	Advect(m_velocity, m_velocity, kVelocityDissipation);
+	AddVorticity();
+	Project();
 	Advect(m_velocity, m_density, kDensityDissipation);
+	Diffuse(m_density);
 
 	shaderMgr.UndoSamplerState();
 }
@@ -126,6 +138,44 @@ void FluidSimulator::Advect(FluidDoubleRT& velocity, FluidDoubleRT& field, float
 
 	DrawPass(Pass::Advect, velocity.Read().m_RTTexture.get(), field.Read().m_RTTexture.get(), field.Write());
 
+	field.Swap();
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 圧力投影：発散(湧き出し・吸い込み)を圧力の勾配で打ち消し、流れが回り込むようにする
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void FluidSimulator::Project()
+{
+	DrawPass(Pass::Divergence, m_velocity.Read().m_RTTexture.get(), nullptr, m_divergence);
+
+	// 前フレームの圧力から始めるので、反復が少なくても収束しやすい
+	for (int i = 0; i < kJacobiIterations; ++i)
+	{
+		DrawPass(Pass::Jacobi, m_pressure.Read().m_RTTexture.get(), m_divergence.m_RTTexture.get(), m_pressure.Write());
+		m_pressure.Swap();
+	}
+
+	DrawPass(Pass::Gradient, m_pressure.Read().m_RTTexture.get(), m_velocity.Read().m_RTTexture.get(), m_velocity.Write());
+	m_velocity.Swap();
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 渦度強調：渦の中心へ向かう方向と直交する力を加え、数値拡散で弱まる渦を保つ
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void FluidSimulator::AddVorticity()
+{
+	DrawPass(Pass::Curl, m_velocity.Read().m_RTTexture.get(), nullptr, m_curl);
+
+	DrawPass(Pass::VorticityForce, m_curl.m_RTTexture.get(), m_velocity.Read().m_RTTexture.get(), m_velocity.Write());
+	m_velocity.Swap();
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 拡散：隣のマスとなじませる(合計は変わらず、輪郭だけが滲む)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void FluidSimulator::Diffuse(FluidDoubleRT& field)
+{
+	DrawPass(Pass::Diffuse, field.Read().m_RTTexture.get(), nullptr, field.Write());
 	field.Swap();
 }
 

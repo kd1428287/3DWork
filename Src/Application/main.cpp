@@ -148,10 +148,82 @@ void Application::DrawSprite()
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 枠付きウィンドウ⇔ボーダレス(モニター全体)の切り替え
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void Application::ToggleBorderless()
+{
+	HWND hwnd = m_window.GetWndHandle();
+
+	if (!m_borderless)
+	{
+		// 元のスタイルと位置を退避してから、現在のモニター全体へ広げる
+		m_prevStyle = GetWindowLongPtr(hwnd, GWL_STYLE);
+		GetWindowPlacement(hwnd, &m_prevPlacement);
+
+		MONITORINFO mi = { sizeof(mi) };
+		GetMonitorInfo(MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), &mi);
+
+		SetWindowLongPtr(hwnd, GWL_STYLE, WS_POPUP | WS_VISIBLE);
+		SetWindowPos(hwnd, HWND_TOP,
+			mi.rcMonitor.left, mi.rcMonitor.top,
+			mi.rcMonitor.right - mi.rcMonitor.left,
+			mi.rcMonitor.bottom - mi.rcMonitor.top,
+			SWP_FRAMECHANGED | SWP_NOOWNERZORDER);
+
+		// カメラ操作中にカーソルが外へ出ないようモニター内に閉じ込める
+		ClipCursor(&mi.rcMonitor);
+	}
+	else
+	{
+		ClipCursor(nullptr);
+
+		SetWindowLongPtr(hwnd, GWL_STYLE, m_prevStyle);
+		SetWindowPlacement(hwnd, &m_prevPlacement);
+		SetWindowPos(hwnd, nullptr, 0, 0, 0, 0,
+			SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+	}
+
+	m_borderless = !m_borderless;
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// クライアント座標 → 設計解像度(1280x720)の仮想座標
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+POINT Application::ClientToVirtual(POINT clientPos) const
+{
+	RECT rc;
+	GetClientRect(m_window.GetWndHandle(), &rc);
+
+	// 最小化中などサイズ0のときはそのまま返す
+	if (rc.right <= 0 || rc.bottom <= 0) return clientPos;
+
+	// A案はクライアント全体へ引き伸ばすため、縦横を別々の倍率で変換する
+	return {
+		(LONG)(clientPos.x * (float)m_baseWidth / rc.right),
+		(LONG)(clientPos.y * (float)m_baseHeight / rc.bottom)
+	};
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 現在のマウス位置(仮想座標)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+POINT Application::GetVirtualMousePos() const
+{
+	POINT p;
+	GetCursorPos(&p);
+	ScreenToClient(m_window.GetWndHandle(), &p);
+	return ClientToVirtual(p);
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // アプリケーション初期設定
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 bool Application::Init(int w, int h)
 {
+	// 設計解像度を保持(ボーダレス時の座標変換に使う)
+	m_baseWidth = w;
+	m_baseHeight = h;
+
 	//===================================================================
 	// ウィンドウ作成
 	//===================================================================
@@ -356,6 +428,19 @@ void Application::Execute()
 			m_prevEditorToggleKeyDown = editorToggleKeyDown;
 		}
 
+		// ボーダレス切り替え(F11キー。押した瞬間のみ、ウィンドウが前面のときだけ)
+		{
+			bool borderlessKeyDown = (GetAsyncKeyState(VK_F11) & 0x8000) != 0;
+
+			if (borderlessKeyDown && !m_prevBorderlessKeyDown &&
+				GetForegroundWindow() == m_window.GetWndHandle())
+			{
+				ToggleBorderless();
+			}
+
+			m_prevBorderlessKeyDown = borderlessKeyDown;
+		}
+
 		//=========================================
 		//
 		// アプリケーション更新処理
@@ -406,6 +491,9 @@ void Application::Execute()
 // アプリケーション終了
 void Application::Release()
 {
+	// カーソル拘束を解除する
+	ClipCursor(nullptr);
+
 	// エディタ関連の解放(内部でImGuiのContext破棄まで行う)
 	// KdDirect3D::Instance().Release()より前に呼ぶこと(ImGuiのDX11バックエンド解放が
 	// デバイス/コンテキスト破棄後になると不正になるため)

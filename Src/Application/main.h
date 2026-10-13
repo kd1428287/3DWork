@@ -4,6 +4,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <atomic>
+#include <algorithm>
 
 //============================================================
 // アプリケーションクラス
@@ -47,6 +48,18 @@ public:
 	// 現在の起動モードを取得(他クラスからモードで分岐したい場合用)
 	AppMode GetAppMode() const { return m_appMode; }
 
+	// 枠付きウィンドウ⇔モニター全体のボーダレスを切り替える
+	void ToggleBorderless();
+
+	// ボーダレス中かどうか
+	bool IsBorderless() const { return m_borderless; }
+
+	// クライアント座標を設計解像度(1280x720)の仮想座標へ変換する
+	POINT ClientToVirtual(POINT clientPos) const;
+
+	// 現在のマウス位置を設計解像度の仮想座標で取得する
+	POINT GetVirtualMousePos() const;
+
 private:
 
 	// 起動時にエディタのみ/プレイのどちらで実行するかを選択させる
@@ -71,6 +84,18 @@ private:
 
 	// エディタ表示ON/OFF(F1キー)のエッジ検出用。押した瞬間だけトグルするための前フレーム値
 	bool m_prevEditorToggleKeyDown = false;
+
+	// ボーダレス切り替え(F11キー)のエッジ検出用前フレーム値
+	bool m_prevBorderlessKeyDown = false;
+
+	// ボーダレス状態と、元の枠付きウィンドウへ戻すための退避情報
+	bool				m_borderless = false;
+	LONG_PTR			m_prevStyle = 0;
+	WINDOWPLACEMENT		m_prevPlacement = { sizeof(WINDOWPLACEMENT) };
+
+	// 設計解像度(Initで受け取った値。UI座標の基準)
+	int					m_baseWidth = 1280;
+	int					m_baseHeight = 720;
 
 	// ゲームウィンドウクラス
 	KdWindow		m_window;

@@ -54,6 +54,12 @@ private:
 		Advect = 0,
 		SplatVelocity,
 		SplatDensity,
+		Divergence,
+		Jacobi,
+		Gradient,
+		Curl,
+		VorticityForce,
+		Diffuse,
 	};
 
 	struct Vertex
@@ -70,7 +76,8 @@ private:
 
 		float Aspect = 1.0f;						// 幅 / 高さ
 		int   Pass = 0;
-		float _blank1[2] = { 0.0f, 0.0f };
+		float Diffusion = 0.0f;						// 濃度の拡散係数(texel²/秒)
+		float Vorticity = 0.0f;						// 渦度強調の強さ(1/秒)
 
 		Math::Vector2 SplatPos = { 0.0f, 0.0f };	// 0〜1の画面座標
 		float SplatRadius = 0.05f;					// 画面の高さに対する比率
@@ -91,6 +98,15 @@ private:
 	// fieldをvelocityで移流する(velocity==fieldなら自己移流)
 	void Advect(FluidDoubleRT& velocity, FluidDoubleRT& field, float dissipation);
 
+	// 速度場の発散を取り除く(発散 → ヤコビ反復で圧力 → 圧力の勾配を引く)
+	void Project();
+
+	// 小さな渦が潰れないよう、渦の回転を強める
+	void AddVorticity();
+
+	// fieldを隣のマスとなじませる(墨の滲み)
+	void Diffuse(FluidDoubleRT& field);
+
 	// 溜めた入力を速度と濃度へ加える
 	void ApplySplats(float dt);
 
@@ -102,19 +118,25 @@ private:
 
 	static constexpr float kMinDeltaTime = 1.0f / 240.0f;
 	static constexpr float kMaxDeltaTime = 1.0f / 30.0f;
-	static constexpr float kVelocityDissipation = 1.0f;
-	static constexpr float kDensityDissipation = 0.1f;
+	static constexpr float kVelocityDissipation = 0.5f;	// 毎秒の減衰率
+	static constexpr float kDensityDissipation = 0.05f;
+	static constexpr float kDensityDiffusion = 6.0f;	// texel²/秒
+	static constexpr float kVorticity = 8.0f;			// 1/秒
 	static constexpr float kMaxSplatSpeed = 600.0f;		// texel/秒
 	static constexpr int   kMaxSplatSubdivision = 16;
+	static constexpr int   kJacobiIterations = 20;
 
-	ID3D11VertexShader*	m_VS = nullptr;
-	ID3D11InputLayout*	m_inputLayout = nullptr;
-	ID3D11PixelShader*	m_PS = nullptr;
+	ID3D11VertexShader* m_VS = nullptr;
+	ID3D11InputLayout* m_inputLayout = nullptr;
+	ID3D11PixelShader* m_PS = nullptr;
 
 	KdConstantBuffer<cbFluid> m_cb;
 
 	FluidDoubleRT	m_velocity;		// texel/秒(Yは下が正)
 	FluidDoubleRT	m_density;		// 墨の濃度(0〜1)
+	FluidDoubleRT	m_pressure;		// 圧力(前フレームの値から反復を始める)
+	KdRenderTargetPack m_divergence;	// 速度場の発散
+	KdRenderTargetPack m_curl;			// 速度場の渦度
 
 	std::vector<SplatRequest> m_splats;
 
