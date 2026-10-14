@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 class KdTexture;
 
@@ -74,6 +74,17 @@ public:
 	void ClientToWorld(const POINT& screenPos, float porjZ, Math::Vector3& dst, const Math::Matrix& mCam, const Math::Matrix& mProj);
 	void WorldToClient(const Math::Vector3& srcWorld, POINT& dst, const Math::Matrix& mCam, const Math::Matrix& mProj);
 
+	// 論理解像度(ゲームが描画する固定解像度)
+	int GetLogicalWidth()  const { return m_windowWidth; }
+	int GetLogicalHeight() const { return m_windowHeight; }
+
+	// 実バックバッファの解像度(ウィンドウのクライアント領域サイズ)
+	int GetRealWidth()  const { return m_realWidth; }
+	int GetRealHeight() const { return m_realHeight; }
+
+	// クライアント座標を論理座標へ変換(黒帯分のオフセットと拡大率を補正)
+	POINT ClientToLogical(POINT clientPos) const;
+
 	//==============================================================
 	//
 	// 設定
@@ -146,6 +157,19 @@ public:
 	void SetBackBufferColor(const Math::Color& col) { m_backBafferClearColor = col; }
 	void ClearBackBuffer();
 
+	//==============================================================
+	// 最終出力パス
+	//  Begin → (Blit) → UI描画など → End → Present の順に呼ぶ
+	//==============================================================
+	// 描画状態を退避し、実バックバッファを描画先にする
+	void BeginFinalPass(bool editorMode);
+
+	// 論理バッファをアスペクト比を保って実バックバッファへ拡大描画する
+	void BlitLogicalToReal();
+
+	// 退避した描画状態(論理バッファへの描画先など)を元に戻す
+	void EndFinalPass();
+
 private:
 
 	//==============================================================
@@ -178,8 +202,51 @@ private:
 
 	Math::Color		m_backBafferClearColor = { 0.9f,0.9f,0.9f,1.0f };
 
+	// 最終出力パスで退避する描画状態
+	struct SavedPipeline
+	{
+		ID3D11RenderTargetView*     rtv[D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT] = {};
+		ID3D11DepthStencilView*     dsv = nullptr;
+		D3D11_VIEWPORT              vp[D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE] = {};
+		UINT                        vpCount = 0;
+		ID3D11InputLayout*          il = nullptr;
+		D3D_PRIMITIVE_TOPOLOGY      topo = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+		ID3D11VertexShader*         vs = nullptr;
+		ID3D11GeometryShader*       gs = nullptr;
+		ID3D11PixelShader*          ps = nullptr;
+		ID3D11BlendState*           bs = nullptr;
+		FLOAT                       bf[4] = {};
+		UINT                        mask = 0;
+		ID3D11DepthStencilState*    ds = nullptr;
+		UINT                        ref = 0;
+		ID3D11RasterizerState*      rs = nullptr;
+		ID3D11ShaderResourceView*   srv = nullptr;
+		ID3D11SamplerState*         smp = nullptr;
+	};
+
+	bool AcquireRealBackBuffer();
+	void SyncSwapChainSize();
+	void CalcLetterbox(float& scale, float& offX, float& offY) const;
+	bool CreateBlitResources(std::string& errMsg);
+
+	HWND                        m_hWnd = nullptr;           // スワップチェーンの出力先ウィンドウ
+	int                         m_realWidth = 0;            // 実バックバッファの幅
+	int                         m_realHeight = 0;           // 実バックバッファの高さ
+	std::shared_ptr<KdTexture>  m_realBackBuffer = nullptr; // 実バックバッファ(スワップチェーン)
+
+	// 拡大表示用リソース
+	ID3D11ShaderResourceView*   m_logicalSRV = nullptr;
+	ID3D11VertexShader*         m_blitVS = nullptr;
+	ID3D11PixelShader*          m_blitPS = nullptr;
+	ID3D11SamplerState*         m_blitSampler = nullptr;
+	ID3D11BlendState*           m_blitBlend = nullptr;
+	ID3D11DepthStencilState*    m_blitDepth = nullptr;
+	ID3D11RasterizerState*      m_blitRaster = nullptr;
+
+	SavedPipeline               m_saved;
+
 	// バッファ
-	std::shared_ptr<KdTexture>	m_backBuffer = nullptr;		// バックバッファ
+	std::shared_ptr<KdTexture>	m_backBuffer = nullptr;		// 論理解像度のオフスクリーンRT(既存コードはこれをバックバッファとして扱う)
 	std::shared_ptr<KdTexture>	m_zBuffer = nullptr;		// Zバッファ
 
 	//------------------------

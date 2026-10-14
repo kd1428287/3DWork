@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 
 #include "Application/Definitions/Prefab/Prefab.h"
@@ -41,7 +41,7 @@ void ApplyOwnerScale(C& config, const BuildContext& ctx)
 	if constexpr (HasApplyScale<C>::value) config.ApplyScale(ctx.OwnerScale());
 }
 
-// Prefabの"type"名からコンポーネントの生成処理を引く表。登録はComponentRegistrations.cppに書く。
+// Prefabの"type"名からコンポーネントの生成処理を引く表。登録はRegistrations/Register*.cppに書く。
 class ComponentRegistry
 {
 public:
@@ -94,7 +94,7 @@ public:
 
 	// 型のparamsの初期値。未登録ならnullptr。
 	//	表示順(挿入順)を保持したいのでordered_jsonで持つ(entry.params自体は
-	//	従来通りnlohmann::jsonのままでよい。詳細はComponentRegistrations.cppの
+	//	従来通りnlohmann::jsonのままでよい。詳細はComponentParamsOrderedJson.hの
 	//	COMPONENT_PARAMS_DEFINE_TYPEマクロのコメントを参照)
 	const nlohmann::ordered_json* FindDefaultParams(const std::string& type) const;
 
@@ -113,5 +113,5 @@ private:
 	std::unordered_map<std::string, TypeInfo> types_;
 };
 
-// 全コンポーネントの登録(ComponentRegistrations.cpp)。
+// 全コンポーネントの登録(ComponentRegistrations.cpp。実体はRegistrations/Register*.cpp)。
 void RegisterAllComponents(ComponentRegistry& registry);

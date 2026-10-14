@@ -277,6 +277,9 @@
     <Filter Include="Src\Application\Components\Graphics\UI\Image">
       <UniqueIdentifier>{b67833e6-3aac-4ceb-86f8-cb7c58251465}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\Factories\Registrations">
+      <UniqueIdentifier>{56483869-722e-4ff0-88a5-79ca4f5b4813}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -1044,6 +1047,12 @@
     <ClInclude Include="Src\Framework\Shader\PostProcessShader\FluidSimulator.h">
       <Filter>Src\Framework\Shader\PostProcessShader</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Factories\Registrations\RegisterFunctions.h">
+      <Filter>Src\Application\Factories\Registrations</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Factories\Registrations\RegistrationHelpers.h">
+      <Filter>Src\Application\Factories\Registrations</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -1387,6 +1396,30 @@
     </ClCompile>
     <ClCompile Include="Src\Framework\Shader\PostProcessShader\FluidSimulator.cpp">
       <Filter>Src\Framework\Shader\PostProcessShader</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Definitions\UI\UIData.cpp">
+      <Filter>Src\Application\Definitions\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Factories\Registrations\RegisterCombat.cpp">
+      <Filter>Src\Application\Factories\Registrations</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Factories\Registrations\RegisterEnemy.cpp">
+      <Filter>Src\Application\Factories\Registrations</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Factories\Registrations\RegisterGraphics.cpp">
+      <Filter>Src\Application\Factories\Registrations</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Factories\Registrations\RegisterPhysics.cpp">
+      <Filter>Src\Application\Factories\Registrations</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Factories\Registrations\RegisterPlayer.cpp">
+      <Filter>Src\Application\Factories\Registrations</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Factories\Registrations\RegisterUI.cpp">
+      <Filter>Src\Application\Factories\Registrations</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Factories\Registrations\RegistrationHelpers.cpp">
+      <Filter>Src\Application\Factories\Registrations</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

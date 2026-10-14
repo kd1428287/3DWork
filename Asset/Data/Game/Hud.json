@@ -1,8 +1,0 @@
-{
-	"name": "hud",
-	"components": [
-		{
-			"type": "PlayerHudGauge"
-		}
-	]
-}

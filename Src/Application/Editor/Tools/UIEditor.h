@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 // ※ ImGui / DirectXTK(SimpleMath) は既存のPCH等で読み込まれている前提です。
+#include <functional>
 #include <memory>
 #include <unordered_map>
 #include "Application/Definitions/UI/UIData.h"
@@ -37,6 +38,7 @@ private:
 	void DrawInspector();
 	void DrawCanvas();
 	void DrawAssetPicker();
+	void DrawScreenBar();	// 画面の選択・追加・名前変更・削除と、その確認ポップアップ
 
 	// m_elements内をIdで探す(見つからなければnullptr)
 	UIElement* FindElement(UIId id);
@@ -105,16 +107,57 @@ private:
 	void Undo();
 	void Redo();
 
-	void Save(const std::string& path);
+	// 現在の状態を1画面分のファイルデータにまとめる
+	UIFile MakeFile() const;
+
+	bool Save(const std::string& path);
 	bool Load(const std::string& path);
 	void CheckHotReload();
+
+	//=====================================================
+	// 画面(マニフェスト)。画面ごとに別のJSONを持ち、一覧はマニフェストで管理する
+	//=====================================================
+	std::string CurrentPath() const;	// 開いている画面のJSONパス(画面なしなら空)
+	void ResetToEmpty();				// 空の画面にする(Undo・選択もクリア)
+
+	void LoadManifest();
+	bool SaveManifest();
+	bool OpenScreen(int index);			// 読めない場合は今の画面のままfalse
+	bool AddScreen(const std::string& name);
+	void RenameScreen(int index, const std::string& newName);
+	void RemoveScreen(int index);		// 一覧から外すだけで、JSONは削除しない
+
+	std::string MakeScreenPath(const std::string& name) const;
+	bool ValidateScreenName(const std::string& name, int ignoreIndex, std::string& err) const;
+
+	// 未保存の変更の検出(保存済みのJSONと比べる)
+	void MarkClean();
+	bool IsDirty() const;
+	void UpdateDirtyFlag();
+
+	// 未保存の変更があれば確認(保存/破棄/キャンセル)してからnextを実行する
+	void RequestLeaveCurrent(std::function<void()> next);
 
 	std::vector<UIElement>			m_elements;
 	UIId							m_selectedId = kInvalidUIId;
 	UIId							m_nextId = 1;
 	DirectX::SimpleMath::Vector2	m_refSize = { 1920.0f, 1080.0f };
 
-	char	m_filePathBuf[260] = "Asset/Data/UI/UIData.json";
+	UIManifest	m_manifest;
+	int			m_currentScreen = -1;		// m_manifest.screensの添字(-1=画面なし)
+	bool		m_manifestBroken = false;	// マニフェストが読めない間は上書きしないよう編集を止める
+	bool		m_fileMissing = false;		// 登録済みだがJSONが無い(Saveで作成される)
+
+	nlohmann::json	m_savedSnapshot;		// 最後に保存/読み込みした内容
+	bool			m_dirty = false;
+	float			m_dirtyCheckTimer = 0.0f;
+
+	std::function<void()>	m_pendingAction;	// 確認ポップアップの結果待ちの処理
+	bool	m_openUnsavedPopup = false;
+	bool	m_openNewPopup = false;
+	bool	m_openRenamePopup = false;
+	bool	m_openRemovePopup = false;
+	char	m_nameBuf[64] = "";
 
 	// UIエディタのいずれかのウィンドウにフォーカスがあるか(他エディタとのショートカット二重発火を防ぐ)
 	bool	m_hasFocus = false;

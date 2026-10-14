@@ -1,0 +1,131 @@
+{
+  "elements": [
+    {
+      "components": [
+        {
+          "params": {
+            "anchor": [
+              0.5,
+              0.5
+            ],
+            "pivot": [
+              0.5,
+              0.5
+            ],
+            "position": [
+              0.0,
+              200.0
+            ],
+            "rotation": 0.0,
+            "scale": [
+              2.0,
+              2.0
+            ],
+            "size": [
+              257.61859130859375,
+              100.0
+            ],
+            "space": "Screen",
+            "worldOffset": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "type": "UITransform"
+        },
+        {
+          "params": {
+            "color": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "texture": "Asset/Textures/UI/fude_幽玄調伏伝 (1).png"
+          },
+          "type": "UIImage"
+        }
+      ],
+      "id": 5,
+      "name": "TitleLogo",
+      "parent": 0,
+      "visible": true
+    },
+    {
+      "components": [
+        {
+          "params": {
+            "anchor": [
+              0.5,
+              0.5
+            ],
+            "pivot": [
+              0.5,
+              0.5
+            ],
+            "position": [
+              0.0,
+              -200.0
+            ],
+            "rotation": 0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "size": [
+              200.0,
+              60.0
+            ],
+            "space": "Screen",
+            "worldOffset": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "type": "UITransform"
+        },
+        {
+          "params": {
+            "clickParam": "",
+            "group": 0,
+            "interactable": true,
+            "layer": 0,
+            "onClick": "",
+            "onDeselect": "",
+            "onHoverEnter": "",
+            "onHoverExit": "",
+            "onSelect": ""
+          },
+          "type": "Selectable"
+        },
+        {
+          "params": {
+            "align": "Center",
+            "antiAliasing": 3,
+            "color": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "fontNo": 0,
+            "text": "調伏開始"
+          },
+          "type": "Text"
+        }
+      ],
+      "id": 6,
+      "name": "StartButton",
+      "parent": 0,
+      "visible": true
+    }
+  ],
+  "nextId": 7,
+  "refSize": [
+    1280.0,
+    720.0
+  ],
+  "version": 2
+}

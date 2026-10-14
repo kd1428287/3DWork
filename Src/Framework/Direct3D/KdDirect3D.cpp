@@ -1,4 +1,7 @@
-﻿#include "Framework/KdFramework.h"
+#include "Framework/KdFramework.h"
+
+#include <d3dcompiler.h>
+#pragma comment(lib, "d3dcompiler.lib")
 
 void KdDirect3D::CopyViewportInfo(Math::Viewport& out) const
 {
@@ -149,27 +152,59 @@ bool KdDirect3D::Init(HWND hWnd, int w, int h, bool deviceDebug, std::string& er
 		Release();
 		return false;
 	}
+	// Alt+Enterによる排他フルスクリーン切替を無効化(ボーダレスはF11で切り替える)
+	factory->MakeWindowAssociation(hWnd, DXGI_MWA_NO_ALT_ENTER);
 	factory->Release();
 
-	// スワップチェインからバックバッファ取得
-	ID3D11Texture2D* pBackBuffer;
-	if (FAILED(m_pGISwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&pBackBuffer))) {
+	m_hWnd = hWnd;
+	m_realWidth = w;
+	m_realHeight = h;
+
+	// スワップチェインの実バックバッファ(ウィンドウのクライアントサイズ)を取得
+	if (AcquireRealBackBuffer() == false) {
 		errMsg = "バックバッファ取得失敗";
 
 		Release();
 		return false;
 	}
 
-	// バックバッファリソースからビューを作成
-	m_backBuffer = std::make_shared<KdTexture>();
-	if (m_backBuffer->Create(pBackBuffer) == false)
+	// 論理解像度(w x h)のオフスクリーンRTを作成し、既存コードからはこれをバックバッファとして扱う
 	{
-		errMsg = "バックバッファ作成失敗";
+		D3D11_TEXTURE2D_DESC desc = {};
+		desc.Width = (UINT)w;
+		desc.Height = (UINT)h;
+		desc.MipLevels = 1;
+		desc.ArraySize = 1;
+		desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		desc.SampleDesc.Count = 1;
+		desc.Usage = D3D11_USAGE_DEFAULT;
+		desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+
+		ID3D11Texture2D* pLogical = nullptr;
+		bool ok = SUCCEEDED(m_pDevice->CreateTexture2D(&desc, nullptr, &pLogical))
+			&& SUCCEEDED(m_pDevice->CreateShaderResourceView(pLogical, nullptr, &m_logicalSRV));
+
+		if (ok)
+		{
+			m_backBuffer = std::make_shared<KdTexture>();
+			ok = m_backBuffer->Create(pLogical);
+		}
+		KdSafeRelease(pLogical);
+
+		if (ok == false)
+		{
+			errMsg = "バックバッファ作成失敗";
+			Release();
+			return false;
+		}
+	}
+
+	// 拡大表示用のシェーダーとステートを作成
+	if (CreateBlitResources(errMsg) == false)
+	{
 		Release();
 		return false;
 	}
-
-	pBackBuffer->Release();
 
 	/*
 	// ALT+Enterでフルスクリーン不可にする
@@ -333,6 +368,15 @@ void KdDirect3D::Release()
 		n.Release();
 	}
 	m_tempVertexBuffer.Release();
+
+	m_realBackBuffer = nullptr;
+	KdSafeRelease(m_logicalSRV);
+	KdSafeRelease(m_blitVS);
+	KdSafeRelease(m_blitPS);
+	KdSafeRelease(m_blitSampler);
+	KdSafeRelease(m_blitBlend);
+	KdSafeRelease(m_blitDepth);
+	KdSafeRelease(m_blitRaster);
 
 	m_backBuffer = nullptr;
 	m_zBuffer = nullptr;
@@ -630,4 +674,252 @@ void KdDirect3D::ClearBackBuffer()
 	// Zバッファクリア
 	m_pDeviceContext->ClearDepthStencilView(m_zBuffer->WorkDSView(),
 		D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+}
+
+// スワップチェーンのバッファ0を実バックバッファとして取得する
+bool KdDirect3D::AcquireRealBackBuffer()
+{
+	ID3D11Texture2D* pBackBuffer = nullptr;
+	if (FAILED(m_pGISwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&pBackBuffer))) {
+		return false;
+	}
+
+	m_realBackBuffer = std::make_shared<KdTexture>();
+	bool ok = m_realBackBuffer->Create(pBackBuffer);
+	pBackBuffer->Release();
+
+	if (ok == false) m_realBackBuffer = nullptr;
+	return ok;
+}
+
+// ウィンドウのクライアントサイズに合わせてスワップチェーンをリサイズする
+void KdDirect3D::SyncSwapChainSize()
+{
+	RECT rc = {};
+	if (GetClientRect(m_hWnd, &rc) == FALSE) return;
+
+	int cw = rc.right - rc.left;
+	int ch = rc.bottom - rc.top;
+
+	// 最小化中(サイズ0)や変化なしのときは何もしない
+	if (cw <= 0 || ch <= 0) return;
+	if (cw == m_realWidth && ch == m_realHeight) return;
+
+	// バックバッファの参照を全て手放してからリサイズする
+	m_pDeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
+	m_realBackBuffer = nullptr;
+	m_pDeviceContext->Flush();
+
+	if (SUCCEEDED(m_pGISwapChain->ResizeBuffers(0, cw, ch, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH)))
+	{
+		m_realWidth = cw;
+		m_realHeight = ch;
+	}
+
+	AcquireRealBackBuffer();
+}
+
+// 論理バッファを実バックバッファへアスペクト比を保って収める拡大率とオフセットを求める
+void KdDirect3D::CalcLetterbox(float& scale, float& offX, float& offY) const
+{
+	scale = (std::min)((float)m_realWidth / m_windowWidth, (float)m_realHeight / m_windowHeight);
+	offX = (m_realWidth - m_windowWidth * scale) * 0.5f;
+	offY = (m_realHeight - m_windowHeight * scale) * 0.5f;
+}
+
+POINT KdDirect3D::ClientToLogical(POINT clientPos) const
+{
+	if (m_realWidth <= 0 || m_realHeight <= 0) return clientPos;
+
+	float scale, offX, offY;
+	CalcLetterbox(scale, offX, offY);
+
+	return {
+		(LONG)((clientPos.x - offX) / scale),
+		(LONG)((clientPos.y - offY) / scale)
+	};
+}
+
+// 論理バッファ→実バックバッファ拡大用のシェーダーとステートを作成する
+bool KdDirect3D::CreateBlitResources(std::string& errMsg)
+{
+	// 頂点バッファ不要のフルスクリーン三角形
+	static const char kBlitHlsl[] = R"(
+Texture2D g_tex : register(t0);
+SamplerState g_smp : register(s0);
+
+struct VSOut
+{
+	float4 pos : SV_Position;
+	float2 uv : TEXCOORD0;
+};
+
+VSOut VSMain(uint id : SV_VertexID)
+{
+	VSOut o;
+	float2 uv = float2((id << 1) & 2, id & 2);
+	o.pos = float4(uv * float2(2, -2) + float2(-1, 1), 0, 1);
+	o.uv = uv;
+	return o;
+}
+
+float4 PSMain(VSOut i) : SV_Target
+{
+	return float4(g_tex.Sample(g_smp, i.uv).rgb, 1);
+}
+)";
+
+	auto compile = [&](const char* entry, const char* target) -> ID3DBlob*
+	{
+		ID3DBlob* blob = nullptr;
+		ID3DBlob* err = nullptr;
+		HRESULT hr = D3DCompile(kBlitHlsl, sizeof(kBlitHlsl) - 1, nullptr, nullptr, nullptr, entry, target, 0, 0, &blob, &err);
+		if (FAILED(hr))
+		{
+			errMsg = "拡大表示シェーダーのコンパイル失敗";
+			if (err) errMsg += std::string(": ") + (const char*)err->GetBufferPointer();
+			if (blob) { blob->Release(); blob = nullptr; }
+		}
+		if (err) err->Release();
+		return blob;
+	};
+
+	ID3DBlob* vsBlob = compile("VSMain", "vs_4_0");
+	ID3DBlob* psBlob = compile("PSMain", "ps_4_0");
+
+	bool ok = vsBlob && psBlob
+		&& SUCCEEDED(m_pDevice->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr, &m_blitVS))
+		&& SUCCEEDED(m_pDevice->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, &m_blitPS));
+
+	if (vsBlob) vsBlob->Release();
+	if (psBlob) psBlob->Release();
+
+	if (ok == false)
+	{
+		if (errMsg.empty()) errMsg = "拡大表示シェーダー作成失敗";
+		return false;
+	}
+
+	m_blitSampler = CreateSamplerState(KdSamplerFilterMode::Linear, 1, KdSamplerAddressingMode::Clamp, false);
+	m_blitBlend = CreateBlendState(KdBlendMode::NoBlend);
+	m_blitDepth = CreateDepthStencilState(false, false);
+	m_blitRaster = CreateRasterizerState(D3D11_CULL_NONE, D3D11_FILL_SOLID, true, false);
+
+	if (!m_blitSampler || !m_blitBlend || !m_blitDepth || !m_blitRaster)
+	{
+		errMsg = "拡大表示ステート作成失敗";
+		return false;
+	}
+
+	return true;
+}
+
+void KdDirect3D::BeginFinalPass(bool editorMode)
+{
+	ID3D11DeviceContext* ctx = m_pDeviceContext;
+	SavedPipeline& s = m_saved;
+
+	// 描画状態を退避
+	ctx->OMGetRenderTargets(D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT, s.rtv, &s.dsv);
+	s.vpCount = D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE;
+	ctx->RSGetViewports(&s.vpCount, s.vp);
+	ctx->IAGetInputLayout(&s.il);
+	ctx->IAGetPrimitiveTopology(&s.topo);
+	ctx->VSGetShader(&s.vs, nullptr, nullptr);
+	ctx->GSGetShader(&s.gs, nullptr, nullptr);
+	ctx->PSGetShader(&s.ps, nullptr, nullptr);
+	ctx->OMGetBlendState(&s.bs, s.bf, &s.mask);
+	ctx->OMGetDepthStencilState(&s.ds, &s.ref);
+	ctx->RSGetState(&s.rs);
+	ctx->PSGetShaderResources(0, 1, &s.srv);
+	ctx->PSGetSamplers(0, 1, &s.smp);
+
+	// ウィンドウサイズの変化に実バックバッファを追従させる
+	SyncSwapChainSize();
+	if (m_realBackBuffer == nullptr) return;
+
+	// 実バックバッファを全面ビューポートで描画先にする
+	ID3D11RenderTargetView* rtv = m_realBackBuffer->WorkRTView();
+	ctx->OMSetRenderTargets(1, &rtv, nullptr);
+
+	D3D11_VIEWPORT vp = { 0.0f, 0.0f, (float)m_realWidth, (float)m_realHeight, 0.0f, 1.0f };
+	ctx->RSSetViewports(1, &vp);
+
+	// エディタ表示中は従来のクリア色、それ以外は黒帯用に黒でクリア
+	if (editorMode)
+	{
+		ctx->ClearRenderTargetView(rtv, kRedColor);
+	}
+	else
+	{
+		const float black[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+		ctx->ClearRenderTargetView(rtv, black);
+	}
+}
+
+void KdDirect3D::BlitLogicalToReal()
+{
+	if (m_realBackBuffer == nullptr || m_blitVS == nullptr) return;
+
+	ID3D11DeviceContext* ctx = m_pDeviceContext;
+
+	// アスペクト比を保つビューポート(余白は黒帯)
+	float scale, offX, offY;
+	CalcLetterbox(scale, offX, offY);
+	D3D11_VIEWPORT vp = { offX, offY, m_windowWidth * scale, m_windowHeight * scale, 0.0f, 1.0f };
+	ctx->RSSetViewports(1, &vp);
+
+	ctx->IASetInputLayout(nullptr);
+	ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	ctx->VSSetShader(m_blitVS, nullptr, 0);
+	ctx->GSSetShader(nullptr, nullptr, 0);
+	ctx->PSSetShader(m_blitPS, nullptr, 0);
+	ctx->PSSetShaderResources(0, 1, &m_logicalSRV);
+	ctx->PSSetSamplers(0, 1, &m_blitSampler);
+	ctx->OMSetBlendState(m_blitBlend, nullptr, 0xFFFFFFFF);
+	ctx->OMSetDepthStencilState(m_blitDepth, 0);
+	ctx->RSSetState(m_blitRaster);
+
+	ctx->Draw(3, 0);
+
+	// 論理バッファを次フレームで描画先にできるようSRVを外す
+	ID3D11ShaderResourceView* nullSRV = nullptr;
+	ctx->PSSetShaderResources(0, 1, &nullSRV);
+
+	// 以降のUI描画用に全面ビューポートへ戻す
+	D3D11_VIEWPORT full = { 0.0f, 0.0f, (float)m_realWidth, (float)m_realHeight, 0.0f, 1.0f };
+	ctx->RSSetViewports(1, &full);
+}
+
+void KdDirect3D::EndFinalPass()
+{
+	ID3D11DeviceContext* ctx = m_pDeviceContext;
+	SavedPipeline& s = m_saved;
+
+	// 退避した描画状態を復元
+	ctx->OMSetRenderTargets(D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT, s.rtv, s.dsv);
+	ctx->RSSetViewports(s.vpCount, s.vp);
+	ctx->IASetInputLayout(s.il);
+	ctx->IASetPrimitiveTopology(s.topo);
+	ctx->VSSetShader(s.vs, nullptr, 0);
+	ctx->GSSetShader(s.gs, nullptr, 0);
+	ctx->PSSetShader(s.ps, nullptr, 0);
+	ctx->OMSetBlendState(s.bs, s.bf, s.mask);
+	ctx->OMSetDepthStencilState(s.ds, s.ref);
+	ctx->RSSetState(s.rs);
+	ctx->PSSetShaderResources(0, 1, &s.srv);
+	ctx->PSSetSamplers(0, 1, &s.smp);
+
+	// 取得時に増えた参照を解放
+	for (auto& r : s.rtv) KdSafeRelease(r);
+	KdSafeRelease(s.dsv);
+	KdSafeRelease(s.il);
+	KdSafeRelease(s.vs);
+	KdSafeRelease(s.gs);
+	KdSafeRelease(s.ps);
+	KdSafeRelease(s.bs);
+	KdSafeRelease(s.ds);
+	KdSafeRelease(s.rs);
+	KdSafeRelease(s.srv);
+	KdSafeRelease(s.smp);
 }

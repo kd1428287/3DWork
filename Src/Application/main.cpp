@@ -78,6 +78,18 @@ void Application::KdBeginDraw(bool usePostProcess)
 	//	・エディタ非表示中 … バックバッファへ直接フルスクリーン描画
 	EditorHost::Instance().BeginSceneDraw();
 
+	// エディタ非表示中は、描画先とビューポートを論理バッファ全面(1280x720)に固定する
+	if (!EditorHost::Instance().IsEnabled())
+	{
+		auto& d3d = KdDirect3D::Instance();
+
+		ID3D11RenderTargetView* rtvs[] = { d3d.WorkBackBuffer()->WorkRTView() };
+		d3d.WorkDevContext()->OMSetRenderTargets(1, rtvs, d3d.WorkZBuffer()->WorkDSView());
+
+		D3D11_VIEWPORT vp = { 0.0f, 0.0f, (float)d3d.GetLogicalWidth(), (float)d3d.GetLogicalHeight(), 0.0f, 1.0f };
+		d3d.WorkDevContext()->RSSetViewports(1, &vp);
+	}
+
 	KdShaderManager::Instance().WorkAmbientController().Draw();
 
 	if (!usePostProcess) return;
@@ -89,24 +101,31 @@ void Application::KdBeginDraw(bool usePostProcess)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void Application::KdPostDraw()
 {
-	if (EditorHost::Instance().IsEnabled())
+	auto& d3d = KdDirect3D::Instance();
+
+	// エディタ表示中は従来通り論理バッファ(Zバッファ含む)をクリアしておく
+	const bool editorMode = EditorHost::Instance().IsEnabled();
+	if (editorMode)
 	{
-		// バックバッファをクリアし、ImGui(ドッキングUI)用のレンダーターゲットに戻す
-		KdDirect3D::Instance().ClearBackBuffer();
-
-		ID3D11RenderTargetView* rtvs[] = { KdDirect3D::Instance().WorkBackBuffer()->WorkRTView() };
-		KdDirect3D::Instance().WorkDevContext()->OMSetRenderTargets(1, rtvs, KdDirect3D::Instance().WorkZBuffer()->WorkDSView());
-
-
+		d3d.ClearBackBuffer();
 	}
-	// エディタ非表示中：ゲーム画面はBeginSceneDraw()で既にバックバッファへ直接描画済みのため、
-	// ここで再クリアするとゲーム画面が消えてしまうので何もしない
 
-	// エディタ用ドッキングUI一式の描画(エディタ非表示中は中身が空でも軽量に呼べる)
+	// 以降は実バックバッファ(ウィンドウ実サイズ)への最終出力
+	d3d.BeginFinalPass(editorMode);
+
+	// ゲーム画面(1280x720)をアスペクト比を保って拡大(エディタ表示中はUI側が表示する)
+	if (!editorMode)
+	{
+		d3d.BlitLogicalToReal();
+	}
+
+	// エディタ用ドッキングUI一式の描画(非表示中は軽量な空処理)
 	EditorHost::Instance().Draw();
 
+	d3d.EndFinalPass();
+
 	// BackBuffer -> 画面表示
-	KdDirect3D::Instance().WorkSwapChain()->Present(0, 0);
+	d3d.WorkSwapChain()->Present(0, 0);
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -147,31 +166,24 @@ void Application::DrawSprite()
 	SceneManager::Instance().DrawSprite();
 }
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 枠付きウィンドウ⇔ボーダレス(モニター全体)の切り替え
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 枠付きウィンドウ⇔モニター全体のボーダレスを切り替える
 void Application::ToggleBorderless()
 {
 	HWND hwnd = m_window.GetWndHandle();
 
 	if (!m_borderless)
 	{
-		// 元のスタイルと位置を退避してから、現在のモニター全体へ広げる
 		m_prevStyle = GetWindowLongPtr(hwnd, GWL_STYLE);
 		GetWindowPlacement(hwnd, &m_prevPlacement);
 
 		MONITORINFO mi = { sizeof(mi) };
 		GetMonitorInfo(MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), &mi);
+		m_clipRect = mi.rcMonitor;
 
 		SetWindowLongPtr(hwnd, GWL_STYLE, WS_POPUP | WS_VISIBLE);
-		SetWindowPos(hwnd, HWND_TOP,
-			mi.rcMonitor.left, mi.rcMonitor.top,
-			mi.rcMonitor.right - mi.rcMonitor.left,
-			mi.rcMonitor.bottom - mi.rcMonitor.top,
+		SetWindowPos(hwnd, HWND_TOP, mi.rcMonitor.left, mi.rcMonitor.top,
+			mi.rcMonitor.right - mi.rcMonitor.left, mi.rcMonitor.bottom - mi.rcMonitor.top,
 			SWP_FRAMECHANGED | SWP_NOOWNERZORDER);
-
-		// カメラ操作中にカーソルが外へ出ないようモニター内に閉じ込める
-		ClipCursor(&mi.rcMonitor);
 	}
 	else
 	{
@@ -186,27 +198,13 @@ void Application::ToggleBorderless()
 	m_borderless = !m_borderless;
 }
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// クライアント座標 → 設計解像度(1280x720)の仮想座標
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// クライアント座標を設計解像度の座標へ変換する(黒帯と拡大率を補正)
 POINT Application::ClientToVirtual(POINT clientPos) const
 {
-	RECT rc;
-	GetClientRect(m_window.GetWndHandle(), &rc);
-
-	// 最小化中などサイズ0のときはそのまま返す
-	if (rc.right <= 0 || rc.bottom <= 0) return clientPos;
-
-	// A案はクライアント全体へ引き伸ばすため、縦横を別々の倍率で変換する
-	return {
-		(LONG)(clientPos.x * (float)m_baseWidth / rc.right),
-		(LONG)(clientPos.y * (float)m_baseHeight / rc.bottom)
-	};
+	return KdDirect3D::Instance().ClientToLogical(clientPos);
 }
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 現在のマウス位置(仮想座標)
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 現在のマウス位置を設計解像度の座標で取得する
 POINT Application::GetVirtualMousePos() const
 {
 	POINT p;
@@ -220,10 +218,6 @@ POINT Application::GetVirtualMousePos() const
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 bool Application::Init(int w, int h)
 {
-	// 設計解像度を保持(ボーダレス時の座標変換に使う)
-	m_baseWidth = w;
-	m_baseHeight = h;
-
 	//===================================================================
 	// ウィンドウ作成
 	//===================================================================
@@ -439,6 +433,12 @@ void Application::Execute()
 			}
 
 			m_prevBorderlessKeyDown = borderlessKeyDown;
+		}
+
+		// ボーダレス中は、前面にいる間だけカーソルをモニター内に拘束する
+		if (m_borderless)
+		{
+			ClipCursor(GetForegroundWindow() == m_window.GetWndHandle() ? &m_clipRect : nullptr);
 		}
 
 		//=========================================

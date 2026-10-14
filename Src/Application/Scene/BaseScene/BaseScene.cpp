@@ -125,12 +125,13 @@ void BaseScene::DrawDebug()
 
 bool BaseScene::LoadUI(const std::string& path)
 {
-	// Enter()前はobjManager_が無いので生成できない
-	if (!objManager_) return false;
+	if (!objManager_) { OutputDebugStringA("LoadUI: objManager_ is null\n"); return false; }
 
 	PrefabDefinition def;
-	if (!PrefabFactory::LoadFromFile(path, def)) return false;
-
+	if (!PrefabFactory::LoadFromFile(path, def)) {
+		OutputDebugStringA(("LoadUI: load failed: " + path + "\n").c_str());
+		return false;
+	}
 	PrefabFactory::Create(*objManager_, def);
 	return true;
 }

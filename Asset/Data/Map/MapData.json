@@ -225,6 +225,75 @@
         1.0,
         0.9999995231628418
       ]
+    },
+    {
+      "components": [
+        {
+          "params": {
+            "anchor": [
+              0.5,
+              0.5
+            ],
+            "pivot": [
+              0.5,
+              0.5
+            ],
+            "position": [
+              0.0,
+              0.0
+            ],
+            "rotation": 0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "size": [
+              0.0,
+              0.0
+            ],
+            "space": "Screen",
+            "worldOffset": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "type": "UITransform"
+        },
+        {
+          "params": {
+            "align": "Left",
+            "antiAliasing": 3,
+            "color": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "fontNo": 0,
+            "text": "What is "
+          },
+          "type": "Text"
+        }
+      ],
+      "id": 14,
+      "name": "Object14",
+      "pos": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
     }
   ],
   "version": 2

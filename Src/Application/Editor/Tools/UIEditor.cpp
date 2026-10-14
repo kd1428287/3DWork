@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 #include <cwctype>
 #include <filesystem>
 #include <commdlg.h>
@@ -17,6 +18,12 @@ static constexpr float kMaxRefSize = 4096.0f;
 
 // UI用テクスチャの置き場(登録一覧のパスはここからの相対)
 static const std::string kTextureRoot = "Asset/Textures/UI/";
+
+// 画面のJSONの置き場と、画面一覧(マニフェスト)
+static const std::string kUIDirectory = "Asset/Data/UI/";
+static const std::string kManifestPath = kUIDirectory + "UIScreens.json";
+// マニフェストが無い時、従来の単一ファイルを1画面として登録するための旧パス
+static const std::string kLegacyUIPath = kUIDirectory + "UIData.json";
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 初期ドックレイアウト: 左Hierarchy / 右Inspector / 下UI Editor+UI Assets / 中央Canvas
@@ -313,6 +320,7 @@ void UIEditor::Redo()
 void UIEditor::Update()
 {
 	CheckHotReload();
+	UpdateDirtyFlag();
 
 	ImGuiViewport* mainViewport = ImGui::GetMainViewport();
 
@@ -351,6 +359,7 @@ void UIEditor::Update()
 			else { Undo(); }
 		}
 		if (ctrl && ImGui::IsKeyPressed(ImGuiKey_Y, false)) { Redo(); }
+		if (ctrl && ImGui::IsKeyPressed(ImGuiKey_S, false) && m_currentScreen >= 0) { Save(CurrentPath()); }
 
 		if (ImGui::IsKeyPressed(ImGuiKey_Delete, false)) { RemoveSelected(); }
 	}
@@ -515,11 +524,16 @@ void UIEditor::DrawMainMenu()
 	ImGui::Begin("UI Editor");
 	if (ImGui::IsWindowFocused()) { m_hasFocus = true; }
 
-	ImGui::InputText("Path", m_filePathBuf, sizeof(m_filePathBuf));
+	DrawScreenBar();
 
-	if (ImGui::Button("Save")) { Save(m_filePathBuf); }
+	ImGui::BeginDisabled(m_currentScreen < 0);
+	if (ImGui::Button("Save")) { Save(CurrentPath()); }
 	ImGui::SameLine();
-	if (ImGui::Button("Load")) { Load(m_filePathBuf); }
+	// 読み直し(未保存の変更は破棄される)
+	ImGui::BeginDisabled(m_fileMissing);
+	if (ImGui::Button("Reload")) { Load(CurrentPath()); }
+	ImGui::EndDisabled();
+	ImGui::EndDisabled();
 	ImGui::SameLine();
 	ImGui::Checkbox("Auto Reload", &m_autoReload);
 
@@ -1069,24 +1083,32 @@ void UIEditor::MoveSibling(UIId id, int dir)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // セーブ/ロード
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void UIEditor::Save(const std::string& path)
+UIFile UIEditor::MakeFile() const
 {
 	UIFile file;
 	file.refSize = m_refSize;
 	file.nextId = m_nextId;
 	file.elements = m_elements;
+	return file;
+}
 
-	if (!SaveUIFile(path, file))
+bool UIEditor::Save(const std::string& path)
+{
+	if (!SaveUIFile(path, MakeFile()))
 	{
 		KdDebugGUI::Instance().AddLog("UIEditor: 保存に失敗 %s\n", path.c_str());
-		return;
+		return false;
 	}
 
 	// 自分の保存を外部変更と誤検知して再ロードしないよう、更新日時を覚えておく
 	FILETIME writeTime;
 	if (JsonLoader::GetLastWriteTime(path, writeTime)) { m_lastWriteTime = writeTime; }
 
+	m_fileMissing = false;
+	MarkClean();
+
 	KdDebugGUI::Instance().AddLog("UIEditor: 保存しました %s\n", path.c_str());
+	return true;
 }
 
 bool UIEditor::Load(const std::string& path)
@@ -1096,16 +1118,6 @@ bool UIEditor::Load(const std::string& path)
 	{
 		KdDebugGUI::Instance().AddLog("UIEditor: 読み込み失敗 %s\n", path.c_str());
 		return false;
-	}
-
-	// 存在しない親を指す要素は最上位へ戻す
-	for (auto& e : file.elements)
-	{
-		if (e.parentId == kInvalidUIId) continue;
-
-		bool found = false;
-		for (auto& p : file.elements) { if (p.id == e.parentId) { found = true; break; } }
-		if (!found) e.parentId = kInvalidUIId;
 	}
 
 	const UIId keepSelectedId = m_selectedId;
@@ -1124,6 +1136,8 @@ bool UIEditor::Load(const std::string& path)
 	FILETIME writeTime;
 	if (JsonLoader::GetLastWriteTime(path, writeTime)) { m_lastWriteTime = writeTime; }
 
+	MarkClean();
+
 	KdDebugGUI::Instance().AddLog("UIEditor: 読み込みました %s\n", path.c_str());
 	return true;
 }
@@ -1131,28 +1145,413 @@ bool UIEditor::Load(const std::string& path)
 // 外部でJSONが更新されたら自動で再読み込みする(編集中の未保存の変更は破棄される)
 void UIEditor::CheckHotReload()
 {
-	if (!m_autoReload) return;
+	if (!m_autoReload || m_currentScreen < 0) return;
 
 	m_reloadCheckTimer += Application::Instance().GetDeltaTime();
 	if (m_reloadCheckTimer < 0.5f) return;
 	m_reloadCheckTimer = 0.0f;
 
+	const std::string path = CurrentPath();
+
 	FILETIME writeTime;
-	if (!JsonLoader::GetLastWriteTime(m_filePathBuf, writeTime)) return;
+	if (!JsonLoader::GetLastWriteTime(path, writeTime)) return;
 
 	if (CompareFileTime(&writeTime, &m_lastWriteTime) == 0) return;
 
 	// 読み込み失敗時に毎回リトライしてログが溢れないよう、先に更新しておく
 	m_lastWriteTime = writeTime;
-	Load(m_filePathBuf);
+	Load(path);
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// コンストラクタ：既存のUIデータがあれば自動ロードする
+// コンストラクタ:マニフェストを読み、最初の画面を開く
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 UIEditor::UIEditor()
 {
-	if (std::filesystem::exists(m_filePathBuf)) { Load(m_filePathBuf); }
+	LoadManifest();
+	if (!m_manifest.screens.empty()) { OpenScreen(0); }
+	MarkClean();
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 画面(マニフェスト)の管理
+//	画面ごとに別のJSON。一覧(名前→パス)はUIScreens.jsonで持つ
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+std::string UIEditor::CurrentPath() const
+{
+	if (m_currentScreen < 0 || m_currentScreen >= (int)m_manifest.screens.size()) return std::string();
+	return m_manifest.screens[m_currentScreen].path;
+}
+
+void UIEditor::ResetToEmpty()
+{
+	m_elements.clear();
+	m_refSize = { 1920.0f, 1080.0f };
+	m_nextId = 1;
+	m_selectedId = kInvalidUIId;
+
+	m_undoStack.clear();
+	m_redoStack.clear();
+	m_dragMode = DragMode::None;
+	m_texCache.clear();
+	m_textCache.clear();
+	m_lastWriteTime = {};
+
+	MarkClean();
+}
+
+void UIEditor::LoadManifest()
+{
+	m_manifest = UIManifest();
+	m_manifestBroken = false;
+
+	if (std::filesystem::exists(kManifestPath))
+	{
+		if (!LoadUIManifest(kManifestPath, m_manifest))
+		{
+			m_manifestBroken = true;
+			KdDebugGUI::Instance().AddLog("UIEditor: 画面一覧の読み込みに失敗 %s\n", kManifestPath.c_str());
+		}
+		return;
+	}
+
+	// 初回は従来の単一ファイルを1画面として登録する
+	if (std::filesystem::exists(kLegacyUIPath))
+	{
+		m_manifest.screens.push_back({ "UIData", kLegacyUIPath });
+		SaveManifest();
+	}
+}
+
+bool UIEditor::SaveManifest()
+{
+	// 壊れたマニフェストを上書きして中身を失わないようにする
+	if (m_manifestBroken) return false;
+
+	if (!SaveUIManifest(kManifestPath, m_manifest))
+	{
+		KdDebugGUI::Instance().AddLog("UIEditor: 画面一覧の保存に失敗 %s\n", kManifestPath.c_str());
+		return false;
+	}
+	return true;
+}
+
+bool UIEditor::OpenScreen(int index)
+{
+	if (index < 0 || index >= (int)m_manifest.screens.size()) return false;
+
+	const std::string path = m_manifest.screens[index].path;
+
+	if (std::filesystem::exists(path))
+	{
+		// 読めないファイルへは切り替えず、今の画面のままにする
+		if (!Load(path)) return false;
+		m_fileMissing = false;
+	}
+	else
+	{
+		// ファイルが無ければ空の画面として開く(Saveで作成される)
+		ResetToEmpty();
+		m_fileMissing = true;
+	}
+
+	m_currentScreen = index;
+
+	// 要素Idは画面ごとに独立なので、選択やドラッグは引き継がない
+	m_selectedId = kInvalidUIId;
+	m_dragMode = DragMode::None;
+	m_fitRequested = true;
+	return true;
+}
+
+std::string UIEditor::MakeScreenPath(const std::string& name) const
+{
+	return kUIDirectory + name + ".json";
+}
+
+bool UIEditor::ValidateScreenName(const std::string& name, int ignoreIndex, std::string& err) const
+{
+	if (name.empty()) { err = "名前を入力してください"; return false; }
+	if (name.size() > 48) { err = "名前が長すぎます(48文字まで)"; return false; }
+
+	// ファイル名にも使うので、文字化けしない英数字・_・-だけにする
+	for (char c : name)
+	{
+		const bool ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '-';
+		if (!ok) { err = "使える文字は英数字・_・- です"; return false; }
+	}
+
+	// Windowsのファイル名は大文字小文字を区別しないので、同じ名前として扱う
+	for (int i = 0; i < (int)m_manifest.screens.size(); ++i)
+	{
+		if (i == ignoreIndex) continue;
+		if (_stricmp(m_manifest.screens[i].name.c_str(), name.c_str()) == 0)
+		{
+			err = "同じ名前の画面があります";
+			return false;
+		}
+	}
+	return true;
+}
+
+bool UIEditor::AddScreen(const std::string& name)
+{
+	const std::string path = MakeScreenPath(name);
+
+	// 既存のファイルは上書きせずそのまま登録する。無い時だけ空のファイルを作る
+	if (!std::filesystem::exists(path))
+	{
+		if (!SaveUIFile(path, UIFile()))
+		{
+			KdDebugGUI::Instance().AddLog("UIEditor: 画面ファイルの作成に失敗 %s\n", path.c_str());
+			return false;
+		}
+	}
+
+	m_manifest.screens.push_back({ name, path });
+	if (!SaveManifest())
+	{
+		m_manifest.screens.pop_back();
+		return false;
+	}
+
+	return OpenScreen((int)m_manifest.screens.size() - 1);
+}
+
+void UIEditor::RenameScreen(int index, const std::string& newName)
+{
+	if (index < 0 || index >= (int)m_manifest.screens.size()) return;
+
+	// 名前だけ変える。JSONのファイル名・パスはそのまま
+	std::string& name = m_manifest.screens[index].name;
+	const std::string oldName = name;
+
+	name = newName;
+	if (!SaveManifest()) { name = oldName; }
+}
+
+void UIEditor::RemoveScreen(int index)
+{
+	if (index < 0 || index >= (int)m_manifest.screens.size()) return;
+
+	const UIScreenEntry removed = m_manifest.screens[index];
+	m_manifest.screens.erase(m_manifest.screens.begin() + index);
+
+	if (!SaveManifest())
+	{
+		m_manifest.screens.insert(m_manifest.screens.begin() + index, removed);
+		return;
+	}
+
+	if (index < m_currentScreen) { --m_currentScreen; return; }
+	if (index != m_currentScreen) return;
+
+	// 開いていた画面を外した時は、近い画面へ移る
+	m_currentScreen = -1;
+	m_fileMissing = false;
+	if (m_manifest.screens.empty() || !OpenScreen((std::min)(index, (int)m_manifest.screens.size() - 1)))
+	{
+		ResetToEmpty();
+	}
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 未保存の変更の検出
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void UIEditor::MarkClean()
+{
+	m_savedSnapshot = UIFileToJson(MakeFile());
+	m_dirty = false;
+}
+
+bool UIEditor::IsDirty() const
+{
+	return UIFileToJson(MakeFile()) != m_savedSnapshot;
+}
+
+// 表示用の印は毎フレーム比べず、一定間隔で更新する
+void UIEditor::UpdateDirtyFlag()
+{
+	m_dirtyCheckTimer += Application::Instance().GetDeltaTime();
+	if (m_dirtyCheckTimer < 0.3f) return;
+	m_dirtyCheckTimer = 0.0f;
+
+	m_dirty = IsDirty();
+}
+
+void UIEditor::RequestLeaveCurrent(std::function<void()> next)
+{
+	m_dirty = IsDirty();
+	if (!m_dirty) { next(); return; }
+
+	// ポップアップはDrawScreenBarの先頭で開く(別のポップアップを閉じた同フレームに開かないため)
+	m_pendingAction = std::move(next);
+	m_openUnsavedPopup = true;
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 画面バー(選択・追加・名前変更・削除)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void UIEditor::DrawScreenBar()
+{
+	const ImVec4 kWarn(1.0f, 0.7f, 0.3f, 1.0f);
+	const ImVec4 kError(1.0f, 0.4f, 0.4f, 1.0f);
+
+	if (m_manifestBroken)
+	{
+		ImGui::TextColored(kError, "%s を読み込めません。JSONを直してから再起動してください", kManifestPath.c_str());
+	}
+
+	const bool hasScreen = m_currentScreen >= 0 && m_currentScreen < (int)m_manifest.screens.size();
+	const std::string currentName = hasScreen ? m_manifest.screens[m_currentScreen].name : std::string();
+
+	// 未保存の変更があれば名前の後ろに*を付ける
+	const std::string preview = hasScreen ? (currentName + (m_dirty ? " *" : "")) : std::string("(画面なし)");
+
+	ImGui::SetNextItemWidth(200.0f);
+	if (ImGui::BeginCombo("Screen", preview.c_str()))
+	{
+		for (int i = 0; i < (int)m_manifest.screens.size(); ++i)
+		{
+			ImGui::PushID(i);
+			if (ImGui::Selectable(m_manifest.screens[i].name.c_str(), i == m_currentScreen) && i != m_currentScreen)
+			{
+				RequestLeaveCurrent([this, i]() { OpenScreen(i); });
+			}
+			ImGui::PopID();
+		}
+		ImGui::EndCombo();
+	}
+
+	ImGui::BeginDisabled(m_manifestBroken);
+	ImGui::SameLine();
+	if (ImGui::Button("New")) { m_nameBuf[0] = '\0'; m_openNewPopup = true; }
+	ImGui::BeginDisabled(!hasScreen);
+	ImGui::SameLine();
+	if (ImGui::Button("Rename"))
+	{
+		strncpy_s(m_nameBuf, sizeof(m_nameBuf), currentName.c_str(), _TRUNCATE);
+		m_openRenamePopup = true;
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Remove")) { m_openRemovePopup = true; }
+	ImGui::EndDisabled();
+	ImGui::EndDisabled();
+
+	if (hasScreen)
+	{
+		ImGui::TextDisabled("%s", CurrentPath().c_str());
+		if (m_fileMissing)
+		{
+			ImGui::SameLine();
+			ImGui::TextColored(kWarn, "(ファイルがありません。Saveで作成されます)");
+		}
+	}
+	else
+	{
+		ImGui::TextDisabled("画面がありません。Newで作成してください");
+	}
+
+	if (m_openUnsavedPopup) { ImGui::OpenPopup("Unsaved Changes"); m_openUnsavedPopup = false; }
+	if (m_openNewPopup) { ImGui::OpenPopup("New Screen"); m_openNewPopup = false; }
+	if (m_openRenamePopup) { ImGui::OpenPopup("Rename Screen"); m_openRenamePopup = false; }
+	if (m_openRemovePopup) { ImGui::OpenPopup("Remove Screen"); m_openRemovePopup = false; }
+
+	// 未保存の変更の確認
+	if (ImGui::BeginPopupModal("Unsaved Changes", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::Text("「%s」に未保存の変更があります。", hasScreen ? currentName.c_str() : "(画面なし)");
+
+		auto runPending = [this]()
+			{
+				std::function<void()> action = std::move(m_pendingAction);
+				m_pendingAction = nullptr;
+				ImGui::CloseCurrentPopup();
+				if (action) action();
+			};
+
+		ImGui::BeginDisabled(!hasScreen);
+		if (ImGui::Button("Save")) { if (Save(CurrentPath())) runPending(); }
+		ImGui::EndDisabled();
+		ImGui::SameLine();
+		if (ImGui::Button("Discard")) { runPending(); }
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel")) { m_pendingAction = nullptr; ImGui::CloseCurrentPopup(); }
+		ImGui::EndPopup();
+	}
+
+	// 新規作成(同名のファイルが既にあれば上書きせず登録する)
+	if (ImGui::BeginPopupModal("New Screen", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		if (ImGui::IsWindowAppearing()) { ImGui::SetKeyboardFocusHere(); }
+		ImGui::InputText("Name", m_nameBuf, sizeof(m_nameBuf));
+
+		const std::string name = m_nameBuf;
+		std::string err;
+		const bool valid = ValidateScreenName(name, -1, err);
+
+		if (valid)
+		{
+			const std::string path = MakeScreenPath(name);
+			ImGui::TextDisabled(std::filesystem::exists(path) ? "既存のファイルを登録します: %s" : "作成します: %s", path.c_str());
+		}
+		else if (!name.empty())
+		{
+			ImGui::TextColored(kError, "%s", err.c_str());
+		}
+
+		ImGui::BeginDisabled(!valid);
+		if (ImGui::Button("Create"))
+		{
+			ImGui::CloseCurrentPopup();
+			RequestLeaveCurrent([this, name]() { AddScreen(name); });
+		}
+		ImGui::EndDisabled();
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel")) { ImGui::CloseCurrentPopup(); }
+		ImGui::EndPopup();
+	}
+
+	// 名前変更(JSONのファイル名は変わらない)
+	if (ImGui::BeginPopupModal("Rename Screen", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		if (ImGui::IsWindowAppearing()) { ImGui::SetKeyboardFocusHere(); }
+		ImGui::InputText("Name", m_nameBuf, sizeof(m_nameBuf));
+		ImGui::TextDisabled("JSONのファイル名は変わりません");
+
+		const std::string name = m_nameBuf;
+		std::string err;
+		const bool valid = ValidateScreenName(name, m_currentScreen, err);
+		if (!valid && !name.empty()) { ImGui::TextColored(kError, "%s", err.c_str()); }
+
+		ImGui::BeginDisabled(!valid);
+		if (ImGui::Button("OK"))
+		{
+			RenameScreen(m_currentScreen, name);
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::EndDisabled();
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel")) { ImGui::CloseCurrentPopup(); }
+		ImGui::EndPopup();
+	}
+
+	// 削除(一覧から外すだけ)
+	if (ImGui::BeginPopupModal("Remove Screen", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::Text("「%s」を画面一覧から外します。", currentName.c_str());
+		ImGui::TextDisabled("JSONファイルは削除されません");
+		if (m_dirty) { ImGui::TextColored(kWarn, "未保存の変更は破棄されます"); }
+
+		if (ImGui::Button("Remove"))
+		{
+			RemoveScreen(m_currentScreen);
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel")) { ImGui::CloseCurrentPopup(); }
+		ImGui::EndPopup();
+	}
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////

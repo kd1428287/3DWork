@@ -11,8 +11,8 @@
 #include "Application/Effect/SlashTrail/SlashTrailDispatcher.h"
 
 // factory
-#include "Application/Factories/GamePlay/Character/PlayerFactory.h"
-#include "Application/Factories/GamePlay/Character/EnemyFactory.h"
+#include "Application/Factories/PrefabFactory.h"
+#include "Application/Factories/PrefabCatalog.h"
 #include "Application/Factories/GamePlay/Map/TerrainFactory.h"
 #include "Application/Factories/Common/CameraFactory.h"
 
@@ -32,17 +32,6 @@ GameScene::~GameScene() = default;
 
 void GameScene::OnUpdate(float deltaTime)
 {
-	// systemManager_の実行順にまとめたので、ここにはそこに乗らない
-	// GameScene固有の処理(例: クリア判定など)だけを書く
-
-	auto tex = KdFontManager::Instance().CreateFontTexture(0, "こんにちは", 3);
-
-	float x = 3, y = 3;
-	for (auto& ch : tex->GetTexList())
-	{
-		KdShaderManager::Instance().m_spriteShader.DrawTex(ch->FontTex, x, y);
-		x += ch->FontTex->GetInfo().Width;
-	}
 }
 
 void GameScene::OnPreDraw(float deltaTime)
@@ -88,22 +77,25 @@ void GameScene::BuildWorld()
 	// 敵
 	std::unordered_map<std::string, std::string> enemyDefs;
 	enemyDefs["Warrock"] = "Asset/Data/Game/Warrock.json";
-	EnemyFactory enemyFactory(enemyDefs);
+	PrefabCatalog enemyCatalog(enemyDefs);
 
-	if (enemyFactory.IsKnownEnemy("Warrock"))
+	if (enemyCatalog.Contains("Warrock"))
 	{
-		enemyFactory.CreateEnemy(*objManager_, "Warrock", Math::Vector3(10, 0, 5.f));
+		enemyCatalog.Spawn(*objManager_, "Warrock", Math::Vector3(10, 0, 5.f));
 	}
 
 	// プレイヤーとカメラ
-	PlayerFactory playerFactory;
-	auto* player = playerFactory.CreatePlayer(*objManager_, "Asset/Data/Game/Player.json");
+	PrefabDefinition playerDef;
+	auto* player = PrefabFactory::LoadFromFile("Asset/Data/Game/Player.json", playerDef)
+		? PrefabFactory::Create(*objManager_, playerDef)
+		: nullptr;
 
 	CameraFactory cameraFactory;
 	cameraFactory.CreateCamera(*objManager_, player);
 
 	// UI
-	LoadUI("Asset/Data/Game/Hud.json");
+	LoadUI("Asset/Data/UI/Hud.json");
+	LoadUI("Asset/Data/UI/TitleUI.json");
 }
 
 void GameScene::BuildSystems()

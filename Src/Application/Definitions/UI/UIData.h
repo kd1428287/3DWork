@@ -169,97 +169,42 @@ inline void ApplyUIRect(UIElement& e, const DirectX::SimpleMath::Vector2& refSiz
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// JSON入出力
+// JSON入出力(実装はUIData.cpp。ファイルI/Oとスキーマ変換はここに一元化する)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-inline bool SaveUIFile(const std::string& path, const UIFile& file)
+
+// pathからUIを読み込む。ファイルが無い/JSONとして壊れている場合はfalseを返す(outは変更しない)。
+// 壊れた要素はスキップして続行し、idの欠落・重複や不正な親は読み込み時に直す
+bool LoadUIFile(const std::string& path, UIFile& out);
+
+// pathへ保存する(常に現行バージョンの形式で書き出す)
+bool SaveUIFile(const std::string& path, const UIFile& file);
+
+// 保存するJSONそのもの。未保存の変更の検出(保存済みとの比較)にも使う
+nlohmann::json UIFileToJson(const UIFile& file);
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 画面マニフェスト(画面名 → UIのJSONパス)
+//	ゲーム側は画面名で呼び出し、エディタはこの一覧から編集する画面を選ぶ。
+//	並び順を保つため、画面は連想配列でなく配列で持つ(エディタのコンボの表示順になる)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+struct UIScreenEntry
 {
-	using json = nlohmann::json;
+	std::string	name;	// 英数字・_・-
+	std::string	path;
+};
 
-	json root;
-	root["version"] = 2;
-	root["refSize"] = { file.refSize.x, file.refSize.y };
-	root["nextId"] = file.nextId;
-
-	json arr = json::array();
-	for (auto& e : file.elements)
-	{
-		json comps = json::array();
-		for (auto& c : e.components)
-		{
-			json jc;
-			jc["type"] = c.type;
-			jc["params"] = c.params;
-			comps.push_back(std::move(jc));
-		}
-
-		json j;
-		j["id"] = e.id;
-		j["parent"] = e.parentId;
-		j["name"] = e.name;
-		j["visible"] = e.visible;
-		j["components"] = std::move(comps);
-		arr.push_back(std::move(j));
-	}
-	root["elements"] = std::move(arr);
-
-	std::error_code ec;
-	std::filesystem::create_directories(std::filesystem::path(path).parent_path(), ec);
-
-	std::ofstream ofs(path);
-	if (!ofs) return false;
-
-	// 不正なUTF-8が混ざっても例外にせず、置換文字にして書き出す
-	ofs << root.dump(2, ' ', false, nlohmann::json::error_handler_t::replace);
-	return true;
-}
-
-inline bool LoadUIFile(const std::string& path, UIFile& out)
+struct UIManifest
 {
-	using json = nlohmann::json;
+	std::vector<UIScreenEntry>	screens;
 
-	std::ifstream ifs(path);
-	if (!ifs) return false;
-
-	json root = json::parse(ifs, nullptr, false);
-	if (root.is_discarded() || !root.is_object()) return false;
-
-	UIFile file;
-	file.refSize = UIDataDetail::ReadVec2(root, "refSize", file.refSize);
-
-	UIId maxId = 0;
-	if (root.contains("elements") && root["elements"].is_array())
+	// 名前が一致する画面の添字(無ければ-1)
+	int Find(const std::string& name) const
 	{
-		for (auto& j : root["elements"])
-		{
-			UIElement e;
-			e.id = j.value("id", 0u);
-			if (e.id == kInvalidUIId) continue;
-
-			e.parentId = j.value("parent", 0u);
-			e.name = j.value("name", std::string());
-			e.visible = j.value("visible", true);
-
-			if (j.contains("components") && j["components"].is_array())
-			{
-				for (auto& jc : j["components"])
-				{
-					ComponentEntry c;
-					c.type = jc.value("type", std::string());
-					if (c.type.empty()) continue;
-
-					c.params = (jc.contains("params") && jc["params"].is_object()) ? jc["params"] : json::object();
-					e.components.push_back(std::move(c));
-				}
-			}
-
-			if (e.id > maxId) maxId = e.id;
-			file.elements.push_back(std::move(e));
-		}
+		for (size_t i = 0; i < screens.size(); ++i) { if (screens[i].name == name) return (int)i; }
+		return -1;
 	}
+};
 
-	file.nextId = root.value("nextId", 1u);
-	if (file.nextId <= maxId) file.nextId = maxId + 1;
-
-	out = std::move(file);
-	return true;
-}
+// 読めない・形式が違う場合はfalse。名前かパスが空の項目と、名前が重複する項目は読み飛ばす
+bool LoadUIManifest(const std::string& path, UIManifest& out);
+bool SaveUIManifest(const std::string& path, const UIManifest& manifest);

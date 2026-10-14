@@ -1,5 +1,7 @@
 ﻿#include "FluidSimulator.h"
 
+#include <DirectXPackedVector.h>
+
 namespace
 {
 	// 現在バインドされているRT(0番)のサイズを取得する
@@ -81,11 +83,39 @@ bool FluidSimulator::Init(int simWidth)
 	m_divergence.CreateRenderTarget(m_simWidth, m_simHeight, false, DXGI_FORMAT_R16_FLOAT);
 	m_curl.CreateRenderTarget(m_simWidth, m_simHeight, false, DXGI_FORMAT_R16_FLOAT);
 
+	// 占有率の計測用：縮小グリッドと、CPUへ読み戻すためのステージング
+	m_gridWidth = kCoverageGridWidth;
+	m_gridHeight = (std::max)(1, static_cast<int>(kCoverageGridWidth / aspect + 0.5f));
+	m_coverageGrid.CreateRenderTarget(m_gridWidth, m_gridHeight, false, DXGI_FORMAT_R16_FLOAT);
+
+	Microsoft::WRL::ComPtr<ID3D11Resource> gridResource;
+	m_coverageGrid.m_RTTexture->WorkRTView()->GetResource(gridResource.GetAddressOf());
+	gridResource.As(&m_coverageTexture);
+
+	D3D11_TEXTURE2D_DESC stagingDesc;
+	m_coverageTexture->GetDesc(&stagingDesc);
+	stagingDesc.Usage = D3D11_USAGE_STAGING;
+	stagingDesc.BindFlags = 0;
+	stagingDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+	stagingDesc.MiscFlags = 0;
+
+	for (int i = 0; i < kStagingCount; ++i)
+	{
+		if (FAILED(KdDirect3D::Instance().WorkDev()->CreateTexture2D(&stagingDesc, nullptr, m_staging[i].GetAddressOf())))
+		{
+			assert(0 && "ステージングテクスチャ作成失敗(Fluid)");
+			Release();
+			return false;
+		}
+	}
+
 	cbFluid& cb = m_cb.Work();
 	cb.TexelSize = { 1.0f / m_simWidth, 1.0f / m_simHeight };
 	cb.Aspect = aspect;
 	cb.Diffusion = kDensityDiffusion;
 	cb.Vorticity = kVorticity;
+	cb.StreamSpeed = kStreamSpeed;
+	cb.StreamDensity = kStreamDensity;
 
 	// 画面全体に書き込む用の頂点
 	m_screenVert[0] = { {-1,-1,0}, {0, 1} };
@@ -113,6 +143,10 @@ void FluidSimulator::Release()
 	m_pressure.Release();
 	m_divergence.m_RTTexture.reset();
 	m_curl.m_RTTexture.reset();
+
+	m_coverageGrid.m_RTTexture.reset();
+	m_coverageTexture.Reset();
+	for (auto& staging : m_staging) { staging.Reset(); }
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -184,15 +218,22 @@ void FluidSimulator::Step(float deltaTime)
 	float dt = std::clamp(deltaTime, kMinDeltaTime, kMaxDeltaTime);
 	m_cb.Work().DeltaTime = dt;
 
-	UpdateIdle(dt);
+	UpdateStream(dt);
 	ApplySplats(dt);
 
-	// 速度の自己移流 → 渦度強調 → 圧力投影で非圧縮にする → 密度を移流して滲ませる
+	// 速度の自己移流 → 渦度強調 → 圧力投影で非圧縮にする → 入口から速度を流し込む
 	Advect(m_velocity, m_velocity, kVelocityDissipation);
 	AddVorticity();
 	Project();
+	Emit(Pass::EmitVelocity, m_velocity);
+
+	// 密度を移流して滲ませる → 入口から墨を流し込む
 	Advect(m_velocity, m_density, kDensityDissipation);
 	Diffuse(m_density);
+	Emit(Pass::EmitDensity, m_density);
+
+	// 次の制御に使う、墨の占有率を計測する
+	MeasureCoverage();
 
 	shaderMgr.UndoSamplerState();
 }
@@ -248,35 +289,88 @@ void FluidSimulator::Diffuse(FluidDoubleRT& field)
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// アイドル時の自動入力：入力が一定時間途絶えたら、ゆっくり動く墨を時々落とす
+// ストリーム：左端の入口から、一本の墨の線を流し込み続ける(出口は右端)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void FluidSimulator::UpdateIdle(float dt)
+void FluidSimulator::UpdateStream(float dt)
 {
-	// このフレームに入力があれば、待ち時間をやり直す
-	if (!m_splats.empty())
+	ReadCoverage();
+
+	m_streamTime += dt;
+
+	// 占有率が目標に足りなければ帯を太く、多ければ細くする
+	if (m_coverageValid)
 	{
-		m_idleTime = 0.0f;
-		m_dropTimer = 0.0f;
-		return;
+		float error = kTargetCoverage - m_coverage;
+
+		m_streamHalfWidth = std::clamp(m_streamHalfWidth + error * kStreamWidthGain * dt, kStreamWidthMin, kStreamWidthMax);
 	}
 
-	m_idleTime += dt;
-	if (m_idleTime < kIdleDelay) { return; }
+	// 入口の位置と向きをゆっくり揺らし、線がうねるようにする
+	cbFluid& cb = m_cb.Work();
+	cb.StreamCenterY = 0.5f + kStreamCenterSwing * std::sin(m_streamTime * kStreamCenterSpeed);
+	cb.StreamHalfWidth = m_streamHalfWidth;
+	cb.StreamAngle = kStreamAngleSwing * std::sin(m_streamTime * kStreamAngleSpeed);
+}
 
-	m_dropTimer -= dt;
-	if (m_dropTimer > 0.0f) { return; }
+void FluidSimulator::Emit(Pass pass, FluidDoubleRT& field)
+{
+	DrawPass(pass, field.Read().m_RTTexture.get(), nullptr, field.Write());
+	field.Swap();
+}
 
-	m_dropTimer = Rand(kIdleIntervalMin, kIdleIntervalMax);
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 占有率の計測：濃度を縮小グリッドへ平均してステージングへコピーする(読み取りは数フレーム後)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void FluidSimulator::MeasureCoverage()
+{
+	if (++m_measureFrame < kMeasureInterval) { return; }
+	m_measureFrame = 0;
 
-	// 画面の端を避けた位置に、ランダムな向きの初速で落とす
-	Math::Vector2 pos = { Rand(0.15f, 0.85f), Rand(0.15f, 0.85f) };
-	float angle = Rand(0.0f, DirectX::XM_2PI);
-	float speed = Rand(kIdleSpeedMin, kIdleSpeedMax);
+	// 読み取りが追いついていない間は、未読のバッファを上書きしないよう見送る
+	if (m_stagingPending >= kStagingCount) { return; }
 
-	// 速度[texel/秒]がspeedになる移動量(ApplySplatsで移動量÷dtへ戻される)
-	Math::Vector2 delta = { std::cos(angle) * speed * dt / m_simWidth, std::sin(angle) * speed * dt / m_simHeight };
+	m_cb.Work().DstSize = { static_cast<float>(m_gridWidth), static_cast<float>(m_gridHeight) };
+	DrawPass(Pass::Coverage, m_density.Read().m_RTTexture.get(), nullptr, m_coverageGrid);
 
-	m_splats.push_back({ pos, delta, Rand(kIdleRadiusMin, kIdleRadiusMax), kIdleDensity });
+	KdDirect3D::Instance().WorkDevContext()->CopyResource(m_staging[m_stagingWrite].Get(), m_coverageTexture.Get());
+
+	m_stagingWrite = (m_stagingWrite + 1) % kStagingCount;
+	++m_stagingPending;
+}
+
+// コピーが終わったものを古い順に読み取り、最新の値を占有率とする(GPUは待たない)
+void FluidSimulator::ReadCoverage()
+{
+	ID3D11DeviceContext* devCon = KdDirect3D::Instance().WorkDevContext();
+
+	while (m_stagingPending > 0)
+	{
+		D3D11_MAPPED_SUBRESOURCE mapped;
+		if (FAILED(devCon->Map(m_staging[m_stagingRead].Get(), 0, D3D11_MAP_READ, D3D11_MAP_FLAG_DO_NOT_WAIT, &mapped)))
+		{
+			return;
+		}
+
+		double sum = 0.0;
+
+		for (int y = 0; y < m_gridHeight; ++y)
+		{
+			const uint16_t* row = reinterpret_cast<const uint16_t*>(static_cast<const uint8_t*>(mapped.pData) + y * mapped.RowPitch);
+
+			for (int x = 0; x < m_gridWidth; ++x)
+			{
+				sum += DirectX::PackedVector::XMConvertHalfToFloat(row[x]);
+			}
+		}
+
+		devCon->Unmap(m_staging[m_stagingRead].Get(), 0);
+
+		m_coverage = static_cast<float>(sum / (m_gridWidth * m_gridHeight));
+		m_coverageValid = true;
+
+		m_stagingRead = (m_stagingRead + 1) % kStagingCount;
+		--m_stagingPending;
+	}
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////

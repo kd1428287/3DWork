@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include <random>
+#include <wrl/client.h>
 
 // 読み書きを交互に入れ替えるRTのペア
 struct FluidDoubleRT
@@ -66,6 +66,9 @@ private:
 		VorticityForce,
 		Diffuse,
 		Display,
+		Coverage,
+		EmitVelocity,
+		EmitDensity,
 	};
 
 	struct Vertex
@@ -91,6 +94,17 @@ private:
 
 		Math::Vector3 SplatValue = { 0.0f, 0.0f, 0.0f };	// 速度ならxy、濃度ならx
 		float _blank3 = 0.0f;
+
+		Math::Vector2 DstSize = { 1.0f, 1.0f };		// 占有率の計測グリッドの解像度
+		float _blank4[2] = { 0.0f, 0.0f };
+
+		float StreamCenterY = 0.5f;			// 入口の中心(0〜1、Yは下が正)
+		float StreamHalfWidth = 0.06f;		// 入口の帯の半幅(画面の高さに対する比率)
+		float StreamSpeed = 0.0f;			// 入口の流速(texel/秒)
+		float StreamAngle = 0.0f;			// 入口の流れる向き(ラジアン。0で右向き)
+
+		float StreamDensity = 0.0f;			// 入口の濃度
+		float _blank5[3] = { 0.0f, 0.0f, 0.0f };
 	};
 
 	struct SplatRequest
@@ -113,8 +127,15 @@ private:
 	// fieldを隣のマスとなじませる(墨の滲み)
 	void Diffuse(FluidDoubleRT& field);
 
-	// 入力が途絶えている間、墨を時々自動で落とす
-	void UpdateIdle(float dt);
+	// 左端の入口の帯の中を、ストリームの速度・濃度へ近づける(passで速度か濃度を選ぶ)
+	void Emit(Pass pass, FluidDoubleRT& field);
+
+	// 入口の位置・向きをゆっくり揺らし、占有率に応じて帯の太さを変える
+	void UpdateStream(float dt);
+
+	// 墨の占有率を計測する(GPUで縮小してから、数フレーム遅れでCPUへ読み戻す)
+	void MeasureCoverage();
+	void ReadCoverage();
 
 	// 溜めた入力を速度と濃度へ加える
 	void ApplySplats(float dt);
@@ -128,34 +149,40 @@ private:
 	// src0/src1をt0/t1に渡して、dstへ全画面描画する(srcはnullptr可)
 	void DrawPass(Pass pass, KdTexture* src0, KdTexture* src1, KdRenderTargetPack& dst);
 
-	float Rand(float lo, float hi) { return std::uniform_real_distribution<float>(lo, hi)(m_rng); }
 
 	// 描画先は切り替えず、現在のレンダーターゲットへ全画面描画する
 	void DrawQuad(Pass pass, KdTexture* src0, KdTexture* src1);
 
 	static constexpr float kMinDeltaTime = 1.0f / 240.0f;
 	static constexpr float kMaxDeltaTime = 1.0f / 30.0f;
-	static constexpr float kVelocityDissipation = 0.75f;	// 毎秒の減衰率
-	static constexpr float kDensityDissipation = 0.25f;
+	static constexpr float kVelocityDissipation = 0.2f;	// 毎秒の減衰率
+	static constexpr float kDensityDissipation = 0.05f;
 	static constexpr float kDensityDiffusion = 6.0f;	// texel²/秒
 	static constexpr float kVorticity = 8.0f;			// 1/秒
 	static constexpr float kMaxSplatSpeed = 600.0f;		// texel/秒
 	static constexpr int   kMaxSplatSubdivision = 16;
 	static constexpr int   kJacobiIterations = 20;
 
-	// 入力が途絶えた時の自動入力
-	static constexpr float kIdleDelay = 2.0f;		// 入力が途絶えてから始めるまでの秒数
-	static constexpr float kIdleIntervalMin = 1.5f;	// 墨を落とす間隔(秒)
-	static constexpr float kIdleIntervalMax = 3.5f;
-	static constexpr float kIdleSpeedMin = 60.0f;		// 落とした墨の初速(texel/秒)
-	static constexpr float kIdleSpeedMax = 140.0f;
-	static constexpr float kIdleRadiusMin = 0.04f;	// 画面の高さに対する比率
-	static constexpr float kIdleRadiusMax = 0.08f;
-	static constexpr float kIdleDensity = 0.5f;
+	// 墨の占有率の制御
+	static constexpr float kTargetCoverage = 0.3f;	// 画面に占める墨の割合の目標(0〜1)
+	static constexpr int   kMeasureInterval = 4;	// 占有率を計測するフレーム間隔
+	static constexpr int   kCoverageGridWidth = 32;	// 計測用の縮小グリッドの幅
+	static constexpr int   kStagingCount = 3;		// 読み戻し用バッファの数
 
-	ID3D11VertexShader* m_VS = nullptr;
-	ID3D11InputLayout* m_inputLayout = nullptr;
-	ID3D11PixelShader* m_PS = nullptr;
+	// 画面の左端から流れ込む、一本の墨のストリーム
+	static constexpr float kStreamSpeed = 350.0f;		// 入口の流速(texel/秒)
+	static constexpr float kStreamDensity = 0.9f;		// 入口の濃度
+	static constexpr float kStreamAngleSwing = 0.5f;	// 入口の向きの振れ幅(ラジアン)
+	static constexpr float kStreamAngleSpeed = 0.7f;	// 入口の向きが振れる速さ(rad/秒)
+	static constexpr float kStreamCenterSwing = 0.15f;	// 入口の中心の上下の振れ幅(画面の高さに対する比率)
+	static constexpr float kStreamCenterSpeed = 0.25f;	// 入口の中心が動く速さ(rad/秒)
+	static constexpr float kStreamWidthMin = 0.02f;		// 入口の帯の半幅の下限(画面の高さに対する比率)
+	static constexpr float kStreamWidthMax = 0.2f;		// 上限
+	static constexpr float kStreamWidthGain = 0.15f;	// 占有率の不足1あたりの、半幅の変化(比率/秒)
+
+	ID3D11VertexShader*	m_VS = nullptr;
+	ID3D11InputLayout*	m_inputLayout = nullptr;
+	ID3D11PixelShader*	m_PS = nullptr;
 
 	KdConstantBuffer<cbFluid> m_cb;
 
@@ -165,11 +192,23 @@ private:
 	KdRenderTargetPack m_divergence;	// 速度場の発散
 	KdRenderTargetPack m_curl;			// 速度場の渦度
 
+	// 占有率の計測：濃度をブロックごとに平均した縮小グリッド → ステージング → CPU
+	KdRenderTargetPack m_coverageGrid;
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> m_coverageTexture;
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> m_staging[kStagingCount];
+	int		m_gridWidth = 0;
+	int		m_gridHeight = 0;
+	int		m_stagingWrite = 0;		// 次にコピーするバッファ
+	int		m_stagingRead = 0;		// 次に読み取るバッファ
+	int		m_stagingPending = 0;	// コピー済みで未読のバッファ数
+	int		m_measureFrame = 0;
+	float	m_coverage = 0.0f;		// 最新の計測結果(0〜1)
+	bool	m_coverageValid = false;
+
 	std::vector<SplatRequest> m_splats;
 
-	std::mt19937	m_rng{ std::random_device{}() };
-	float			m_idleTime = 0.0f;	// 入力が無い状態が続いている時間
-	float			m_dropTimer = 0.0f;	// 次に墨を落とすまでの残り時間
+	float			m_streamTime = 0.0f;
+	float			m_streamHalfWidth = 0.06f;	// 占有率に応じて変わる入口の帯の半幅
 
 	int		m_simWidth = 0;
 	int		m_simHeight = 0;

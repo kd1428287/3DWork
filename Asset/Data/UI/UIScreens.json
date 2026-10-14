@@ -1,0 +1,17 @@
+{
+  "screens": [
+    {
+      "name": "TitleUI",
+      "path": "Asset/Data/UI/TitleUI.json"
+    },
+    {
+      "name": "Hud",
+      "path": "Asset/Data/UI/Hud.json"
+    },
+    {
+      "name": "ResultUI",
+      "path": "Asset/Data/UI/ResultUI.json"
+    }
+  ],
+  "version": 1
+}

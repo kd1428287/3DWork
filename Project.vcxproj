@@ -452,6 +452,8 @@
     <ClInclude Include="Src\Application\Factories\GamePlay\Map\TerrainFactory.h" />
     <ClInclude Include="Src\Application\Factories\PrefabCatalog.h" />
     <ClInclude Include="Src\Application\Factories\PrefabFactory.h" />
+    <ClInclude Include="Src\Application\Factories\Registrations\RegisterFunctions.h" />
+    <ClInclude Include="Src\Application\Factories\Registrations\RegistrationHelpers.h" />
     <ClInclude Include="Src\Application\main.h" />
     <ClInclude Include="Src\Application\Scene\BaseScene\BaseScene.h" />
     <ClInclude Include="Src\Application\Scene\GameScene\GameScene.h" />
@@ -556,6 +558,7 @@
     <ClCompile Include="Src\Application\Definitions\Loaders\MapLoader.cpp" />
     <ClCompile Include="Src\Application\Definitions\Loaders\PlayerAttackTableLoader.cpp" />
     <ClCompile Include="Src\Application\Definitions\Map\MapData.cpp" />
+    <ClCompile Include="Src\Application\Definitions\UI\UIData.cpp" />
     <ClCompile Include="Src\Application\Editor\Common\ComponentInspector.cpp" />
     <ClCompile Include="Src\Application\Editor\Common\EditorPreviewViewport.cpp" />
     <ClCompile Include="Src\Application\Editor\Common\EditorViewport.cpp" />
@@ -584,6 +587,13 @@
     <ClCompile Include="Src\Application\Factories\GamePlay\Map\TerrainFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\PrefabCatalog.cpp" />
     <ClCompile Include="Src\Application\Factories\PrefabFactory.cpp" />
+    <ClCompile Include="Src\Application\Factories\Registrations\RegisterCombat.cpp" />
+    <ClCompile Include="Src\Application\Factories\Registrations\RegisterEnemy.cpp" />
+    <ClCompile Include="Src\Application\Factories\Registrations\RegisterGraphics.cpp" />
+    <ClCompile Include="Src\Application\Factories\Registrations\RegisterPhysics.cpp" />
+    <ClCompile Include="Src\Application\Factories\Registrations\RegisterPlayer.cpp" />
+    <ClCompile Include="Src\Application\Factories\Registrations\RegisterUI.cpp" />
+    <ClCompile Include="Src\Application\Factories\Registrations\RegistrationHelpers.cpp" />
     <ClCompile Include="Src\Application\main.cpp" />
     <ClCompile Include="Src\Application\Scene\BaseScene\BaseScene.cpp" />
     <ClCompile Include="Src\Application\Scene\GameScene\GameScene.cpp" />

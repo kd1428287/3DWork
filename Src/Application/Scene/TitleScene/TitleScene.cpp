@@ -5,6 +5,8 @@
 
 #include "Application/Core/EventBus/Events/SceneEvents.h"
 
+#include "Application/Factories/PrefabFactory.h"
+
 namespace
 {
 	constexpr float kSplatRadius = 0.05f;	// 画面の高さに対する比率
@@ -15,6 +17,8 @@ void TitleScene::OnEnter()
 {
 	GameObject* logo = objManager_->Instantiate("TitleLogo");
 	logo->AddComponent<TransformComponent>()->SetScale({ 1.4f,1.4f,1.4f });
+
+	LoadUI("Asset/Data/UI/TitleUI.json");
 
 	fluid_.Init();
 

@@ -12,8 +12,9 @@ namespace
 {
 	// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 	// コンポーネント1個ぶんのparamsを、型の初期値(defaults)のJSON型に従って自動描画する汎用UI。
-	//	bool→チェックボックス / 数値→ドラッグ / [x,y,z]→3要素ドラッグ / 文字列→入力欄 /
-	//	文字列の配列→リスト / オブジェクト→折りたたみ(再帰)。それ以外はJSONの直接編集に任せる。
+	//	bool→チェックボックス / 数値→ドラッグ / [x,y]・[x,y,z]・[x,y,z,w]→要素数ぶんのドラッグ(colorはピッカー) /
+	//	文字列→入力欄(enum風のものはコンボ) / 文字列の配列→リスト / オブジェクト→折りたたみ(再帰)。
+	//	それ以外はJSONの直接編集に任せる。
 	//	戻り値は「このフレームで何か編集されたか」(文字列は入力の確定時のみtrue)
 	//
 	//	defaultsだけnlohmann::ordered_json(挿入順を保持するjson)で受け取っている。
@@ -37,7 +38,36 @@ namespace
 		return true;
 	}
 
-	bool DrawParamsJson(nlohmann::json& params, const nlohmann::ordered_json& defaults, const ComponentInspector::RequestUndoFn& pushUndo)
+	// 文字列だがenumとして選択肢が決まっているparams(型名+キーで特定する)。無ければnullptr
+	const std::vector<const char*>* FindEnumOptions(const std::string& type, const std::string& key)
+	{
+		static const std::vector<const char*> kSpace = { "Screen", "World" };
+		static const std::vector<const char*> kAlign = { "Left", "Center", "Right" };
+
+		if (type == "UITransform" && key == "space") return &kSpace;
+		if (type == "Text" && key == "align") return &kAlign;
+		return nullptr;
+	}
+
+	bool IsColorKey(const std::string& key)
+	{
+		return key.find("olor") != std::string::npos;	// color / Color / tintColor など
+	}
+
+	// ピッカーのポップアップ内の操作ではIsItemActivatedが立たないため、変更の最初の1回だけUndoを積む
+	bool DrawColor4(const std::string& key, float v[4], const ComponentInspector::RequestUndoFn& pushUndo)
+	{
+		static ImGuiID s_editingId = 0;
+
+		const ImGuiID id = ImGui::GetID(key.c_str());
+		const bool changed = ImGui::ColorEdit4(key.c_str(), v, ImGuiColorEditFlags_AlphaBar);
+		if (changed && s_editingId != id) { pushUndo(); s_editingId = id; }
+		if (!ImGui::IsMouseDown(ImGuiMouseButton_Left)) { s_editingId = 0; }
+		return changed;
+	}
+
+	bool DrawParamsJson(nlohmann::json& params, const nlohmann::ordered_json& defaults,
+		const std::string& componentType, const ComponentInspector::RequestUndoFn& pushUndo)
 	{
 		using nlohmann::json;
 		using nlohmann::ordered_json;
@@ -77,6 +107,20 @@ namespace
 				if (ImGui::IsItemActivated()) { pushUndo(); }
 				if (ImGui::IsItemEdited()) { params[key] = v; edited = true; }
 			}
+			else if (def.is_string() && FindEnumOptions(componentType, key))
+			{
+				const auto& options = *FindEnumOptions(componentType, key);
+				const std::string cur = current.is_string() ? current.get<std::string>() : def.get<std::string>();
+				int idx = 0;
+				for (int k = 0; k < (int)options.size(); k++) { if (cur == options[k]) { idx = k; break; } }
+
+				if (ImGui::Combo(key.c_str(), &idx, options.data(), (int)options.size()))
+				{
+					pushUndo();
+					params[key] = std::string(options[idx]);
+					edited = true;
+				}
+			}
 			else if (def.is_string())
 			{
 				const std::string s = current.is_string() ? current.get<std::string>() : def.get<std::string>();
@@ -95,6 +139,34 @@ namespace
 				ImGui::DragFloat3(key.c_str(), v, 0.1f);
 				if (ImGui::IsItemActivated()) { pushUndo(); }
 				if (ImGui::IsItemEdited()) { params[key] = json::array({ v[0], v[1], v[2] }); edited = true; }
+			}
+			else if (IsNumberArray(def, 2))
+			{
+				const json src = IsNumberArray(current, 2) ? current : json(def);
+				float v[2] = { src[0].get<float>(), src[1].get<float>() };
+				// anchor/pivotは0～1の割合なので細かく動かす
+				const float speed = (key == "anchor" || key == "pivot") ? 0.01f : 0.1f;
+				ImGui::DragFloat2(key.c_str(), v, speed);
+				if (ImGui::IsItemActivated()) { pushUndo(); }
+				if (ImGui::IsItemEdited()) { params[key] = json::array({ v[0], v[1] }); edited = true; }
+			}
+			else if (IsNumberArray(def, 4))
+			{
+				const json src = IsNumberArray(current, 4) ? current : json(def);
+				float v[4] = { src[0].get<float>(), src[1].get<float>(), src[2].get<float>(), src[3].get<float>() };
+
+				bool changed = false;
+				if (IsColorKey(key))
+				{
+					changed = DrawColor4(key, v, pushUndo);
+				}
+				else
+				{
+					ImGui::DragFloat4(key.c_str(), v, 0.1f);
+					if (ImGui::IsItemActivated()) { pushUndo(); }
+					changed = ImGui::IsItemEdited();
+				}
+				if (changed) { params[key] = json::array({ v[0], v[1], v[2], v[3] }); edited = true; }
 			}
 			else if (IsStringArray(def) && (!params.contains(key) || IsStringArray(params[key])))
 			{
@@ -132,7 +204,7 @@ namespace
 				{
 					json child = params.contains(key) ? params[key] : json::object();
 					const json before = child;
-					const bool childEdited = DrawParamsJson(child, def, pushUndo);
+					const bool childEdited = DrawParamsJson(child, def, componentType, pushUndo);
 					if (child != before) { params[key] = child; }
 					edited = edited || childEdited;
 					ImGui::TreePop();
@@ -425,7 +497,7 @@ void ComponentInspector::DrawList(
 				}
 				else
 				{
-					edited = DrawParamsJson(entry.params, *defaults, requestUndoCheckpoint);
+					edited = DrawParamsJson(entry.params, *defaults, entry.type, requestUndoCheckpoint);
 				}
 
 				if (edited && onComponentEdited)
