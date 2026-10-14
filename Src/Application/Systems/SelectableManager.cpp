@@ -48,7 +48,7 @@ void SelectableManager::Dispatch()
 			fn(p.action.param);
 		}
 
-		GLOBALEVENT.Publish(UIActionEvent(p.trigger, p.action.id, p.action.param));
+		GLOBALEVENT->Publish(UIActionEvent(p.trigger, p.action.id, p.action.param));
 	}
 }
 

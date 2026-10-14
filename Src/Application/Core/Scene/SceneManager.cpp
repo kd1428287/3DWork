@@ -24,20 +24,13 @@ void SceneManager::Init()
 	factories_[SceneType::Game] = [] { return std::make_unique<GameScene>(); };
 	factories_[SceneType::Result] = [] { return std::make_unique<ResultScene>(); };
 
-	// どちらのイベントも予約するだけ。実行中のシーンを即時に破棄しない
-	sceneChangeSub_ = ScopedSubscriber(&GLOBALEVENT,
-		GLOBALEVENT.Subscribe<Events::SceneChangeRequestEvent>(
-			[this](const Events::SceneChangeRequestEvent& e)
-			{
-				SetNextScene(e.nextScene);
-			}));
+	sceneChangeSub_ = GLOBALEVENT->SubscribeScoped<Events::SceneChangeRequest>(
+		[this](const Events::SceneChangeRequest& e) {
+			SetNextScene(e.nextScene); });
 
-	reloadSceneSub_ = ScopedSubscriber(&GLOBALEVENT,
-		GLOBALEVENT.Subscribe<Events::ReloadingSceneEvent>(
-			[this](const Events::ReloadingSceneEvent&)
-			{
-				ReloadScene();
-			}));
+	sceneChangeSub_ = GLOBALEVENT->SubscribeScoped<Events::ReloadingScene>(
+		[this](const Events::ReloadingScene& e) {
+			ReloadScene(); });
 
 	// 開始シーンは最初のUpdate()で生成する
 	pending_ = currentSceneType_;

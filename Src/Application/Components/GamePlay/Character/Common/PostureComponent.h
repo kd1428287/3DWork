@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "Application/Core/EventBus/Events/PostureEvents.h"
+#include "Application/Core/EventBus/Events/CombatEvents.h"
 
 // 初期設定(Prefab/JSONから渡す値)。
 struct PostureConfig
@@ -66,7 +66,7 @@ public:
 
 private:
 	void PublishChanged() {
-		Events::PostureChangedEvent e;
+		Events::PostureChanged e;
 		e.source = Handle<GameObject>(GetOwner());
 		e.ratio = GetRatio();
 		GetOwner()->GetContext()->eventBus->Publish(e);

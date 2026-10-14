@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "../Common/BehaviorTree/IBTNode.h"
 #include "Application/Components/GamePlay/Character/Common/AttackSourceComponent.h"
+#include "Application/Core/EventBus/Events/CombatEvents.h"
 
 class EnemyAIController;
 
@@ -84,7 +85,7 @@ public:
 	// Subscribe<AttackSourceComponent::ParriedEvent>()しており、受信した
 	// 瞬間にこれを呼ぶ(AttackSourceComponent::ParriedEvent冒頭コメント
 	// 参照)。何もしない敵種はデフォルト実装(何もしない)のままでよい。
-	virtual void OnParried(EnemyAIController* owner, const AttackSourceComponent::ParriedEvent& event) {}
+	virtual void OnParrySucceeded(EnemyAIController* owner, const Events::ParrySucceeded& event) {}
 
 	// HealthComponentのDiedEventを受けてEnemyAIController側が
 	// 移動停止・当たり判定無効化等の共通死亡処理を終えた直後に呼ばれる

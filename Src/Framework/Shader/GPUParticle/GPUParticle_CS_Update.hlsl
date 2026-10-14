@@ -11,7 +11,11 @@ cbuffer cbGPUParticleUpdate : register(b0)
 
 	float3	g_Gravity;			// 重力(加速度)
 	float	_pad1;
+
+	float3 g_ConvergeCenter;
 };
+
+static const int EMIT_DIST_CONVERGE = 2;
 
 //================================
 // 生存中のパーティクルを1フレームぶんシミュレーションする
@@ -32,12 +36,32 @@ void main(uint3 id : SV_DispatchThreadID)
 	// Beam(固定軸方向に伸びる線)は物理挙動の対象外：重力はもちろん、速度による移動も一切適用しない。
 	// Beamは「静止したまま軸方向に伸縮するマーカー」という定義そのものなので、
 	// 万が一Beamのレイヤーに初速を設定してしまっても動かないようにここで保証しておく
+	// モード値を整数化
+	int distribution = (int) (p.Distribution + 0.5f);
+
 	if (p.BillboardMode < 1.5f)
 	{
-		// 重力を速度に加算
-		p.Velocity += g_Gravity * g_DeltaTime;
+    // --- 挙動の更新 ---
+    
+		if (distribution == EMIT_DIST_CONVERGE)
+		{
+        // 【Convergeモード特有の更新処理】
+        // 例: 中心に向かって加速させる、または中心付近で消滅させる 等
+			float3 toCenter = p.ConvergeCenter - p.Position;
+			float dist = length(toCenter);
 
-		// 移動
+			if (dist < 0.05f) // 中心点（または敷居値）に到達したら消去
+			{
+				p.Life = 0.0f;
+			}
+		}
+		else
+		{
+        // 通常の物理運動（重力適用）
+			p.Velocity += g_Gravity * g_DeltaTime;
+		}
+
+    // 位置の更新
 		p.Position += p.Velocity * g_DeltaTime;
 	}
 

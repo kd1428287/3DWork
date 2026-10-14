@@ -1,9 +1,11 @@
-#pragma once
+﻿#pragma once
 
 #include <thread>
 #include <mutex>
 #include <condition_variable>
 #include <atomic>
+
+#include "FrameWork/Audio/KdAudio.h"
 
 //============================================================
 // アプリケーションクラス
@@ -94,6 +96,9 @@ private:
 
 	// FPSコントローラー
 	KdFPSController	m_fpsController;
+
+	// サウンドマネージャー
+	std::unique_ptr<KdAudioManager> m_audioManager = nullptr;
 
 	// ゲーム終了フラグ trueで終了する (メインスレッドのみが書き込む)
 	std::atomic<bool>	m_endFlag = false;

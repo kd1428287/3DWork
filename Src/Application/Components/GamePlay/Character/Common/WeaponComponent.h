@@ -3,15 +3,11 @@
 #include "../../../Graphics/Effect/SlashTrailComponent.h"
 #include "AttackSourceComponent.h"
 #include "Application/Core/EventBus/Events/CollisionEvents.h"
+#include "Application/Core/EventBus/Events/CombatEvents.h"
 
-struct AttackHitContext : public Event {
-	CollisionMath::OverlapResult hitResult;
-	Handle<GameObject> attacker;
-	Handle<AttackSourceComponent> attackSource;
-	Handle<GameObject> weaponObject;
-	AttackDamageData damageData;
-	Math::Vector3 lastValidSwingDir;
-};
+namespace Events {
+
+}
 
 // ============================================================
 // WeaponComponent
@@ -29,10 +25,8 @@ public:
 		attackSource_ = GetOwner()->GetComponent<AttackSourceComponent>();
 		trail_ = GetOwner()->GetComponent<SlashTrailComponent>(); // 無い部位(素手等)もあるためnullptr許容
 
-		EventBus& localBus = GetOwner()->GetLocalEventBus();
-		const SubscriptionId subscriptionId = localBus.Subscribe<Events::CollisionEnterEvent>(
+		subscriber_ = GetOwner()->GetLocalEventBus().SubscribeScoped<Events::CollisionEnterEvent>(
 			[this](const Events::CollisionEnterEvent& e) { OnCollisionEnter(e); });
-		subscriber_ = ScopedSubscriber(&localBus, subscriptionId);
 	}
 
 	void Update(float deltaTime) override
@@ -87,7 +81,7 @@ public:
 	{
 		if (!e.SelfIs(ColliderCategory::HitBox) || !e.OtherIs(ColliderCategory::HurtBox))return;
 
-		AttackHitContext c;
+		Events::AttackHit c;
 		c.hitResult = e.hitResult;
 		c.attacker = attackSource_->GetOwnerHandle();
 		c.attackSource = Handle<AttackSourceComponent>(attackSource_);

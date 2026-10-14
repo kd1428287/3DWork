@@ -1035,10 +1035,7 @@
     <ClInclude Include="Src\Application\Components\Graphics\UI\Image\UIImageComponent.h">
       <Filter>Src\Application\Components\Graphics\UI\Image</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Core\EventBus\Events\PostureEvents.h">
-      <Filter>Src\Application\Core\EventBus\Events</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Core\EventBus\Events\HealthEvents.h">
+    <ClInclude Include="Src\Application\Core\EventBus\Events\CombatEvents.h">
       <Filter>Src\Application\Core\EventBus\Events</Filter>
     </ClInclude>
     <ClInclude Include="Src\Application\Factories\PrefabCatalog.h">

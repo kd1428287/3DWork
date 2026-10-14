@@ -21,7 +21,7 @@ void FootstepEventComponent::Update(float /*deltaTime*/)
 	if (triggers != nullptr) {
 		for (const auto& trigger : *triggers) {
 			if (CrossedPhase(lastPhase_, currentPhase, trigger.phase)) {
-				PublishFootstepEvent(GetOwner()->GetLocalEventBus(), GetOwner(), trigger.foot);
+				Events::PublishFootstepEvent(GetOwner()->GetLocalEventBus(), GetOwner(), trigger.foot);
 			}
 		}
 	}

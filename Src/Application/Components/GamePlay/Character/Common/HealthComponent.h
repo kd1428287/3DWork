@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "Application/Core/EventBus/Events/HealthEvents.h"
+#include "Application/Core/EventBus/Events/CombatEvents.h"
 
 // 初期設定(Prefab/JSONから渡す値)。
 struct HealthConfig
@@ -29,7 +29,7 @@ public:
 
 		if (current_ <= 0.0f) {
 			died_ = true;
-			Events::HealthDiedEvent e;
+			Events::Died e;
 			e.source = Handle<GameObject>(GetOwner());
 			GetOwner()->GetContext()->eventBus->Publish(e);
 			GetOwner()->GetLocalEventBus().Publish(e);

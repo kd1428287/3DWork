@@ -6,65 +6,65 @@ class GameObject;
 
 namespace Events
 {
-	// ObjectManager全体(=シーン全体)のtimeScaleを操作する。
-	struct SetGlobalTimeScaleEvent : public Event
+	// シーン全体のタイムスケール変更リクエスト
+	struct ChangeGlobalTimeScale : public Event
 	{
 		float timeScale = 1.0f;
 		float duration = -1.0f;
 		mutable uint64_t issuedRequestId = 0; // TimeScaleSystemが発行直後に書き込む
 	};
 
-	// 指定したObjectFlagsマスクに一致するGameObject群のtimeScaleを一括で操作する
-	struct SetMaskTimeScaleEvent : public Event
+	// 特定のObjectFlagsマスクに一致するオブジェクト群のタイムスケール変更リクエスト
+	struct ChangeMaskTimeScale : public Event
 	{
 		uint8_t mask = 0;
 		float timeScale = 1.0f;
 		float duration = -1.0f;
 	};
 
-	// 特定の1個体だけのtimeScaleを操作する。
-	struct SetObjectTimeScaleEvent : public Event
+	// 特定の1個体に対するタイムスケール変更リクエスト
+	struct ChangeObjectTimeScale : public Event
 	{
 		Handle<GameObject> target;
 		float timeScale = 1.0f;
 		float duration = -1.0f;
 	};
 
-	// duration <= 0 (無期限)で登録した要求を、対応するidを指定して明示的に解除するためのイベント
-	struct CancelTimeScaleRequestEvent : public Event
+	// 無制限(duration <= 0)で適用したタイムスケール要求のキャンセル
+	struct CancelTimeScaleRequest : public Event
 	{
 		uint64_t requestId = 0;
 	};
 
-	// TimeScaleSystemがSet*TimeScaleEventを受理した際、発行元へ
-	// 払い出したrequestIdを通知するためのイベント。
-	struct TimeScaleRequestIssuedEvent : public Event
+	// リクエスト受理時に発行元へ払い出されたIDを通知するイベント
+	struct TimeScaleRequestIssued : public Event
 	{
 		uint64_t requestId = 0;
 	};
 
-	// Publishヘルパー
+	// --- Helper Functions ---
+
 	inline void PublishHitStop(EventBus& bus, float scale, float duration)
 	{
-		SetGlobalTimeScaleEvent e;
+		ChangeGlobalTimeScale e;
 		e.timeScale = scale;
 		e.duration = duration;
 		bus.Publish(e);
 	}
 
-	inline void PublishPause(EventBus& bus, uint64_t& id)
+	inline void PublishPause(EventBus& bus, uint64_t& outRequestId)
 	{
-		SetGlobalTimeScaleEvent e;
+		ChangeGlobalTimeScale e;
 		e.timeScale = 0.0f;
 		e.duration = -1.0f;
 		bus.Publish(e);
-		id = e.issuedRequestId;
+		outRequestId = e.issuedRequestId;
 	}
 
-	inline void PublishPauseCancel(EventBus& bus, uint64_t& id)
+	inline void PublishPauseCancel(EventBus& bus, uint64_t requestId)
 	{
-		CancelTimeScaleRequestEvent e;
-		e.requestId = id;
+		CancelTimeScaleRequest e;
+		e.requestId = requestId;
 		bus.Publish(e);
 	}
 }

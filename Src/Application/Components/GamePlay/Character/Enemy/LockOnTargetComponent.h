@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include "../../../Core/BoneSocketComponent.h"
-#include "Application/Core/EventBus/Events/HealthEvents.h"
+#include "Application/Core/EventBus/Events/CombatEvents.h"
 #include "../Common/HealthComponent.h"
 
 // ============================================================
@@ -21,10 +21,8 @@ public:
 
 		// HealthComponentのDiedEvent購読で死亡時に自動解除する
 		if (GetOwner()->HasComponent<HealthComponent>()) {
-			EventBus& localBus = GetOwner()->GetLocalEventBus();
-			const SubscriptionId id = localBus.Subscribe<Events::HealthDiedEvent>(
-				[this](const Events::HealthDiedEvent&) { isLockable_ = false; });
-			subscriber_ = ScopedSubscriber(&localBus, id);
+			subscriber_ = GetOwner()->GetLocalEventBus().SubscribeScoped<Events::Died>(
+				[this](const Events::Died &e) { isLockable_ = false; });
 		}
 	}
 

@@ -3,11 +3,11 @@
 void FootDustComponent::Awake()
 {
 	// FootstepEventは同一GameObject(プレイヤー本体)のLocalEventBusに流れてくる想定。
-	onFootSub_ = { &GetOwner()->GetLocalEventBus(),GetOwner()->GetLocalEventBus().Subscribe<FootstepEvent>(
-		[this](const FootstepEvent& event) { OnFootstep(event); }) };
+	onFootSub_ = GetOwner()->GetLocalEventBus().SubscribeScoped<Events::FootstepEvent>(
+		[this](const Events::FootstepEvent& e) { OnFootstep(e); });
 }
 
-void FootDustComponent::OnFootstep(const FootstepEvent& event)
+void FootDustComponent::OnFootstep(const Events::FootstepEvent& event)
 {
 	BoneSocketComponent* left = nullptr;
 	BoneSocketComponent* right = nullptr;

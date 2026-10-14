@@ -6,18 +6,18 @@
 namespace Events
 {
 	// 指定のシーンへ遷移する汎用イベント
-	struct SceneChangeRequestEvent : public Event
+	struct SceneChangeRequest : public Event
 	{
 		SceneType nextScene;
 
-		explicit SceneChangeRequestEvent(SceneType scene)
+		explicit SceneChangeRequest(SceneType scene)
 			: nextScene(scene)
 		{
 		}
 	};
 
 	// 現在のシーンを生成し直すイベント
-	struct ReloadingSceneEvent : public Event
+	struct ReloadingScene : public Event
 	{
 	};
 }

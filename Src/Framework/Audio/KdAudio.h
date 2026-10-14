@@ -3,6 +3,7 @@
 class KdSoundEffect;
 class KdSoundInstance;
 class KdSoundInstance3D;
+class ScopedSubscriber;
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // ゲーム内の音を全て管理するクラス
@@ -15,6 +16,8 @@ class KdSoundInstance3D;
 class KdAudioManager
 {
 public:
+	KdAudioManager() {}
+	~KdAudioManager() { Release(); }
 
 	// 初期化
 	void Init();
@@ -73,17 +76,7 @@ private:
 	// サウント管理マップ
 	std::unordered_map< std::string, std::shared_ptr<KdSoundEffect>> m_soundMap;
 
-	// シングルトンパターン
-public:
-	static KdAudioManager& Instance()
-	{
-		static KdAudioManager instance;
-		return instance;
-	}
 
-private:
-	KdAudioManager() {}
-	~KdAudioManager() { Release(); }
 };
 
 

@@ -15,25 +15,25 @@ bool EffectDispatcher::Init(EventBus& bus, const std::string& effectDataPath)
 
 	LoadData(effectDataPath_);
 
-	subscriptions_.emplace_back(
-		&bus,
-		bus.Subscribe<Events::GenericEffectSpawnEvent>(
-			[this](const Events::GenericEffectSpawnEvent& e) { OnGenericEffectSpawn(e); }));
+	// ベクターの領域をあらかじめ確保して再確保コストを抑える
+	subscriptions_.reserve(4);
 
-	subscriptions_.emplace_back(
-		&bus,
-		bus.Subscribe<Events::EffectAttachSpawnEvent>(
-			[this](const Events::EffectAttachSpawnEvent& e) { OnEffectAttachSpawn(e); }));
+	// すべて SubscribeScoped に統一して自動ライフサイクル管理を行う
+	subscriptions_.push_back(
+		bus.SubscribeScoped<Events::GenericEffectSpawn>(
+			[this](const Events::GenericEffectSpawn& e) { OnGenericEffectSpawn(e); }));
 
-	subscriptions_.emplace_back(
-		&bus,
-		bus.Subscribe<Events::EffectPositionUpdateEvent>(
-			[this](const Events::EffectPositionUpdateEvent& e) { OnEffectPositionUpdate(e); }));
+	subscriptions_.push_back(
+		bus.SubscribeScoped<Events::EffectAttachSpawn>(
+			[this](const Events::EffectAttachSpawn& e) { OnEffectAttachSpawn(e); }));
 
-	subscriptions_.emplace_back(
-		&bus,
-		bus.Subscribe<Events::EffectDetachEvent>(
-			[this](const Events::EffectDetachEvent& e) { OnEffectDetach(e); }));
+	subscriptions_.push_back(
+		bus.SubscribeScoped<Events::EffectPositionUpdate>(
+			[this](const Events::EffectPositionUpdate& e) { OnEffectPositionUpdate(e); }));
+
+	subscriptions_.push_back(
+		bus.SubscribeScoped<Events::EffectDetach>(
+			[this](const Events::EffectDetach& e) { OnEffectDetach(e); }));
 
 	{
 		std::lock_guard<std::mutex> lock(s_instancesMutex);
@@ -42,7 +42,6 @@ bool EffectDispatcher::Init(EventBus& bus, const std::string& effectDataPath)
 
 	return true;
 }
-
 bool EffectDispatcher::LoadData(const std::string& effectDataPath)
 {
 	EffectDataFile data;

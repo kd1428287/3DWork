@@ -23,7 +23,9 @@ struct Particle
 
 	// ※必ず末尾に追加する事(途中に挿すとC++側とオフセットがズレる。過去に実際発生した事故)
 	float3 Axis; // Beam専用：伸びる向き(固定。速度とは無関係)
-	float _padAxis; // 16バイト境界合わせ
+	float Distribution; // 0: Directional, 1: RadialInPlane, 2: Converge
+	float3 ConvergeCenter;
+	float _pad;
 };
 
 // 描画シェーダー(VS→PS)の受け渡し用

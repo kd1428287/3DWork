@@ -24,13 +24,14 @@ cbuffer cbFluid : register(b0)
 	float2	g_dstSize;		// 占有率の計測グリッドの解像度
 	float2	_blank4;
 
-	float	g_streamCenterY;	// 入口の中心(0〜1)
+	float	g_streamCenterX;	// 入口の中心(0〜1)
 	float	g_streamHalfWidth;	// 入口の帯の半幅(画面の高さに対する比率)
 	float	g_streamSpeed;		// 入口の流速(texel/秒)
-	float	g_streamAngle;		// 入口の流れる向き(ラジアン)
+	float	g_streamAngle;		// 入口の流れる向き(ラジアン。0で真下)
 
 	float	g_streamDensity;	// 入口の濃度
-	float3	_blank5;
+	float	g_gravity;			// 墨が下へ引かれる力(texel/秒²)
+	float2	_blank5;
 };
 
 struct VSOutput
@@ -53,6 +54,7 @@ struct VSOutput
 #define PASS_COVERAGE			10
 #define PASS_EMIT_VELOCITY		11
 #define PASS_EMIT_DENSITY		12
+#define PASS_BUOYANCY			13
 
 // 墨の見た目の調整値
 static const float3 PAPER_COLOR = float3(0.93, 0.91, 0.86);	// 紙の色(生成り)
@@ -95,13 +97,14 @@ float SplatWeight(float2 uv)
 	return exp(-dot(p, p) / (g_splatRadius * g_splatRadius));
 }
 
-static const float INLET_TEXELS = 6.0;	// 入口の厚み(左端から何texelか)
+static const float INLET_TEXELS = 6.0;	// 入口の厚み(上端から何texelか)
 
-// 左端の入口の重み：帯の中(縦)で1、左端から離れる(横)ほど薄れる
+// 上端の入口の重み：帯の中(横)で1、上端から離れる(縦)ほど薄れる
 float StreamWeight(float2 uv)
 {
-	float band = 1.0 - smoothstep(g_streamHalfWidth * 0.6, g_streamHalfWidth, abs(uv.y - g_streamCenterY));
-	float zone = saturate(1.0 - uv.x / (g_texelSize.x * INLET_TEXELS));
+	float dist = abs(uv.x - g_streamCenterX) * g_aspect;	// 画面の高さに対する比率
+	float band = 1.0 - smoothstep(g_streamHalfWidth * 0.6, g_streamHalfWidth, dist);
+	float zone = saturate(1.0 - uv.y / (g_texelSize.y * INLET_TEXELS));
 
 	return band * zone;
 }
@@ -148,9 +151,9 @@ float4 main(VSOutput In) : SV_Target0
 	{
 		// t0 = 圧力、t1 = 発散。隣の平均から発散を引いて反復する
 		float pL = g_tex0.Sample(g_smp, uv - dx).x;
-		float pR = (uv.x + g_texelSize.x > 1.0) ? 0.0 : g_tex0.Sample(g_smp, uv + dx).x;	// 右端の外は圧力0(出口)
+		float pR = g_tex0.Sample(g_smp, uv + dx).x;
 		float pU = g_tex0.Sample(g_smp, uv - dy).x;
-		float pD = g_tex0.Sample(g_smp, uv + dy).x;
+		float pD = (uv.y + g_texelSize.y > 1.0) ? 0.0 : g_tex0.Sample(g_smp, uv + dy).x;	// 下端の外は圧力0(出口)
 		float div = g_tex1.Sample(g_smp, uv).x;
 
 		return float4((pL + pR + pU + pD - div) * 0.25, 0.0, 0.0, 1.0);
@@ -160,15 +163,15 @@ float4 main(VSOutput In) : SV_Target0
 	{
 		// t0 = 圧力、t1 = 速度。圧力の勾配を引いて発散を取り除く
 		float pL = g_tex0.Sample(g_smp, uv - dx).x;
-		float pR = (uv.x + g_texelSize.x > 1.0) ? 0.0 : g_tex0.Sample(g_smp, uv + dx).x;	// 右端の外は圧力0(出口)
+		float pR = g_tex0.Sample(g_smp, uv + dx).x;
 		float pU = g_tex0.Sample(g_smp, uv - dy).x;
-		float pD = g_tex0.Sample(g_smp, uv + dy).x;
+		float pD = (uv.y + g_texelSize.y > 1.0) ? 0.0 : g_tex0.Sample(g_smp, uv + dy).x;	// 下端の外は圧力0(出口)
 
 		float2 vel = g_tex1.Sample(g_smp, uv).xy - 0.5 * float2(pR - pL, pD - pU);
 
-		// 左・上・下の端を壁にする(壁を貫く向きの速度を0にする)。右端は流れ出る出口として開ける
-		if (uv.x < g_texelSize.x) { vel.x = 0.0; }
-		if (uv.y < g_texelSize.y || uv.y > 1.0 - g_texelSize.y) { vel.y = 0.0; }
+		// 左・右・上の端を壁にする(壁を貫く向きの速度を0にする)。下端は流れ出る出口として開ける
+		if (uv.x < g_texelSize.x || uv.x > 1.0 - g_texelSize.x) { vel.x = 0.0; }
+		if (uv.y < g_texelSize.y) { vel.y = 0.0; }
 
 		return float4(vel, 0.0, 1.0);
 	}
@@ -259,7 +262,7 @@ float4 main(VSOutput In) : SV_Target0
 	if (g_pass == PASS_EMIT_VELOCITY)
 	{
 		// t0 = 速度。入口の帯の中を、ストリームの速度へ近づける
-		float2 inletVel = float2(cos(g_streamAngle), sin(g_streamAngle)) * g_streamSpeed;
+		float2 inletVel = float2(sin(g_streamAngle), cos(g_streamAngle)) * g_streamSpeed;
 		float2 vel = lerp(g_tex0.Sample(g_smp, uv).xy, inletVel, StreamWeight(uv));
 
 		return float4(vel, 0.0, 1.0);
@@ -271,6 +274,15 @@ float4 main(VSOutput In) : SV_Target0
 		float d = lerp(g_tex0.Sample(g_smp, uv).x, g_streamDensity, StreamWeight(uv));
 
 		return float4(d, 0.0, 0.0, 1.0);
+	}
+
+	if (g_pass == PASS_BUOYANCY)
+	{
+		// t0 = 速度、t1 = 濃度。墨は水より重いので、濃度に比例した力で下へ引かれる(Yは下が正)
+		float2 vel = g_tex0.Sample(g_smp, uv).xy;
+		vel.y += g_gravity * g_tex1.Sample(g_smp, uv).x * g_dt;
+
+		return float4(vel, 0.0, 1.0);
 	}
 
 	// PASS_SPLAT_DENSITY：重ねるほど濃くなるが1は超えない

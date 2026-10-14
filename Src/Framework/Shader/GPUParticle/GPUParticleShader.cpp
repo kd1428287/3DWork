@@ -176,6 +176,8 @@ void GPUParticleShader::Emit(ID3D11UnorderedAccessView* particleUAV, ID3D11Unord
 	emit.EmitRadialSpeedMin = param.RadialSpeedMin;
 	emit.EmitRadialSpeedMax = param.RadialSpeedMax;
 	emit.EmitAxis = param.Axis;
+	emit.EmitConvergeRadius = param.ConvergeRadius;
+	emit.EmitConvergeSpeed = param.ConvergeSpeed;
 
 	m_cb0_Emit.Write();
 

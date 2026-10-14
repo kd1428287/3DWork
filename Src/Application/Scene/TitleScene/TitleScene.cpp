@@ -36,7 +36,7 @@ void TitleScene::OnUpdate(float /*deltaTime*/)
 	// SceneManagerを直接知らなくてよくなった(疎結合)。
 	if (KdInputManager::Instance().IsPress("Attack"))
 	{
-		GLOBALEVENT.Publish(Events::SceneChangeRequestEvent{ SceneType::Game });
+		GLOBALEVENT->Publish(Events::SceneChangeRequest{ SceneType::Game });
 	}
 
 	AddCursorSplat();

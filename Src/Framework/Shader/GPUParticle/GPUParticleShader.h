@@ -103,6 +103,10 @@ private:
 
 		Math::Vector3	EmitAxis;				// Beam専用：伸びる向き(固定)
 		float			_padAxis = 0.0f;		// 16バイト境界合わせ(次に追加するならここを使う)
+
+		float			EmitConvergeRadius = 5.0f;	// 収束開始半径（周囲の広がり具合）
+		float			EmitConvergeSpeed = 5.0f;	// 収束速度（または 0指定で 寿命から自動計算）
+		float			_padConverge[2] = {};	// 16バイト境界合わせ用パディング
 	};
 	KdConstantBuffer<cbEmit> m_cb0_Emit;
 

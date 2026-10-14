@@ -162,7 +162,7 @@
 							"duration": 3.0,
 							"useRootMotion": true
 						},
-						"Parried": {
+						"ParrySucceeded": {
 							"animationName": "Hit_High",
 							"duration": 0.4
 						},

@@ -5,12 +5,12 @@
 namespace Events
 {
 	// 座標だけで表現できる単純なエフェクトの汎用発生イベント(一撃だけ、その場で発生)
-	struct CameraShakeEvent : public Event
+	struct CameraShake : public Event
 	{
 		float trauma = 0.f;
 	};
 
-	struct CameraShakeSettingEvent : public Event
+	struct CameraShakeSetting : public Event
 	{
 		float perSecond = -1.f;               // 外傷値が減衰しきるまでの体感速度。大きいほどすぐ揺れが収まる。
 		float frequency = -1.f;               // 揺れの細かさ。大きいほど震え、小さいほどゆったりうねる。
@@ -21,7 +21,7 @@ namespace Events
 	// Publishヘルパー
 	inline void PublishCameraShake(EventBus& bus, const float& trauma)
 	{
-		CameraShakeEvent e;
+		CameraShake e;
 		e.trauma = trauma;
 		bus.Publish(e);
 	}
@@ -29,7 +29,7 @@ namespace Events
 	inline void PublishCameraShakeSettings(EventBus& bus, const float& perSecond = -1.0f, const float& frequency = -1.0f,
 		const Math::Vector3& posAmplitude = { 0.f,0.f,0.f }, const Math::Vector3& rotAmplitude = { 0.f,0.f,0.f })
 	{
-		CameraShakeSettingEvent e;
+		CameraShakeSetting e;
 		e.perSecond = perSecond;
 		e.frequency = frequency;
 		e.posAmplitude = posAmplitude;

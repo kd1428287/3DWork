@@ -8,18 +8,15 @@ bool SlashTrailDispatcher::Init(EventBus& bus)
 {
 	bus_ = &bus;
 
-	subscriptions_.emplace_back(
-		&bus,
+	subscriptions_.push_back(
 		bus.Subscribe<Events::SlashTrailBeginEvent>(
 			[this](const Events::SlashTrailBeginEvent& e) { OnSlashTrailBegin(e); }));
 
 	subscriptions_.emplace_back(
-		&bus,
 		bus.Subscribe<Events::SlashTrailPositionUpdateEvent>(
 			[this](const Events::SlashTrailPositionUpdateEvent& e) { OnSlashTrailPositionUpdate(e); }));
 
 	subscriptions_.emplace_back(
-		&bus,
 		bus.Subscribe<Events::SlashTrailEndEvent>(
 			[this](const Events::SlashTrailEndEvent& e) { OnSlashTrailEnd(e); }));
 

@@ -18,18 +18,19 @@ struct FootstepTrigger
 	FootSide foot = FootSide::Left;
 };
 
-// 接地phaseを通過した瞬間にEventBusへ流すイベント。
-struct FootstepEvent : public Event
-{
-	GameObject* owner = nullptr;
-	FootSide foot = FootSide::Left;
-};
+namespace Events {
+	// 接地phaseを通過した瞬間にEventBusへ流すイベント。
+	struct FootstepEvent : public Event
+	{
+		GameObject* owner = nullptr;
+		FootSide foot = FootSide::Left;
+	};
 
-inline void PublishFootstepEvent(EventBus& bus, GameObject* owner, const FootSide& foot) 
-{
-	FootstepEvent e;
-	e.owner = owner;
-	e.foot = foot;
-	bus.Publish(e);
+	inline void PublishFootstepEvent(EventBus& bus, GameObject* owner, const FootSide& foot)
+	{
+		FootstepEvent e;
+		e.owner = owner;
+		e.foot = foot;
+		bus.Publish(e);
+	}
 }
-

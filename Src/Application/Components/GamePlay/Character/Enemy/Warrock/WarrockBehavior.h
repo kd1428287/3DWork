@@ -25,7 +25,7 @@ public:
 	std::unique_ptr<IBTNode<EnemyAIController>> BuildTree(EnemyAIController* owner) override;
 	void OnSpawned(EnemyAIController* owner) override;
 	void OnStaggered(EnemyAIController* owner, bool isLarge, float duration) override;
-	void OnParried(EnemyAIController* owner, const AttackSourceComponent::ParriedEvent& event) override;
+	void OnParrySucceeded(EnemyAIController* owner, const Events::ParrySucceeded& event) override;
 	void OnDied(EnemyAIController* owner) override;
 	float GetDespawnDelay(const EnemyAIController* owner) const override;
 

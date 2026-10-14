@@ -1,4 +1,4 @@
-#include "WarrockBehavior.h"
+﻿#include "WarrockBehavior.h"
 #include "../EnemyAIController.h"
 #include "../EnemyActions.h"
 #include "Application/Definitions/Character/Enemy/EnemyBlackboardKeys.h"
@@ -96,7 +96,7 @@ void WarrockBehavior::OnStaggered(EnemyAIController* owner, bool isLarge, float 
 }
 
 // --- 被パリィ処理 ---------------------------------------------------------
-void WarrockBehavior::OnParried(EnemyAIController* owner, const AttackSourceComponent::ParriedEvent& event)
+void WarrockBehavior::OnParrySucceeded(EnemyAIController* owner, const Events::ParrySucceeded& event)
 {
 	RequestReaction(owner, "Parried", ReactionPriority::Parried);
 

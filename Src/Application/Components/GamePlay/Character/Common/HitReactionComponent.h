@@ -12,7 +12,7 @@
 #include "Application/Definitions/Prefab/BitFlags.h" 
 
 class WeaponComponent;
-struct AttackHitContext;
+struct AttackHit;
 
 // ============================================================
 // 状態(ヒット/ブロック/パリィ)ごとの反応設定。
@@ -69,23 +69,23 @@ public:
 
 private:
 	// 攻撃側(WeaponComponent)から再通知されるヒット情報の受け口
-	void OnHit(const AttackHitContext& ctx);
+	void OnHit(const Events::AttackHit& ctx);
 
 	// 状態別の演出(カメラシェイク/ヒットストップ/エフェクト)
-	void HitReaction(const ReactionEventConfig& config, const AttackHitContext& ctx);
+	void HitReaction(const ReactionEventConfig& config, const Events::AttackHit& ctx);
 
 	// 反射エフェクト: 自武器上の最近点から、法線+反射の合成方向へ出す
-	void SpawnRefrectEffect(const ReactionEventConfig& config, const AttackHitContext& ctx);
+	void SpawnRefrectEffect(const ReactionEventConfig& config, const Events::AttackHit& ctx);
 	// 通常エフェクト: 衝突点から、攻撃側へ向けた法線方向へ出す
-	void SpawnNormalEffect(const ReactionEventConfig& config, const AttackHitContext& ctx);
+	void SpawnNormalEffect(const ReactionEventConfig& config, const Events::AttackHit& ctx);
 
 	Math::Vector3 ComputeKnockbackDirection(GameObject* attacker) const;
-	Math::Vector3 ComputeIncomingDirection(const AttackHitContext& ctx) const;
-	Math::Vector3 ComputeBodyHitNormal(const AttackHitContext& ctx, const Math::Vector3& incoming) const;
+	Math::Vector3 ComputeIncomingDirection(const Events::AttackHit& ctx) const;
+	Math::Vector3 ComputeBodyHitNormal(const Events::AttackHit& ctx, const Math::Vector3& incoming) const;
 	static Math::Vector3 BlendReflectDirection(const Math::Vector3& normal, const Math::Vector3& incoming, float normalBlendRatio);
 
 	// 自武器と攻撃側武器の最近点対。取れなければnullopt。
-	std::optional<ShapeSurfaceQuery::ClosestPair> FindWeaponClashPoints(const AttackHitContext& ctx) const;
+	std::optional<ShapeSurfaceQuery::ClosestPair> FindWeaponClashPoints(const Events::AttackHit& ctx) const;
 
 	IHitReactionQuery* query_ = nullptr;
 

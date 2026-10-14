@@ -111,10 +111,10 @@ void EnemyAIController::FaceHorizontalTarget(const Math::Vector3& targetPosition
 }
 
 // --- 被パリィ処理 ---------------------------------------------------------
-void EnemyAIController::OnParried(const AttackSourceComponent::ParriedEvent& e)
+void EnemyAIController::OnParrySucceeded(const Events::ParrySucceeded& e)
 {
 	if (behavior_) {
-		behavior_->OnParried(this, e);
+		behavior_->OnParrySucceeded(this, e);
 	}
 }
 

@@ -35,7 +35,7 @@ public:
 	void Awake() override;
 
 private:
-	void OnFootstep(const FootstepEvent& event);
+	void OnFootstep(const Events::FootstepEvent& event);
 
 	Handle<BoneSocketComponent> footSocketLeft_{};
 	Handle<BoneSocketComponent> footSocketRight_{};

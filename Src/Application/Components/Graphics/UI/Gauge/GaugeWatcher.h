@@ -1,6 +1,5 @@
 ﻿#pragma once
-#include "Application/Core/EventBus/Events/HealthEvents.h"
-#include "Application/Core/EventBus/Events/PostureEvents.h"
+#include "Application/Core/EventBus/Events/CombatEvents.h"
 #include "../../../GamePlay/Character/Common/HealthComponent.h"
 #include "../../../GamePlay/Character/Common/PostureComponent.h"
 
@@ -32,23 +31,20 @@ public:
 			}
 		}
 
-		healthSub_ = ScopedSubscriber(bus, bus->Subscribe<Events::HealthChangedEvent>(
-			[this](const Events::HealthChangedEvent& e) {
+		healthSub_ = bus->SubscribeScoped<Events::HealthChanged>(
+			[this](const Events::HealthChanged& e) {
 				if (e.source != target_) return;
-				healthRatio_ = e.ratio;
-			}));
+				healthRatio_ = e.ratio; });
 
-		postureSub_ = ScopedSubscriber(bus, bus->Subscribe<Events::PostureChangedEvent>(
-			[this](const Events::PostureChangedEvent& e) {
+		postureSub_ = bus->SubscribeScoped<Events::PostureChanged>(
+			[this](const Events::PostureChanged& e) {
 				if (e.source != target_) return;
-				postureRatio_ = e.ratio;
-			}));
+				postureRatio_ = e.ratio; });
 
-		diedSub_ = ScopedSubscriber(bus, bus->Subscribe<Events::HealthDiedEvent>(
-			[this](const Events::HealthDiedEvent& e) {
+		diedSub_ = bus->SubscribeScoped<Events::Died>(
+			[this](const Events::Died& e) {
 				if (e.source != target_) return;
-				if (onDied_) onDied_();
-			}));
+				if (onDied_) onDied_(); });
 	}
 
 	float GetHealthRatio() const { return healthRatio_; }

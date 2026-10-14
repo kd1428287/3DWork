@@ -116,6 +116,7 @@ bool FluidSimulator::Init(int simWidth)
 	cb.Vorticity = kVorticity;
 	cb.StreamSpeed = kStreamSpeed;
 	cb.StreamDensity = kStreamDensity;
+	cb.Gravity = kGravity;
 
 	// 画面全体に書き込む用の頂点
 	m_screenVert[0] = { {-1,-1,0}, {0, 1} };
@@ -220,6 +221,7 @@ void FluidSimulator::Step(float deltaTime)
 
 	UpdateStream(dt);
 	ApplySplats(dt);
+	AddBuoyancy();
 
 	// 速度の自己移流 → 渦度強調 → 圧力投影で非圧縮にする → 入口から速度を流し込む
 	Advect(m_velocity, m_velocity, kVelocityDissipation);
@@ -289,7 +291,7 @@ void FluidSimulator::Diffuse(FluidDoubleRT& field)
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// ストリーム：左端の入口から、一本の墨の線を流し込み続ける(出口は右端)
+// ストリーム：上端の入口から、一本の墨の線を注ぎ続ける(出口は下端)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void FluidSimulator::UpdateStream(float dt)
 {
@@ -307,7 +309,7 @@ void FluidSimulator::UpdateStream(float dt)
 
 	// 入口の位置と向きをゆっくり揺らし、線がうねるようにする
 	cbFluid& cb = m_cb.Work();
-	cb.StreamCenterY = 0.5f + kStreamCenterSwing * std::sin(m_streamTime * kStreamCenterSpeed);
+	cb.StreamCenterX = 0.5f + kStreamCenterSwing * std::sin(m_streamTime * kStreamCenterSpeed);
 	cb.StreamHalfWidth = m_streamHalfWidth;
 	cb.StreamAngle = kStreamAngleSwing * std::sin(m_streamTime * kStreamAngleSpeed);
 }
@@ -316,6 +318,12 @@ void FluidSimulator::Emit(Pass pass, FluidDoubleRT& field)
 {
 	DrawPass(pass, field.Read().m_RTTexture.get(), nullptr, field.Write());
 	field.Swap();
+}
+
+void FluidSimulator::AddBuoyancy()
+{
+	DrawPass(Pass::Buoyancy, m_velocity.Read().m_RTTexture.get(), m_density.Read().m_RTTexture.get(), m_velocity.Write());
+	m_velocity.Swap();
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////

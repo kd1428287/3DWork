@@ -17,10 +17,7 @@ void HitReactionComponent::Awake()
 	velocityComponent_ = GetOwner()->GetComponent<VelocityComponent>();
 	transform_ = GetOwner()->GetComponent<TransformComponent>();
 
-	EventBus& localBus = GetOwner()->GetLocalEventBus();
-	const SubscriptionId subscriptionId = localBus.Subscribe<AttackHitContext>(
-		[this](const AttackHitContext& e) { OnHit(e); });
-	subscriber_ = ScopedSubscriber(&localBus, subscriptionId);
+	subscriber_ = GetOwner()->GetLocalEventBus().SubscribeScoped<Events::AttackHit>([this](const Events::AttackHit& e) {OnHit(e); });
 }
 
 Math::Vector3 HitReactionComponent::ComputeKnockbackDirection(GameObject* attacker) const
@@ -42,7 +39,7 @@ Math::Vector3 HitReactionComponent::ComputeKnockbackDirection(GameObject* attack
 	return dir;
 }
 
-Math::Vector3 HitReactionComponent::ComputeIncomingDirection(const AttackHitContext& ctx) const
+Math::Vector3 HitReactionComponent::ComputeIncomingDirection(const Events::AttackHit& ctx) const
 {
 	// 武器の振り方向。取れなければ攻撃者→自分。
 	Math::Vector3 incoming = ctx.lastValidSwingDir;
@@ -54,7 +51,7 @@ Math::Vector3 HitReactionComponent::ComputeIncomingDirection(const AttackHitCont
 }
 
 Math::Vector3 HitReactionComponent::ComputeBodyHitNormal(
-	const AttackHitContext& ctx, const Math::Vector3& incoming) const
+	const Events::AttackHit& ctx, const Math::Vector3& incoming) const
 {
 	// hitNormalは正規化済み。ゼロ(未設定)の場合のみ上向きで代用。
 	Math::Vector3 normal = ctx.hitResult.hitNormal;
@@ -83,7 +80,7 @@ Math::Vector3 HitReactionComponent::BlendReflectDirection(
 }
 
 std::optional<ShapeSurfaceQuery::ClosestPair> HitReactionComponent::FindWeaponClashPoints(
-	const AttackHitContext& ctx) const
+	const Events::AttackHit& ctx) const
 {
 	GameObject* weaponObject = ctx.weaponObject.Resolve();
 	if (weaponObject == nullptr) return std::nullopt;
@@ -103,7 +100,7 @@ std::optional<ShapeSurfaceQuery::ClosestPair> HitReactionComponent::FindWeaponCl
 	return ShapeSurfaceQuery::ClosestPointsBetweenShapes(*myCollider, *myShape, *attackerCollider, *attackerShape);
 }
 
-void HitReactionComponent::SpawnRefrectEffect(const ReactionEventConfig& config, const AttackHitContext& ctx)
+void HitReactionComponent::SpawnRefrectEffect(const ReactionEventConfig& config, const Events::AttackHit& ctx)
 {
 	if (config.effectName.empty()) return;
 
@@ -133,7 +130,7 @@ void HitReactionComponent::SpawnRefrectEffect(const ReactionEventConfig& config,
 	Events::PublishGenericEffect(GetOwner()->GetSceneEventBus(), config.effectName, pos, dir);
 }
 
-void HitReactionComponent::SpawnNormalEffect(const ReactionEventConfig& config, const AttackHitContext& ctx)
+void HitReactionComponent::SpawnNormalEffect(const ReactionEventConfig& config, const Events::AttackHit& ctx)
 {
 	if (config.effectName.empty()) return;
 
@@ -143,7 +140,7 @@ void HitReactionComponent::SpawnNormalEffect(const ReactionEventConfig& config, 
 	Events::PublishGenericEffect(GetOwner()->GetSceneEventBus(), config.effectName, ctx.hitResult.hitPos, normal);
 }
 
-void HitReactionComponent::HitReaction(const ReactionEventConfig& config, const AttackHitContext& ctx)
+void HitReactionComponent::HitReaction(const ReactionEventConfig& config, const Events::AttackHit& ctx)
 {
 	EventBus& bus = *GetOwner()->GetContext()->eventBus;
 
@@ -164,7 +161,7 @@ void HitReactionComponent::HitReaction(const ReactionEventConfig& config, const 
 	}
 }
 
-void HitReactionComponent::OnHit(const AttackHitContext& ctx)
+void HitReactionComponent::OnHit(const Events::AttackHit& ctx)
 {
 	if (query_ == nullptr) return;
 
@@ -182,7 +179,7 @@ void HitReactionComponent::OnHit(const AttackHitContext& ctx)
 			if (PostureComponent* attackerPosture = attacker->GetComponent<PostureComponent>()) {
 				attackerPosture->AddPostureDamage(attackData.parryPostureDamage);
 			}
-			attacker->GetLocalEventBus().Publish(AttackSourceComponent::ParriedEvent{});
+			attacker->GetLocalEventBus().Publish(Events::ParrySucceeded{});
 		}
 		HitReaction(config_.parry, ctx);
 

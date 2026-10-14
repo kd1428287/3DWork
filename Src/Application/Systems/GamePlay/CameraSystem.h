@@ -6,13 +6,12 @@
 class CameraSystem {
 public:
     CameraSystem(ObjectManager& objManager) : objManager_(objManager) {
-		subscriptions_.push_back(ScopedSubscriber(objManager.GetSceneEventBus(),
-			objManager.GetSceneEventBus()->Subscribe<Events::CameraShakeEvent>(
-				[this](const Events::CameraShakeEvent& e) { OnCameraShake(e); })));
+		auto bus = objManager.GetSceneEventBus();
+		subscriptions_.emplace_back(bus->SubscribeScoped<Events::CameraShake>(
+			[this](const Events::CameraShake& e) { OnCameraShake(e); }));
 
-		subscriptions_.push_back(ScopedSubscriber(objManager.GetSceneEventBus(),
-			objManager.GetSceneEventBus()->Subscribe<Events::CameraShakeSettingEvent>(
-				[this](const Events::CameraShakeSettingEvent& e) { OnCameraShakeSettings(e); })));
+		subscriptions_.emplace_back(bus->SubscribeScoped<Events::CameraShakeSetting>(
+			[this](const Events::CameraShakeSetting& e) { OnCameraShakeSettings(e); }));
     }
 
     // 明示的にアクティブカメラを切り替える。
@@ -21,7 +20,7 @@ public:
 	void SwitchTo(CameraComponent* camera) { objManager_.SetActiveCamera(camera);  }
 
 private:
-	void OnCameraShake(const Events::CameraShakeEvent& e)
+	void OnCameraShake(const Events::CameraShake& e)
 	{
 		CameraComponent* camera = objManager_.GetActiveCamera();
 		if (camera == nullptr) return;
@@ -30,7 +29,7 @@ private:
 		if (shake != nullptr) shake->AddTrauma(e.trauma);
 	}
 
-	void OnCameraShakeSettings(const Events::CameraShakeSettingEvent e)
+	void OnCameraShakeSettings(const Events::CameraShakeSetting e)
 	{
 		CameraComponent* camera = objManager_.GetActiveCamera();
 		if (camera == nullptr) return;

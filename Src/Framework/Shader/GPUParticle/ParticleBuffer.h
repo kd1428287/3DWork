@@ -31,8 +31,8 @@ enum class ParticleBillboardMode
 enum class ParticleEmitDistribution
 {
 	Directional,	// 従来通り：baseDir軸のVelocityMin〜Maxの範囲(箱型の乱数)で決める
-	RadialInPlane,	// 水平面(XZ)内でランダムな角度へ均等に飛ばす(角度はGPU側で毎粒子ごとに決定)。
-	// 放射状に広がるヒットスパーク(十字/星形の線)向け
+	RadialInPlane,	// 水平面(XZ)内でランダムな角度へ均等に飛ばす
+	Converge,		// 周囲から中心点(param.Position)へ集まる（球状・円盤状）
 };
 
 // パーティクルのブレンドモード
@@ -72,9 +72,10 @@ public:
 		float			StretchScale = 0.0f;	// Stretch時のみ使用：速度→伸び量の係数。Beam時は「幅」として読み替える
 		float			SizeEnd = 0.0f;			// 消滅時サイズ(旧_pad を転用)
 
-		// ※必ず末尾に追加する事(途中に挿すとHLSL側とオフセットがズレる。過去に実際発生した事故)
 		Math::Vector3	Axis = { 0,0,1 };		// Beam専用：伸びる向き(固定。速度とは無関係)
-		float			_padAxis = 0.0f;		// 16バイト境界合わせ
+		float			Distribution;			// 0: Directional, 1: RadialInPlane, 2: Converge
+		Math::Vector3	ConvergeCenter = { 0.f,0.f,0.f };
+		float			_pad = 0;
 	};
 
 	// 発生パラメータ
@@ -102,12 +103,14 @@ public:
 		ParticleBillboardMode	BillboardMode = ParticleBillboardMode::Normal;
 		float					StretchScale = 0.0f;
 
-		// ※必ず末尾に追加する事(途中に挿すとC++/HLSL双方の構造体オフセットがズレる。過去に実際発生した事故)
 		ParticleEmitDistribution	Distribution = ParticleEmitDistribution::Directional;
 		float						RadialSpeedMin = 1.0f;	// RadialInPlane専用：速度の大きさの範囲(最小)
 		float						RadialSpeedMax = 4.0f;	// RadialInPlane専用：速度の大きさの範囲(最大)
 
 		Math::Vector3	Axis = { 0,0,1 };	// Beam専用：伸びる向き(固定。baseDirをそのまま渡す想定)
+	
+		float			ConvergeRadius = 5.0f;	// 収束開始半径（周囲の広がり具合）
+		float			ConvergeSpeed = 5.0f;	// 収束速度（または 0指定で 寿命から自動計算）
 	};
 
 	//================================================

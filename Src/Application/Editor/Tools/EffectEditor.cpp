@@ -457,23 +457,45 @@ bool EffectEditor::DrawLayerInspector(GPUParticleLayer& layer, int index)
 
 		ImGui::SeparatorText("Shape");
 		{
-			const char* distributionLabels[] = { "Directional", "Radial In Plane" };
-			int distributionIdx = (shape.Distribution == ParticleEmitDistribution::RadialInPlane) ? 1 : 0;
-			if (ImGui::Combo("Distribution", &distributionIdx, distributionLabels, IM_ARRAYSIZE(distributionLabels)))
+			struct DistributionOption
 			{
-				shape.Distribution = (distributionIdx == 1) ? ParticleEmitDistribution::RadialInPlane : ParticleEmitDistribution::Directional;
+				const char* label;
+				ParticleEmitDistribution value;
+			};
+
+			static const DistributionOption kDistributionOptions[] = {
+				{ "Directional",     ParticleEmitDistribution::Directional },
+				{ "Radial In Plane", ParticleEmitDistribution::RadialInPlane },
+				{ "Converge", ParticleEmitDistribution::Converge },
+			};
+
+			// 1. ラベル一覧の配列を作成
+			static const char* labels[IM_ARRAYSIZE(kDistributionOptions)];
+			static bool initialized = false;
+			if (!initialized)
+			{
+				for (int i = 0; i < IM_ARRAYSIZE(kDistributionOptions); ++i)
+				{
+					labels[i] = kDistributionOptions[i].label;
+				}
+				initialized = true;
 			}
 
-			if (shape.Distribution == ParticleEmitDistribution::RadialInPlane)
+			// 2. 現在のインデックスを取得
+			int currentDistributionIdx = 0;
+			for (int i = 0; i < IM_ARRAYSIZE(kDistributionOptions); ++i)
 			{
-				ImGui::DragFloat2("Radial Speed", &shape.RadialSpeedMin /* Min/Maxを並べる */);
-				ImGui::TextDisabled("水平面内のランダムな角度へ均等に飛ばす(角度はGPU側で毎粒子ごとに決定)");
+				if (kDistributionOptions[i].value == shape.Distribution)
+				{
+					currentDistributionIdx = i;
+					break;
+				}
 			}
-			else
+
+			// 3. 標準の const char*[] 版 ImGui::Combo を呼び出す
+			if (ImGui::Combo("Distribution", &currentDistributionIdx, labels, IM_ARRAYSIZE(kDistributionOptions)))
 			{
-				ImGui::DragFloat2("DirScale", &shape.DirScaleMin /* Min/Maxを並べる */);
-				ImGui::DragFloat3("OffsetMin", &shape.OffsetMin.x);
-				ImGui::DragFloat3("OffsetMax", &shape.OffsetMax.x);
+				shape.Distribution = kDistributionOptions[currentDistributionIdx].value;
 			}
 		}
 

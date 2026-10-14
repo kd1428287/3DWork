@@ -23,7 +23,7 @@
 #include "../../../Graphics/Animation/FacingDirectionComponent.h"
 #include "../../../Graphics/Animation/ModelAnimatorComponent.h"
 
-#include "Application/Core/EventBus/Events/HealthEvents.h"
+#include "Application/Core/EventBus/Events/CombatEvents.h"
 
 
 // ============================================================
@@ -99,14 +99,12 @@ public:
 		EventBus& localBus = GetOwner()->GetLocalEventBus();
 
 		if (healthComponent_ != nullptr) {
-			const SubscriptionId diedId = localBus.Subscribe<Events::HealthDiedEvent>(
-				[this](const Events::HealthDiedEvent&) { OnDied(); });
-			diedSubscriber_ = ScopedSubscriber(&localBus, diedId);
+			diedSubscriber_ = localBus.SubscribeScoped<Events::Died>(
+				[this](const Events::Died& e) { OnDied(); });
 		}
 
-		const SubscriptionId parriedId = localBus.Subscribe<AttackSourceComponent::ParriedEvent>(
-			[this](const AttackSourceComponent::ParriedEvent& e) { OnParried(e); });
-		parriedSubscriber_ = ScopedSubscriber(&localBus, parriedId);
+		diedSubscriber_ = GetOwner()->GetLocalEventBus().SubscribeScoped<Events::ParrySucceeded>(
+			[this](const Events::ParrySucceeded& e) { OnParrySucceeded(e); });
 
 		root_ = behavior_->BuildTree(this);
 		behavior_->OnSpawned(this);
@@ -370,7 +368,7 @@ public:
 private:
 	void UpdateTargetAcquisition();
 	TransformComponent* FindPlayerTransform() const;
-	void OnParried(const AttackSourceComponent::ParriedEvent& e);
+	void OnParrySucceeded(const Events::ParrySucceeded& e);
 	void OnDied();
 	void RequestDespawn();
 	void ApplyRootMotion();
@@ -422,7 +420,7 @@ private:
 	bool isDead_ = false;
 	float despawnTimer_ = 0.0f;
 
-	ScopedSubscriber parriedSubscriber_;
+	ScopedSubscriber ParrySucceededSubscriber_;
 	ScopedSubscriber diedSubscriber_;
 
 	std::unique_ptr<IBTNode<EnemyAIController>> root_;

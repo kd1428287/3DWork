@@ -57,7 +57,7 @@ void Application::KdBeginUpdate()
 void Application::KdPostUpdate()
 {
 	// 3DSoundListnerの行列を更新
-	KdAudioManager::Instance().SetListnerMatrix(KdShaderManager::Instance().GetCameraCB().mView.Invert());
+	m_audioManager->SetListnerMatrix(KdShaderManager::Instance().GetCameraCB().mView.Invert());
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -276,7 +276,8 @@ bool Application::Init(int w, int h)
 	//===================================================================
 	// オーディオ初期化
 	//===================================================================
-	KdAudioManager::Instance().Init();
+	m_audioManager = std::make_unique<KdAudioManager>();
+	m_audioManager->Init();
 
 	//===================================================================
 	// フォント初期化
@@ -289,7 +290,7 @@ bool Application::Init(int w, int h)
 	//===================================================================
 	// ゲーム固有の初期化
 	//===================================================================
-	ShowCursolEnable(false);
+	ShowCursolEnable(true);
 
 	// Input
 	auto keyboardDevice = std::make_unique<KdInputCollector>();
@@ -503,7 +504,7 @@ void Application::Release()
 
 	KdShaderManager::Instance().Release();
 
-	KdAudioManager::Instance().Release();
+	m_audioManager->Release();
 
 	KdDirect3D::Instance().Release();
 
