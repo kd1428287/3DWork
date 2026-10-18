@@ -1,4 +1,4 @@
-﻿#include "GameScene.h"
+#include "GameScene.h"
 #include"Application/Core/Scene/SceneManager.h"
 
 // system
@@ -12,7 +12,6 @@
 
 // factory
 #include "Application/Factories/PrefabFactory.h"
-#include "Application/Factories/PrefabCatalog.h"
 #include "Application/Factories/GamePlay/Map/TerrainFactory.h"
 #include "Application/Factories/Common/CameraFactory.h"
 
@@ -25,6 +24,21 @@
 #include "Application/Components/Graphics/Animation/SkeletonComponent.h"
 #include "Application/Components/Graphics/Animation/ModelAnimatorComponent.h"
 #include "Application/Components/Graphics/Render/ModelRenderComponent.h"
+
+namespace
+{
+	constexpr const char* kDefaultPlayerPrefab = "Asset/Data/Game/Player.json";
+
+	// マーカーの位置・向きでPrefabを生成する。読み込みに失敗したらnullptr
+	GameObject* SpawnAtMarker(ObjectManager& om, const std::string& path, const SpawnMarkerDef& m)
+	{
+		PrefabDefinition def;
+		if (!PrefabFactory::LoadFromFile(path, def)) return nullptr;
+		def.pos = m.position;
+		def.rotation = m.rotation;
+		return PrefabFactory::Create(om, def);
+	}
+}
 
 GameScene::GameScene() = default;
 
@@ -57,16 +71,24 @@ void GameScene::OnEnter()
 	BuildWorld();
 	BuildSystems();
 	SetupEnvironment();
+	Application::Instance().ShowCursolEnable(false);
+}
+
+void GameScene::OnExit()
+{
+	KdInputManager::Instance().SetAxisConfineToWindowCenter("Look", false);
+	Application::Instance().ShowCursolEnable(true);
 }
 
 void GameScene::BuildWorld()
 {
-	// 地形・マップ
+	// 地形・マップ(スポーンマーカーはここで回収し、生成は後段で行う)
 	TerrainFactory terrainFactory;
 	terrainFactory.CreateSkydome(*objManager_, 0);
 
+	std::vector<SpawnMarkerDef> markers;
 	MapLoader loader;
-	loader.LoadMapFromJson("Asset/Data/Map/MapData.json", *objManager_, terrainFactory);
+	loader.LoadMapFromJson("Asset/Data/Map/MapData.json", *objManager_, terrainFactory, &markers);
 
 	// 以降のオブジェクト生成より先にバスを購読させる(元の生成順を維持)
 	slashTrailDispatcher_ = std::make_unique<SlashTrailDispatcher>();
@@ -75,27 +97,51 @@ void GameScene::BuildWorld()
 	slashTrailDispatcher_->RegisterDefinition("Sword", params);
 
 	// 敵
-	std::unordered_map<std::string, std::string> enemyDefs;
-	enemyDefs["Warrock"] = "Asset/Data/Game/Warrock.json";
-	PrefabCatalog enemyCatalog(enemyDefs);
-
-	if (enemyCatalog.Contains("Warrock"))
+	for (const auto& m : markers)
 	{
-		enemyCatalog.Spawn(*objManager_, "Warrock", Math::Vector3(10, 0, 5.f));
+		if (m.role == SpawnRole::None)
+		{
+			std::cerr << "[Spawn] marker " << m.id << " has no valid role" << std::endl;
+			continue;
+		}
+		if (m.role != SpawnRole::Enemy) continue;
+
+		if (m.prefab.empty() || !SpawnAtMarker(*objManager_, m.prefab, m))
+		{
+			std::cerr << "[Spawn] enemy marker " << m.id << " failed: " << m.prefab << std::endl;
+		}
 	}
 
-	// プレイヤーとカメラ
-	PrefabDefinition playerDef;
-	auto* player = PrefabFactory::LoadFromFile("Asset/Data/Game/Player.json", playerDef)
-		? PrefabFactory::Create(*objManager_, playerDef)
-		: nullptr;
+	// プレイヤー(最初のPlayerマーカーを採用)
+	GameObject* player = nullptr;
+	for (const auto& m : markers)
+	{
+		if (m.role != SpawnRole::Player) continue;
+		if (player)
+		{
+			std::cerr << "[Spawn] extra Player marker ignored: " << m.id << std::endl;
+			continue;
+		}
+		player = SpawnAtMarker(*objManager_, m.prefab.empty() ? kDefaultPlayerPrefab : m.prefab, m);
+	}
 
+	// マーカーが無い古いマップ用のフォールバック(Prefab既定位置)
+	if (!player)
+	{
+		std::cerr << "[Spawn] no Player marker. using prefab default position" << std::endl;
+		PrefabDefinition def;
+		if (PrefabFactory::LoadFromFile(kDefaultPlayerPrefab, def))
+		{
+			player = PrefabFactory::Create(*objManager_, def);
+		}
+	}
+
+	// カメラ
 	CameraFactory cameraFactory;
 	cameraFactory.CreateCamera(*objManager_, player);
 
 	// UI
 	LoadUI("Asset/Data/UI/Hud.json");
-	LoadUI("Asset/Data/UI/TitleUI.json");
 }
 
 void GameScene::BuildSystems()

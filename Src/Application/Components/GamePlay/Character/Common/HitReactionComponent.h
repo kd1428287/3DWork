@@ -26,6 +26,7 @@ struct ReactionEventConfig
 	bool enableDistortion = false;
 
 	std::string effectName = "";
+	std::string SEName = "";
 
 	// true: 衝突法線と反射ベクトルを合成した方向で出す(SpawnRefrectEffect)。
 	// false: 衝突法線方向で出す(SpawnNormalEffect)。

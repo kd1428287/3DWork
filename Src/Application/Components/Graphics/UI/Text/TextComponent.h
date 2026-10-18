@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 class KdFontSprite;
 class UITransformComponent;
@@ -24,6 +24,8 @@ public:
 
 	void SetAlign(Align align) { m_align = align; }
 	void SetColor(const Math::Color& color) { m_color = color; }
+	// アウトライン。widthは基準解像度でのpx(0で無効)。拡大率に連動して太くなる
+	void SetOutline(int width, const Math::Color& color) { m_outlineWidth = std::max(0, width); m_outlineColor = color; }
 
 	const std::string& GetText() const { return m_text; }
 
@@ -39,6 +41,8 @@ private:
 
 	Align				m_align = Align::Left;
 	Math::Color			m_color = { 1, 1, 1, 1 };
+	int					m_outlineWidth = 0;
+	Math::Color			m_outlineColor = { 0, 0, 0, 1 };
 
 	std::vector<std::shared_ptr<KdFontSprite>>	m_lines;
 	float				m_lineHeight = 0;

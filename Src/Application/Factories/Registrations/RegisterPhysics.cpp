@@ -1,4 +1,4 @@
-// 物理(当たり判定・重力・接地)と移動まわりのコンポーネント登録。
+﻿// 物理(当たり判定・重力・接地)と移動まわりのコンポーネント登録。
 
 #include "Application/Factories/ComponentRegistry.h"
 #include "Application/Factories/Registrations/RegisterFunctions.h"
@@ -7,6 +7,7 @@
 #include "Application/Definitions/Loaders/DefinitionJson.h"
 #include "Application/Definitions/Prefab/BitFlags.h"
 #include "Application/Definitions/Physics/ColliderCategoryNames.h"
+#include "Application/Definitions/Physics/ColliderParams.h"
 
 #include "Application/Components/Physics/Collision/ColliderComponent.h"
 #include "Application/Components/Physics/Movement/GravityComponent.h"
@@ -22,45 +23,9 @@ COMPONENT_PARAMS_DEFINE_TYPE(VelocityConfig, dampingPerSecond)
 COMPONENT_PARAMS_DEFINE_TYPE(MovementConfig, speed)
 COMPONENT_PARAMS_DEFINE_TYPE(GroundSensorConfig, footOffset, checkDistance)
 
-// 接続を伴う型のparams。ODR違反を避けるため、マクロも含めて無名名前空間に入れる。
+// Colliderの組み立て(paramsの型はColliderParams.h)。
 namespace
 {
-	// Colliderの1形状分。shapeは"Sphere"/"Capsule"/"Box"(未知の値はBox)。
-	// Capsuleはoffsetが始点、capsuleEndが終点。マスクはColliderCategoryNames.hの名前の配列で指定する。
-	struct ColliderShapeParams
-	{
-		std::string name = "shape";
-		std::string shape = "Box";
-
-		Math::Vector3 offset = { 0.0f, 0.0f, 0.0f };
-		float         radius = 0.5f;
-		Math::Vector3 capsuleEnd = { 0.0f, 1.0f, 0.0f };
-		Math::Vector3 halfExtents = { 0.5f, 0.5f, 0.5f };
-
-		std::vector<std::string> categoryMask = { "Bump" };
-		bool                     useDefaultCollideMask = true;
-		std::vector<std::string> collideMask;
-
-		bool enabled = true;
-		bool isTrigger = false;
-		bool isStatic = false;
-		bool wantsStayEvent = false;
-	};
-	COMPONENT_PARAMS_DEFINE_TYPE(ColliderShapeParams,
-		name, shape, offset, radius, capsuleEnd, halfExtents,
-		categoryMask, useDefaultCollideMask, collideMask, enabled, isTrigger, isStatic, wantsStayEvent)
-
-	// wireFrameがtrueなら、デバッグ用のWireFrameも一緒に付ける(未追加の場合のみ)。
-	// ignoreParentがtrueなら、親オブジェクトとの衝突を無視する(武器など)。
-	struct ColliderParams
-	{
-		std::vector<ColliderShapeParams> shapes;
-		std::string						 bodyShapeName;
-		bool                             wireFrame = false;
-		bool                             ignoreParent = false;
-	};
-	COMPONENT_PARAMS_DEFINE_TYPE(ColliderParams, shapes, bodyShapeName, wireFrame, ignoreParent)
-
 	void BuildCollider(BuildContext& ctx, const ColliderParams& p)
 	{
 		GameObject* ignoreTarget = p.ignoreParent ? RequireParent(ctx, "Collider.ignoreParent") : nullptr;

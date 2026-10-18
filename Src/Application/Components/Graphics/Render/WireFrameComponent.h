@@ -30,43 +30,55 @@ public:
 		}
 	}
 
-	// IRenderable: デバッグ描画パスでColliderComponentの形状を描き、
-	// 描いたらすぐクリアする(KdDebugWireFrame::Draw()の既存挙動)。
+	// IRenderable: デバッグ描画パスでColliderComponentの形状を描き、すぐクリアする
 	void DrawDebug() override
 	{
 		if (!enabled_ || collider_ == nullptr) return;
 
+		const Math::Matrix world = collider_->GetWorldMatrix();
 		for (const CollisionShapeEntry& shape : collider_->GetShapes()) {
 			if (!shape.enabled) continue;
-
-			const Math::Color col = shape.isTrigger ? triggerColor_ : solidColor_;
-
-			switch (shape.shape) {
-			case ColliderShape::Sphere:
-				wire_.AddDebugSphere(
-					collider_->GetShapeWorldCenter(shape), collider_->GetShapeWorldRadius(shape), col);
-				break;
-
-			case ColliderShape::Box: {
-				const CollisionMath::OrientedBox obb = collider_->GetShapeWorldOBB(shape);
-				Math::Matrix m = Math::Matrix::CreateFromQuaternion(obb.orientation);
-				m.Translation(obb.center);
-				wire_.AddDebugBox(m, obb.halfExtents, {}, true, col);
-				break;
-			}
-			case ColliderShape::Capsule: {
-				const CollisionMath::Capsule capsule = collider_->GetShapeWorldCapsule(shape);
-				DrawCapsuleShape(capsule.start, capsule.end, capsule.radius, col);
-				break;
-			}
-			default:
-				// Mesh/Polygonは三角形数が多く毎フレーム描画コストが
-				// 見合わないため未対応。
-				break;
-			}
+			AddShapeWire(wire_, shape, world, shape.isTrigger ? triggerColor_ : solidColor_);
 		}
 
 		wire_.Draw();
+	}
+
+	// 形状1つをワールド行列基準でワイヤーへ追加する。MapEditorのプレビューとも共用
+	static void AddShapeWire(KdDebugWireFrame& wire, const CollisionShapeEntry& shape,
+		const Math::Matrix& world, const Math::Color& col)
+	{
+		Math::Matrix w = world;	// Decomposeが非constのためコピー
+		Math::Vector3 scale, pos;
+		Math::Quaternion rot;
+		w.Decompose(scale, rot, pos);
+		const float maxScale = std::max({ std::abs(scale.x), std::abs(scale.y), std::abs(scale.z) });
+
+		switch (shape.shape) {
+		case ColliderShape::Sphere:
+			wire.AddDebugSphere(Math::Vector3::Transform(shape.offset, world), shape.radius * maxScale, col);
+			break;
+
+		case ColliderShape::Box: {
+			Math::Matrix m = Math::Matrix::CreateFromQuaternion(rot);
+			m.Translation(Math::Vector3::Transform(shape.offset, world));
+			const Math::Vector3 he(
+				shape.halfExtents.x * std::abs(scale.x),
+				shape.halfExtents.y * std::abs(scale.y),
+				shape.halfExtents.z * std::abs(scale.z));
+			wire.AddDebugBox(m, he, {}, true, col);
+			break;
+		}
+		case ColliderShape::Capsule:
+			DrawCapsuleShape(wire,
+				Math::Vector3::Transform(shape.offset, world),
+				Math::Vector3::Transform(shape.capsuleEnd, world),
+				shape.radius * maxScale, col);
+			break;
+
+		default:
+			break;	// Mesh/Polygonは三角形数が多いため未対応
+		}
 	}
 
 	void SetEnabled(bool enabled) { enabled_ = enabled; }
@@ -78,11 +90,11 @@ public:
 	void SetTriggerColor(const Math::Color& col) { triggerColor_ = col; }
 
 private:
-	void DrawCapsuleShape(const Math::Vector3& worldStart, const Math::Vector3& worldEnd,
-		float worldRadius, const Math::Color& col)
+	static void DrawCapsuleShape(KdDebugWireFrame& wire, const Math::Vector3& worldStart,
+		const Math::Vector3& worldEnd, float worldRadius, const Math::Color& col)
 	{
-		wire_.AddDebugSphere(worldStart, worldRadius, col);
-		wire_.AddDebugSphere(worldEnd, worldRadius, col);
+		wire.AddDebugSphere(worldStart, worldRadius, col);
+		wire.AddDebugSphere(worldEnd, worldRadius, col);
 
 		Math::Vector3 axis = worldEnd - worldStart;
 		if (axis.LengthSquared() < 1e-8f) return;
@@ -92,7 +104,7 @@ private:
 		Math::Vector3 fwd = axis.Cross(side); fwd.Normalize();
 
 		for (const Math::Vector3& dir : { side, -side, fwd, -fwd }) {
-			wire_.AddDebugLine(worldStart + dir * worldRadius, worldEnd + dir * worldRadius, col);
+			wire.AddDebugLine(worldStart + dir * worldRadius, worldEnd + dir * worldRadius, col);
 		}
 	}
 

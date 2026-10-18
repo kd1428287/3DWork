@@ -72,9 +72,9 @@ public:
 
 private:
 
-	void OnSlashTrailBegin(const Events::SlashTrailBeginEvent& e);
-	void OnSlashTrailPositionUpdate(const Events::SlashTrailPositionUpdateEvent& e);
-	void OnSlashTrailEnd(const Events::SlashTrailEndEvent& e);
+	void OnSlashTrailBegin(const Events::SlashTrailBegin& e);
+	void OnSlashTrailPositionUpdate(const Events::SlashTrailPositionUpdate& e);
+	void OnSlashTrailEnd(const Events::SlashTrailEnd& e);
 
 	// name → 定義(テンプレート)。SlashTrailBeginEventで新規SlashTrailInstanceを作る時に参照する
 	std::unordered_map<std::string, SlashTrailParams> trailDefinitions_;

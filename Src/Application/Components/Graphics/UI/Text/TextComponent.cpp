@@ -1,4 +1,4 @@
-﻿#include "Framework/KdFramework.h"
+#include "Framework/KdFramework.h"
 
 #include "TextComponent.h"
 #include "Application/Components/Graphics/UI/UITransformComponent.h"
@@ -96,25 +96,45 @@ void TextComponent::DrawSprite()
 
 	auto& shader = KdShaderManager::Instance().m_spriteShader;
 
-	for (auto& line : m_lines)
+	// pass0=アウトライン / pass1=本体。縁を全部描いてから本体を重ねる
+	for (int pass = 0; pass < 2; ++pass)
 	{
-		const float lineW = line->GetTotalWidth() * scale.x;
+		if (pass == 0 && m_outlineWidth <= 0) continue;
 
-		float x = left;
-		if (m_align == Align::Center)		x += (blockW - lineW) * 0.5f;
-		else if (m_align == Align::Right)	x += blockW - lineW;
-
-		for (auto& ch : line->GetTexList())
+		float py = y;
+		for (auto& line : m_lines)
 		{
-			if (!ch->FontTex) continue;
+			const float lineW = line->GetTotalWidth() * scale.x;
 
-			const float w = ch->FontTex->GetInfo().Width * scale.x;
-			const float h = ch->FontTex->GetInfo().Height * scale.y;
+			float x = left;
+			if (m_align == Align::Center)		x += (blockW - lineW) * 0.5f;
+			else if (m_align == Align::Right)	x += blockW - lineW;
 
-			// pivot(0,0)で左下基準になる
-			shader.DrawTex(ch->FontTex.get(), (int)x, (int)y, (int)(w + 0.5f), (int)(h + 0.5f), nullptr, &m_color, Math::Vector2(0.0f, 0.0f));
-			x += w;
+			for (auto& ch : line->GetTexList())
+			{
+				if (!ch->FontTex) continue;
+
+				const float w = ch->FontTex->GetInfo().Width * scale.x;
+				const float h = ch->FontTex->GetInfo().Height * scale.y;
+
+				if (pass == 0)
+				{
+					// 縁は両側にoutline分はみ出す。文字送りは変えない
+					if (auto o = ch->GetOutlineTex(m_outlineWidth))
+					{
+						const float ox = m_outlineWidth * scale.x;
+						const float oy = m_outlineWidth * scale.y;
+						shader.DrawTex(o.get(), (int)(x - ox), (int)(py - oy), (int)(w + ox * 2.0f + 0.5f), (int)(h + oy * 2.0f + 0.5f), nullptr, &m_outlineColor, Math::Vector2(0.0f, 0.0f));
+					}
+				}
+				else
+				{
+					// pivot(0,0)で左下基準になる
+					shader.DrawTex(ch->FontTex.get(), (int)x, (int)py, (int)(w + 0.5f), (int)(h + 0.5f), nullptr, &m_color, Math::Vector2(0.0f, 0.0f));
+				}
+				x += w;
+			}
+			py -= lineH;
 		}
-		y -= lineH;
 	}
 }

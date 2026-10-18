@@ -270,25 +270,25 @@ void EffectDispatcher::DrawLiquid()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 以下、イベントハンドラ：pendingEvents_へ積むだけ。simpleEffects_/activeInstances_には触れない
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void EffectDispatcher::OnGenericEffectSpawn(const Events::GenericEffectSpawnEvent& e)
+void EffectDispatcher::OnGenericEffectSpawn(const Events::GenericEffectSpawn& e)
 {
 	std::lock_guard<std::mutex> lock(pendingMutex_);
 	pendingEvents_.push_back(PendingSpawn{ e.Id, e.Position, e.Direction });
 }
 
-void EffectDispatcher::OnEffectAttachSpawn(const Events::EffectAttachSpawnEvent& e)
+void EffectDispatcher::OnEffectAttachSpawn(const Events::EffectAttachSpawn& e)
 {
 	std::lock_guard<std::mutex> lock(pendingMutex_);
 	pendingEvents_.push_back(PendingAttach{ e.InstanceKey, e.EffectName, e.Position });
 }
 
-void EffectDispatcher::OnEffectPositionUpdate(const Events::EffectPositionUpdateEvent& e)
+void EffectDispatcher::OnEffectPositionUpdate(const Events::EffectPositionUpdate& e)
 {
 	std::lock_guard<std::mutex> lock(pendingMutex_);
 	pendingEvents_.push_back(PendingPositionUpdate{ e.InstanceKey, e.Position });
 }
 
-void EffectDispatcher::OnEffectDetach(const Events::EffectDetachEvent& e)
+void EffectDispatcher::OnEffectDetach(const Events::EffectDetach& e)
 {
 	std::lock_guard<std::mutex> lock(pendingMutex_);
 	pendingEvents_.push_back(PendingDetach{ e.InstanceKey });

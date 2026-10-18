@@ -5,6 +5,7 @@
 #include "PlayerFacingComponent.h"
 #include "PlayerCombatMovementComponent.h"
 
+#include "../Common/HealthComponent.h" // パスはプロジェクトの配置に合わせて調整
 #include "../Common/HitReactionComponent.h"
 #include "../../../Physics/Collision/ColliderComponent.h"
 
@@ -18,6 +19,7 @@ void PlayerStatusController::Awake()
 	attackSelector_ = GetOwner()->GetComponent<PlayerAttackSelector>();
 	facing_ = GetOwner()->GetComponent<PlayerFacingComponent>();
 	combatMovement_ = GetOwner()->GetComponent<PlayerCombatMovementComponent>();
+	health_ = GetOwner()->GetComponent<HealthComponent>();
 
 	// 自分自身をIHitReactionQueryとして登録
 	if (HitReactionComponent* hitReaction = GetOwner()->GetComponent<HitReactionComponent>()) {
@@ -35,6 +37,15 @@ void PlayerStatusController::Awake()
 
 void PlayerStatusController::Update(float deltaTime)
 {
+	// 死亡検知。Stateは一度入ったら抜けない。
+	if (!IsDead() && health_ != nullptr && health_->IsDead()) {
+		Die();
+	}
+	if (IsDead()) {
+		stateMachine_.Update(this, deltaTime);
+		return; // 入力・移動処理は一切行わない
+	}
+
 	if (inputComponent_ != nullptr) {
 		HandleMovementInput(*inputComponent_, deltaTime);
 		HandleActionInput(*inputComponent_);
@@ -176,8 +187,15 @@ void PlayerStatusController::ReleaseCharge()
 
 void PlayerStatusController::ApplyStagger(bool isLarge, float duration)
 {
+	if (IsDead()) return; // 死亡後のよろけで上書きされない
 	stateStagger_.Setup(isLarge, duration);
 	ForceTransitionTo(&stateStagger_);
+}
+
+void PlayerStatusController::Die()
+{
+	if (IsDead()) return;
+	ForceTransitionTo(&stateDead_);
 }
 
 void PlayerStatusController::NotifyParrySuccess()
@@ -343,7 +361,7 @@ void PlayerStatusController::OnStateChanged(IPlayerState* prevState, IPlayerStat
 	}
 	if (facing_ != nullptr) {
 		// None: movement追従で向く。Attack: FaceAttackTarget()のoverrideで向く。
-		// Evade/Guard/Staggerはfacing完全停止(現在の向きを保つ)。
+		// Evade/Guard/Stagger/Deadはfacing完全停止(現在の向きを保つ)。
 		facing_->SetFacingEnabled(nextState == &stateNone_ || nextState == &stateAttack_);
 
 		if (nextState != &stateAttack_) {

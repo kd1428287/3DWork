@@ -4,6 +4,7 @@
 #include "Application/Components/Core/TransformComponent.h"
 
 #include "Application/Core/EventBus/Events/SceneEvents.h"
+#include "Application/Core/EventBus/Events/TransitionEvents.h""
 
 #include "Application/Factories/PrefabFactory.h"
 

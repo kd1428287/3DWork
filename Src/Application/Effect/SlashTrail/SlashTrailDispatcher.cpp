@@ -9,16 +9,16 @@ bool SlashTrailDispatcher::Init(EventBus& bus)
 	bus_ = &bus;
 
 	subscriptions_.push_back(
-		bus.Subscribe<Events::SlashTrailBeginEvent>(
-			[this](const Events::SlashTrailBeginEvent& e) { OnSlashTrailBegin(e); }));
+		bus.SubscribeScoped<Events::SlashTrailBegin>(
+			[this](const Events::SlashTrailBegin& e) { OnSlashTrailBegin(e); }));
 
-	subscriptions_.emplace_back(
-		bus.Subscribe<Events::SlashTrailPositionUpdateEvent>(
-			[this](const Events::SlashTrailPositionUpdateEvent& e) { OnSlashTrailPositionUpdate(e); }));
+	subscriptions_.push_back(
+		bus.SubscribeScoped<Events::SlashTrailPositionUpdate>(
+			[this](const Events::SlashTrailPositionUpdate& e) { OnSlashTrailPositionUpdate(e); }));
 
-	subscriptions_.emplace_back(
-		bus.Subscribe<Events::SlashTrailEndEvent>(
-			[this](const Events::SlashTrailEndEvent& e) { OnSlashTrailEnd(e); }));
+	subscriptions_.push_back(
+		bus.SubscribeScoped<Events::SlashTrailEnd>(
+			[this](const Events::SlashTrailEnd& e) { OnSlashTrailEnd(e); }));
 
 	return true;
 }
@@ -99,7 +99,7 @@ void SlashTrailDispatcher::Draw(ParticleDrawPass pass)
 //	  上書きする(通常は前の記録がIsFinished()になってから次のBeginが来る想定だが、
 //	  連撃等で前の記録が残ったまま次のBeginが来た場合は新しい記録を優先する)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void SlashTrailDispatcher::OnSlashTrailBegin(const Events::SlashTrailBeginEvent& e)
+void SlashTrailDispatcher::OnSlashTrailBegin(const Events::SlashTrailBegin& e)
 {
 	auto defIt = trailDefinitions_.find(e.TrailName);
 	if (defIt == trailDefinitions_.end()) { return; }
@@ -115,7 +115,7 @@ void SlashTrailDispatcher::OnSlashTrailBegin(const Events::SlashTrailBeginEvent&
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 記録中インスタンスの位置更新：InstanceKeyが見つからない場合(Begin前・End後)は無視する
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void SlashTrailDispatcher::OnSlashTrailPositionUpdate(const Events::SlashTrailPositionUpdateEvent& e)
+void SlashTrailDispatcher::OnSlashTrailPositionUpdate(const Events::SlashTrailPositionUpdate& e)
 {
 	auto it = activeTrails_.find(e.InstanceKey);
 	if (it == activeTrails_.end()) { return; }
@@ -126,7 +126,7 @@ void SlashTrailDispatcher::OnSlashTrailPositionUpdate(const Events::SlashTrailPo
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 記録終了：EndRecording()を呼ぶだけ(即座には破棄しない。Update()の刈り取りに委ねる)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void SlashTrailDispatcher::OnSlashTrailEnd(const Events::SlashTrailEndEvent& e)
+void SlashTrailDispatcher::OnSlashTrailEnd(const Events::SlashTrailEnd& e)
 {
 	auto it = activeTrails_.find(e.InstanceKey);
 	if (it == activeTrails_.end()) { return; }

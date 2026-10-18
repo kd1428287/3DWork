@@ -1050,6 +1050,36 @@
     <ClInclude Include="Src\Application\Factories\Registrations\RegistrationHelpers.h">
       <Filter>Src\Application\Factories\Registrations</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Loaders\UILoader.h">
+      <Filter>Src\Application\Definitions\Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Core\EventBus\Events\AudioEvents.h">
+      <Filter>Src\Application\Core\EventBus\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Framework\Audio\KdSoundDef.h">
+      <Filter>Src\Framework\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Core\Scene\SceneTransition.h">
+      <Filter>Src\Application\Core\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Core\EventBus\Events\TransitionEvents.h">
+      <Filter>Src\Application\Core\EventBus\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Core\Scene\TransitionController.h">
+      <Filter>Src\Application\Core\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Physics\ColliderParams.h">
+      <Filter>Src\Application\Definitions\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Editor\Tools\ColliderEditor.h">
+      <Filter>Src\Application\Editor\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\EnemyOverheadGaugeComponent.h">
+      <Filter>Src\Application\Components\Graphics\UI\Gauge</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Map\SpawnMarker.h">
+      <Filter>Src\Application\Definitions\Map</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -1418,6 +1448,21 @@
     <ClCompile Include="Src\Application\Factories\Registrations\RegistrationHelpers.cpp">
       <Filter>Src\Application\Factories\Registrations</Filter>
     </ClCompile>
+    <ClCompile Include="Src\Application\Definitions\Loaders\UILoader.cpp">
+      <Filter>Src\Application\Definitions\Loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Framework\Audio\KdSoundDef.cpp">
+      <Filter>Src\Framework\Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Core\Scene\TransitionController.cpp">
+      <Filter>Src\Application\Core\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Editor\Tools\ColliderEditor.cpp">
+      <Filter>Src\Application\Editor\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Factories\Registrations\RegisterMap.cpp">
+      <Filter>Src\Application\Factories\Registrations</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Src\Framework\Shader\inc_KdCommon.hlsli">
@@ -1531,6 +1576,12 @@
       <Filter>Src\Framework\Shader\PostProcessShader</Filter>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdFluid_PS.hlsl">
+      <Filter>Src\Framework\Shader\PostProcessShader</Filter>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_TransitionCover.hlsl">
+      <Filter>Src\Framework\Shader\PostProcessShader</Filter>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_TransitionWarp.hlsl">
       <Filter>Src\Framework\Shader\PostProcessShader</Filter>
     </FxCompile>
   </ItemGroup>

@@ -119,6 +119,30 @@ bool KdPostProcessShader::Init()
 		}
 	}
 
+	{
+#include "KdPostProcessShader_PS_TransitionWarp.shaderInc"
+
+		if (FAILED(KdDirect3D::Instance().WorkDev()->CreatePixelShader(
+			compiledBuffer, sizeof(compiledBuffer), nullptr, &m_PS_TransitionWarp)))
+		{
+			assert(0 && "ピクセルシェーダー作成失敗(TransitionWarp)");
+			Release();
+			return false;
+		}
+	}
+
+	{
+#include "KdPostProcessShader_PS_TransitionCover.shaderInc"
+
+		if (FAILED(KdDirect3D::Instance().WorkDev()->CreatePixelShader(
+			compiledBuffer, sizeof(compiledBuffer), nullptr, &m_PS_TransitionCover)))
+		{
+			assert(0 && "ピクセルシェーダー作成失敗(TransitionCover)");
+			Release();
+			return false;
+		}
+	}
+
 	m_cb0_BlurInfo.Create();
 
 	m_cb0_DoFInfo.Create();
@@ -132,6 +156,8 @@ bool KdPostProcessShader::Init()
 	m_cb0_DistortionInfo.Create();
 
 	m_cb0_SurfaceInfo.Create();
+
+	m_cb0_TransitionInfo.Create();
 
 	const std::shared_ptr<KdTexture>& backBuffer = KdDirect3D::Instance().GetBackBuffer();
 
@@ -173,6 +199,10 @@ bool KdPostProcessShader::Init()
 	m_distortionRTPack.CreateRenderTarget(backBuffer->GetWidth(), backBuffer->GetHeight());
 	m_cb0_DistortionInfo.Work().Aspect = static_cast<float>(backBuffer->GetWidth()) / backBuffer->GetHeight();
 
+	// 画面遷移の波紋適用後の画像。円形補正用に縦横比も渡す
+	m_transitionRTPack.CreateRenderTarget(backBuffer->GetWidth(), backBuffer->GetHeight());
+	m_cb0_TransitionInfo.Work().Aspect = static_cast<float>(backBuffer->GetWidth()) / backBuffer->GetHeight();
+
 	// 質感合成後の画像
 	m_surfaceRTPack.CreateRenderTarget(backBuffer->GetWidth(), backBuffer->GetHeight());
 
@@ -211,6 +241,8 @@ void KdPostProcessShader::Release()
 	KdSafeRelease(m_PS_LiquidInk);
 	KdSafeRelease(m_PS_Distortion);
 	KdSafeRelease(m_PS_Surface);
+	KdSafeRelease(m_PS_TransitionWarp);
+	KdSafeRelease(m_PS_TransitionCover);
 
 
 	m_cb0_BlurInfo.Release();
@@ -220,6 +252,7 @@ void KdPostProcessShader::Release()
 	m_cb0_LiquidInfo.Release();
 	m_cb0_DistortionInfo.Release();
 	m_cb0_SurfaceInfo.Release();
+	m_cb0_TransitionInfo.Release();
 
 	m_surfaceTex.reset();
 }
@@ -454,6 +487,93 @@ void KdPostProcessShader::DistortionProcess()
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 画面遷移の描画パラメータ設定。MaxDistは中心から最遠の角までの距離(円形補正済み)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void KdPostProcessShader::SetTransition(float progress, const Math::Vector2& centerUV, const Math::Vector3& color, float time)
+{
+	cbTransitionInfo& cb = m_cb0_TransitionInfo.Work();
+
+	cb.Progress = progress;
+	cb.Center = centerUV;
+	cb.FadeColor = color;
+	cb.Time = time;
+
+	float dx = (std::max)(centerUV.x, 1.0f - centerUV.x) * cb.Aspect;
+	float dy = (std::max)(centerUV.y, 1.0f - centerUV.y);
+	cb.MaxDist = sqrtf(dx * dx + dy * dy);
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 画面遷移の見た目の調整(0除算を避けるため帯の幅と縁の柔らかさには下限を設ける)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void KdPostProcessShader::SetTransitionWave(float amount, float freq, float ringWidth, float chromatic, float softness)
+{
+	cbTransitionInfo& cb = m_cb0_TransitionInfo.Work();
+
+	cb.WaveAmount = amount;
+	cb.WaveFreq = freq;
+	cb.RingWidth = (std::max)(ringWidth, 0.001f);
+	cb.ChromaticAmount = chromatic;
+	cb.Softness = (std::max)(softness, 0.01f);
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 衝撃波適用後(または無し)の画像へ波紋の歪みと色収差を適用して m_transitionRTPack に描画
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void KdPostProcessShader::TransitionWarpProcess(const std::shared_ptr<KdTexture>& srcTex)
+{
+	ID3D11DeviceContext* DevCon = KdDirect3D::Instance().WorkDevContext();
+	if (!DevCon) { return; }
+
+	m_cb0_TransitionInfo.Write();
+	DevCon->PSSetConstantBuffers(0, 1, m_cb0_TransitionInfo.GetAddress());
+
+	KdShaderManager& shaderMgr = KdShaderManager::Instance();
+	if (shaderMgr.SetVertexShader(m_VS))
+	{
+		DevCon->IASetInputLayout(m_inputLayout);
+	}
+	shaderMgr.SetPixelShader(m_PS_TransitionWarp);
+
+	shaderMgr.ChangeSamplerState(KdSamplerState::Linear_Clamp);
+
+	std::shared_ptr<KdTexture> srcTexList[1] = { srcTex };
+	DrawTexture(srcTexList, 1, m_transitionRTPack.m_RTTexture, &m_transitionRTPack.m_viewPort);
+
+	shaderMgr.UndoSamplerState();
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 現在のRT(UI描画後)へ、波面の内側を遷移色で覆う。progressが0の間は何もしない
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void KdPostProcessShader::DrawTransitionCover()
+{
+	if (m_cb0_TransitionInfo.Get().Progress <= 0.0f) { return; }
+
+	ID3D11DeviceContext* DevCon = KdDirect3D::Instance().WorkDevContext();
+	if (!DevCon) { return; }
+
+	m_cb0_TransitionInfo.Write();
+	DevCon->PSSetConstantBuffers(0, 1, m_cb0_TransitionInfo.GetAddress());
+
+	// 直前のスプライト描画でレイアウトが変わっている可能性があるため、毎回設定する
+	KdShaderManager& shaderMgr = KdShaderManager::Instance();
+	shaderMgr.SetVertexShader(m_VS);
+	DevCon->IASetInputLayout(m_inputLayout);
+	shaderMgr.SetPixelShader(m_PS_TransitionCover);
+
+	shaderMgr.ChangeBlendState(KdBlendState::Alpha);
+	shaderMgr.ChangeDepthStencilState(KdDepthStencilState::ZDisable);
+	shaderMgr.ChangeRasterizerState(KdRasterizerState::CullNone);
+
+	KdDirect3D::Instance().DrawVertices(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP, 4, &m_screenVert[0], sizeof(Vertex));
+
+	shaderMgr.UndoRasterizerState();
+	shaderMgr.UndoDepthStencilState();
+	shaderMgr.UndoBlendState();
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 質感テクスチャを明暗として合成して m_surfaceRTPack に描画
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void KdPostProcessShader::SurfaceProcess(const std::shared_ptr<KdTexture>& srcTex)
@@ -512,6 +632,13 @@ void KdPostProcessShader::PostEffectProcess()
 	{
 		DistortionProcess();
 		finalTex = m_distortionRTPack.m_RTTexture;
+	}
+
+	// 画面遷移中だけ波紋の歪みを重ねる(覆いはUI描画後のDrawTransitionCover()で行う)
+	if (m_cb0_TransitionInfo.Get().Progress > 0.0f)
+	{
+		TransitionWarpProcess(finalTex);
+		finalTex = m_transitionRTPack.m_RTTexture;
 	}
 
 	// 質感未設定または強さ0の間はパスごと省く

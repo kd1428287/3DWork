@@ -28,6 +28,7 @@ enum class CombatState
 	StaggerSmall,
 	StaggerLarge,
 	Charge,
+	Dead,
 };
 
 

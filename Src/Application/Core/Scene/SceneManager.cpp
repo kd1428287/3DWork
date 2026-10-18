@@ -1,4 +1,4 @@
-﻿#include "SceneManager.h"
+#include "SceneManager.h"
 #include "Application/main.h"
 
 #include "Application/Scene/BaseScene/BaseScene.h"
@@ -6,6 +6,9 @@
 #include "Application/Scene/GameScene/GameScene.h"
 #include "Application/Scene/ResultScene/ResultScene.h"
 #include "Application/Core/EventBus/Events/SceneEvents.h"
+#include "Application/Core/EventBus/Events/TransitionEvents.h"
+
+#include "TransitionController.h"
 
 SceneManager::SceneManager()
 {
@@ -26,11 +29,20 @@ void SceneManager::Init()
 
 	sceneChangeSub_ = GLOBALEVENT->SubscribeScoped<Events::SceneChangeRequest>(
 		[this](const Events::SceneChangeRequest& e) {
-			SetNextScene(e.nextScene); });
+			RequestSceneChange(e.nextScene, e.withTransition); });
 
-	sceneChangeSub_ = GLOBALEVENT->SubscribeScoped<Events::ReloadingScene>(
+	reloadSceneSub_ = GLOBALEVENT->SubscribeScoped<Events::ReloadingScene>(
 		[this](const Events::ReloadingScene& e) {
 			ReloadScene(); });
+
+	// 覆い切った通知で、待機中のシーンへ切り替える(待機が無ければ何もしない)
+	transitionCoveredSub_ = GLOBALEVENT->SubscribeScoped<Events::TransitionCovered>(
+		[this](const Events::TransitionCovered&) {
+			if (!waitingScene_) return;
+
+			SetNextScene(*waitingScene_);
+			waitingScene_.reset();
+		});
 
 	// 開始シーンは最初のUpdate()で生成する
 	pending_ = currentSceneType_;
@@ -41,9 +53,28 @@ void SceneManager::Shutdown()
 	// 先に購読を外して新しい要求を受けないようにする
 	sceneChangeSub_.reset();
 	reloadSceneSub_.reset();
+	transitionCoveredSub_.reset();
+	waitingScene_.reset();
 	pending_.reset();
 
 	DestroyCurrentScene();
+}
+
+void SceneManager::RequestSceneChange(SceneType next, bool withTransition)
+{
+	// 遷移待ち・遷移中の要求は無視する(拒否通知が無く、待機が残って固まるのを防ぐ)
+	if (waitingScene_ || TransitionController::Instance().IsActive()) return;
+
+	if (!withTransition)
+	{
+		SetNextScene(next);
+		return;
+	}
+
+	if (next == currentSceneType_ && !pending_) return;
+
+	waitingScene_ = next;
+	GLOBALEVENT->Publish(Events::TransitionRequest{});
 }
 
 void SceneManager::Update()

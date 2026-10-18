@@ -31,7 +31,8 @@ cbuffer cbFluid : register(b0)
 
 	float	g_streamDensity;	// 入口の濃度
 	float	g_gravity;			// 墨が下へ引かれる力(texel/秒²)
-	float2	_blank5;
+	float	g_time;				// 経過時間(秒)
+	float	g_ambient;			// ゆるやかな水流の強さ(texel/秒²)
 };
 
 struct VSOutput
@@ -55,6 +56,7 @@ struct VSOutput
 #define PASS_EMIT_VELOCITY		11
 #define PASS_EMIT_DENSITY		12
 #define PASS_BUOYANCY			13
+#define PASS_AMBIENT			14
 
 // 墨の見た目の調整値
 static const float3 PAPER_COLOR = float3(0.93, 0.91, 0.86);	// 紙の色(生成り)
@@ -107,6 +109,14 @@ float StreamWeight(float2 uv)
 	float zone = saturate(1.0 - uv.y / (g_texelSize.y * INLET_TEXELS));
 
 	return band * zone;
+}
+
+static const float AMBIENT_SCALE = 1.5;	// 画面の高さあたりのノイズの格子数(小さいほどゆったりした流れ)
+
+// ゆるやかな水流のもとになる、ゆっくり動くノイズ(大きさの違う2枚を重ねる)
+float AmbientPotential(float2 pA, float2 pB)
+{
+	return ValueNoise(pA) + 0.5 * ValueNoise(pB);
 }
 
 // 既定のブレンドがAlphaなので、出力のwは常に1にする
@@ -281,6 +291,27 @@ float4 main(VSOutput In) : SV_Target0
 		// t0 = 速度、t1 = 濃度。墨は水より重いので、濃度に比例した力で下へ引かれる(Yは下が正)
 		float2 vel = g_tex0.Sample(g_smp, uv).xy;
 		vel.y += g_gravity * g_tex1.Sample(g_smp, uv).x * g_dt;
+
+		return float4(vel, 0.0, 1.0);
+	}
+
+	if (g_pass == PASS_AMBIENT)
+	{
+		// t0 = 速度。ゆっくり変化する、渦状(発散のない)の弱い流れを足す
+		float2 p = uv * float2(g_aspect, 1.0) * AMBIENT_SCALE;
+		float2 pA = p + float2(0.05, 0.03) * g_time;
+		float2 pB = p * 2.1 + float2(-0.04, 0.06) * g_time + 17.3;
+
+		float e = 0.05;
+		float2 ex = float2(e, 0.0);
+		float2 ey = float2(0.0, e);
+
+		// ノイズの勾配を90度回すと、湧き出しも吸い込みもない渦状の力になる
+		float dpx = AmbientPotential(pA + ex, pB + ex * 2.1) - AmbientPotential(pA - ex, pB - ex * 2.1);
+		float dpy = AmbientPotential(pA + ey, pB + ey * 2.1) - AmbientPotential(pA - ey, pB - ey * 2.1);
+		float2 force = float2(dpy, -dpx) / (2.0 * e) * g_ambient;
+
+		float2 vel = g_tex0.Sample(g_smp, uv).xy + force * g_dt;
 
 		return float4(vel, 0.0, 1.0);
 	}

@@ -5,20 +5,20 @@
 
 namespace Events
 {
-	struct SlashTrailBeginEvent : public Event
+	struct SlashTrailBegin : public Event
 	{
 		std::string InstanceKey;
 		std::string TrailName;
 	};
 
-	struct SlashTrailPositionUpdateEvent : public Event
+	struct SlashTrailPositionUpdate : public Event
 	{
 		std::string   InstanceKey;
 		Math::Vector3 Tip;
 		Math::Vector3 Base;
 	};
 
-	struct SlashTrailEndEvent : public Event
+	struct SlashTrailEnd : public Event
 	{
 		std::string InstanceKey;
 	};
@@ -26,7 +26,7 @@ namespace Events
 	// Publishヘルパー
 	inline void PublishSlashTrailBegin(EventBus& bus, const std::string& instanceKey, const std::string& trailName)
 	{
-		SlashTrailBeginEvent e;
+		SlashTrailBegin e;
 		e.InstanceKey = instanceKey;
 		e.TrailName = trailName;
 
@@ -36,7 +36,7 @@ namespace Events
 	inline void PublishSlashTrailPositionUpdate(EventBus& bus, const std::string& instanceKey,
 		const Math::Vector3& tip, const Math::Vector3& base)
 	{
-		SlashTrailPositionUpdateEvent e;
+		SlashTrailPositionUpdate e;
 		e.InstanceKey = instanceKey;
 		e.Tip = tip;
 		e.Base = base;
@@ -46,7 +46,7 @@ namespace Events
 
 	inline void PublishSlashTrailEnd(EventBus& bus, const std::string& instanceKey)
 	{
-		SlashTrailEndEvent e;
+		SlashTrailEnd e;
 		e.InstanceKey = instanceKey;
 
 		bus.Publish(e);

@@ -42,7 +42,7 @@
               1.0,
               1.0
             ],
-            "texture": "Asset/Textures/UI/fude_幽玄調伏伝 (1).png"
+            "texture": "Asset/Textures/UI/Title.png"
           },
           "type": "UIImage"
         }
@@ -105,12 +105,19 @@
             "align": "Center",
             "antiAliasing": 3,
             "color": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "fontNo": 0,
+            "outlineColor": [
               1.0,
               1.0,
               1.0,
               1.0
             ],
-            "fontNo": 0,
+            "outlineWidth": 2,
             "text": "調伏開始"
           },
           "type": "Text"

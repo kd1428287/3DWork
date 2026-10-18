@@ -6,6 +6,7 @@ void EditorPreviewViewport::Configure(const Settings& settings)
 {
 	m_settings = settings;
 	m_camera.Distance = settings.InitialDistance;
+	m_camera.Pan = { 0, 0, 0 };
 }
 
 bool EditorPreviewViewport::IsReady() const
@@ -26,7 +27,22 @@ DirectX::SimpleMath::Matrix EditorPreviewViewport::OrbitCamera::GetView(const Di
 		Distance * sinf(Pitch),
 		Distance * cosPitch * cosf(Yaw));
 
-	return Matrix::CreateLookAt(target + offset, target, Vector3::Up);
+	const Vector3 center = target + Pan;
+	return Matrix::CreateLookAt(center + offset, center, Vector3::Up);
+}
+
+void EditorPreviewViewport::OrbitCamera::GetBasis(DirectX::SimpleMath::Vector3& right,
+	DirectX::SimpleMath::Vector3& up, DirectX::SimpleMath::Vector3& forward) const
+{
+	using namespace DirectX::SimpleMath;
+
+	const float cosPitch = cosf(Pitch);
+	const Vector3 z(cosPitch * sinf(Yaw), sinf(Pitch), cosPitch * cosf(Yaw));	// 注視点→カメラ
+
+	right = Vector3::Up.Cross(z);
+	right.Normalize();
+	up = z.Cross(right);
+	forward = -z;
 }
 
 DirectX::SimpleMath::Matrix EditorPreviewViewport::GetViewMatrix(const DirectX::SimpleMath::Vector3& target) const
@@ -216,23 +232,61 @@ void EditorPreviewViewport::DrawWindow(const char* windowName, ImGuiWindowFlags 
 
 		ImGui::Image((ImTextureID)displayTex->WorkSRView(), regionSize);
 
-		// 右ドラッグ：オービット回転、ホイール：ズーム
-		if (ImGui::IsItemHovered())
+		// 右ドラッグ：回転 / 右ホールド中のWASD・Q/E：前後左右・下上へ移動(Shiftで加速)
+		// 中ドラッグ：画面平行移動 / ホイール：ズーム / F：移動量を戻す
+		ImGuiIO& io = ImGui::GetIO();
+		const bool hovered = ImGui::IsItemHovered();
+
+		if (hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) { m_rightHeld = true; }
+		if (hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Middle)) { m_middleHeld = true; }
+		if (!ImGui::IsMouseDown(ImGuiMouseButton_Right)) { m_rightHeld = false; }
+		if (!ImGui::IsMouseDown(ImGuiMouseButton_Middle)) { m_middleHeld = false; }
+
+		DirectX::SimpleMath::Vector3 right, up, forward;
+		m_camera.GetBasis(right, up, forward);
+
+		if (m_rightHeld)
 		{
-			ImGuiIO& io = ImGui::GetIO();
+			m_camera.Yaw -= io.MouseDelta.x * 0.01f;
+			m_camera.Pitch += io.MouseDelta.y * 0.01f;
+			m_camera.Pitch = std::clamp(m_camera.Pitch, -1.5f, 1.5f);
 
-			if (ImGui::IsMouseDragging(ImGuiMouseButton_Right))
+			DirectX::SimpleMath::Vector3 move(0, 0, 0);
+			if (ImGui::IsKeyDown(ImGuiKey_W)) { move += forward; }
+			if (ImGui::IsKeyDown(ImGuiKey_S)) { move -= forward; }
+			if (ImGui::IsKeyDown(ImGuiKey_D)) { move += right; }
+			if (ImGui::IsKeyDown(ImGuiKey_A)) { move -= right; }
+			if (ImGui::IsKeyDown(ImGuiKey_E)) { move += DirectX::SimpleMath::Vector3::Up; }
+			if (ImGui::IsKeyDown(ImGuiKey_Q)) { move -= DirectX::SimpleMath::Vector3::Up; }
+
+			if (move.LengthSquared() > 0.0f)
 			{
-				m_camera.Yaw -= io.MouseDelta.x * 0.01f;
-				m_camera.Pitch += io.MouseDelta.y * 0.01f;
-				m_camera.Pitch = std::clamp(m_camera.Pitch, -1.5f, 1.5f);
+				move.Normalize();
+				const float speed = std::max(m_camera.Distance, 1.0f) * m_settings.FlySpeedScale * (io.KeyShift ? 3.0f : 1.0f);
+				m_camera.Pan += move * speed * io.DeltaTime;
 			}
+		}
 
+		if (m_middleHeld)
+		{
+			// 画面1ピクセルあたりのワールド距離(注視点の位置での値)
+			const float worldPerPixel = (m_viewport.Height > 0)
+				? 2.0f * m_camera.Distance * tanf(DirectX::XMConvertToRadians(m_settings.FovDeg) * 0.5f) / (float)m_viewport.Height
+				: 0.0f;
+
+			m_camera.Pan -= right * (io.MouseDelta.x * worldPerPixel);
+			m_camera.Pan += up * (io.MouseDelta.y * worldPerPixel);
+		}
+
+		if (hovered)
+		{
 			if (io.MouseWheel != 0.0f)
 			{
 				m_camera.Distance -= io.MouseWheel * m_settings.WheelSensitivity;
 				m_camera.Distance = std::clamp(m_camera.Distance, m_settings.MinDistance, m_settings.MaxDistance);
 			}
+
+			if (!m_rightHeld && !io.WantTextInput && ImGui::IsKeyPressed(ImGuiKey_F, false)) { ResetPan(); }
 		}
 	}
 

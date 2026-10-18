@@ -228,3 +228,26 @@ private:
 	float reactionDuration_ = 0.0f;
 	float elapsed_ = 0.0f;
 };
+
+
+// 死亡状態。CanStart*は全てfalseのままで、入力でも移動キャンセルでも抜けられない終端State。
+class StateDead : public IPlayerState {
+public:
+	void Enter(PlayerStatusController* controller) override;
+	void Update(PlayerStatusController* controller, float deltaTime) override;
+	void Exit(PlayerStatusController* controller) override;
+
+	CombatState GetDetailedState() const override { return CombatState::Dead; }
+	float GetElapsed() const override { return elapsed_; }
+
+	// 死体への追加被弾を無効化する。
+	bool IsInvincible(const PlayerStatusController* controller) const override { return true; }
+
+private:
+	float elapsed_ = 0.0f;
+	bool reloadRequested_ = false;
+
+	// 死亡アニメ名とその長さ(秒)。仮のハードコード値。
+	static constexpr const char* kDeathAnimationName = "Die11_Root";
+	static constexpr float kDeathAnimationDuration = 3.0f;
+};

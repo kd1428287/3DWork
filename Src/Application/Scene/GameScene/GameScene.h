@@ -30,6 +30,7 @@ private:
 
 	// SceneManagerがEnter()経由で呼ぶ。コンストラクタからは呼ばない
 	void OnEnter() override;
+	void OnExit() override;
 
 	// OnEnter()の内訳。呼び出し順に依存があるので順番を変えない
 	void BuildWorld();

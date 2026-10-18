@@ -1,5 +1,8 @@
 ﻿#include "KdFont.h"
 
+#include <algorithm>
+#include <cmath>
+
 // 日本語判定
 static bool isSJIS(char a)
 {
@@ -35,6 +38,51 @@ static HFONT MakeFont(const std::wstring& fontName, int h, int angle)
 		fontName.c_str());		//書体名
 
 	return hFont;
+}
+
+std::shared_ptr<KdTexture> KdFontData::GetOutlineTex(int outline)
+{
+	if (outline <= 0 || Alpha.empty()) return nullptr;
+
+	auto it = OutlineTexMap.find(outline);
+	if (it != OutlineTexMap.end()) return it->second;
+
+	const int ow = Width + outline * 2;
+	const int oh = Height + outline * 2;
+	std::vector<UINT> buf((size_t)ow * oh, 0);
+
+	// 円形カーネルで周囲の最大アルファを取る(縁は距離で滑らかにする)
+	for (int y = 0; y < oh; ++y)
+	{
+		for (int x = 0; x < ow; ++x)
+		{
+			float best = 0.0f;
+			for (int dy = -outline; dy <= outline; ++dy)
+			{
+				const int sy = y - outline + dy;
+				if (sy < 0 || sy >= Height) continue;
+				for (int dx = -outline; dx <= outline; ++dx)
+				{
+					const int sx = x - outline + dx;
+					if (sx < 0 || sx >= Width) continue;
+
+					const uint8_t a = Alpha[(size_t)sy * Width + sx];
+					if (a == 0) continue;
+
+					const float cover = std::clamp(outline + 0.5f - std::sqrt((float)(dx * dx + dy * dy)), 0.0f, 1.0f);
+					best = (std::max)(best, a / 255.0f * cover);
+				}
+			}
+			buf[(size_t)y * ow + x] = ((UINT)(best * 255.0f) << 24) | 0x00ffffff;
+		}
+	}
+
+	auto tex = std::make_shared<KdTexture>();
+	tex->Create(ow, oh, DXGI_FORMAT_B8G8R8A8_UNORM);
+	KdDirect3D::Instance().WorkDevContext()->UpdateSubresource(tex->WorkResource(), 0, nullptr, buf.data(), ow * 4, 0);
+
+	OutlineTexMap[outline] = tex;
+	return tex;
 }
 
 void KdFontSprite::CreateFontTexture(HDC hdc, const std::string& text, int antiAliasing, std::array<std::shared_ptr<KdFontData>, 65536>* pFontDataArray, bool bAdd)
@@ -79,6 +127,8 @@ void KdFontSprite::CreateFontTexture(HDC hdc, const std::string& text, int antiA
 			{
 				bCreate = false;
 				m_TexList.push_back((*pFontDataArray)[code]);
+				// キャッシュ命中時も総幅を加算する(漏れると2回目以降0になる)
+				m_TotalWidth += (*pFontDataArray)[code]->Width;
 			}
 		}
 
@@ -249,6 +299,12 @@ void KdFontSprite::CreateFontTexture(HDC hdc, const std::string& text, int antiA
 					}
 				}
 			}
+
+			// アウトライン生成用にアルファを保持
+			data->Width = texWidth;
+			data->Height = texHeight;
+			data->Alpha.resize((size_t)texWidth * texHeight);
+			for (int i = 0; i < texWidth * texHeight; ++i) data->Alpha[i] = (uint8_t)(buf.get()[i] >> 24);
 
 			// テクスチャ作成
 			data->FontTex = std::make_shared<KdTexture>();

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 //=====================================================================
 // 文字のデータ
@@ -10,6 +10,14 @@ struct KdFontData
 	std::shared_ptr<KdTexture>	FontTex = nullptr;	// 文字テクスチャ
 	char						Bytes = 1;	// 1:1バイト文字 2:2バイト文字
 	uint16_t					Code = 0;	// 文字コード
+
+	std::vector<uint8_t>		Alpha;				// 文字のアルファ(アウトライン生成用)
+	int							Width = 0;
+	int							Height = 0;
+	std::map<int, std::shared_ptr<KdTexture>>	OutlineTexMap;	// 太さ(px)別のアウトライン
+
+	// 指定px分だけ縁取りしたテクスチャを返す(幅・高さは両側にoutline分増える)。0以下はnullptr
+	std::shared_ptr<KdTexture> GetOutlineTex(int outline);
 
 	// テクスチャの使用容量取得
 	UINT DEBUG_GetBytes()

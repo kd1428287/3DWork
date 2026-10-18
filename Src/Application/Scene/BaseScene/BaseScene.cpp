@@ -1,7 +1,7 @@
-﻿#include "BaseScene.h"
+#include "BaseScene.h"
 #include "Application/main.h"
 #include "Application/Editor/Tools/MapEditor.h"
-#include "Application/Factories/PrefabFactory.h"
+#include "Application/Definitions/Loaders/UILoader.h"
 
 BaseScene::BaseScene() = default;
 BaseScene::~BaseScene() = default;
@@ -125,13 +125,9 @@ void BaseScene::DrawDebug()
 
 bool BaseScene::LoadUI(const std::string& path)
 {
-	if (!objManager_) { OutputDebugStringA("LoadUI: objManager_ is null\n"); return false; }
+	// Enter()前はobjManager_が無いので生成できない
+	if (!objManager_) return false;
 
-	PrefabDefinition def;
-	if (!PrefabFactory::LoadFromFile(path, def)) {
-		OutputDebugStringA(("LoadUI: load failed: " + path + "\n").c_str());
-		return false;
-	}
-	PrefabFactory::Create(*objManager_, def);
-	return true;
+	UILoader loader;
+	return loader.LoadUIFromJson(path, *objManager_);
 }

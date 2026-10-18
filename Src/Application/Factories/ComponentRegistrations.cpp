@@ -11,4 +11,5 @@ void RegisterAllComponents(ComponentRegistry& registry)
 	RegisterPlayerComponents(registry);
 	RegisterEnemyComponents(registry);
 	RegisterUIComponents(registry);
+	RegisterMapComponents(registry);
 }

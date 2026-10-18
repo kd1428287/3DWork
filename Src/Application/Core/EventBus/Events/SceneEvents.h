@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Event.h"
 #include "Application/Core/Scene/SceneType.h"
@@ -9,9 +9,10 @@ namespace Events
 	struct SceneChangeRequest : public Event
 	{
 		SceneType nextScene;
+		bool withTransition;	// falseなら演出なしで即切り替え
 
-		explicit SceneChangeRequest(SceneType scene)
-			: nextScene(scene)
+		explicit SceneChangeRequest(SceneType scene, bool transition = true)
+			: nextScene(scene), withTransition(transition)
 		{
 		}
 	};

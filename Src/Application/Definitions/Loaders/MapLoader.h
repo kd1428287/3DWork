@@ -1,4 +1,5 @@
-﻿#pragma once
+#pragma once
+#include "Application/Definitions/Map/SpawnMarker.h"
 
 class ObjectManager;
 class TerrainFactory;
@@ -12,11 +13,13 @@ public:
 	 *        MapData.h の LoadMapFile() 経由で読む。旧バージョンの形式も自動変換される)
 	 * @param objectManager オブジェクト管理システム
 	 * @param terrainFactory 構築を委譲するファクトリー
+	 * @param outMarkers SpawnMarkerを持つエンティティの回収先(生成はしない)。不要ならnullptr
 	 * @return 読み込み成功可否(ファイルが無い/JSONとして壊れている場合のみfalse。
 	 *         個々のエンティティのフィールド欠落は該当エンティティをスキップするのみで、
 	 *         全体の失敗としては扱わない)
 	 */
 	bool LoadMapFromJson(const std::string& jsonFilePath,
 		ObjectManager& objectManager,
-		TerrainFactory& terrainFactory);
+		TerrainFactory& terrainFactory,
+		std::vector<SpawnMarkerDef>* outMarkers = nullptr);
 };

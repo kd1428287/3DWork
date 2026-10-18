@@ -28,15 +28,18 @@ public:
 
 	bool IsLockable() const { return isLockable_; }
 
+	void SetOffset(const Math::Vector3& offset) { offset_ = offset; }
+
 	// ロック時にカメラ/UIが狙う実座標
 	Math::Vector3 GetReticlePosition() const {
 		if (reticleSocket_ != nullptr) return reticleSocket_->GetPosition();
 		TransformComponent* transform = GetOwner()->GetComponent<TransformComponent>();
-		return transform ? transform->GetPosition() : Math::Vector3::Zero;
+		return transform ? transform->GetPosition() + offset_ : Math::Vector3::Zero;
 	}
 
 private:
 	bool isLockable_ = true;
+	Math::Vector3 offset_ = { 0,1.5,0 };
 	BoneSocketComponent* reticleSocket_ = nullptr;
 	ScopedSubscriber subscriber_;
 };

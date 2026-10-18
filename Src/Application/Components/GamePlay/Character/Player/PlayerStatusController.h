@@ -16,6 +16,7 @@
 class PlayerAttackSelector;
 class PlayerFacingComponent;
 class PlayerCombatMovementComponent;
+class HealthComponent;
 
 // 初期設定(Prefab/JSONから渡す値)。
 struct PlayerStatusControllerConfig
@@ -64,6 +65,7 @@ public:
 	bool IsStaggered() const { return GetCombatState() == CombatState::StaggerSmall || GetCombatState() == CombatState::StaggerLarge; }
 	bool IsGuarding() const override { return GetCombatState() == CombatState::Guard; }
 	bool IsCharging() const { return GetCombatState() == CombatState::Charge; }
+	bool IsDead() const { return GetCombatState() == CombatState::Dead; }
 
 	bool IsInJustEvadeWindow() const { return stateMachine_.Current()->IsInJustEvadeWindow(this); }
 	bool IsInParryWindow() const override { return stateMachine_.Current()->IsInParryWindow(this); }
@@ -101,6 +103,9 @@ public:
 	// 溜めを解放してチャージ攻撃を発射する。HandleActionInputから呼ぶ。
 	void ReleaseCharge();
 	void ApplyStagger(bool isLarge, float duration);
+
+	// HPが0になった際に死亡Stateへ強制遷移する(一度入ったら抜けない)。
+	void Die();
 
 	// --- IHitReactionQuery ---
 	void EnterStagger(bool isLarge, float duration) override { ApplyStagger(isLarge, duration); }
@@ -179,6 +184,7 @@ private:
 	PlayerAttackSelector* attackSelector_ = nullptr;
 	PlayerFacingComponent* facing_ = nullptr;
 	PlayerCombatMovementComponent* combatMovement_ = nullptr;
+	HealthComponent* health_ = nullptr;
 
 	MovementState movementState_ = MovementState::Stand;
 
@@ -197,6 +203,7 @@ private:
 	StateGuard   stateGuard_;
 	StateCharge  stateCharge_;
 	StateStagger stateStagger_;
+	StateDead    stateDead_;
 
 	StateMachine<PlayerStatusController, IPlayerState> stateMachine_;
 

@@ -1,8 +1,10 @@
 ﻿#include "Application/main.h"
 
 #include "MapEditor.h"
+#include "ColliderEditor.h"
 #include "../Common/EditorViewport.h"
 #include "Application/Factories/ComponentRegistry.h"
+#include "Application/Definitions/Physics/ColliderParams.h"
 
 #include "Application/Core/EventBus/Events/SceneEvents.h"
 
@@ -139,7 +141,8 @@ void MapEditor::Update()
 		if (ImGui::IsKeyPressed(ImGuiKey_3)) m_operation = ImGuizmo::SCALE;
 	}
 
-	if (!ImGui::GetIO().WantTextInput)
+	// ColliderEditorにフォーカスがある間は、Undo/Redoのショートカットを渡す
+	if (!ImGui::GetIO().WantTextInput && !ColliderEditor::Instance().IsFocused())
 	{
 		bool ctrl = ImGui::GetIO().KeyCtrl;
 		if (ctrl && ImGui::IsKeyPressed(ImGuiKey_Z, false))
@@ -610,7 +613,44 @@ void MapEditor::DrawObjects()
 	}
 }
 
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// WireFrameコンポーネント：Colliderのparamsから形状を復元し、プレビューへワイヤー描画する
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// ColliderParamsとして読み、表示用の形状リストにする(不正なJSONなら空)
+static std::vector<CollisionShapeEntry> ParseColliderShapes(const nlohmann::json& params)
+{
+	std::vector<CollisionShapeEntry> result;
+	try
+	{
+		const ColliderParams p = params.get<ColliderParams>();
+		for (const ColliderShapeParams& sp : p.shapes) { result.push_back(ToPreviewEntry(sp)); }
+	}
+	catch (const nlohmann::json::exception&) {}
+	return result;
+}
+
+void MapEditor::DrawWireFrames()
+{
+	for (auto& obj : m_objects)
+	{
+		const ComponentEntry* colComp = obj.FindComponent("Collider");
+		if (!colComp) continue;
+
+		// 実行時と同じく、WireFrameコンポーネント or Collider自身のwireFrameフラグで表示
+		const bool show = obj.HasComponent("WireFrame") || colComp->params.value("wireFrame", false);
+		if (!show) continue;
+
+		const Math::Matrix world = obj.GetMatrix();
+		for (const CollisionShapeEntry& shape : ParseColliderShapes(colComp->params))
+		{
+			if (!shape.enabled) continue;
+			WireFrameComponent::AddShapeWire(m_wire, shape, world, shape.isTrigger ? kRedColor : kGreenColor);
+		}
+	}
+	m_wire.Draw();
+}
+
+// ///// /////
 // プレビュー用カメラの注視点：選択中オブジェクトがあればその位置。
 // 未選択時は配置済みオブジェクト全体の重心(オブジェクトが無ければ原点)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -669,6 +709,7 @@ void MapEditor::RenderPreviewViewport()
 			KdShaderManager::Instance().m_StandardShader.BeginLit();
 			DrawObjects();
 			KdShaderManager::Instance().m_StandardShader.EndLit();
+			DrawWireFrames();	// Lit描画の後に1回だけ(影用パスには入れない)
 		});
 }
 

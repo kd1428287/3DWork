@@ -1,4 +1,4 @@
-// UI(HUD・ワールドゲージ・テキスト・画像・ボタン)のコンポーネント登録。
+﻿// UI(HUD・ワールドゲージ・テキスト・画像・ボタン)のコンポーネント登録。
 
 #include "Application/Factories/ComponentRegistry.h"
 #include "Application/Factories/Registrations/RegisterFunctions.h"
@@ -9,6 +9,7 @@
 // UI(配置フォルダは実際の場所に合わせて調整)
 #include "Application/Components/Graphics/UI/Gauge/PlayerHudGaugeComponent.h"
 #include "Application/Components/Graphics/UI/Gauge/EnemyWorldGaugeComponent.h"
+#include "Application/Components/Graphics/UI/Gauge/EnemyOverheadGaugeComponent.h"
 #include "Application/Components/Graphics/UI/UITransformComponent.h"
 #include "Application/Components/Graphics/UI/Text/TextComponent.h"
 #include "Application/Components/Graphics/UI/Image/UIImageComponent.h"
@@ -22,15 +23,15 @@ NLOHMANN_JSON_SERIALIZE_ENUM(UITransformComponent::Space, {
 	{ UITransformComponent::Space::World, "World" },
 	})
 
-// TextComponent::Align: JSONでは"Left"/"Center"/"Right"で指定する。未知の値はLeftになる。
-NLOHMANN_JSON_SERIALIZE_ENUM(TextComponent::Align, {
-	{ TextComponent::Align::Left, "Left" },
-	{ TextComponent::Align::Center, "Center" },
-	{ TextComponent::Align::Right, "Right" },
-	})
+	// TextComponent::Align: JSONでは"Left"/"Center"/"Right"で指定する。未知の値はLeftになる。
+	NLOHMANN_JSON_SERIALIZE_ENUM(TextComponent::Align, {
+		{ TextComponent::Align::Left, "Left" },
+		{ TextComponent::Align::Center, "Center" },
+		{ TextComponent::Align::Right, "Right" },
+		})
 
-// 接続を伴う型のparams。ODR違反を避けるため、マクロも含めて無名名前空間に入れる。
-namespace
+		// 接続を伴う型のparams。ODR違反を避けるため、マクロも含めて無名名前空間に入れる。
+	namespace
 {
 	// UTF-8をShift-JIS(CP932)へ変換する。変換できない文字は'?'になる。
 	std::string JsonUtf8ToSjis(const std::string& utf8)
@@ -65,7 +66,7 @@ namespace
 	};
 	COMPONENT_PARAMS_DEFINE_TYPE(UITransformParams, space, anchor, pivot, position, size, scale, rotation, worldOffset)
 
-	void BuildUITransform(BuildContext& ctx, const UITransformParams& p)
+		void BuildUITransform(BuildContext& ctx, const UITransformParams& p)
 	{
 		auto* ui = ctx.Add<UITransformComponent>();
 		ui->SetSpace(p.space);
@@ -90,10 +91,13 @@ namespace
 		TextComponent::Align align = TextComponent::Align::Left;
 
 		std::array<float, 4> color = { 1.0f, 1.0f, 1.0f, 1.0f };
-	};
-	COMPONENT_PARAMS_DEFINE_TYPE(TextParams, text, fontNo, antiAliasing, align, color)
 
-	void BuildText(BuildContext& ctx, const TextParams& p)
+		int                  outlineWidth = 0;
+		std::array<float, 4> outlineColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+	};
+	COMPONENT_PARAMS_DEFINE_TYPE(TextParams, text, fontNo, antiAliasing, align, color, outlineWidth, outlineColor)
+
+		void BuildText(BuildContext& ctx, const TextParams& p)
 	{
 		auto* text = ctx.Add<TextComponent>();
 		text->SetFontNo(p.fontNo);
@@ -101,6 +105,7 @@ namespace
 		text->SetText(JsonUtf8ToSjis(p.text));
 		text->SetAlign(p.align);
 		text->SetColor(Math::Color(p.color[0], p.color[1], p.color[2], p.color[3]));
+		text->SetOutline(p.outlineWidth, Math::Color(p.outlineColor[0], p.outlineColor[1], p.outlineColor[2], p.outlineColor[3]));
 	}
 
 	// 画像表示。textureはUTF-8のパスで書き、読み込み時にShift-JISへ変換する。空なら単色の矩形になる。
@@ -112,7 +117,7 @@ namespace
 	};
 	COMPONENT_PARAMS_DEFINE_TYPE(UIImageParams, texture, color)
 
-	void BuildUIImage(BuildContext& ctx, const UIImageParams& p)
+		void BuildUIImage(BuildContext& ctx, const UIImageParams& p)
 	{
 		auto* image = ctx.Add<UIImageComponent>();
 		image->SetColor(Math::Color(p.color[0], p.color[1], p.color[2], p.color[3]));
@@ -137,7 +142,7 @@ namespace
 	COMPONENT_PARAMS_DEFINE_TYPE(SelectableParams, interactable, layer, group,
 		onHoverEnter, onHoverExit, onSelect, onDeselect, onClick, clickParam)
 
-	void BuildSelectable(BuildContext& ctx, const SelectableParams& p)
+		void BuildSelectable(BuildContext& ctx, const SelectableParams& p)
 	{
 		auto* selectable = ctx.Add<SelectableComponent>();
 		selectable->SetInteractable(p.interactable);
@@ -149,6 +154,24 @@ namespace
 		if (!p.onSelect.empty())     selectable->AddAction(UITrigger::Select, p.onSelect);
 		if (!p.onDeselect.empty())   selectable->AddAction(UITrigger::Deselect, p.onDeselect);
 		if (!p.onClick.empty())      selectable->AddAction(UITrigger::Click, p.onClick, p.clickParam);
+	}
+
+	// 敵Prefabへ直接付け、自分のHP/体幹ゲージをworldOffsetだけずらした位置に描く。
+	// worldOffsetはscale=1基準で所有者の拡大率に合わせる。barSizeはピクセル。
+	struct EnemyOverheadGaugeParams
+	{
+		Math::Vector3        worldOffset = { 0.0f, 2.0f, 0.0f };
+		std::array<float, 2> healthBarSize = { 80.0f, 10.0f };
+		std::array<float, 2> postureBarSize = { 80.0f, 6.0f };
+	};
+	COMPONENT_PARAMS_DEFINE_TYPE(EnemyOverheadGaugeParams, worldOffset, healthBarSize, postureBarSize)
+
+		void BuildEnemyOverheadGauge(BuildContext& ctx, const EnemyOverheadGaugeParams& p)
+	{
+		auto* gauge = ctx.Add<EnemyOverheadGaugeComponent>();
+		gauge->SetWorldOffset(p.worldOffset * ctx.OwnerScale());
+		gauge->SetBarSizes(Math::Vector2(p.healthBarSize[0], p.healthBarSize[1]),
+			Math::Vector2(p.postureBarSize[0], p.postureBarSize[1]));
 	}
 
 	// 親の敵をターゲットにした頭上ゲージUIを組み立てる。
@@ -163,6 +186,7 @@ void RegisterUIComponents(ComponentRegistry& registry)
 	// PlayerHudGaugeは独立Prefab(Hud.json)で生成し、ctx->playerを追う。EnemyWorldGaugeは敵Prefabの子として使う。
 	registry.Add<PlayerHudGaugeComponent>("PlayerHudGauge");
 	registry.AddRaw("EnemyWorldGauge", BuildEnemyWorldGauge);
+	registry.AddWithParams<EnemyOverheadGaugeParams>("EnemyOverheadGauge", BuildEnemyOverheadGauge);
 	registry.AddWithParams<UITransformParams>("UITransform", BuildUITransform);
 	registry.AddWithParams<TextParams>("Text", BuildText);
 	registry.AddWithParams<UIImageParams>("UIImage", BuildUIImage);

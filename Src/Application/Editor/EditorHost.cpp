@@ -10,6 +10,7 @@
 #include "Tools/ShaderTuningEditor.h"
 #include "Tools/BTEditor.h"
 #include "Tools/UIEditor.h"
+#include "Tools/ColliderEditor.h"
 
 // DockBuilder系APIを使うために必要(公式にも初期配置構築の定番として使われる内部ヘッダ)
 // ※旧KdDebugGUI.cppから移設。ドッキングレイアウトはエディタ固有の関心事のためこちらに置く
@@ -80,6 +81,8 @@ void EditorHost::RenderPreviewViewports()
 	MapEditor::Instance().RenderPreviewViewport();
 	// UIプレビュー
 	UIEditor::Instance().RenderPreviewViewport();
+	// コライダー調整プレビュー
+	ColliderEditor::Instance().RenderPreviewViewport();
 
 	KdShaderManager::Instance().UndoRasterizerState();
 }
@@ -122,6 +125,9 @@ void EditorHost::Draw()
 
 		// UIエディタ
 		UIEditor::Instance().Update();
+
+		// コライダーエディタ
+		ColliderEditor::Instance().Update();
 	}
 
 	// ここより上にImGuiの描画はする事(EndFrame内でImGui::Render()を呼ぶため)

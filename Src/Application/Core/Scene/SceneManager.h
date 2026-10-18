@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <functional>
 #include <memory>
@@ -45,6 +45,9 @@ private:
 	// ファクトリ登録とイベント購読。シーン生成は最初のUpdate()で行う
 	void Init();
 
+	// シーン切り替え要求の受付。演出ありならTransitionRequestを発行し、覆い切るまで遷移先を保持する
+	void RequestSceneChange(SceneType next, bool withTransition);
+
 	// 予約された遷移を実行する。必ずUpdate()の先頭から呼ぶ
 	void ApplyPendingTransition();
 
@@ -63,9 +66,13 @@ private:
 	// 遷移の予約(未予約ならnullopt)。開始シーンもこの経路で生成する
 	std::optional<SceneType> pending_;
 
+	// 画面が覆われるのを待っている遷移先(TransitionCovered通知でpending_へ移す)
+	std::optional<SceneType> waitingScene_;
+
 	// イベントの購読
 	ScopedSubscriber sceneChangeSub_;
 	ScopedSubscriber reloadSceneSub_;
+	ScopedSubscriber transitionCoveredSub_;
 
 private:
 

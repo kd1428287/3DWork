@@ -76,6 +76,16 @@ public:
 	// 毎フレームPostEffectProcess()より前に呼ぶ(ジッター用)
 	void UpdateSurface(float deltaTime);
 
+	// 画面遷移(波紋)。進行管理はTransitionController側で、ここは描画パラメータのみ持つ
+	//	・progress … 0=通常、1=完全に覆われた
+	//	・centerUV … 波紋の中心(0〜1の画面座標)
+	// 毎フレームPostEffectProcess()より前に呼ぶ
+	void SetTransition(float progress, const Math::Vector2& centerUV, const Math::Vector3& color, float time);
+	// 見た目の調整(歪みの強さ・波の細かさ・帯の幅・色収差・覆いの縁の柔らかさ)
+	void SetTransitionWave(float amount, float freq, float ringWidth, float chromatic, float softness);
+	// UI描画後に呼ぶ。progress>0の間だけ画面全体(UI含む)を覆う
+	void DrawTransitionCover();
+
 	void PostEffectProcess();
 
 	// エディタプレビュー等、本編以外の任意サイズテクスチャに対してカラーグレードのみを適用する。
@@ -96,6 +106,7 @@ private:
 	void DepthOfFieldProcess();
 	void ColorGradeProcess();
 	void DistortionProcess();
+	void TransitionWarpProcess(const std::shared_ptr<KdTexture>& srcTex);
 	void SurfaceProcess(const std::shared_ptr<KdTexture>& srcTex);
 
 	void CreateBlurOffsetList(std::vector<Math::Vector3>& dstInfo, const std::shared_ptr<KdTexture>& spSrcTex, int samplingSize, const Math::Vector2& dir);
@@ -119,6 +130,8 @@ private:
 	ID3D11PixelShader* m_PS_LiquidInk = nullptr;
 	ID3D11PixelShader* m_PS_Distortion = nullptr;
 	ID3D11PixelShader* m_PS_Surface = nullptr;
+	ID3D11PixelShader* m_PS_TransitionWarp = nullptr;
+	ID3D11PixelShader* m_PS_TransitionCover = nullptr;
 
 	static const int kBlurSamplingRadius = 8;
 	static const int kLightBloomSamplingRadius = 4;
@@ -202,6 +215,27 @@ private:
 	};
 	KdConstantBuffer<cbSurfaceInfo> m_cb0_SurfaceInfo;
 
+	// 歪みPS・覆いPSで共有する(HLSL側のcbuffer cbTransitionと並びを一致させること)
+	struct cbTransitionInfo
+	{
+		Math::Vector2 Center = { 0.5f, 0.5f };	// 波紋の中心UV
+		float Progress = 0.0f;					// 0=通常 1=完全に覆われた
+		float Time = 0.0f;						// 波のアニメーション用
+
+		Math::Vector3 FadeColor = { 0.0f, 0.0f, 0.0f };
+		float Aspect = 1.0f;					// 画面の幅/高さ(円形補正用)
+
+		float MaxDist = 1.0f;					// 中心から最遠の角までの距離(アスペクト補正後)
+		float WaveAmount = 0.03f;				// 歪みの強さ
+		float WaveFreq = 40.0f;					// 波の細かさ
+		float RingWidth = 0.12f;				// 歪みが強い帯の幅(正規化距離)
+
+		float ChromaticAmount = 0.5f;			// 歪みの強い場所ほどRGBをずらす割合
+		float Softness = 0.3f;					// 覆いの縁の柔らかさ(正規化距離)
+		float _blank[2] = { 0, 0 };
+	};
+	KdConstantBuffer<cbTransitionInfo> m_cb0_TransitionInfo;
+
 	// 発生中の衝撃波(経過時間から半径と強さを毎フレーム算出する)
 	struct ShockwaveInstance
 	{
@@ -227,6 +261,7 @@ public:
 	const cbDistortionInfo& GetDistortionCB() const { return m_cb0_DistortionInfo.Get(); }
 	const cbSurfaceInfo& GetSurfaceCB() const { return m_cb0_SurfaceInfo.Get(); }
 	cbSurfaceInfo& WorkSurfaceCB() { return m_cb0_SurfaceInfo.Work(); }
+	const cbTransitionInfo& GetTransitionCB() const { return m_cb0_TransitionInfo.Get(); }
 
 private:
 	KdRenderTargetPack m_colorGradeRTPack; // 最終カラーグレーディング用RT
@@ -259,6 +294,9 @@ private:
 
 	// ディストーション適用後の最終画像(衝撃波が有効な間だけ使う)
 	KdRenderTargetPack	m_distortionRTPack;
+
+	// 画面遷移の波紋適用後の画像(遷移中だけ使う)
+	KdRenderTargetPack	m_transitionRTPack;
 
 	// 質感合成後の最終画像と、合成する質感テクスチャ
 	KdRenderTargetPack m_surfaceRTPack;

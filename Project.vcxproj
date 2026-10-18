@@ -332,6 +332,7 @@
     <ClInclude Include="Src\Application\Components\Graphics\Render\SpriteRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\WireFrameComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Button\SelectableComponent.h" />
+    <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\EnemyOverheadGaugeComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\EnemyWorldGaugeComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\GaugeBar.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\GaugeBarRenderer.h" />
@@ -366,12 +367,16 @@
     <ClInclude Include="Src\Application\Core\EventBus\Events\EffectEvents.h" />
     <ClInclude Include="Src\Application\Core\EventBus\Events\Event.h" />
     <ClInclude Include="Src\Application\Core\EventBus\Events\CombatEvents.h" />
+    <ClInclude Include="Src\Application\Core\EventBus\Events\AudioEvents.h" />
     <ClInclude Include="Src\Application\Core\EventBus\Events\SceneEvents.h" />
     <ClInclude Include="Src\Application\Core\EventBus\Events\SlashTrailEvents.h" />
     <ClInclude Include="Src\Application\Core\EventBus\Events\TimeScaleEvents.h" />
+    <ClInclude Include="Src\Application\Core\EventBus\Events\TransitionEvents.h" />
     <ClInclude Include="Src\Application\Core\Math\PerlinNoise.h" />
     <ClInclude Include="Src\Application\Core\Scene\SceneManager.h" />
+    <ClInclude Include="Src\Application\Core\Scene\SceneTransition.h" />
     <ClInclude Include="Src\Application\Core\Scene\SceneType.h" />
+    <ClInclude Include="Src\Application\Core\Scene\TransitionController.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\Blackboard.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\BTBlackboardConditions.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\BTComposite.h" />
@@ -403,10 +408,13 @@
     <ClInclude Include="Src\Application\Definitions\Loaders\JsonLoader.h" />
     <ClInclude Include="Src\Application\Definitions\Loaders\MapLoader.h" />
     <ClInclude Include="Src\Application\Definitions\Loaders\PlayerAttackTableLoader.h" />
+    <ClInclude Include="Src\Application\Definitions\Loaders\UILoader.h" />
     <ClInclude Include="Src\Application\Definitions\Map\MapData.h" />
+    <ClInclude Include="Src\Application\Definitions\Map\SpawnMarker.h" />
     <ClInclude Include="Src\Application\Definitions\Physics\ColliderCategory.h" />
     <ClInclude Include="Src\Application\Definitions\Physics\ColliderCategoryNames.h" />
     <ClInclude Include="Src\Application\Definitions\Physics\ColliderLayerMatrix.h" />
+    <ClInclude Include="Src\Application\Definitions\Physics\ColliderParams.h" />
     <ClInclude Include="Src\Application\Definitions\Physics\ModelCollisionMeshBuilder.h" />
     <ClInclude Include="Src\Application\Definitions\Physics\TriangleMeshData.h" />
     <ClInclude Include="Src\Application\Definitions\Prefab\BitFlags.h" />
@@ -426,6 +434,7 @@
     <ClInclude Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_node_editor_internal.h" />
     <ClInclude Include="Src\Application\Editor\ThirdParty\ImGuizmo.h" />
     <ClInclude Include="Src\Application\Editor\Tools\BTEditor.h" />
+    <ClInclude Include="Src\Application\Editor\Tools\ColliderEditor.h" />
     <ClInclude Include="Src\Application\Editor\Tools\EffectEditor.h" />
     <ClInclude Include="Src\Application\Editor\Tools\MapEditor.h" />
     <ClInclude Include="Src\Application\Editor\Tools\ShaderTuningEditor.h" />
@@ -471,6 +480,7 @@
     <ClInclude Include="Src\Application\Systems\InputSystem.h" />
     <ClInclude Include="Src\Application\Systems\SelectableManager.h" />
     <ClInclude Include="Src\Application\Systems\SystemManager.h" />
+    <ClInclude Include="Src\Framework\Audio\KdSoundDef.h" />
     <ClInclude Include="Src\Framework\Direct3D\KdMaterial.h" />
     <ClInclude Include="Src\Framework\Direct3D\Polygon\KdPolygon.h" />
     <ClInclude Include="Src\Framework\Direct3D\Polygon\KdSquarePolygon.h" />
@@ -549,6 +559,7 @@
     <ClCompile Include="Src\Application\Components\Graphics\UI\Text\TextComponent.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\UI\UITransformComponent.cpp" />
     <ClCompile Include="Src\Application\Core\Scene\SceneManager.cpp" />
+    <ClCompile Include="Src\Application\Core\Scene\TransitionController.cpp" />
     <ClCompile Include="Src\Application\Definitions\Effect\EffectParams.cpp" />
     <ClCompile Include="Src\Application\Definitions\Loaders\AttackDataLoader.cpp" />
     <ClCompile Include="Src\Application\Definitions\Loaders\EffectDataLoader.cpp" />
@@ -556,6 +567,7 @@
     <ClCompile Include="Src\Application\Definitions\Loaders\JsonLoader.cpp" />
     <ClCompile Include="Src\Application\Definitions\Loaders\MapLoader.cpp" />
     <ClCompile Include="Src\Application\Definitions\Loaders\PlayerAttackTableLoader.cpp" />
+    <ClCompile Include="Src\Application\Definitions\Loaders\UILoader.cpp" />
     <ClCompile Include="Src\Application\Definitions\Map\MapData.cpp" />
     <ClCompile Include="Src\Application\Definitions\UI\UIData.cpp" />
     <ClCompile Include="Src\Application\Editor\Common\ComponentInspector.cpp" />
@@ -569,6 +581,7 @@
     <ClCompile Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_node_editor_api.cpp" />
     <ClCompile Include="Src\Application\Editor\ThirdParty\ImGuizmo.cpp" />
     <ClCompile Include="Src\Application\Editor\Tools\BTEditor.cpp" />
+    <ClCompile Include="Src\Application\Editor\Tools\ColliderEditor.cpp" />
     <ClCompile Include="Src\Application\Editor\Tools\EffectEditor.cpp" />
     <ClCompile Include="Src\Application\Editor\Tools\MapEditor.cpp" />
     <ClCompile Include="Src\Application\Editor\Tools\ShaderTuningEditor.cpp" />
@@ -589,6 +602,7 @@
     <ClCompile Include="Src\Application\Factories\Registrations\RegisterCombat.cpp" />
     <ClCompile Include="Src\Application\Factories\Registrations\RegisterEnemy.cpp" />
     <ClCompile Include="Src\Application\Factories\Registrations\RegisterGraphics.cpp" />
+    <ClCompile Include="Src\Application\Factories\Registrations\RegisterMap.cpp" />
     <ClCompile Include="Src\Application\Factories\Registrations\RegisterPhysics.cpp" />
     <ClCompile Include="Src\Application\Factories\Registrations\RegisterPlayer.cpp" />
     <ClCompile Include="Src\Application\Factories\Registrations\RegisterUI.cpp" />
@@ -599,6 +613,7 @@
     <ClCompile Include="Src\Application\Scene\ResultScene\ResultScene.cpp" />
     <ClCompile Include="Src\Application\Scene\TitleScene\TitleScene.cpp" />
     <ClCompile Include="Src\Application\Systems\SelectableManager.cpp" />
+    <ClCompile Include="Src\Framework\Audio\KdSoundDef.cpp" />
     <ClCompile Include="Src\Framework\Direct3D\KdMaterial.cpp">
       <SubType>
       </SubType>
@@ -721,6 +736,12 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_Surface.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_TransitionCover.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_TransitionWarp.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_VS.hlsl">

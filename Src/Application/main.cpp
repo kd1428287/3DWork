@@ -1,6 +1,7 @@
 ﻿#include "main.h"
 
 #include "Core/Scene/SceneManager.h"
+#include "Core/Scene/TransitionController.h"
 #include "Systems/SelectableManager.h"
 
 #include "Editor/EditorHost.h"
@@ -45,7 +46,11 @@ void Application::KdBeginUpdate()
 	KdInputManager::Instance().Update();
 
 	// UIのホバー・決定・キー移動(入力更新の直後、シーン更新の前に1回だけ呼ぶ)
-	SelectableManager::Instance().Update();
+	// 画面遷移中は操作を受け付けない
+	if (!TransitionController::Instance().IsActive())
+	{
+		SelectableManager::Instance().Update();
+	}
 
 	// 空間環境の更新
 	KdShaderManager::Instance().WorkAmbientController().Update();
@@ -57,7 +62,7 @@ void Application::KdBeginUpdate()
 void Application::KdPostUpdate()
 {
 	// 3DSoundListnerの行列を更新
-	m_audioManager->SetListnerMatrix(KdShaderManager::Instance().GetCameraCB().mView.Invert());
+	m_audioManager->SetListenerMatrix(KdShaderManager::Instance().GetCameraCB().mView.Invert());
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -65,6 +70,9 @@ void Application::KdPostUpdate()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void Application::Update()
 {
+	// SceneManager::Update()より前に回す。Covered通知で予約したシーンが同フレーム先頭で切り替わる
+	TransitionController::Instance().Update(GetDeltaTime());
+
 	SceneManager::Instance().Update();
 }
 
@@ -164,6 +172,9 @@ void Application::PostDraw()
 void Application::DrawSprite()
 {
 	SceneManager::Instance().DrawSprite();
+
+	// UIを含む画面全体を覆う(遷移中のみ)
+	KdShaderManager::Instance().m_postProcessShader.DrawTransitionCover();
 }
 
 // 枠付きウィンドウ⇔モニター全体のボーダレスを切り替える
@@ -221,7 +232,7 @@ bool Application::Init(int w, int h)
 	//===================================================================
 	// ウィンドウ作成
 	//===================================================================
-	if (m_window.Create(w, h, "YugenTyoubukuDen", "Window") == false) {
+	if (m_window.Create(w, h, "幽玄調伏伝", "Window") == false) {
 		MessageBoxA(nullptr, "ウィンドウ作成に失敗", "エラー", MB_OK);
 		return false;
 	}
@@ -273,6 +284,9 @@ bool Application::Init(int w, int h)
 	//===================================================================
 	KdShaderManager::Instance().Init();
 
+	// 画面遷移の要求購読を、最初のシーン生成より前に済ませておく
+	TransitionController::Instance();
+
 	//===================================================================
 	// オーディオ初期化
 	//===================================================================
@@ -284,7 +298,7 @@ bool Application::Init(int w, int h)
 	//===================================================================
 	KdFontManager::Instance().Init(GetWindowHandle());
 
-	KdFontManager::Instance().AddFontResource("Asset/Data/Font/衡山毛筆フォント.ttf");
+	KdFontManager::Instance().AddFontResource(L"Asset/Data/Font/衡山毛筆フォント.ttf");
 	KdFontManager::Instance().AddFont(0, L"衡山毛筆フォント", 32);
 
 	//===================================================================
@@ -501,6 +515,9 @@ void Application::Release()
 	EditorHost::Instance().Release();
 
 	KdInputManager::Instance().Release();
+
+	// 画面遷移の購読解除(KdShaderManagerの解放より前に行う)
+	TransitionController::Instance().Shutdown();
 
 	KdShaderManager::Instance().Release();
 

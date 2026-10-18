@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 // ※ DirectXTK(SimpleMath) は既存のPCH等で読み込まれている前提です。
 #include <cstdint>
@@ -17,14 +17,19 @@ constexpr UIId kInvalidUIId = 0;
 //	親子は整理用で、座標はUITransformが画面基準で決める(親の位置は影響しない)。
 //	兄弟間の並び順 = 描画順(後ろほど手前)。visibleはエディタ上の表示切り替え専用
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-struct UIElement
+struct UIElement : PrefabDefinition	// name・componentsはPrefabDefinition側。MapEntityと同じく、そのままPrefabFactory::Createに渡せる
 {
 	UIId		id = kInvalidUIId;
 	UIId		parentId = kInvalidUIId;	// 0なら最上位
-	std::string	name;
 	bool		visible = true;
 
-	std::vector<ComponentEntry>	components;
+	// 位置・回転・拡大率はUITransformが決めるので使わない。生成時にPrefabFactoryが読むため恒等にしておく
+	UIElement()
+	{
+		pos = Math::Vector3::Zero;
+		rotation = Math::Quaternion::Identity;
+		scale = Math::Vector3::One;
+	}
 
 	ComponentEntry* Find(const std::string& type)
 	{

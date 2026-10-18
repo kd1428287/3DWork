@@ -1,4 +1,4 @@
-﻿#include "Application/main.h"
+#include "Application/main.h"
 
 #include "UIEditor.h"
 #include "Application/Factories/ComponentRegistry.h"
@@ -461,27 +461,50 @@ void UIEditor::RenderPreviewViewport()
 			const float blockH = lineH * (float)tb->lines.size();
 
 			const float left = base.x - blockW * l.pivot.x;
-			float y = base.y + blockH * (1.0f - l.pivot.y) - lineH;
+			const float topY = base.y + blockH * (1.0f - l.pivot.y) - lineH;
 
-			for (auto& line : tb->lines)
+			// TextComponentと同じ。pass0=アウトライン / pass1=本体
+			const int outlineW = (std::max)(0, t->params.value("outlineWidth", 0));
+			const DirectX::SimpleMath::Vector4 ov = UIDataDetail::ReadVec4(t->params, "outlineColor", DirectX::SimpleMath::Vector4(0, 0, 0, 1));
+			const Math::Color outlineColor(ov.x, ov.y, ov.z, ov.w);
+
+			for (int pass = 0; pass < 2; ++pass)
 			{
-				const float lineW = line->GetTotalWidth() * l.scale.x;
+				if (pass == 0 && outlineW <= 0) continue;
 
-				float x = left;
-				if (align == "Center")		x += (blockW - lineW) * 0.5f;
-				else if (align == "Right")	x += blockW - lineW;
-
-				for (auto& ch : line->GetTexList())
+				float y = topY;
+				for (auto& line : tb->lines)
 				{
-					if (!ch->FontTex) continue;
+					const float lineW = line->GetTotalWidth() * l.scale.x;
 
-					const float cw = ch->FontTex->GetInfo().Width * l.scale.x;
-					const float chh = ch->FontTex->GetInfo().Height * l.scale.y;
+					float x = left;
+					if (align == "Center")		x += (blockW - lineW) * 0.5f;
+					else if (align == "Right")	x += blockW - lineW;
 
-					spr.DrawTex(ch->FontTex.get(), (int)x, (int)y, (int)(cw + 0.5f), (int)(chh + 0.5f), nullptr, &color, Math::Vector2(0.0f, 0.0f));
-					x += cw;
+					for (auto& ch : line->GetTexList())
+					{
+						if (!ch->FontTex) continue;
+
+						const float cw = ch->FontTex->GetInfo().Width * l.scale.x;
+						const float chh = ch->FontTex->GetInfo().Height * l.scale.y;
+
+						if (pass == 0)
+						{
+							if (auto o = ch->GetOutlineTex(outlineW))
+							{
+								const float ox = outlineW * l.scale.x;
+								const float oy = outlineW * l.scale.y;
+								spr.DrawTex(o.get(), (int)(x - ox), (int)(y - oy), (int)(cw + ox * 2.0f + 0.5f), (int)(chh + oy * 2.0f + 0.5f), nullptr, &outlineColor, Math::Vector2(0.0f, 0.0f));
+							}
+						}
+						else
+						{
+							spr.DrawTex(ch->FontTex.get(), (int)x, (int)y, (int)(cw + 0.5f), (int)(chh + 0.5f), nullptr, &color, Math::Vector2(0.0f, 0.0f));
+						}
+						x += cw;
+					}
+					y -= lineH;
 				}
-				y -= lineH;
 			}
 		};
 

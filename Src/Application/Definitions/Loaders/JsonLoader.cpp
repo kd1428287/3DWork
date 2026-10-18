@@ -3,7 +3,9 @@
 
 #include <fstream>
 
-bool JsonLoader::Load(const std::string& path, nlohmann::json& out)
+// json / ordered_json 共通の実装
+template <typename JsonT>
+static bool LoadImpl(const std::string& path, JsonT& out)
 {
 	std::ifstream ifs(path);
 	if (!ifs) { return false; }
@@ -12,7 +14,7 @@ bool JsonLoader::Load(const std::string& path, nlohmann::json& out)
 	{
 		ifs >> out;
 	}
-	catch (const nlohmann::json::parse_error&)
+	catch (const nlohmann::json::exception&)
 	{
 		// 壊れたJSON/空ファイル等。呼び出し側には読み込み失敗として通知する
 		return false;
@@ -21,7 +23,8 @@ bool JsonLoader::Load(const std::string& path, nlohmann::json& out)
 	return true;
 }
 
-bool JsonLoader::Save(const std::string& path, const nlohmann::json& j)
+template <typename JsonT>
+static bool SaveImpl(const std::string& path, const JsonT& j)
 {
 	std::ofstream ofs(path);
 	if (!ofs) { return false; }
@@ -30,6 +33,11 @@ bool JsonLoader::Save(const std::string& path, const nlohmann::json& j)
 
 	return true;
 }
+
+bool JsonLoader::Load(const std::string& path, nlohmann::json& out) { return LoadImpl(path, out); }
+bool JsonLoader::Save(const std::string& path, const nlohmann::json& j) { return SaveImpl(path, j); }
+bool JsonLoader::Load(const std::string& path, nlohmann::ordered_json& out) { return LoadImpl(path, out); }
+bool JsonLoader::Save(const std::string& path, const nlohmann::ordered_json& j) { return SaveImpl(path, j); }
 
 bool JsonLoader::GetLastWriteTime(const std::string& path, FILETIME& out)
 {

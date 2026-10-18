@@ -67,29 +67,270 @@
             "ignoreParent": false,
             "shapes": [
               {
+                "capsuleEnd": [
+                  0.0,
+                  1.0,
+                  0.0
+                ],
                 "categoryMask": [
                   "Bump",
                   "Ground"
                 ],
+                "collideMask": [],
+                "enabled": true,
                 "halfExtents": [
-                  0.5,
+                  0.3199999928474426,
                   0.10000000149011612,
-                  0.5
+                  0.3499999940395355
                 ],
                 "isStatic": true,
                 "isTrigger": false,
                 "name": "shape0",
                 "offset": [
+                  0.04999999329447746,
+                  -0.007946758531033993,
+                  0.04999999329447746
+                ],
+                "radius": 0.5,
+                "shape": "Box",
+                "useDefaultCollideMask": true,
+                "wantsStayEvent": false
+              },
+              {
+                "capsuleEnd": [
                   0.0,
-                  0.0,
+                  1.0,
                   0.0
                 ],
+                "categoryMask": [
+                  "Bump"
+                ],
+                "collideMask": [],
+                "enabled": true,
+                "halfExtents": [
+                  0.3499999940395355,
+                  0.5,
+                  0.009999999776482582
+                ],
+                "isStatic": true,
+                "isTrigger": false,
+                "name": "shape1",
+                "offset": [
+                  0.0,
+                  0.0,
+                  0.375
+                ],
+                "radius": 0.5,
+                "shape": "Box",
+                "useDefaultCollideMask": true,
+                "wantsStayEvent": false
+              },
+              {
+                "capsuleEnd": [
+                  0.0,
+                  1.0,
+                  0.0
+                ],
+                "categoryMask": [
+                  "Bump"
+                ],
+                "collideMask": [],
+                "enabled": true,
+                "halfExtents": [
+                  0.01078187208622694,
+                  0.5,
+                  0.020001793280243874
+                ],
+                "isStatic": true,
+                "isTrigger": false,
+                "name": "Box",
+                "offset": [
+                  0.25710737705230713,
+                  0.0,
+                  -0.29458436369895935
+                ],
+                "radius": 0.5,
+                "shape": "Box",
+                "useDefaultCollideMask": true,
+                "wantsStayEvent": false
+              },
+              {
+                "capsuleEnd": [
+                  0.0,
+                  1.0,
+                  0.0
+                ],
+                "categoryMask": [
+                  "Bump"
+                ],
+                "collideMask": [],
+                "enabled": true,
+                "halfExtents": [
+                  0.05000000074505806,
+                  0.5,
+                  0.07520167529582977
+                ],
+                "isStatic": true,
+                "isTrigger": false,
+                "name": "Box2",
+                "offset": [
+                  0.27841708064079285,
+                  0.0,
+                  0.326108455657959
+                ],
+                "radius": 0.5,
+                "shape": "Box",
+                "useDefaultCollideMask": true,
+                "wantsStayEvent": false
+              },
+              {
+                "capsuleEnd": [
+                  0.0,
+                  1.0,
+                  0.0
+                ],
+                "categoryMask": [
+                  "Ground",
+                  "Bump"
+                ],
+                "collideMask": [],
+                "enabled": true,
+                "halfExtents": [
+                  0.5,
+                  0.009999999776482582,
+                  0.10000000149011612
+                ],
+                "isStatic": true,
+                "isTrigger": false,
+                "name": "Box3",
+                "offset": [
+                  0.0,
+                  0.08699999749660492,
+                  0.4093819260597229
+                ],
+                "radius": 0.5,
+                "shape": "Box",
+                "useDefaultCollideMask": true,
+                "wantsStayEvent": false
+              },
+              {
+                "capsuleEnd": [
+                  0.0,
+                  1.0,
+                  0.0
+                ],
+                "categoryMask": [
+                  "Bump"
+                ],
+                "collideMask": [],
+                "enabled": true,
+                "halfExtents": [
+                  0.3499999940395355,
+                  0.5,
+                  0.009999999776482582
+                ],
+                "isStatic": true,
+                "isTrigger": false,
+                "name": "shape12",
+                "offset": [
+                  0.0,
+                  0.05631355196237564,
+                  -0.30893272161483765
+                ],
+                "radius": 0.5,
+                "shape": "Box",
+                "useDefaultCollideMask": true,
+                "wantsStayEvent": false
+              },
+              {
+                "capsuleEnd": [
+                  0.0,
+                  1.0,
+                  0.0
+                ],
+                "categoryMask": [
+                  "Bump"
+                ],
+                "collideMask": [],
+                "enabled": true,
+                "halfExtents": [
+                  0.009999999776482582,
+                  0.5,
+                  0.3499999940395355
+                ],
+                "isStatic": true,
+                "isTrigger": false,
+                "name": "shape122",
+                "offset": [
+                  -0.2787091135978699,
+                  0.05631355196237564,
+                  0.02610178478062153
+                ],
+                "radius": 0.5,
+                "shape": "Box",
+                "useDefaultCollideMask": true,
+                "wantsStayEvent": false
+              },
+              {
+                "capsuleEnd": [
+                  0.0,
+                  1.0,
+                  0.0
+                ],
+                "categoryMask": [
+                  "Bump"
+                ],
+                "collideMask": [],
+                "enabled": true,
+                "halfExtents": [
+                  0.009999999776482582,
+                  0.5,
+                  0.3499999940395355
+                ],
+                "isStatic": true,
+                "isTrigger": false,
+                "name": "shape1222",
+                "offset": [
+                  0.2772672474384308,
+                  0.05631355196237564,
+                  0.02610178478062153
+                ],
+                "radius": 0.5,
+                "shape": "Box",
+                "useDefaultCollideMask": true,
+                "wantsStayEvent": false
+              },
+              {
+                "capsuleEnd": [
+                  0.0,
+                  1.0,
+                  0.0
+                ],
+                "categoryMask": [
+                  "Bump"
+                ],
+                "collideMask": [],
+                "enabled": true,
+                "halfExtents": [
+                  0.01078187208622694,
+                  0.5,
+                  0.020001793280243874
+                ],
+                "isStatic": true,
+                "isTrigger": false,
+                "name": "Box4",
+                "offset": [
+                  -0.26034054160118103,
+                  0.0,
+                  -0.29458436369895935
+                ],
+                "radius": 0.5,
                 "shape": "Box",
                 "useDefaultCollideMask": true,
                 "wantsStayEvent": false
               }
             ],
-            "wireFrame": true
+            "wireFrame": false
           },
           "type": "Collider"
         }
@@ -153,7 +394,7 @@
       "name": "Object11",
       "pos": [
         0.0,
-        2.345635414123535,
+        -38.18043518066406,
         0.0
       ],
       "rotation": [
@@ -230,64 +471,53 @@
       "components": [
         {
           "params": {
-            "anchor": [
-              0.5,
-              0.5
-            ],
-            "pivot": [
-              0.5,
-              0.5
-            ],
-            "position": [
-              0.0,
-              0.0
-            ],
-            "rotation": 0.0,
-            "scale": [
-              1.0,
-              1.0
-            ],
-            "size": [
-              0.0,
-              0.0
-            ],
-            "space": "Screen",
-            "worldOffset": [
-              0.0,
-              0.0,
-              0.0
-            ]
+            "prefab": "",
+            "role": "Player"
           },
-          "type": "UITransform"
-        },
-        {
-          "params": {
-            "align": "Left",
-            "antiAliasing": 3,
-            "color": [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ],
-            "fontNo": 0,
-            "text": "What is "
-          },
-          "type": "Text"
+          "type": "SpawnMarker"
         }
       ],
       "id": 14,
-      "name": "Object14",
+      "name": "PlayerStart",
       "pos": [
         0.0,
+        2.722020149230957,
+        12.170656204223633
+      ],
+      "rotation": [
+        -0.0,
         0.0,
-        0.0
+        -0.0,
+        1.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "components": [
+        {
+          "params": {
+            "prefab": "Asset/Data/Game/Warrock.json",
+            "role": "Enemy"
+          },
+          "type": "SpawnMarker"
+        }
+      ],
+      "id": 15,
+      "name": "Enemy_Warrock",
+      "pos": [
+        0.0,
+        2.3969080448150635,
+        -11.575162887573242
       ],
       "rotation": [
         0.0,
+        1.0,
         0.0,
-        0.0,
-        1.0
+        0.0
       ],
       "scale": [
         1.0,

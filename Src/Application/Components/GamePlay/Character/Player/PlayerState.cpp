@@ -3,6 +3,7 @@
 #include "PlayerAttackSelector.h"
 #include "../Common/WeaponSetComponent.h"
 #include "../../../Physics/Movement/TweenMoveComponent.h"
+#include "Application/Core/EventBus/Events/SceneEvents.h" // パスは配置に合わせて調整
 
 // =================================================================
 // 各Stateの具体的なロジック実装
@@ -370,4 +371,29 @@ bool StateStagger::CanStartMove(const PlayerStatusController* controller) const 
 const StaggerPhaseData& StateStagger::GetPhaseData(const PlayerStatusController* controller) const {
 	const StaggerData& data = controller->GetStaggerData();
 	return isLarge_ ? data.staggerLarge : data.staggerSmall;
+}
+
+
+// --- Dead State ---
+void StateDead::Enter(PlayerStatusController* controller) {
+	elapsed_ = 0.0f;
+	reloadRequested_ = false;
+	controller->CancelStepMove();
+	controller->ClearRootMotionWarp();
+	controller->ClearLockOn(); // カメラが死体を追い続けないようロック解除
+	controller->PlayAnimation(kDeathAnimationName, false, kDeathAnimationDuration, false);
+}
+
+void StateDead::Update(PlayerStatusController* controller, float deltaTime) {
+	elapsed_ += deltaTime;
+	if (reloadRequested_ || elapsed_ < kDeathAnimationDuration) return;
+
+	// アニメ終了時に一度だけシーンのリロードを要求する。
+	reloadRequested_ = true;
+	//GLOBALEVENT->Publish(Events::ReloadingScene{});
+	GLOBALEVENT->Publish(Events::SceneChangeRequest{SceneType::Title});
+}
+
+void StateDead::Exit(PlayerStatusController* controller) {
+	// 復活を実装する際に使う。現状は何もしない。
 }

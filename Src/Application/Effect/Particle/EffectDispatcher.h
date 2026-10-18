@@ -122,10 +122,10 @@ private:
 	using PendingEvent = std::variant<PendingSpawn, PendingAttach, PendingPositionUpdate, PendingDetach>;
 
 	// イベントハンドラ：pendingEvents_へ積むだけ(mutexで保護)
-	void OnGenericEffectSpawn(const Events::GenericEffectSpawnEvent& e);
-	void OnEffectAttachSpawn(const Events::EffectAttachSpawnEvent& e);
-	void OnEffectPositionUpdate(const Events::EffectPositionUpdateEvent& e);
-	void OnEffectDetach(const Events::EffectDetachEvent& e);
+	void OnGenericEffectSpawn(const Events::GenericEffectSpawn& e);
+	void OnEffectAttachSpawn(const Events::EffectAttachSpawn& e);
+	void OnEffectPositionUpdate(const Events::EffectPositionUpdate& e);
+	void OnEffectDetach(const Events::EffectDetach& e);
 
 	// pendingEvents_を取り出して1件ずつ処理する(Update()冒頭から呼ばれる)
 	void ProcessPendingEvents();

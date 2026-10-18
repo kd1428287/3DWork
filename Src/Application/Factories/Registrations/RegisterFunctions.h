@@ -9,3 +9,4 @@ void RegisterCombatComponents(ComponentRegistry& registry);
 void RegisterPlayerComponents(ComponentRegistry& registry);
 void RegisterEnemyComponents(ComponentRegistry& registry);
 void RegisterUIComponents(ComponentRegistry& registry);
+void RegisterMapComponents(ComponentRegistry& registry);

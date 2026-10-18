@@ -4,6 +4,32 @@
 
 namespace
 {
+	// 整数ハッシュによる-1〜1の値(格子点ごとの乱数)
+	float Hash1(int i, int seed)
+	{
+		uint32_t n = static_cast<uint32_t>(i) * 374761393u + static_cast<uint32_t>(seed) * 668265263u;
+		n = (n ^ (n >> 13)) * 1274126177u;
+		n ^= n >> 16;
+
+		return static_cast<float>(n & 0xFFFFu) / 32767.5f - 1.0f;
+	}
+
+	// 格子点の乱数をなめらかにつないだ1次元ノイズ(-1〜1)
+	float Noise1D(float x, int seed)
+	{
+		int i = static_cast<int>(std::floor(x));
+		float f = x - i;
+		float u = f * f * (3.0f - 2.0f * f);
+
+		return Hash1(i, seed) + (Hash1(i + 1, seed) - Hash1(i, seed)) * u;
+	}
+
+	// 粗い揺らぎに、細かい揺らぎを重ねる(周期のない自然な動き)
+	float Fbm1D(float x, int seed)
+	{
+		return 0.65f * Noise1D(x, seed) + 0.35f * Noise1D(x * 2.3f, seed + 100);
+	}
+
 	// 現在バインドされているRT(0番)のサイズを取得する
 	bool GetBoundRTSize(ID3D11DeviceContext* devCon, float& width, float& height)
 	{
@@ -114,9 +140,8 @@ bool FluidSimulator::Init(int simWidth)
 	cb.Aspect = aspect;
 	cb.Diffusion = kDensityDiffusion;
 	cb.Vorticity = kVorticity;
-	cb.StreamSpeed = kStreamSpeed;
-	cb.StreamDensity = kStreamDensity;
 	cb.Gravity = kGravity;
+	cb.AmbientForce = kAmbientForce;
 
 	// 画面全体に書き込む用の頂点
 	m_screenVert[0] = { {-1,-1,0}, {0, 1} };
@@ -220,8 +245,10 @@ void FluidSimulator::Step(float deltaTime)
 	m_cb.Work().DeltaTime = dt;
 
 	UpdateStream(dt);
+	UpdateDisturbance(dt);
 	ApplySplats(dt);
 	AddBuoyancy();
+	AddAmbientFlow();
 
 	// 速度の自己移流 → 渦度強調 → 圧力投影で非圧縮にする → 入口から速度を流し込む
 	Advect(m_velocity, m_velocity, kVelocityDissipation);
@@ -299,25 +326,83 @@ void FluidSimulator::UpdateStream(float dt)
 
 	m_streamTime += dt;
 
-	// 占有率が目標に足りなければ帯を太く、多ければ細くする
+	// 占有率の計測値をなめらかにし、目標との差から、太さの基準を少しずつ変える
 	if (m_coverageValid)
 	{
-		float error = kTargetCoverage - m_coverage;
+		if (!m_coverageFilterInit)
+		{
+			m_coverageFiltered = m_coverage;
+			m_coverageFilterInit = true;
+		}
 
-		m_streamHalfWidth = std::clamp(m_streamHalfWidth + error * kStreamWidthGain * dt, kStreamWidthMin, kStreamWidthMax);
+		m_coverageFiltered += (m_coverage - m_coverageFiltered) * (1.0f - std::exp(-dt / kCoverageFilterTime));
+
+		float error = kTargetCoverage - m_coverageFiltered;
+
+		if (std::abs(error) > kCoverageDeadband)
+		{
+			float rate = std::clamp(error * kStreamWidthGain, -kStreamWidthMaxRate, kStreamWidthMaxRate);
+
+			m_streamHalfWidth = std::clamp(m_streamHalfWidth + rate * dt, kStreamWidthMin, kStreamWidthMax);
+		}
 	}
 
-	// 入口の位置と向きをゆっくり揺らし、線がうねるようにする
+	// 入口の中心は、ノイズでゆっくり不規則に動かす
+	float centerX = 0.5f + kStreamCenterSwing * Fbm1D(m_streamTime * kStreamCenterSpeed, 0);
+
+	// 手を動かしながら注ぐように、入口の横移動の速さを、墨の初速へ加える
+	float lateral = (m_prevCenterX >= 0.0f) ? (centerX - m_prevCenterX) * m_simWidth / dt : 0.0f;
+	m_prevCenterX = centerX;
+
+	// 濃度と太さに、ゆっくりしたゆらぎを与える(太さは基準に対する倍率)
+	float densityNoise = 0.5f + 0.5f * Fbm1D(m_streamTime * kStreamDensitySpeed, 1);
+	float widthScale = 1.0f + kStreamWidthVar * Fbm1D(m_streamTime * kStreamWidthVarSpeed, 2);
+
 	cbFluid& cb = m_cb.Work();
-	cb.StreamCenterX = 0.5f + kStreamCenterSwing * std::sin(m_streamTime * kStreamCenterSpeed);
-	cb.StreamHalfWidth = m_streamHalfWidth;
-	cb.StreamAngle = kStreamAngleSwing * std::sin(m_streamTime * kStreamAngleSpeed);
+	cb.StreamCenterX = centerX;
+	cb.StreamHalfWidth = (std::max)(m_streamHalfWidth * widthScale, kStreamWidthMin * 0.5f);
+	cb.StreamSpeed = std::hypot(lateral, kStreamSpeed);
+	cb.StreamAngle = std::atan2(lateral, kStreamSpeed);
+	cb.StreamDensity = kStreamDensityMin + (kStreamDensityMax - kStreamDensityMin) * densityNoise;
+	cb.Time = m_streamTime;
+}
+
+void FluidSimulator::UpdateDisturbance(float dt)
+{
+	m_disturbTimer -= dt;
+	if (m_disturbTimer > 0.0f) { return; }
+
+	// 乱数の代わりに、発生回数から決まるハッシュ値(0〜1)を使う
+	auto rand01 = [this](int k) { return 0.5f + 0.5f * Hash1(m_disturbCount * 8 + k, 7); };
+
+	m_disturbTimer = kDisturbIntervalMin + (kDisturbIntervalMax - kDisturbIntervalMin) * rand01(0);
+
+	// 入口の下あたり(墨が通る辺り)の、ランダムな位置と向きへ、墨を加えない力だけを加える
+	float centerX = (m_prevCenterX >= 0.0f) ? m_prevCenterX : 0.5f;
+	Math::Vector2 pos = { std::clamp(centerX + (rand01(1) - 0.5f) * 0.6f, 0.1f, 0.9f), 0.15f + 0.75f * rand01(2) };
+
+	float angle = rand01(3) * DirectX::XM_2PI;
+	float speed = kDisturbSpeedMin + (kDisturbSpeedMax - kDisturbSpeedMin) * rand01(4);
+	float radius = kDisturbRadiusMin + (kDisturbRadiusMax - kDisturbRadiusMin) * rand01(5);
+
+	// 速度[texel/秒]がspeedになる移動量(ApplySplatsで移動量÷dtへ戻される)
+	Math::Vector2 delta = { std::cos(angle) * speed * dt / m_simWidth, std::sin(angle) * speed * dt / m_simHeight };
+
+	m_splats.push_back({ pos, delta, radius, 0.0f });
+
+	++m_disturbCount;
 }
 
 void FluidSimulator::Emit(Pass pass, FluidDoubleRT& field)
 {
 	DrawPass(pass, field.Read().m_RTTexture.get(), nullptr, field.Write());
 	field.Swap();
+}
+
+void FluidSimulator::AddAmbientFlow()
+{
+	DrawPass(Pass::Ambient, m_velocity.Read().m_RTTexture.get(), nullptr, m_velocity.Write());
+	m_velocity.Swap();
 }
 
 void FluidSimulator::AddBuoyancy()
@@ -415,7 +500,10 @@ void FluidSimulator::ApplySplats(float dt)
 
 			// 分割数で割り、軌跡全体の入力量が分割数に依らないようにする
 			Splat(m_velocity, Pass::SplatVelocity, pos, s.Radius, { vel.x / n, vel.y / n, 0.0f });
-			Splat(m_density, Pass::SplatDensity, pos, s.Radius, { s.Density / n, 0.0f, 0.0f });
+			if (s.Density > 0.0f)
+			{
+				Splat(m_density, Pass::SplatDensity, pos, s.Radius, { s.Density / n, 0.0f, 0.0f });
+			}
 		}
 	}
 

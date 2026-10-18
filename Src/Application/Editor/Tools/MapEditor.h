@@ -6,6 +6,7 @@
 #include "Application/Definitions/Map/MapData.h"
 #include "../Common/EditorPreviewViewport.h"
 #include "../Common/ComponentInspector.h"
+#include "Application/Components/Graphics/Render/WireFrameComponent.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // マップに配置する1オブジェクト分の、Editor側の実体。
@@ -27,6 +28,13 @@ struct MapObject
 	{
 		for (auto& c : data.components) { if (c.type == type) return true; }
 		return false;
+	}
+
+	// 指定した種類のコンポーネントを返す(無ければnullptr)
+	const ComponentEntry* FindComponent(const std::string& type) const
+	{
+		for (auto& c : data.components) { if (c.type == type) return &c; }
+		return nullptr;
 	}
 
 	// data.components内の"ModelRender"コンポーネントのmodelパラメータを見て、
@@ -76,6 +84,10 @@ public:
 	// 配置済みオブジェクト一覧の取得(読み取り専用参照用)
 	const std::vector<MapObject>& GetObjects() const { return m_objects; }
 
+	// ColliderEditor用: 配置済みオブジェクトの編集口と、現在のパスへの保存
+	std::vector<MapObject>& WorkObjects() { return m_objects; }
+	void SaveToCurrentPath() { Save(m_filePathBuf); }
+
 	// 配置済みオブジェクトを実際に3D描画する
 	//	SceneManager::Draw() など、GUIとは別の3D描画パスから呼び出すこと
 	//	(KdDebugGUI::GuiProcess() 内のUpdate()から呼んではいけない)
@@ -101,6 +113,10 @@ private:
 
 	// 配置済みオブジェクトを描画する実処理(DrawPlacedObjects()・RenderPreviewViewport()の共通部分)
 	void DrawObjects();
+
+	// WireFrame+Colliderを持つオブジェクトの形状をデータから直接ワイヤー描画する
+	void DrawWireFrames();
+	KdDebugWireFrame	m_wire;
 
 	// プレビュー用カメラの注視点(選択中オブジェクトがあればその位置、無ければ配置済み全体の重心)
 	//	RenderPreviewViewport()・DrawGizmo()の両方で同じ注視点を使うための共通処理

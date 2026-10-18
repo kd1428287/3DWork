@@ -33,6 +33,7 @@ public:
 		float	MinDistance = 0.2f;
 		float	MaxDistance = 50.0f;
 		float	WheelSensitivity = 0.3f;
+		float	FlySpeedScale = 1.0f;	// 右ホールド+WASDQEの移動速度(カメラ距離に比例する速度への倍率)
 
 		float	ClearColor[4] = { 0.1f, 0.1f, 0.12f, 1.0f };
 	};
@@ -54,6 +55,9 @@ public:
 	// ImGuiウィンドウを開き、結果画像の表示と右ドラッグ回転・ホイールズームを処理する。
 	// overlayFuncはウィンドウ内(画像表示の直後)で毎回呼ばれる。ギズモやテキスト表示用
 	void DrawWindow(const char* windowName, ImGuiWindowFlags flags, const std::function<void()>& overlayFunc = nullptr);
+
+	// カメラの平行移動量(右ホールド+WASDQE・中ドラッグで動かした分)を元に戻し、注視点を中心へ戻す
+	void ResetPan() { m_camera.Pan = { 0, 0, 0 }; }
 
 	// ギズモ等で同じカメラ・同じ表示領域を使うための取得口
 	DirectX::SimpleMath::Matrix GetViewMatrix(const DirectX::SimpleMath::Vector3& target) const;
@@ -86,7 +90,13 @@ private:
 		float Yaw = 0.0f;
 		float Pitch = 0.3f;
 
+		// 注視点(target)からの平行移動量。実際の注視点は target + Pan
+		DirectX::SimpleMath::Vector3 Pan = { 0, 0, 0 };
+
 		DirectX::SimpleMath::Matrix GetView(const DirectX::SimpleMath::Vector3& target) const;
+
+		// カメラの右・上・前方向(ワールド座標)
+		void GetBasis(DirectX::SimpleMath::Vector3& right, DirectX::SimpleMath::Vector3& up, DirectX::SimpleMath::Vector3& forward) const;
 	};
 
 	// ウィンドウサイズに合わせてバッファを作り直す(サイズ据え置きなら何もしない)
@@ -96,4 +106,8 @@ private:
 	Viewport				m_viewport;
 	OrbitCamera				m_camera;
 	KdPreviewPostProcess	m_postProcess;
+
+	// 右/中ボタンのドラッグ操作中か(開始時にウィンドウ上にあれば、カーソルが外へ出ても継続する)
+	bool					m_rightHeld = false;
+	bool					m_middleHeld = false;
 };

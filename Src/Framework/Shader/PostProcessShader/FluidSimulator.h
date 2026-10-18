@@ -70,6 +70,7 @@ private:
 		EmitVelocity,
 		EmitDensity,
 		Buoyancy,
+		Ambient,
 	};
 
 	struct Vertex
@@ -106,7 +107,8 @@ private:
 
 		float StreamDensity = 0.0f;			// 入口の濃度
 		float Gravity = 0.0f;				// 墨が下へ引かれる力(texel/秒²)
-		float _blank5[2] = { 0.0f, 0.0f };
+		float Time = 0.0f;					// 経過時間(秒)
+		float AmbientForce = 0.0f;			// ゆるやかな水流の強さ(texel/秒²)
 	};
 
 	struct SplatRequest
@@ -135,8 +137,14 @@ private:
 	// 墨は水より重いので、濃度に比例した力で下へ引く
 	void AddBuoyancy();
 
-	// 入口の位置・向きをゆっくり揺らし、占有率に応じて帯の太さを変える
+	// 画面全体へ、ゆっくり変化する弱い渦状の流れを加える
+	void AddAmbientFlow();
+
+	// 入口をノイズで不規則に動かし、濃度と太さにゆらぎを与える(太さの基準は占有率で変える)
 	void UpdateStream(float dt);
+
+	// ときどき、墨を加えない小さな力(水の乱れ)を、ランダムな位置と向きへ加える
+	void UpdateDisturbance(float dt);
 
 	// 墨の占有率を計測する(GPUで縮小してから、数フレーム遅れでCPUへ読み戻す)
 	void MeasureCoverage();
@@ -175,16 +183,30 @@ private:
 	static constexpr int   kStagingCount = 3;		// 読み戻し用バッファの数
 
 	// 画面の上端から注がれる、一本の墨のストリーム(下端から画面の外へ流れ出る)
-	static constexpr float kStreamSpeed = 25.0f;		// 注ぐ勢い(texel/秒)。小さいほど静か
-	static constexpr float kStreamDensity = 0.9f;		// 入口の濃度
-	static constexpr float kStreamAngleSwing = 0.3f;	// 注ぐ向きの振れ幅(ラジアン)
-	static constexpr float kStreamAngleSpeed = 0.7f;	// 注ぐ向きが振れる速さ(rad/秒)
-	static constexpr float kStreamCenterSwing = 0.2f;	// 入口の中心の左右の振れ幅(画面の幅に対する比率)
-	static constexpr float kStreamCenterSpeed = 0.3f;	// 入口の中心が動く速さ(rad/秒)
-	static constexpr float kStreamWidthMin = 0.01f;		// 入口の帯の半幅の下限(画面の高さに対する比率)
-	static constexpr float kStreamWidthMax = 0.15f;		// 上限
-	static constexpr float kStreamWidthGain = 0.1f;		// 占有率の不足1あたりの、半幅の変化(比率/秒)
-	static constexpr float kGravity = 60.0f;			// 濃度1の墨が下へ引かれる力(texel/秒²)
+	static constexpr float kStreamSpeed = 25.0f;			// 注ぐ勢い(texel/秒)。小さいほど静か
+	static constexpr float kStreamCenterSwing = 0.2f;		// 入口の中心の左右の振れ幅(画面の幅に対する比率)
+	static constexpr float kStreamCenterSpeed = 0.12f;		// 入口の中心が動く速さ(ノイズの変化/秒)
+	static constexpr float kStreamDensityMin = 0.55f;		// 入口の濃度の範囲(濃淡のゆらぎ)
+	static constexpr float kStreamDensityMax = 1.0f;
+	static constexpr float kStreamDensitySpeed = 0.2f;		// 濃度が変わる速さ(ノイズの変化/秒)
+	static constexpr float kStreamWidthVar = 0.35f;			// 帯の太さのゆらぎ(基準に対する比率)
+	static constexpr float kStreamWidthVarSpeed = 0.35f;	// 太さが変わる速さ(ノイズの変化/秒)
+	static constexpr float kStreamWidthMin = 0.01f;			// 帯の半幅の基準の下限(画面の高さに対する比率)
+	static constexpr float kStreamWidthMax = 0.15f;			// 上限
+	static constexpr float kStreamWidthGain = 0.05f;		// 占有率の不足1あたりの、半幅の基準の変化(比率/秒)
+	static constexpr float kStreamWidthMaxRate = 0.02f;		// 半幅の基準の変化速度の上限(比率/秒)
+	static constexpr float kCoverageFilterTime = 1.5f;		// 占有率の計測値をなめらかにする時間(秒)
+	static constexpr float kCoverageDeadband = 0.01f;		// 目標との差がこの範囲なら、太さの基準を変えない
+	// ランダムな力
+	static constexpr float kAmbientForce = 25.0f;			// ゆるやかな水流の強さ(texel/秒²)
+	static constexpr float kDisturbIntervalMin = 1.5f;		// 小さな乱れが起きる間隔(秒)
+	static constexpr float kDisturbIntervalMax = 4.0f;
+	static constexpr float kDisturbSpeedMin = 25.0f;		// 乱れの初速(texel/秒)
+	static constexpr float kDisturbSpeedMax = 60.0f;
+	static constexpr float kDisturbRadiusMin = 0.06f;		// 乱れの大きさ(画面の高さに対する比率)
+	static constexpr float kDisturbRadiusMax = 0.12f;
+
+	static constexpr float kGravity = 60.0f;				// 濃度1の墨が下へ引かれる力(texel/秒²)
 
 	ID3D11VertexShader*	m_VS = nullptr;
 	ID3D11InputLayout*	m_inputLayout = nullptr;
@@ -214,7 +236,12 @@ private:
 	std::vector<SplatRequest> m_splats;
 
 	float			m_streamTime = 0.0f;
-	float			m_streamHalfWidth = 0.06f;	// 占有率に応じて変わる入口の帯の半幅
+	float			m_streamHalfWidth = 0.08f;	// 占有率に応じて変わる、入口の帯の半幅の基準
+	float			m_prevCenterX = -1.0f;		// 前フレームの入口の中心(未設定は負)
+	float			m_coverageFiltered = 0.0f;	// なめらかにした占有率
+	bool			m_coverageFilterInit = false;
+	float			m_disturbTimer = 1.0f;		// 次の乱れまでの残り時間
+	int				m_disturbCount = 0;			// 起きた乱れの回数(乱数の種)
 
 	int		m_simWidth = 0;
 	int		m_simHeight = 0;
