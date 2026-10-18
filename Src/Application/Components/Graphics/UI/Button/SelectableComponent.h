@@ -16,6 +16,7 @@ public:
 	// Awake/デストラクタでSelectableManagerへの登録・解除を行う
 	~SelectableComponent();
 	void Awake() override;
+	void Update(float) override;
 
 	//===========================================
 	// 判定
@@ -114,6 +115,9 @@ public:
 		}
 	}
 
+	// ホバー中の拡大率(1で無効)と追従の速さ(1/秒)。元の拡大率に掛ける
+	void SetHoverScale(float scale, float speed = 12.0f) { hoverScale_ = scale; hoverSpeed_ = speed; }
+
 	// 重なったときの優先度。大きいほど手前で、マウスの判定が先に取られる
 	void SetLayer(int layer) { layer_ = layer; }
 	// 所属グループ。Managerのアクティブグループと一致するものだけが反応する
@@ -164,6 +168,12 @@ private:
 
 	int layer_ = 0;
 	int group_ = 0;
+
+	float hoverScale_ = 1.0f;
+	float hoverSpeed_ = 12.0f;
+	float scaleRate_ = 1.0f;
+	Math::Vector2 baseScale_ = { 1.0f, 1.0f };
+	bool baseCaptured_ = false;
 
 	SelectableComponent* nav_[4] = {};
 

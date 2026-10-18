@@ -210,6 +210,8 @@ void HitReactionComponent::OnHit(const Events::AttackHit& ctx)
 			postureComponent_->AddPostureDamage(attackData.postureDamage);
 			if (postureComponent_->IsBroken()) {
 				// TODO: 崩し状態(専用State)への遷移は別途実装。
+				// 【暫定】専用Stateができるまで、満タン固着を防ぐためResetだけ行う。
+				postureComponent_->Reset();
 			}
 		}
 		if (healthComponent_ != nullptr) {

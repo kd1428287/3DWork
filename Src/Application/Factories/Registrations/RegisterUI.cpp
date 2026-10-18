@@ -132,6 +132,10 @@ NLOHMANN_JSON_SERIALIZE_ENUM(UITransformComponent::Space, {
 		int         layer = 0;
 		int         group = 0;
 
+		// ホバー中の拡大率(1で無効)と追従の速さ(1/秒)
+		float       hoverScale = 1.0f;
+		float       hoverSpeed = 12.0f;
+
 		std::string onHoverEnter;
 		std::string onHoverExit;
 		std::string onSelect;
@@ -139,7 +143,7 @@ NLOHMANN_JSON_SERIALIZE_ENUM(UITransformComponent::Space, {
 		std::string onClick;
 		std::string clickParam;
 	};
-	COMPONENT_PARAMS_DEFINE_TYPE(SelectableParams, interactable, layer, group,
+	COMPONENT_PARAMS_DEFINE_TYPE(SelectableParams, interactable, layer, group, hoverScale, hoverSpeed,
 		onHoverEnter, onHoverExit, onSelect, onDeselect, onClick, clickParam)
 
 		void BuildSelectable(BuildContext& ctx, const SelectableParams& p)
@@ -148,6 +152,7 @@ NLOHMANN_JSON_SERIALIZE_ENUM(UITransformComponent::Space, {
 		selectable->SetInteractable(p.interactable);
 		selectable->SetLayer(p.layer);
 		selectable->SetGroup(p.group);
+		selectable->SetHoverScale(p.hoverScale, p.hoverSpeed);
 
 		if (!p.onHoverEnter.empty()) selectable->AddAction(UITrigger::HoverEnter, p.onHoverEnter);
 		if (!p.onHoverExit.empty())  selectable->AddAction(UITrigger::HoverExit, p.onHoverExit);

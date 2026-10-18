@@ -110,6 +110,9 @@ void WarrockBehavior::OnParrySucceeded(EnemyAIController* owner, const Events::P
 	if (PostureComponent* posture = owner->GetPostureComponent()) {
 		posture->AddPostureDamage(event.parryPostureDamage);
 		if (posture->IsBroken()) {
+			// 【修正】パリィで体幹が満タンになった場合もResetする。
+			// (通常被弾側はHitReactionComponentがResetしているが、この経路には無かった)
+			posture->Reset();
 			RequestReaction(owner, "BigStagger", ReactionPriority::BigStagger);
 		}
 	}
