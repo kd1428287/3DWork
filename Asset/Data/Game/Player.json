@@ -511,7 +511,7 @@
 					"type": "Collider",
 					"params": {
 						"ignoreParent": true,
-						"wireFrame": true,
+						"wireFrame": false,
 						"shapes": [
 							{
 								"name": "HitBox",

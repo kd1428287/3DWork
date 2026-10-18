@@ -1968,6 +1968,93 @@
         1.0,
         1.0
       ]
+    },
+    {
+      "name": "Star",
+      "params": {
+        "blendMode": "Add",
+        "drawPass": [
+          "Default"
+        ],
+        "emitInterval": 0.0,
+        "emitMode": "Burst",
+        "gravity": [
+          0.0,
+          -0.5,
+          0.0
+        ],
+        "layers": [
+          {
+            "billboardMode": "Normal",
+            "colorMax": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "colorMin": [
+              0.9460784196853638,
+              0.9368031024932861,
+              0.9368031024932861,
+              1.0
+            ],
+            "colorStartMax": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "colorStartMin": [
+              0.9460784196853638,
+              0.9368031024932861,
+              0.9368031024932861,
+              1.0
+            ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
+            "count": 30,
+            "dirScaleMax": 4.0,
+            "dirScaleMin": 1.0,
+            "distribution": "Directional",
+            "lifeMax": 0.800000011920929,
+            "lifeMin": 0.44999998807907104,
+            "offsetMax": [
+              1.0,
+              1.5,
+              1.0
+            ],
+            "offsetMin": [
+              1.0,
+              0.5,
+              1.0
+            ],
+            "radialSpeedMax": 4.0,
+            "radialSpeedMin": 1.0,
+            "sizeEndMax": 0.05999999865889549,
+            "sizeEndMin": 0.019999999552965164,
+            "sizeMax": 0.05999999865889549,
+            "sizeMin": 0.019999999552965164,
+            "stretchScale": 0.15000000596046448
+          }
+        ],
+        "maxParticleNum": 500,
+        "texture": "star.png"
+      },
+      "pos": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotate": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
     }
   ],
   "groups": {

@@ -1,9 +1,8 @@
 {
-  "elements": [],
-  "nextId": 1,
-  "refSize": [
-    1920.0,
-    1080.0
-  ],
-  "version": 2
+	"name": "hud",
+	"components": [
+		{
+			"type": "PlayerHudGauge"
+		}
+	]
 }

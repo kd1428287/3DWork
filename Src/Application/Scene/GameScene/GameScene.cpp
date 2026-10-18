@@ -34,6 +34,7 @@
 #include "Application/Core/EventBus/Events/CombatEvents.h"
 #include "Application/Core/EventBus/Events/SceneEvents.h"
 #include "Application/Core/EventBus/Events/TimeScaleEvents.h"
+#include "Application/Core/EventBus/Events/InputLockEvents.h"
 
 namespace
 {
@@ -269,6 +270,12 @@ void GameScene::SetupResult()
 			case ResultController::Phase::Slow:
 				// 撃破の瞬間にスローへ。文字テクスチャもスローの間に作っておく
 				Events::PublishHitStop(*localBus_, kResultTimeScale, -1.0f);
+				{
+					// 操作・視点をロック。コンポーネントはシーンと共に破棄されるので解除は不要
+					Events::InputLockChanged lock;
+					lock.locked = true;
+					GLOBALEVENT->Publish(lock);
+				}
 				resultView_->Build(result_->GetPlayTime());
 				break;
 			case ResultController::Phase::Exit:

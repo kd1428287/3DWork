@@ -112,7 +112,8 @@
                   0.0
                 ],
                 "categoryMask": [
-                  "Bump"
+                  "Bump",
+                  "CameraBump"
                 ],
                 "collideMask": [],
                 "enabled": true,
@@ -141,7 +142,8 @@
                   0.0
                 ],
                 "categoryMask": [
-                  "Bump"
+                  "Bump",
+                  "CameraBump"
                 ],
                 "collideMask": [],
                 "enabled": true,
@@ -170,7 +172,8 @@
                   0.0
                 ],
                 "categoryMask": [
-                  "Bump"
+                  "Bump",
+                  "CameraBump"
                 ],
                 "collideMask": [],
                 "enabled": true,
@@ -316,7 +319,8 @@
                   0.0
                 ],
                 "categoryMask": [
-                  "Bump"
+                  "Bump",
+                  "CameraBump"
                 ],
                 "collideMask": [],
                 "enabled": true,
@@ -361,35 +365,6 @@
         50.0,
         25.0,
         50.0
-      ]
-    },
-    {
-      "components": [
-        {
-          "params": {
-            "animations": "",
-            "model": "Asset/Models/Character/Masks/DemonMask.gltf"
-          },
-          "type": "ModelRender"
-        }
-      ],
-      "id": 13,
-      "name": "DemonMask",
-      "pos": [
-        0.10122694075107574,
-        5.044363498687744,
-        -19.128625869750977
-      ],
-      "rotation": [
-        0.0,
-        1.0,
-        0.0,
-        -1.192093321833454e-07
-      ],
-      "scale": [
-        0.9999995231628418,
-        1.0,
-        0.9999995231628418
       ]
     },
     {
@@ -459,6 +434,32 @@
       ],
       "id": 16,
       "name": "GroundTexture",
+      "pos": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "components": [
+        {
+          "params": {},
+          "type": "PlayerHudGauge"
+        }
+      ],
+      "id": 17,
+      "name": "HUD",
       "pos": [
         0.0,
         0.0,

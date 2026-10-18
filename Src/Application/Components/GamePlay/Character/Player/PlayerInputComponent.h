@@ -1,5 +1,7 @@
 ﻿#pragma once
 #include "Application/Definitions/Character/Player/PlayerCombatTypes.h"
+#include "Application/Core/EventBus/EventBus.h"
+#include "Application/Core/EventBus/Events/InputLockEvents.h"
 #include "../../../Tags/IMovementSource.h"
 
 #include "../../Camera/CameraComponent.h"
@@ -28,6 +30,16 @@ public:
 		}
 		transform_ = GetOwner()->GetComponent<TransformComponent>();       // 追加
 		lockOnComponent_ = GetOwner()->GetComponent<PlayerLockOnComponent>(); // 追加
+
+		inputLockSub_ = GLOBALEVENT->SubscribeScoped<Events::InputLockChanged>(
+			[this](const Events::InputLockChanged& e) { SetInputLocked(e.locked); });
+	}
+
+	// ロック中は入力を読まず、移動・押下状態と先行入力をすべて空にする
+	void SetInputLocked(bool locked) {
+		if (inputLocked_ == locked) return;
+		inputLocked_ = locked;
+		if (locked) ClearInput();
 	}
 
 	// カメラのactiveCamera(SceneContext経由)が使えない/yawを決められない場合に
@@ -43,6 +55,8 @@ public:
 	//  積んだ分がその場で減算されてしまうことはない)。
 	void PreUpdate(float deltaTime) override
 	{
+		if (inputLocked_) return;
+
 		const Math::Vector2 axis = KdInputManager::Instance().GetAxisState("Move");
 		Math::Vector3 dir{ axis.x, 0.0f, axis.y };
 
@@ -164,6 +178,21 @@ public:
 	Math::Vector3 GetMoveDirection() const { return moveDirection_; }
 
 private:
+	void ClearInput() {
+		moveDirection_ = Math::Vector3::Zero;
+		dashHeld_ = false;
+		guardHeld_ = false;
+		attackHeld_ = false;
+		lockPressed_ = false;
+
+		// ロック前に積まれた先行入力が、演出中に発動しないよう捨てる
+		if (actionBuffer_ != nullptr) {
+			for (ActionCommand command : { ActionCommand::Attack, ActionCommand::Evade, ActionCommand::Guard }) {
+				while (actionBuffer_->ConsumeCommand(command)) {}
+			}
+		}
+	}
+
 	void SetMoveDirection(Math::Vector3 direction) {
 		direction.Normalize();
 		moveDirection_ = direction;
@@ -178,6 +207,9 @@ private:
 	bool guardHeld_ = false;
 	bool attackHeld_ = false;
 	bool lockPressed_ = false; // このフレームLockが押されたか(消費されるまで保持)
+
+	bool inputLocked_ = false;
+	ScopedSubscriber inputLockSub_;
 
 	Handle<CameraOrbitComponent> cameraOrbitFallback_; // activeCamera不使用時のyawフォールバック先
 

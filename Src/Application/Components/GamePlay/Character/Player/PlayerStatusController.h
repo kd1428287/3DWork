@@ -22,9 +22,9 @@ class HealthComponent;
 // 被弾/ガード/パリィのSEはHitReactionConfig側(SEName)で指定する。
 struct PlayerSoundData
 {
-	std::string attackSwing;		// 攻撃判定の発生時
+	std::string attackSwing = "Asset/Sounds/Game/Kazakiri.wav";		// 攻撃判定の発生時
 	std::string evade;
-	std::string guardRaise;
+	std::string guardRaise = "Asset/Sounds/Game/Kamae.wav";
 	std::string death;
 };
 

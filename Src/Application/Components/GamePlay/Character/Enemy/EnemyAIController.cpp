@@ -155,6 +155,7 @@ void EnemyAIController::StopTelegraphEffect()
 {
 	if (telegraphKey_.empty()) return;
 	Events::PublishEffectDetach(GetOwner()->GetSceneEventBus(), telegraphKey_);
+	Events::PublishGenericEffect(GetOwner()->GetSceneEventBus(), std::string("Star"),ComputeTelegraphPosition());
 	telegraphKey_.clear();
 }
 

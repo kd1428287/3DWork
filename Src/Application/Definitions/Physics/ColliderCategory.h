@@ -29,6 +29,7 @@ enum class ColliderCategory : uint32_t
 	HurtBox = 1u << 4, // 食らい判定
 	Sight = 1u << 5, // 視界判定
 	EventArea = 1u << 6, // イベント用の任意領域
+	CameraBump = 1u << 7,
 	All = 0xFFFFFFFFu,
 
 	// Add*系のcollideMask引数を省略した時の目印専用の値。

@@ -16,6 +16,7 @@ inline const std::vector<std::pair<const char*, ColliderCategory>>& GetColliderC
 		{ "HurtBox",   ColliderCategory::HurtBox },
 		{ "Sight",     ColliderCategory::Sight },
 		{ "EventArea", ColliderCategory::EventArea },
+		{ "CameraBump", ColliderCategory::CameraBump },
 	};
 	return flags;
 }

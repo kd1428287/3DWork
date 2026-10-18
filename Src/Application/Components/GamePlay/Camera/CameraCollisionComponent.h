@@ -67,7 +67,7 @@ public:
 			RaycastSystem::Hit hit;
 			const bool blocked = RaycastSystem::SphereCastClosest(
 				*registry, pivot, dir, desiredDistance, sweepRadius_,
-				ColliderCategory::Ground | ColliderCategory::Bump,
+				ColliderCategory::Ground | ColliderCategory::CameraBump,
 				hit, ignoreOwner);
 
 			if (blocked) {

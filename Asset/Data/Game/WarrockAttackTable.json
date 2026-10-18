@@ -207,7 +207,7 @@
 				"effectName": "StarConverge",
 				"anchorSlot": "Main",
 				"offset": [ 0.0, 0.0, 0.0 ],
-				"leadTime": 0.2
+				"leadTime": 0.4
 			},
 			"minRange": 0.0,
 			"maxRange": 4.0,
@@ -233,7 +233,7 @@
 				},
 				"phaseData": {
 					"windup": {
-						"duration": 0.20,
+						"duration": 0.40,
 						"animationName": "SpinningAttack_Low",
 						"useRootMotion": true,
 						"blendDuration": 0.1,
