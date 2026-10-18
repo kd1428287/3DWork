@@ -49,6 +49,13 @@ public:
 		current_ = std::clamp(value, 0.0f, max_);
 		died_ = (current_ <= 0.0f);
 		PublishChanged();
+		if (current_ <= 0.0f) {
+			died_ = true;
+			Events::Died e;
+			e.source = Handle<GameObject>(GetOwner());
+			GetOwner()->GetContext()->eventBus->Publish(e);
+			GetOwner()->GetLocalEventBus().Publish(e);
+		}
 	}
 
 	// 最大値を変更する。alsoHeal=trueなら同時に全回復させる

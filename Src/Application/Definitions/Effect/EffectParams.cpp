@@ -15,6 +15,12 @@ ParticleBuffer::EmitParameter DirectionalEmitShape::ToEmitParameter(
 		p.RadialSpeedMin = RadialSpeedMin;
 		p.RadialSpeedMax = RadialSpeedMax;
 	}
+	else if (Distribution == ParticleEmitDistribution::Converge)
+	{
+		// 収束点はworldPos。速度はGPU側が半径と寿命から決める
+		p.ConvergeRadius = ConvergeRadius;
+		p.ConvergeSpeed = ConvergeSpeed;
+	}
 	else
 	{
 		p.VelocityMin = baseDir * DirScaleMin - OffsetMin;

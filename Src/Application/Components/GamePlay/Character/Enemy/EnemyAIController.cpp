@@ -1,4 +1,6 @@
 ﻿#include "EnemyAIController.h"
+#include "../Common/CharacterEvents.h"
+#include "Application/Core/EventBus/Events/AudioEvents.h"
 
 void EnemyAIController::UpdateTargetAcquisition()
 {
@@ -110,6 +112,52 @@ void EnemyAIController::FaceHorizontalTarget(const Math::Vector3& targetPosition
 	transform_->SetRotation(Math::Quaternion::CreateFromAxisAngle(Math::Vector3::Up, yaw));
 }
 
+// --- 効果音 ---------------------------------------------------------------
+void EnemyAIController::PlaySE(const std::string& id) const
+{
+	if (id.empty()) return;
+	Events::PublishSoundPlayEvent(*GlobalEventBus::Instance(), id);
+}
+
+// --- 予備動作エフェクト ---------------------------------------------------
+Math::Vector3 EnemyAIController::ComputeTelegraphPosition() const
+{
+	// 基準位置: anchorSlotの武器オブジェクト位置。見つからなければルート
+	Math::Vector3 basePos = transform_->GetPosition();
+	if (!telegraphData_.anchorSlot.empty() && weaponSet_ != nullptr) {
+		if (WeaponComponent* weapon = weaponSet_->GetWeapon(telegraphData_.anchorSlot)) {
+			if (TransformComponent* weaponTf = weapon->GetTransform()) {
+				basePos = weaponTf->GetPosition();
+			}
+		}
+	}
+	// offsetは敵の向きに合わせて回す
+	return basePos + Math::Vector3::Transform(telegraphData_.offset, transform_->GetRotation());
+}
+
+void EnemyAIController::PlayTelegraphEffect(const EnemyAttackTelegraphData& data)
+{
+	if (data.effectName.empty() || transform_ == nullptr) return;
+
+	StopTelegraphEffect(); // 二重再生防止
+	telegraphData_ = data;
+	telegraphKey_ = "EnemyTelegraph_" + std::to_string(reinterpret_cast<uintptr_t>(this));
+	Events::PublishEffectAttach(GetOwner()->GetSceneEventBus(), telegraphKey_, data.effectName, ComputeTelegraphPosition());
+}
+
+void EnemyAIController::UpdateTelegraphEffect()
+{
+	if (telegraphKey_.empty() || transform_ == nullptr) return;
+	Events::PublishEffectPositionUpdate(GetOwner()->GetSceneEventBus(), telegraphKey_, ComputeTelegraphPosition());
+}
+
+void EnemyAIController::StopTelegraphEffect()
+{
+	if (telegraphKey_.empty()) return;
+	Events::PublishEffectDetach(GetOwner()->GetSceneEventBus(), telegraphKey_);
+	telegraphKey_.clear();
+}
+
 // --- 被パリィ処理 ---------------------------------------------------------
 void EnemyAIController::OnParrySucceeded(const Events::ParrySucceeded& e)
 {
@@ -123,7 +171,10 @@ void EnemyAIController::OnDied()
 {
 	if (isDead_) return;
 	isDead_ = true;
+	StopTelegraphEffect();
 	despawnTimer_ = behavior_ ? behavior_->GetDespawnDelay(this) : 1.5f;
+
+	PlaySE(sound_.death);
 
 	StopMovement();
 	if (movementComponent_ != nullptr) movementComponent_->SetEnabled(false);
@@ -138,6 +189,7 @@ void EnemyAIController::OnDied()
 
 void EnemyAIController::RequestDespawn()
 {
+	StopTelegraphEffect();
 	const SceneContext* context = GetOwner()->GetContext();
 	if (context == nullptr || context->objectManager == nullptr) return;
 

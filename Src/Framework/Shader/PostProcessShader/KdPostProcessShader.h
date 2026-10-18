@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 // 液体表現の質感の種類(合成PSの切り替え用。血・水はここへ追加する)
 enum class LiquidStyle
@@ -55,6 +55,8 @@ public:
 	void AddShockwave(const Math::Vector2& centerUV, float duration, float maxRadius, float strength);
 	// ワールド座標指定版(カメラの背後なら何もしない)
 	void AddShockwaveWorld(const Math::Vector3& worldPos, float duration, float maxRadius, float strength);
+	// ワールド座標を画面UV(0〜1)へ変換する。カメラの背後ならfalse
+	bool WorldToScreenUV(const Math::Vector3& worldPos, Math::Vector2& outUV) const;
 	// 毎フレームPostEffectProcess()より前に呼ぶ(渡すdeltaTimeでヒットストップの影響を制御)
 	void UpdateDistortion(float deltaTime);
 
@@ -86,6 +88,10 @@ public:
 	// UI描画後に呼ぶ。progress>0の間だけ画面全体(UI含む)を覆う
 	void DrawTransitionCover();
 
+	// 水墨画化(リザルト演出)。progress=0で無効、1で画面全体。centerUVは墨の広がる起点
+	// 毎フレームPostEffectProcess()より前に呼ぶ
+	void SetInkWash(float progress, const Math::Vector2& centerUV, float time);
+
 	void PostEffectProcess();
 
 	// エディタプレビュー等、本編以外の任意サイズテクスチャに対してカラーグレードのみを適用する。
@@ -107,6 +113,7 @@ private:
 	void ColorGradeProcess();
 	void DistortionProcess();
 	void TransitionWarpProcess(const std::shared_ptr<KdTexture>& srcTex);
+	void InkWashProcess(const std::shared_ptr<KdTexture>& srcTex);
 	void SurfaceProcess(const std::shared_ptr<KdTexture>& srcTex);
 
 	void CreateBlurOffsetList(std::vector<Math::Vector3>& dstInfo, const std::shared_ptr<KdTexture>& spSrcTex, int samplingSize, const Math::Vector2& dir);
@@ -132,6 +139,7 @@ private:
 	ID3D11PixelShader* m_PS_Surface = nullptr;
 	ID3D11PixelShader* m_PS_TransitionWarp = nullptr;
 	ID3D11PixelShader* m_PS_TransitionCover = nullptr;
+	ID3D11PixelShader* m_PS_InkWash = nullptr;
 
 	static const int kBlurSamplingRadius = 8;
 	static const int kLightBloomSamplingRadius = 4;
@@ -236,6 +244,35 @@ private:
 	};
 	KdConstantBuffer<cbTransitionInfo> m_cb0_TransitionInfo;
 
+	// 水墨画化(HLSL側のcbuffer cbInkWashと並びを一致させること)
+	struct cbInkWashInfo
+	{
+		Math::Vector2 Center = { 0.5f, 0.5f };	// 墨の広がる起点UV
+		float Progress = 0.0f;					// 0=通常 1=画面全体
+		float Time = 0.0f;						// ノイズのアニメーション用
+
+		Math::Vector3 InkColor = { 0.06f, 0.06f, 0.07f };
+		float Aspect = 1.0f;					// 画面の幅/高さ(円形補正用)
+
+		Math::Vector3 PaperColor = { 0.93f, 0.91f, 0.86f };
+		float MaxDist = 1.0f;					// 中心から最遠の角までの距離(アスペクト補正後)
+
+		float Softness = 0.25f;					// 広がりの縁の柔らかさ
+		float Contrast = 2.0f;					// 明暗の強さ
+		float Pivot = 0.4f;						// 紙と墨の境になる輝度
+		float Bleed = 0.25f;					// にじみ(濃淡の揺れ)
+
+		float EdgeStrength = 0.9f;				// 輪郭線の濃さ
+		float DepthEdgeGain = 8.0f;				// 深度の段差を輪郭にする強さ
+		float Vignette = 0.7f;					// 周辺の暗さ
+		float PaperGrain = 0.05f;				// 紙の粒状感
+
+		float Posterize = 0.4f;					// 濃淡を段にする割合
+		float NoiseScale = 4.0f;				// にじみノイズの細かさ
+		float _blank[2] = { 0, 0 };
+	};
+	KdConstantBuffer<cbInkWashInfo> m_cb0_InkWashInfo;
+
 	// 発生中の衝撃波(経過時間から半径と強さを毎フレーム算出する)
 	struct ShockwaveInstance
 	{
@@ -262,6 +299,8 @@ public:
 	const cbSurfaceInfo& GetSurfaceCB() const { return m_cb0_SurfaceInfo.Get(); }
 	cbSurfaceInfo& WorkSurfaceCB() { return m_cb0_SurfaceInfo.Work(); }
 	const cbTransitionInfo& GetTransitionCB() const { return m_cb0_TransitionInfo.Get(); }
+	const cbInkWashInfo& GetInkWashCB() const { return m_cb0_InkWashInfo.Get(); }
+	cbInkWashInfo& WorkInkWashCB() { return m_cb0_InkWashInfo.Work(); }
 
 private:
 	KdRenderTargetPack m_colorGradeRTPack; // 最終カラーグレーディング用RT
@@ -297,6 +336,9 @@ private:
 
 	// 画面遷移の波紋適用後の画像(遷移中だけ使う)
 	KdRenderTargetPack	m_transitionRTPack;
+
+	// 水墨画化後の画像(リザルト演出中だけ使う)
+	KdRenderTargetPack	m_inkWashRTPack;
 
 	// 質感合成後の最終画像と、合成する質感テクスチャ
 	KdRenderTargetPack m_surfaceRTPack;

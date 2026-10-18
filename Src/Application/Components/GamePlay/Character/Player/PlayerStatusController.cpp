@@ -8,6 +8,7 @@
 #include "../Common/HealthComponent.h" // パスはプロジェクトの配置に合わせて調整
 #include "../Common/HitReactionComponent.h"
 #include "../../../Physics/Collision/ColliderComponent.h"
+#include "Application/Core/EventBus/Events/AudioEvents.h"
 
 void PlayerStatusController::Awake()
 {
@@ -266,6 +267,12 @@ void PlayerStatusController::PlayAnimation(const MotionClipData& clip)
 {
 	if (modelAnimatorComponent_ == nullptr) return;
 	modelAnimatorComponent_->Play(clip);
+}
+
+void PlayerStatusController::PlaySE(const std::string& id) const
+{
+	if (id.empty()) return;
+	Events::PublishSoundPlayEvent(*GlobalEventBus::Instance(), id);
 }
 
 void PlayerStatusController::RefreshMovementAnimation()

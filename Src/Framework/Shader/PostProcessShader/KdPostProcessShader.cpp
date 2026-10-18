@@ -1,4 +1,4 @@
-﻿#include "KdPostProcessShader.h"
+#include "KdPostProcessShader.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // シェーダー本体の生成、定数バッファの生成
@@ -143,6 +143,18 @@ bool KdPostProcessShader::Init()
 		}
 	}
 
+	{
+#include "KdPostProcessShader_PS_InkWash.shaderInc"
+
+		if (FAILED(KdDirect3D::Instance().WorkDev()->CreatePixelShader(
+			compiledBuffer, sizeof(compiledBuffer), nullptr, &m_PS_InkWash)))
+		{
+			assert(0 && "ピクセルシェーダー作成失敗(InkWash)");
+			Release();
+			return false;
+		}
+	}
+
 	m_cb0_BlurInfo.Create();
 
 	m_cb0_DoFInfo.Create();
@@ -158,6 +170,8 @@ bool KdPostProcessShader::Init()
 	m_cb0_SurfaceInfo.Create();
 
 	m_cb0_TransitionInfo.Create();
+
+	m_cb0_InkWashInfo.Create();
 
 	const std::shared_ptr<KdTexture>& backBuffer = KdDirect3D::Instance().GetBackBuffer();
 
@@ -203,6 +217,10 @@ bool KdPostProcessShader::Init()
 	m_transitionRTPack.CreateRenderTarget(backBuffer->GetWidth(), backBuffer->GetHeight());
 	m_cb0_TransitionInfo.Work().Aspect = static_cast<float>(backBuffer->GetWidth()) / backBuffer->GetHeight();
 
+	// 水墨画化後の画像。円形補正用に縦横比も渡す
+	m_inkWashRTPack.CreateRenderTarget(backBuffer->GetWidth(), backBuffer->GetHeight());
+	m_cb0_InkWashInfo.Work().Aspect = static_cast<float>(backBuffer->GetWidth()) / backBuffer->GetHeight();
+
 	// 質感合成後の画像
 	m_surfaceRTPack.CreateRenderTarget(backBuffer->GetWidth(), backBuffer->GetHeight());
 
@@ -243,6 +261,7 @@ void KdPostProcessShader::Release()
 	KdSafeRelease(m_PS_Surface);
 	KdSafeRelease(m_PS_TransitionWarp);
 	KdSafeRelease(m_PS_TransitionCover);
+	KdSafeRelease(m_PS_InkWash);
 
 
 	m_cb0_BlurInfo.Release();
@@ -253,6 +272,7 @@ void KdPostProcessShader::Release()
 	m_cb0_DistortionInfo.Release();
 	m_cb0_SurfaceInfo.Release();
 	m_cb0_TransitionInfo.Release();
+	m_cb0_InkWashInfo.Release();
 
 	m_surfaceTex.reset();
 }
@@ -410,19 +430,28 @@ void KdPostProcessShader::AddShockwave(const Math::Vector2& centerUV, float dura
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 衝撃波の発生(ワールド座標指定)。カメラの背後なら何もしない
+// ワールド座標を画面UV(0〜1)へ変換する。カメラの背後ならfalse
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void KdPostProcessShader::AddShockwaveWorld(const Math::Vector3& worldPos, float duration, float maxRadius, float strength)
+bool KdPostProcessShader::WorldToScreenUV(const Math::Vector3& worldPos, Math::Vector2& outUV) const
 {
 	const KdShaderManager::cbCamera& cam = KdShaderManager::Instance().GetCameraCB();
 
 	Math::Vector4 clip = Math::Vector4::Transform(Math::Vector4(worldPos.x, worldPos.y, worldPos.z, 1.0f), cam.mView * cam.mProj);
-	if (clip.w <= 0.0f) { return; }
+	if (clip.w <= 0.0f) { return false; }
 
 	// NDC(-1〜1、Yは上が正)→画面UV(0〜1、Vは下が正)
+	outUV.x = clip.x / clip.w * 0.5f + 0.5f;
+	outUV.y = 0.5f - clip.y / clip.w * 0.5f;
+	return true;
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 衝撃波の発生(ワールド座標指定)。カメラの背後なら何もしない
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void KdPostProcessShader::AddShockwaveWorld(const Math::Vector3& worldPos, float duration, float maxRadius, float strength)
+{
 	Math::Vector2 uv;
-	uv.x = clip.x / clip.w * 0.5f + 0.5f;
-	uv.y = 0.5f - clip.y / clip.w * 0.5f;
+	if (!WorldToScreenUV(worldPos, uv)) { return; }
 
 	AddShockwave(uv, duration, maxRadius, strength);
 }
@@ -616,6 +645,48 @@ void KdPostProcessShader::UpdateSurface(float deltaTime)
 	cb.Offset.y = static_cast<float>(rand()) / RAND_MAX;
 }
 
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 水墨画化の描画パラメータ設定。MaxDistは中心から最遠の角までの距離(円形補正済み)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void KdPostProcessShader::SetInkWash(float progress, const Math::Vector2& centerUV, float time)
+{
+	cbInkWashInfo& cb = m_cb0_InkWashInfo.Work();
+
+	cb.Progress = progress;
+	cb.Center = centerUV;
+	cb.Time = time;
+
+	float dx = (std::max)(centerUV.x, 1.0f - centerUV.x) * cb.Aspect;
+	float dy = (std::max)(centerUV.y, 1.0f - centerUV.y);
+	cb.MaxDist = sqrtf(dx * dx + dy * dy);
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 衝撃波適用後(または無し)の画像を水墨画化して m_inkWashRTPack に描画(t0=画像 t1=シーン深度)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void KdPostProcessShader::InkWashProcess(const std::shared_ptr<KdTexture>& srcTex)
+{
+	ID3D11DeviceContext* DevCon = KdDirect3D::Instance().WorkDevContext();
+	if (!DevCon) { return; }
+
+	m_cb0_InkWashInfo.Write();
+	DevCon->PSSetConstantBuffers(0, 1, m_cb0_InkWashInfo.GetAddress());
+
+	KdShaderManager& shaderMgr = KdShaderManager::Instance();
+	if (shaderMgr.SetVertexShader(m_VS))
+	{
+		DevCon->IASetInputLayout(m_inputLayout);
+	}
+	shaderMgr.SetPixelShader(m_PS_InkWash);
+
+	shaderMgr.ChangeSamplerState(KdSamplerState::Linear_Clamp);
+
+	std::shared_ptr<KdTexture> srcTexList[2] = { srcTex, m_postEffectRTPack.m_ZBuffer };
+	DrawTexture(srcTexList, 2, m_inkWashRTPack.m_RTTexture, &m_inkWashRTPack.m_viewPort);
+
+	shaderMgr.UndoSamplerState();
+}
+
 void KdPostProcessShader::PostEffectProcess()
 {
 	m_postEffectRTChanger.UndoRenderTarget();
@@ -632,6 +703,13 @@ void KdPostProcessShader::PostEffectProcess()
 	{
 		DistortionProcess();
 		finalTex = m_distortionRTPack.m_RTTexture;
+	}
+
+	// 水墨画化中だけ(リザルト演出)。UIはこの後に描くので文字は染まらない
+	if (m_cb0_InkWashInfo.Get().Progress > 0.0f)
+	{
+		InkWashProcess(finalTex);
+		finalTex = m_inkWashRTPack.m_RTTexture;
 	}
 
 	// 画面遷移中だけ波紋の歪みを重ねる(覆いはUI描画後のDrawTransitionCover()で行う)

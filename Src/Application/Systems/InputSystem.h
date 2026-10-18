@@ -4,6 +4,9 @@
 #include "Application/main.h"
 #include "Application/Editor/Common/EditorViewPort.h"
 #include "Application/Core/EventBus/Events/TimeScaleEvents.h"
+#include "Application/Core/EventBus/Events/SceneEvents.h"
+#include "Application/Core/EventBus/Events/DebugEvents.h"
+
 
 class InputSystem
 {
@@ -23,6 +26,32 @@ public:
 				Events::PublishPauseCancel(eventBus_, pauseID_);
 			}
 
+		}
+
+		// Debug
+
+		if (KdInputManager::Instance().IsPress("Debug2"))
+		{
+			GLOBALEVENT->Publish(Events::SceneChangeRequest(SceneType::Title));
+		}
+
+		if (KdInputManager::Instance().IsPress("Debug3"))
+		{
+			GLOBALEVENT->Publish(Events::SceneChangeRequest(SceneType::Game));
+		}
+
+		if (KdInputManager::Instance().IsPress("Debug4"))
+		{
+			GLOBALEVENT->Publish(Events::SceneChangeRequest(SceneType::Result));
+		}
+
+		if (KdInputManager::Instance().IsPress("Debug5"))
+		{
+			GLOBALEVENT->Publish(Events::EnemyKill());
+		}
+
+		if (KdInputManager::Instance().IsPress("Debug6"))
+		{
 		}
 	}
 

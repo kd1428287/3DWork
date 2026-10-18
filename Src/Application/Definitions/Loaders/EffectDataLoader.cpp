@@ -58,12 +58,14 @@ static const char* DistributionToString(ParticleEmitDistribution d)
 	{
 	case ParticleEmitDistribution::Directional:   return "Directional";
 	case ParticleEmitDistribution::RadialInPlane: return "RadialInPlane";
+	case ParticleEmitDistribution::Converge:      return "Converge";
 	}
 	return "Directional";
 }
 static ParticleEmitDistribution DistributionFromString(const std::string& s)
 {
 	if (s == "RadialInPlane") { return ParticleEmitDistribution::RadialInPlane; }
+	if (s == "Converge") { return ParticleEmitDistribution::Converge; }
 	return ParticleEmitDistribution::Directional;
 }
 static const char* DrawPassToString(ParticleDrawPass p)
@@ -189,6 +191,8 @@ static nlohmann::json ShapeToJson(const DirectionalEmitShape& s)
 		{ "offsetMax",   { s.OffsetMax.x, s.OffsetMax.y, s.OffsetMax.z } },
 		{ "radialSpeedMin", s.RadialSpeedMin },
 		{ "radialSpeedMax", s.RadialSpeedMax },
+		{ "convergeRadius", s.ConvergeRadius },
+		{ "convergeSpeed",  s.ConvergeSpeed },
 	};
 }
 
@@ -207,6 +211,9 @@ static DirectionalEmitShape ShapeFromJson(const nlohmann::json& j, const Directi
 
 	s.RadialSpeedMin = j.value("radialSpeedMin", s.RadialSpeedMin);
 	s.RadialSpeedMax = j.value("radialSpeedMax", s.RadialSpeedMax);
+
+	s.ConvergeRadius = j.value("convergeRadius", s.ConvergeRadius);
+	s.ConvergeSpeed = j.value("convergeSpeed", s.ConvergeSpeed);
 
 	TryReadVector3(j, "offsetMin", s.OffsetMin);
 	TryReadVector3(j, "offsetMax", s.OffsetMax);

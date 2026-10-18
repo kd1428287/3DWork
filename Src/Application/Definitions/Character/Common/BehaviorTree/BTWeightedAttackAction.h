@@ -27,6 +27,9 @@
 //   void SetWeaponTrailEmitting(const std::vector<std::string>&, bool)
 //   void NotifyAttackCompleted()
 //   void SetVulnerable(bool)
+//   void PlayTelegraphEffect(const EnemyAttackTelegraphData&)
+//   void StopTelegraphEffect()
+//   void PlayAttackSwingSE()
 //
 // 【攻撃中の向き制御について】
 // 以前は攻撃開始の瞬間に一度だけ瞬時にターゲットへ正対していた。今は
@@ -95,6 +98,7 @@ public:
 
 			phase_ = Phase::Windup;
 			elapsed_ = 0.0f;
+			telegraphFired_ = false;
 
 			context->StopMovement();
 			// 追従しない技(windupTurnSpeed<=0)だけ、ここで一度だけ瞬時に正対する。
@@ -110,6 +114,12 @@ public:
 		const AttackPhaseData& phaseData = current_->attackData.phaseData;
 		switch (phase_) {
 		case Phase::Windup:
+			// 判定発生のleadTime前に1回だけ予備動作エフェクトを出す
+			if (!telegraphFired_ && current_->telegraph.type != TelegraphType::None &&
+				elapsed_ >= phaseData.windup.duration - current_->telegraph.leadTime) {
+				telegraphFired_ = true;
+				context->PlayTelegraphEffect(current_->telegraph);
+			}
 			if (elapsed_ >= phaseData.windup.duration) {
 				phase_ = Phase::Active;
 				elapsed_ = 0.0f;
@@ -117,9 +127,11 @@ public:
 				// AttackData::weaponSlotsで対象スロットを指定する。
 				// BTWeightedAttackAction冒頭コメントのダックタイピング
 				// 一覧を参照)。
+				context->StopTelegraphEffect(); // 予備動作は判定発生で終了
 				context->SetWeaponHitBoxEnabled(current_->attackData.weaponSlots, true);
 				context->SetWeaponTrailEmitting(current_->attackData.weaponSlots, true);
 				context->PlayAnimation(current_->attackData.phaseData.active);
+				context->PlayAttackSwingSE(); // 振りの音は判定発生に合わせる
 			}
 			break;
 
@@ -158,6 +170,12 @@ public:
 
 	void Reset() override
 	{
+		// Windup中断時にエフェクトが残らないよう止める
+		if (telegraphFired_ && lastContext_ != nullptr) {
+			lastContext_->StopTelegraphEffect();
+		}
+		telegraphFired_ = false;
+
 		// Active中(HitBoxが有効な最中)に中断された場合は、有効なまま
 		// 残らないよう明示的に閉じておく(クラスコメント参照)。
 		if (phase_ == Phase::Active && lastContext_ != nullptr && current_ != nullptr) {
@@ -201,6 +219,7 @@ private:
 	enum class Phase { NotStarted, Windup, Active, Recovery };
 	Phase phase_ = Phase::NotStarted;
 	float elapsed_ = 0.0f;
+	bool telegraphFired_ = false; // 今回の攻撃で予備動作を出したか
 	const EnemyAttackDefinition* current_ = nullptr;
 
 	// Reset()がcontextを受け取れない制約への回避策(クラス冒頭コメント参照)。

@@ -3,6 +3,7 @@
 #include "../EnemyActions.h"
 #include "Application/Definitions/Character/Enemy/EnemyBlackboardKeys.h"
 #include "Application/Definitions/Character/Common/BehaviorTree/BTComposite.h"
+#include "Application/Definitions/Character/Common/BehaviorTree/BTCommittedSelector.h"
 #include "Application/Definitions/Character/Common/BehaviorTree/BTBlackboardConditions.h"
 #include "Application/Definitions/Character/Common/BehaviorTree/BTPendingReactionAction.h"
 #include "Application/Definitions/Character/Common/BehaviorTree/BTWeightedAttackAction.h"
@@ -68,11 +69,16 @@ std::unique_ptr<IBTNode<EnemyAIController>> WarrockBehavior::BuildTree(EnemyAICo
 		EnemyBlackboardKeys::HasTarget, true));
 	chaseSeq->AddChild(std::make_unique<EnemyActionMaintainDistance>());
 
+	// 攻撃(間合い詰め含む)は開始したら終了まで他の行動に遮られない。
+	// 中断できるのは上位のreactionSeq(被弾リアクション等)だけ。
+	auto attackGroup = std::make_unique<BTCommittedSelector<EnemyAIController>>();
+	attackGroup->AddChild(std::move(gapCloserSeq));
+	attackGroup->AddChild(std::move(attackSeq));
+
 	// 優先度順。
 	auto selector = std::make_unique<BTSelector<EnemyAIController>>();
 	selector->AddChild(std::move(reactionSeq));
-	selector->AddChild(std::move(gapCloserSeq));
-	selector->AddChild(std::move(attackSeq));
+	selector->AddChild(std::move(attackGroup));
 	selector->AddChild(std::move(chaseSeq));
 	selector->AddChild(std::make_unique<EnemyActionIdle>());
 
@@ -82,6 +88,7 @@ std::unique_ptr<IBTNode<EnemyAIController>> WarrockBehavior::BuildTree(EnemyAICo
 void WarrockBehavior::OnSpawned(EnemyAIController* owner)
 {
 	RequestReaction(owner, "Roar", ReactionPriority::Roar);
+	owner->PlaySE(owner->GetSoundData().roar);
 }
 
 void WarrockBehavior::OnStaggered(EnemyAIController* owner, bool isLarge, float /*duration*/)

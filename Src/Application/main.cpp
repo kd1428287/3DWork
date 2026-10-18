@@ -325,6 +325,13 @@ bool Application::Init(int w, int h)
 	keyboardDevice->AddButton("UILeft", new KdInputButtonForWindows({ 'A', VK_LEFT }));
 	keyboardDevice->AddButton("UIRight", new KdInputButtonForWindows({ 'D', VK_RIGHT }));
 
+	// Debug用
+	keyboardDevice->AddButton("Debug2", new KdInputButtonForWindows({ '2' }));
+	keyboardDevice->AddButton("Debug3", new KdInputButtonForWindows({ '3' }));
+	keyboardDevice->AddButton("Debug4", new KdInputButtonForWindows({ '4' }));
+	keyboardDevice->AddButton("Debug5", new KdInputButtonForWindows({ '5' }));
+	keyboardDevice->AddButton("Debug6", new KdInputButtonForWindows({ '6' }));
+
 	std::string buff;
 	for (int i = 0; i < 10; i++)
 	{
@@ -492,6 +499,9 @@ void Application::Execute()
 			EditorHost::Instance().RenderPreviewViewports();
 		}
 		KdPostDraw();
+
+		m_audioManager->Update();
+
 
 		//=========================================
 		//

@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "Event.h"
+#include "Application/Definitions/Character/Common/CombatData.h"
 
 class GameObject;
 class AttackSourceComponent;

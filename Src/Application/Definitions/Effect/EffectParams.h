@@ -70,6 +70,7 @@ struct DirectionalEmitShape
 	// Directional(既定)：baseDir軸のDirScale/Offsetで速度範囲(箱型)を決める。
 	// RadialInPlane：水平面内のランダムな角度へ均等に飛ばす(角度はGPU側で毎粒子決定)。
 	//	十字/放射状に広がるヒットスパーク向け。DirScale/Offsetはこのモードでは使わない
+	// Converge：周囲(半径ConvergeRadiusの球面)から発生位置(中心)へ集まる。チャージ演出向け
 	ParticleEmitDistribution Distribution = ParticleEmitDistribution::Directional;
 
 	// ---- Directional用 ----
@@ -81,6 +82,10 @@ struct DirectionalEmitShape
 	// ---- RadialInPlane用：速度の大きさの範囲のみ指定(角度はGPU側の乱数任せ) ----
 	float	RadialSpeedMin = 1.0f;
 	float	RadialSpeedMax = 4.0f;
+
+	// ---- Converge用：収束開始半径と速度(Speed<=0なら寿命ぴったりで中心へ到達) ----
+	float	ConvergeRadius = 5.0f;
+	float	ConvergeSpeed = 0.0f;
 
 	// Position/VelocityMin/VelocityMax(またはDistribution/RadialSpeed)のみを埋めて返す。
 	// 他フィールドは既定値のまま(Size/Life/Color/BillboardModeはGPUParticleLayer側で上書きされる)

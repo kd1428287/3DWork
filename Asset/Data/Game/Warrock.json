@@ -1,441 +1,513 @@
 {
-  "name": "enemy_warrock",
-  "scale": [
-    2,
-    2,
-    2
-  ],
-  "components": [
-    {
-      "type": "ModelRender",
-      "params": {
-        "model": "Asset/Models/Character/Warrock/Warrock.gltf",
-        "animations": "Asset/Animations/Character/Warrock"
-      }
-    },
-    {
-      "type": "Outline",
-      "params": {
-        "width": 0.003
-      }
-    },
-    {
-      "type": "ModelAnimator",
-      "params": {
-        "fps": 60,
-        "speedScale": 1.0,
-        "blendDuration": 0.15,
-        "rootMotion": {
-          "boneName": "mixamorig:Hips",
-          "unitScale": 0.01,
-          "forwardAxis": "Y",
-          "forwardSign": -1.0,
-          "rightAxis": "X",
-          "rightSign": 1.0,
-          "extractRotation": false,
-          "yawSign": 1.0
-        }
-      }
-    },
-    {
-      "type": "RootMotionApplier"
-    },
-    {
-      "type": "Gravity"
-    },
-    {
-      "type": "Velocity"
-    },
-    {
-      "type": "Collider",
-      "params": {
-        "shapes": [
-          {
-            "name": "HurtBox",
-            "shape": "Capsule",
-            "radius": 0.5,
-            "offset": [
-              0.0,
-              0.5,
-              0.0
-            ],
-            "capsuleEnd": [
-              0.0,
-              1.5,
-              0.0
-            ],
-            "categoryMask": [
-              "HurtBox"
-            ],
-            "useDefaultCollideMask": false,
-            "collideMask": [
-              "HitBox"
-            ],
-            "isTrigger": true
-          },
-          {
-            "name": "Body",
-            "shape": "Capsule",
-            "radius": 0.5,
-            "offset": [
-              0.0,
-              0.5,
-              0.0
-            ],
-            "capsuleEnd": [
-              0.0,
-              1.5,
-              0.0
-            ],
-            "categoryMask": [
-              "Bump"
-            ]
-          }
-        ],
-        "bodyShapeName": "Body",
-        "wireFrame": false
-      }
-    },
-    {
-      "type": "GroundSensor"
-    },
-    {
-      "type": "FacingDirection",
-      "params": {
-        "rotationSpeed": 3.0
-      }
-    },
-    {
-      "type": "Posture",
-      "params": {
-        "max": 500.0
-      }
-    },
-    {
-      "type": "Health",
-      "params": {
-        "max": 1000.0
-      }
-    },
-    {
-      "type": "HitReaction",
-      "params": {
-        "hit": {
-          "enableCameraShake": false,
-          "enableHitStop": true,
-          "enableEffect": true,
-          "effectName": "InkHitEffect",
-          "useReflectDirection": false,
-          "cameraShakeIntensity": 1.0,
-          "hitStopDurationSeconds": 0.1
-        },
-        "block": {
-          "enableCameraShake": false,
-          "enableHitStop": true,
-          "enableEffect": true,
-          "effectName": "InkHitEffect",
-          "useReflectDirection": false,
-          "cameraShakeIntensity": 1.0,
-          "hitStopDurationSeconds": 0.1
-        },
-        "parry": {
-          "enableCameraShake": false,
-          "enableHitStop": true,
-          "enableEffect": true,
-          "effectName": "ParryEffect",
-          "useReflectDirection": true,
-          "cameraShakeIntensity": 1.0,
-          "hitStopDurationSeconds": 0.1
-        },
-        "hitStopDelaySeconds": 0.0,
-        "largeStaggerDuration": 0.6
-      }
-    },
-    {
-      "type": "LockOnTarget"
-    },
-    {
-      "type": "EnemyOverheadGauge",
-      "params": {
-        "worldOffset": [
-          0.0,
-          2.0,
-          0.0
-        ],
-        "healthBarSize": [
-          80.0,
-          10.0
-        ],
-        "postureBarSize": [
-          80.0,
-          6.0
-        ]
-      }
-    },
-    {
-      "type": "WeaponSet"
-    },
-    {
-      "type": "Movement",
-      "params": {
-        "speed": 2.0
-      }
-    },
-    {
-      "type": "MovementResolver"
-    },
-    {
-      "type": "EnemyAIController",
-      "params": {
-        "behavior": "Warrock",
-        "attackTablePath": "Asset/Data/Game/WarrockAttackTable.json",
-        "data": {
-          "chaseSpeed": 2.0,
-          "detectionRange": 10.0,
-          "loseTargetRange": 14.0,
-          "attackIntervalDuration": 0.5,
-          "maintainDistance": 3.0,
-          "movementAnimations": {
-            "idle": {
-              "animationName": "Idle",
-              "loop": true,
-              "useRootMotion": false,
-              "blendDuration": 0.1,
-              "isForce": false
-            },
-            "walk": {
-              "animationName": "Walk",
-              "loop": true,
-              "useRootMotion": false,
-              "blendDuration": 0.1,
-              "isForce": false
-            },
-            "run": {
-              "animationName": "Run",
-              "loop": true,
-              "useRootMotion": false,
-              "blendDuration": 0.1,
-              "isForce": false
-            }
-          },
-          "oneShotAnimations": {
-            "HitReaction": {
-              "animationName": "Hit_Middle",
-              "duration": 0.4
-            },
-            "BigStagger": {
-              "animationName": "Knockback",
-              "duration": 3.0,
-              "useRootMotion": true
-            },
-            "ParrySucceeded": {
-              "animationName": "Hit_High",
-              "duration": 0.4
-            },
-            "Roar": {
-              "animationName": "Roaring",
-              "duration": 1.5
-            },
-            "Dying": {
-              "animationName": "Died",
-              "duration": 2.0
-            }
-          },
-          "postDeathLingerSeconds": 1.0,
-          "rootMotionBoneName": "mixamorig:Hips"
-        }
-      }
-    }
-  ],
-  "children": [
-    {
-      "name": "Main",
-      "scale": [
-        0.5,
-        0.5,
-        0.5
-      ],
-      "components": [
-        {
-          "type": "AttachToBone",
-          "params": {
-            "bone": "mixamorig:RightHand"
-          }
-        },
-        {
-          "type": "Collider",
-          "params": {
-            "shapes": [
-              {
-                "name": "HitBox",
-                "shape": "Box",
-                "offset": [
-                  0.0065651871263980865,
-                  -0.5,
-                  1.4958359315642156e-05
-                ],
-                "radius": 0.5,
-                "capsuleEnd": [
-                  0.0,
-                  1.0,
-                  0.0
-                ],
-                "halfExtents": [
-                  0.75,
-                  1.25,
-                  0.75
-                ],
-                "categoryMask": [
-                  "HitBox"
-                ],
-                "useDefaultCollideMask": true,
-                "collideMask": [],
-                "enabled": true,
-                "isTrigger": true,
-                "isStatic": false,
-                "wantsStayEvent": false
-              }
-            ],
-            "bodyShapeName": "",
-            "wireFrame": true,
-            "ignoreParent": true
-          }
-        },
-        {
-          "type": "AttackSource"
-        },
-        {
-          "type": "Weapon"
-        }
-      ]
-    },
-    {
-      "name": "Off",
-      "scale": [
-        0.5,
-        0.5,
-        0.5
-      ],
-      "components": [
-        {
-          "type": "AttachToBone",
-          "params": {
-            "bone": "mixamorig:LeftHand"
-          }
-        },
-        {
-          "type": "Collider",
-          "params": {
-            "shapes": [
-              {
-                "name": "HitBox",
-                "shape": "Box",
-                "offset": [
-                  0.0,
-                  -0.5,
-                  0.0
-                ],
-                "radius": 0.5,
-                "capsuleEnd": [
-                  0.0,
-                  1.0,
-                  0.0
-                ],
-                "halfExtents": [
-                  0.75,
-                  1.25,
-                  0.75
-                ],
-                "categoryMask": [
-                  "HitBox"
-                ],
-                "useDefaultCollideMask": true,
-                "collideMask": [],
-                "enabled": true,
-                "isTrigger": true,
-                "isStatic": false,
-                "wantsStayEvent": false
-              }
-            ],
-            "bodyShapeName": "",
-            "wireFrame": true,
-            "ignoreParent": true
-          }
-        },
-        {
-          "type": "AttackSource"
-        },
-        {
-          "type": "Weapon",
-          "params": {
-            "slot": "Off"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Foot",
-      "scale": [
-        0.5,
-        0.5,
-        0.5
-      ],
-      "components": [
-        {
-          "type": "AttachToBone",
-          "params": {
-            "bone": "mixamorig:RightFoot"
-          }
-        },
-        {
-          "type": "Collider",
-          "params": {
-            "shapes": [
-              {
-                "name": "HitBox",
-                "shape": "Box",
-                "offset": [
-                  -9.596346899343189e-06,
-                  0.6412903666496277,
-                  -0.36084112524986267
-                ],
-                "radius": 0.5,
-                "capsuleEnd": [
-                  0.0,
-                  1.0,
-                  0.0
-                ],
-                "halfExtents": [
-                  0.75,
-                  0.75,
-                  0.75
-                ],
-                "categoryMask": [
-                  "HitBox"
-                ],
-                "useDefaultCollideMask": true,
-                "collideMask": [],
-                "enabled": true,
-                "isTrigger": true,
-                "isStatic": false,
-                "wantsStayEvent": false
-              }
-            ],
-            "bodyShapeName": "",
-            "wireFrame": true,
-            "ignoreParent": true
-          }
-        },
-        {
-          "type": "AttackSource"
-        },
-        {
-          "type": "Weapon",
-          "params": {
-            "slot": "Foot"
-          }
-        }
-      ]
-    }
-  ]
+	"name": "enemy_warrock",
+	"scale": [
+		2,
+		2,
+		2
+	],
+	"components": [
+		{
+			"type": "ModelRender",
+			"params": {
+				"model": "Asset/Models/Character/Warrock/Warrock.gltf",
+				"animations": "Asset/Animations/Character/Warrock"
+			}
+		},
+		{
+			"type": "Outline",
+			"params": {
+				"width": 0.003
+			}
+		},
+		{
+			"type": "ModelAnimator",
+			"params": {
+				"fps": 60,
+				"speedScale": 1.0,
+				"blendDuration": 0.15,
+				"rootMotion": {
+					"boneName": "mixamorig:Hips",
+					"unitScale": 0.01,
+					"forwardAxis": "Y",
+					"forwardSign": -1.0,
+					"rightAxis": "X",
+					"rightSign": 1.0,
+					"extractRotation": false,
+					"yawSign": 1.0
+				}
+			}
+		},
+		{
+			"type": "RootMotionApplier"
+		},
+		{
+			"type": "Gravity"
+		},
+		{
+			"type": "Velocity"
+		},
+		{
+			"type": "Collider",
+			"params": {
+				"shapes": [
+					{
+						"name": "HurtBox",
+						"shape": "Capsule",
+						"radius": 0.5,
+						"offset": [
+							0.0,
+							0.5,
+							0.0
+						],
+						"capsuleEnd": [
+							0.0,
+							1.5,
+							0.0
+						],
+						"categoryMask": [
+							"HurtBox"
+						],
+						"useDefaultCollideMask": false,
+						"collideMask": [
+							"HitBox"
+						],
+						"isTrigger": true
+					},
+					{
+						"name": "Body",
+						"shape": "Capsule",
+						"radius": 0.5,
+						"offset": [
+							0.0,
+							0.5,
+							0.0
+						],
+						"capsuleEnd": [
+							0.0,
+							1.5,
+							0.0
+						],
+						"categoryMask": [
+							"Bump"
+						]
+					}
+				],
+				"bodyShapeName": "Body",
+				"wireFrame": false
+			}
+		},
+		{
+			"type": "GroundSensor"
+		},
+		{
+			"type": "FacingDirection",
+			"params": {
+				"rotationSpeed": 3.0
+			}
+		},
+		{
+			"type": "Posture",
+			"params": {
+				"max": 500.0
+			}
+		},
+		{
+			"type": "Health",
+			"params": {
+				"max": 1000.0
+			}
+		},
+		{
+			"type": "HitReaction",
+			"params": {
+				"hit": {
+					"enableCameraShake": false,
+					"enableHitStop": true,
+					"enableEffect": true,
+					"effectName": "InkHitEffect",
+					"SEName": "Asset/Sounds/Game/SwordHit.wav",
+					"useReflectDirection": false,
+					"cameraShakeIntensity": 1.0,
+					"hitStopDurationSeconds": 0.1
+				},
+				"block": {
+					"enableCameraShake": false,
+					"enableHitStop": true,
+					"enableEffect": true,
+					"effectName": "InkHitEffect",
+					"SEName": "Asset/Sounds/Game/SwordHit.wav",
+					"useReflectDirection": false,
+					"cameraShakeIntensity": 1.0,
+					"hitStopDurationSeconds": 0.1
+				},
+				"parry": {
+					"enableCameraShake": false,
+					"enableHitStop": true,
+					"enableEffect": true,
+					"effectName": "ParryEffect",
+					"SEName": "Asset/Sounds/Game/Hit.wav",
+					"useReflectDirection": true,
+					"cameraShakeIntensity": 1.0,
+					"hitStopDurationSeconds": 0.1
+				},
+				"hitStopDelaySeconds": 0.0,
+				"largeStaggerDuration": 0.6
+			}
+		},
+		{
+			"type": "LockOnTarget"
+		},
+		{
+			"type": "EnemyOverheadGauge",
+			"params": {
+				"worldOffset": [
+					0.0,
+					2.0,
+					0.0
+				],
+				"healthBarSize": [
+					80.0,
+					10.0
+				],
+				"postureBarSize": [
+					80.0,
+					6.0
+				]
+			}
+		},
+		{
+			"type": "WeaponSet"
+		},
+		{
+			"type": "Movement",
+			"params": {
+				"speed": 2.0
+			}
+		},
+		{
+			"type": "MovementResolver"
+		},
+		{
+			"type": "EnemyAIController",
+			"params": {
+				"behavior": "Warrock",
+				"attackTablePath": "Asset/Data/Game/WarrockAttackTable.json",
+				"sound": {
+					"attackSwing": "",
+					"roar": "",
+					"death": ""
+				},
+				"data": {
+					"chaseSpeed": 2.0,
+					"detectionRange": 10.0,
+					"loseTargetRange": 14.0,
+					"attackIntervalDuration": 0.5,
+					"maintainDistance": 3.0,
+					"movementAnimations": {
+						"idle": {
+							"animationName": "Idle",
+							"loop": true,
+							"useRootMotion": false,
+							"blendDuration": 0.1,
+							"isForce": false
+						},
+						"walk": {
+							"animationName": "Walk",
+							"loop": true,
+							"useRootMotion": false,
+							"blendDuration": 0.1,
+							"isForce": false
+						},
+						"run": {
+							"animationName": "Run",
+							"loop": true,
+							"useRootMotion": false,
+							"blendDuration": 0.1,
+							"isForce": false
+						}
+					},
+					"oneShotAnimations": {
+						"HitReaction": {
+							"animationName": "Hit_Middle",
+							"duration": 0.4
+						},
+						"BigStagger": {
+							"animationName": "Knockback",
+							"duration": 3.0,
+							"useRootMotion": true
+						},
+						"ParrySucceeded": {
+							"animationName": "Hit_High",
+							"duration": 0.4
+						},
+						"Roar": {
+							"animationName": "Roaring",
+							"duration": 1.5
+						},
+						"Dying": {
+							"animationName": "Died",
+							"duration": 2.0
+						}
+					},
+					"postDeathLingerSeconds": 1.0,
+					"rootMotionBoneName": "mixamorig:Hips"
+				}
+			}
+		}
+	],
+	"children": [
+		{
+			"name": "Main",
+			"scale": [
+				0.5,
+				0.5,
+				0.5
+			],
+			"components": [
+				{
+					"type": "AttachToBone",
+					"params": {
+						"bone": "mixamorig:RightHand"
+					}
+				},
+				{
+					"type": "Collider",
+					"params": {
+						"shapes": [
+							{
+								"name": "HitBox",
+								"shape": "Box",
+								"offset": [
+									0.0065651871263980865,
+									-0.5,
+									1.4958359315642156e-05
+								],
+								"radius": 0.5,
+								"capsuleEnd": [
+									0.0,
+									1.0,
+									0.0
+								],
+								"halfExtents": [
+									0.75,
+									1.25,
+									0.75
+								],
+								"categoryMask": [
+									"HitBox"
+								],
+								"useDefaultCollideMask": true,
+								"collideMask": [],
+								"enabled": true,
+								"isTrigger": true,
+								"isStatic": false,
+								"wantsStayEvent": false
+							}
+						],
+						"bodyShapeName": "",
+						"wireFrame": false,
+						"ignoreParent": true
+					}
+				},
+				{
+					"type": "AttackSource"
+				},
+				{
+					"type": "Weapon"
+				}
+			]
+		},
+		{
+			"name": "Body",
+			"scale": [
+				0.5,
+				0.5,
+				0.5
+			],
+			"components": [
+				{
+					"type": "AttachToBone",
+					"params": {
+						"bone": "mixamorig:Hips"
+					}
+				},
+				{
+					"type": "Collider",
+					"params": {
+						"shapes": [
+							{
+								"name": "HitBox",
+								"shape": "Box",
+								"offset": [
+									0.006567157339304686,
+									0.7005058526992798,
+									1.4844404176983517e-05
+								],
+								"radius": 0.5,
+								"capsuleEnd": [
+									0.0,
+									1.0,
+									0.0
+								],
+								"halfExtents": [
+									0.75,
+									1.25,
+									0.75
+								],
+								"categoryMask": [
+									"HitBox"
+								],
+								"useDefaultCollideMask": true,
+								"collideMask": [],
+								"enabled": true,
+								"isTrigger": true,
+								"isStatic": false,
+								"wantsStayEvent": false
+							}
+						],
+						"bodyShapeName": "",
+						"wireFrame": false,
+						"ignoreParent": true
+					}
+				},
+				{
+					"type": "AttackSource"
+				},
+				{
+					"type": "Weapon",
+					"params": {
+						"slot": "Body"
+					}
+				}
+			]
+		},
+		{
+			"name": "Off",
+			"scale": [
+				0.5,
+				0.5,
+				0.5
+			],
+			"components": [
+				{
+					"type": "AttachToBone",
+					"params": {
+						"bone": "mixamorig:LeftHand"
+					}
+				},
+				{
+					"type": "Collider",
+					"params": {
+						"shapes": [
+							{
+								"name": "HitBox",
+								"shape": "Box",
+								"offset": [
+									0.0,
+									-0.5,
+									0.0
+								],
+								"radius": 0.5,
+								"capsuleEnd": [
+									0.0,
+									1.0,
+									0.0
+								],
+								"halfExtents": [
+									0.75,
+									1.25,
+									0.75
+								],
+								"categoryMask": [
+									"HitBox"
+								],
+								"useDefaultCollideMask": true,
+								"collideMask": [],
+								"enabled": true,
+								"isTrigger": true,
+								"isStatic": false,
+								"wantsStayEvent": false
+							}
+						],
+						"bodyShapeName": "",
+						"wireFrame": false,
+						"ignoreParent": true
+					}
+				},
+				{
+					"type": "AttackSource"
+				},
+				{
+					"type": "Weapon",
+					"params": {
+						"slot": "Off"
+					}
+				}
+			]
+		},
+		{
+			"name": "Foot",
+			"scale": [
+				0.5,
+				0.5,
+				0.5
+			],
+			"components": [
+				{
+					"type": "AttachToBone",
+					"params": {
+						"bone": "mixamorig:RightFoot"
+					}
+				},
+				{
+					"type": "Collider",
+					"params": {
+						"shapes": [
+							{
+								"name": "HitBox",
+								"shape": "Box",
+								"offset": [
+									-9.596346899343189e-06,
+									0.6412903666496277,
+									-0.36084112524986267
+								],
+								"radius": 0.5,
+								"capsuleEnd": [
+									0.0,
+									1.0,
+									0.0
+								],
+								"halfExtents": [
+									0.75,
+									0.75,
+									0.75
+								],
+								"categoryMask": [
+									"HitBox"
+								],
+								"useDefaultCollideMask": true,
+								"collideMask": [],
+								"enabled": true,
+								"isTrigger": true,
+								"isStatic": false,
+								"wantsStayEvent": false
+							}
+						],
+						"bodyShapeName": "",
+						"wireFrame": false,
+						"ignoreParent": true
+					}
+				},
+				{
+					"type": "AttackSource"
+				},
+				{
+					"type": "Weapon",
+					"params": {
+						"slot": "Foot"
+					}
+				}
+			]
+		}
+	]
 }

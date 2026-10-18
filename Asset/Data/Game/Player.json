@@ -1,6 +1,6 @@
 {
 	"name": "player",
-	"positon": [0,20,0],
+	"positon": [ 0, 20, 0 ],
 	"components": [
 		{ "type": "Player" },
 		{
@@ -308,6 +308,7 @@
 					"enableEffect": true,
 					"enableDistortion": false,
 					"effectName": "BloodSplatter",
+					"SEName": "Asset/Sounds/Game/Hit.wav",
 					"useReflectDirection": false,
 					"cameraShakeIntensity": 1.0,
 					"hitStopDurationSeconds": 0.1
@@ -318,6 +319,7 @@
 					"enableEffect": true,
 					"enableDistortion": false,
 					"effectName": "BlockEffect",
+					"SEName": "Asset/Sounds/Game/Block.wav",
 					"useReflectDirection": true,
 					"cameraShakeIntensity": 0.8,
 					"hitStopDurationSeconds": 0.1
@@ -328,6 +330,8 @@
 					"enableEffect": true,
 					"enableDistortion": true,
 					"effectName": "ParryEffect",
+					"SEName": "Asset/Sounds/Game/Parry.wav",
+					"sePitchRandom": 0.1,
 					"useReflectDirection": true,
 					"cameraShakeIntensity": 1.0,
 					"hitStopDurationSeconds": 0.05
@@ -354,6 +358,12 @@
 		{
 			"type": "PlayerStatusController",
 			"params": {
+				"sound": {
+					"attackSwing": "Asset/Sounds/Game/Kazakiri.wav",
+					"evade": "",
+					"guardRaise": "Asset/Sounds/Game/Kamae.wav",
+					"death": ""
+				},
 				"evade": {
 					"activeDuration": 0.35,
 					"recoveryDuration": 0.25,
@@ -552,7 +562,7 @@
 							1.75
 						],
 						"key": "Sword_Player",
-						"emitOnStart": true
+						"emitOnStart": false
 					}
 				},
 				{

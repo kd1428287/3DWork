@@ -1,4 +1,4 @@
-#include "KdAudio.h"
+﻿#include "KdAudio.h"
 
 // ##### KdAudioManager #####
 
@@ -14,9 +14,12 @@ void KdAudioManager::Init(const std::shared_ptr<EventBus>& bus)
 
 	m_listener.OrientFront = { 0, 0, 1 };
 
+	m_lastUpdate = std::chrono::steady_clock::now();
+
 	SubscribeQueued<Events::SoundPlayRequested>(&KdAudioManager::OnPlay);
 	SubscribeQueued<Events::SoundStopRequested>(&KdAudioManager::OnStop);
 	SubscribeQueued<Events::SoundVolumeChangeRequested>(&KdAudioManager::OnVolume);
+	SubscribeQueued<Events::SoundFadeRequested>(&KdAudioManager::OnFade);
 	SubscribeQueued<Events::SoundCategoryVolumeChangeRequested>(&KdAudioManager::OnCategoryVolume);
 
 	SubscribeQueued<Events::StopAllSoundRequested>(&KdAudioManager::StopAllSound);
@@ -27,6 +30,11 @@ void KdAudioManager::Init(const std::shared_ptr<EventBus>& bus)
 
 void KdAudioManager::Update()
 {
+	// 実時間でフェードを進める(ブレーク復帰などの大きな値は丸める)
+	const auto now = std::chrono::steady_clock::now();
+	const float deltaTime = std::min(std::chrono::duration<float>(now - m_lastUpdate).count(), 0.1f);
+	m_lastUpdate = now;
+
 	// 処理中に積まれた分は次フレームに回す
 	std::vector<std::function<void()>> pending;
 	pending.swap(m_pending);
@@ -46,6 +54,8 @@ void KdAudioManager::Update()
 
 	for (auto it = m_active.begin(); it != m_active.end();)
 	{
+		UpdateFade(it->second, deltaTime);
+
 		it->second.instance->Update();
 
 		if (it->second.instance->IsStopped())
@@ -102,6 +112,15 @@ void KdAudioManager::OnVolume(const Events::SoundVolumeChangeRequested& e)
 	it->second.userVolume = e.volume;
 
 	ApplyVolume(it->second);
+}
+
+void KdAudioManager::OnFade(const Events::SoundFadeRequested& e)
+{
+	auto it = m_active.find(e.handle.id);
+
+	if (it == m_active.end()) { return; }
+
+	StartFade(it->second, e.targetVolume, e.duration, e.stopOnEnd);
 }
 
 void KdAudioManager::OnCategoryVolume(const Events::SoundCategoryVolumeChangeRequested& e)
@@ -174,6 +193,9 @@ std::shared_ptr<KdSoundInstance> KdAudioManager::StartSound(const Events::SoundP
 	active.defVolume = def.volume;
 	active.userVolume = e.volume;
 
+	// フェードインは無音から始める
+	if (e.fadeIn > 0.0f) { active.fadeVolume = 0.0f; }
+
 	ApplyVolume(active);
 
 	instance->Play(e.loop || def.loop);
@@ -183,14 +205,59 @@ std::shared_ptr<KdSoundInstance> KdAudioManager::StartSound(const Events::SoundP
 	// ハンドル未指定(旧API・発行忘れ)ならここで発行する
 	SoundHandle handle = e.handle.IsValid() ? e.handle : SoundHandle::Issue();
 
-	m_active[handle.id] = std::move(active);
+	ActiveSound& stored = m_active[handle.id] = std::move(active);
+
+	if (e.fadeIn > 0.0f) { StartFade(stored, 1.0f, e.fadeIn, false); }
 
 	return instance;
 }
 
 void KdAudioManager::ApplyVolume(ActiveSound& s)
 {
-	s.instance->SetVolume(s.userVolume * s.defVolume * m_categoryVolume[(size_t)s.category]);
+	s.instance->SetVolume(s.userVolume * s.defVolume * m_categoryVolume[(size_t)s.category] * s.fadeVolume);
+}
+
+void KdAudioManager::StartFade(ActiveSound& s, float target, float duration, bool stopOnEnd)
+{
+	// 時間指定なしは即時反映
+	if (duration <= 0.0f)
+	{
+		s.fadeVolume = target;
+		s.fading = false;
+
+		ApplyVolume(s);
+
+		if (stopOnEnd) { s.instance->Stop(); }
+
+		return;
+	}
+
+	s.fadeFrom = s.fadeVolume;
+	s.fadeTo = target;
+	s.fadeDuration = duration;
+	s.fadeElapsed = 0.0f;
+	s.fading = true;
+	s.stopOnFadeEnd = stopOnEnd;
+}
+
+void KdAudioManager::UpdateFade(ActiveSound& s, float deltaTime)
+{
+	if (!s.fading) { return; }
+
+	s.fadeElapsed += deltaTime;
+
+	const float t = std::min(s.fadeElapsed / s.fadeDuration, 1.0f);
+
+	s.fadeVolume = s.fadeFrom + (s.fadeTo - s.fadeFrom) * t;
+
+	ApplyVolume(s);
+
+	if (t >= 1.0f)
+	{
+		s.fading = false;
+
+		if (s.stopOnFadeEnd) { s.instance->Stop(); }
+	}
 }
 
 int KdAudioManager::CountActive(const std::string& soundId)
@@ -324,7 +391,8 @@ bool KdSoundEffect::Load(std::string_view fileName, const std::unique_ptr<Direct
 // ##### KdSoundInstance #####
 
 KdSoundInstance::KdSoundInstance(const std::shared_ptr<KdSoundEffect>& soundEffect)
-	:m_soundData(soundEffect) {}
+	:m_soundData(soundEffect) {
+}
 
 bool KdSoundInstance::CreateInstance()
 {
@@ -387,7 +455,8 @@ bool KdSoundInstance::IsStopped()
 // ##### KdSoundInstance3D #####
 
 KdSoundInstance3D::KdSoundInstance3D(const std::shared_ptr<KdSoundEffect>& soundEffect, const DirectX::AudioListener& ownerListener)
-	:KdSoundInstance(soundEffect), m_ownerListener(ownerListener) {}
+	:KdSoundInstance(soundEffect), m_ownerListener(ownerListener) {
+}
 
 bool KdSoundInstance3D::CreateInstance()
 {

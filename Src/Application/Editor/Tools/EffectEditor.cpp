@@ -499,6 +499,13 @@ bool EffectEditor::DrawLayerInspector(GPUParticleLayer& layer, int index)
 			}
 		}
 
+		if (shape.Distribution == ParticleEmitDistribution::Converge)
+		{
+			ImGui::DragFloat("Converge Radius", &shape.ConvergeRadius, 0.05f, 0.1f, 100.0f);
+			ImGui::DragFloat("Converge Speed", &shape.ConvergeSpeed, 0.05f, 0.0f, 100.0f);
+			ImGui::TextDisabled("Speed=0で寿命ぴったりに中心(発生位置)へ到達");
+		}
+
 		ImGui::SeparatorText("Appearance");
 		ImGui::DragFloatRange2("Life Min/Max(sec)", &app.LifeMin, &app.LifeMax, 0.02f, 0.01f, 60.0f);
 		ImGui::DragFloat2("Size Start", &app.SizeStartMin);

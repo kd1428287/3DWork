@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include <chrono>
+
 #include "Application/Core/EventBus/EventBus.h"
 #include "Application/Core/EventBus/Events/AudioEvents.h"
 #include "KdSoundDef.h"
@@ -22,7 +24,7 @@ public:
 	// 初期化(イベントの購読開始)
 	void Init(const std::shared_ptr<EventBus>& bus = GlobalEventBus::Instance());
 
-	// イベント処理・3D音の更新・終了した音の回収
+	// イベント処理・フェード・3D音の更新・終了した音の回収
 	void Update();
 
 	// 毎フレーム呼ぶため、イベントにせず直接呼ぶ
@@ -61,12 +63,22 @@ private:
 		SoundCategory	category = SoundCategory::SE;
 		float			defVolume = 1.0f;	// SoundDef側の音量
 		float			userVolume = 1.0f;	// 要求側が指定した音量
+
+		// フェード(fadeVolumeを最終音量に掛ける)
+		float			fadeVolume = 1.0f;
+		float			fadeFrom = 1.0f;
+		float			fadeTo = 1.0f;
+		float			fadeDuration = 0.0f;
+		float			fadeElapsed = 0.0f;
+		bool			fading = false;
+		bool			stopOnFadeEnd = false;
 	};
 
 	// イベントハンドラ(キュー経由で Update から呼ばれる)
 	void OnPlay(const Events::SoundPlayRequested& e);
 	void OnStop(const Events::SoundStopRequested& e);
 	void OnVolume(const Events::SoundVolumeChangeRequested& e);
+	void OnFade(const Events::SoundFadeRequested& e);
 	void OnCategoryVolume(const Events::SoundCategoryVolumeChangeRequested& e);
 
 	// 受信したイベントは即処理せず、キューに積んで Update で処理する
@@ -90,8 +102,14 @@ private:
 	// 生成・再生・登録(イベントと旧APIの共通処理)
 	std::shared_ptr<KdSoundInstance> StartSound(const Events::SoundPlayRequested& e);
 
-	// 最終音量 = 要求音量 × 定義音量 × 種別音量
+	// 最終音量 = 要求音量 × 定義音量 × 種別音量 × フェード
 	void ApplyVolume(ActiveSound& s);
+
+	// 現在の音量から目標へのフェードを開始する(duration<=0なら即時)
+	void StartFade(ActiveSound& s, float target, float duration, bool stopOnEnd);
+
+	// フェードを進める
+	void UpdateFade(ActiveSound& s, float deltaTime);
 
 	// 再生中の同一IDの数(同時発音数の判定用)
 	int CountActive(const std::string& soundId);
@@ -112,6 +130,9 @@ private:
 	KdSoundDefTable								m_defs;
 	std::array<float, (size_t)SoundCategory::Max>	m_categoryVolume;
 	std::mt19937								m_random{ std::random_device{}() };
+
+	// フェード用の経過時間計測(ゲームのタイムスケールの影響を受けない)
+	std::chrono::steady_clock::time_point	m_lastUpdate;
 
 	std::unordered_map<std::string, std::shared_ptr<KdSoundEffect>>	m_soundMap;
 };

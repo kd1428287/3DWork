@@ -41,6 +41,8 @@
               0.0,
               1.0
             ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
             "count": 8,
             "dirScaleMax": 0.0,
             "dirScaleMin": 0.0,
@@ -126,6 +128,8 @@
               0.0026432161685079336,
               1.0
             ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
             "count": 500,
             "dirScaleMax": 2.0,
             "dirScaleMin": 1.0,
@@ -176,6 +180,8 @@
               0.10000000149011612,
               1.0
             ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
             "count": 100,
             "dirScaleMax": 4.0,
             "dirScaleMin": 1.0,
@@ -262,6 +268,8 @@
               1.600000023841858,
               1.0
             ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
             "count": 100,
             "dirScaleMax": 2.0,
             "dirScaleMin": 0.10000000149011612,
@@ -312,6 +320,8 @@
               0.30000001192092896,
               1.0
             ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
             "count": 200,
             "dirScaleMax": 0.0,
             "dirScaleMin": 0.0,
@@ -362,6 +372,8 @@
               0.09227219223976135,
               1.0
             ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
             "count": 400,
             "dirScaleMax": 10.0,
             "dirScaleMin": 2.0,
@@ -447,6 +459,8 @@
               1.600000023841858,
               1.0
             ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
             "count": 50,
             "dirScaleMax": 4.0,
             "dirScaleMin": 1.0,
@@ -497,6 +511,8 @@
               0.30000001192092896,
               1.0
             ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
             "count": 100,
             "dirScaleMax": 0.0,
             "dirScaleMin": 0.0,
@@ -547,6 +563,8 @@
               0.10000000149011612,
               1.0
             ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
             "count": 50,
             "dirScaleMax": 4.0,
             "dirScaleMin": 1.0,
@@ -632,6 +650,8 @@
               0.12941177189350128,
               1.0
             ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
             "count": 250,
             "dirScaleMax": 8.0,
             "dirScaleMin": 0.10000000149011612,
@@ -682,6 +702,8 @@
               0.10000000149011612,
               1.0
             ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
             "count": 30,
             "dirScaleMax": 0.0,
             "dirScaleMin": 0.0,
@@ -732,6 +754,8 @@
               0.10000000149011612,
               1.0
             ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
             "count": 150,
             "dirScaleMax": 0.0,
             "dirScaleMin": 0.0,
@@ -782,6 +806,8 @@
               0.12941177189350128,
               1.0
             ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
             "count": 30,
             "dirScaleMax": 0.0,
             "dirScaleMin": 0.0,
@@ -867,6 +893,8 @@
               1.0,
               1.0
             ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
             "count": 140,
             "dirScaleMax": 9.0,
             "dirScaleMin": 3.0,
@@ -917,6 +945,8 @@
               1.0,
               1.0
             ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
             "count": 100,
             "dirScaleMax": 8.0,
             "dirScaleMin": 4.0,
@@ -967,6 +997,8 @@
               0.8999999761581421,
               1.0
             ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
             "count": 160,
             "dirScaleMax": 7.0,
             "dirScaleMin": 2.0,
@@ -1053,6 +1085,8 @@
               0.0,
               1.0
             ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
             "count": 1,
             "dirScaleMax": 0.0,
             "dirScaleMin": 0.0,
@@ -1103,6 +1137,8 @@
               0.0,
               1.0
             ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
             "count": 1,
             "dirScaleMax": 0.0,
             "dirScaleMin": 0.0,
@@ -1189,6 +1225,8 @@
               0.0,
               1.0
             ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
             "count": 1,
             "dirScaleMax": 4.0,
             "dirScaleMin": 1.0,
@@ -1274,6 +1312,8 @@
               0.5706700086593628,
               1.0
             ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
             "count": 30,
             "dirScaleMax": 4.0,
             "dirScaleMin": 1.0,
@@ -1324,6 +1364,8 @@
               0.10000000149011612,
               1.0
             ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
             "count": 30,
             "dirScaleMax": 4.0,
             "dirScaleMin": 1.0,
@@ -1410,6 +1452,8 @@
               0.07434642314910889,
               1.0
             ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
             "count": 10,
             "dirScaleMax": 0.0,
             "dirScaleMin": 0.0,
@@ -1460,6 +1504,8 @@
               0.04044116660952568,
               1.0
             ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
             "count": 20,
             "dirScaleMax": 0.0,
             "dirScaleMin": 0.0,
@@ -1510,6 +1556,8 @@
               0.23039215803146362,
               1.0
             ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
             "count": 5,
             "dirScaleMax": 0.0,
             "dirScaleMin": 0.0,
@@ -1595,6 +1643,8 @@
               0.10000000149011612,
               1.0
             ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
             "count": 30,
             "dirScaleMax": 4.0,
             "dirScaleMin": 1.0,
@@ -1681,6 +1731,8 @@
               0.024798179045319557,
               1.0
             ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
             "count": 15,
             "dirScaleMax": 2.0,
             "dirScaleMin": 0.10000000149011612,
@@ -1731,6 +1783,8 @@
               0.30000001192092896,
               1.0
             ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
             "count": 100,
             "dirScaleMax": 0.0,
             "dirScaleMin": 0.0,
@@ -1781,6 +1835,8 @@
               0.01441754586994648,
               1.0
             ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
             "count": 200,
             "dirScaleMax": 2.0,
             "dirScaleMin": 2.0,
@@ -1808,6 +1864,94 @@
         ],
         "maxParticleNum": 2000,
         "texture": "circle.png"
+      },
+      "pos": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotate": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "StarConverge",
+      "params": {
+        "blendMode": "Add",
+        "drawPass": [
+          "Default",
+          "Bright"
+        ],
+        "emitInterval": 0.0,
+        "emitMode": "Continuous",
+        "gravity": [
+          0.0,
+          -0.5,
+          0.0
+        ],
+        "layers": [
+          {
+            "billboardMode": "Normal",
+            "colorMax": [
+              0.9607843160629272,
+              0.7865244150161743,
+              0.7865244150161743,
+              1.0
+            ],
+            "colorMin": [
+              0.9656862616539001,
+              0.7147971987724304,
+              0.7147971987724304,
+              1.0
+            ],
+            "colorStartMax": [
+              0.9803921580314636,
+              0.168769970536232,
+              0.14417533576488495,
+              1.0
+            ],
+            "colorStartMin": [
+              0.720588207244873,
+              0.46865248680114746,
+              0.3779555559158325,
+              1.0
+            ],
+            "convergeRadius": 3.0,
+            "convergeSpeed": 0.0,
+            "count": 200,
+            "dirScaleMax": 4.0,
+            "dirScaleMin": 1.0,
+            "distribution": "Converge",
+            "lifeMax": 0.800000011920929,
+            "lifeMin": 0.44999998807907104,
+            "offsetMax": [
+              1.0,
+              1.5,
+              1.0
+            ],
+            "offsetMin": [
+              1.0,
+              0.5,
+              1.0
+            ],
+            "radialSpeedMax": 4.0,
+            "radialSpeedMin": 1.0,
+            "sizeEndMax": 0.05999999865889549,
+            "sizeEndMin": 0.019999999552965164,
+            "sizeMax": 0.05999999865889549,
+            "sizeMin": 0.019999999552965164,
+            "stretchScale": 0.15000000596046448
+          }
+        ],
+        "maxParticleNum": 500,
+        "texture": "star.png"
       },
       "pos": [
         0.0,

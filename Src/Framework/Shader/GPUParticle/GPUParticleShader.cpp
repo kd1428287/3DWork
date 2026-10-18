@@ -143,8 +143,8 @@ void GPUParticleShader::InitParticles(ID3D11UnorderedAccessView* particleUAV, UI
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 発生：リングバッファへcount個ぶん書き込む
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void GPUParticleShader::Emit(ID3D11UnorderedAccessView* particleUAV, ID3D11UnorderedAccessView* emitCounterUAV,
-	UINT maxParticleNum, const ParticleBuffer::EmitParameter& param, UINT count)
+void GPUParticleShader::Emit(ID3D11UnorderedAccessView* particleUAV,
+	UINT maxParticleNum, const ParticleBuffer::EmitParameter& param, UINT count, UINT startIndex)
 {
 	if (!m_initialized || count == 0) { return; }
 
@@ -172,12 +172,17 @@ void GPUParticleShader::Emit(ID3D11UnorderedAccessView* particleUAV, ID3D11Unord
 	else if (param.BillboardMode == ParticleBillboardMode::Beam) { billboardModeValue = 2.0f; }
 	emit.EmitBillboardMode = billboardModeValue;
 	emit.EmitStretchScale = param.StretchScale;
-	emit.EmitDistribution = (param.Distribution == ParticleEmitDistribution::RadialInPlane) ? 1.0f : 0.0f;
+	// Directional=0 / RadialInPlane=1 / Converge=2
+	float distributionValue = 0.0f;
+	if (param.Distribution == ParticleEmitDistribution::RadialInPlane) { distributionValue = 1.0f; }
+	else if (param.Distribution == ParticleEmitDistribution::Converge) { distributionValue = 2.0f; }
+	emit.EmitDistribution = distributionValue;
 	emit.EmitRadialSpeedMin = param.RadialSpeedMin;
 	emit.EmitRadialSpeedMax = param.RadialSpeedMax;
 	emit.EmitAxis = param.Axis;
 	emit.EmitConvergeRadius = param.ConvergeRadius;
 	emit.EmitConvergeSpeed = param.ConvergeSpeed;
+	emit.EmitStartIndex = startIndex;
 
 	m_cb0_Emit.Write();
 
@@ -186,14 +191,13 @@ void GPUParticleShader::Emit(ID3D11UnorderedAccessView* particleUAV, ID3D11Unord
 	DevCon->CSSetShader(m_CS_Emit, nullptr, 0);
 	DevCon->CSSetConstantBuffers(0, 1, m_cb0_Emit.GetAddress());
 
-	ID3D11UnorderedAccessView* uavs[2] = { particleUAV, emitCounterUAV };
-	DevCon->CSSetUnorderedAccessViews(0, 2, uavs, nullptr);
+	DevCon->CSSetUnorderedAccessViews(0, 1, &particleUAV, nullptr);
 
 	UINT threadGroupNum = (count + 255) / 256;
 	DevCon->Dispatch(threadGroupNum, 1, 1);
 
-	ID3D11UnorderedAccessView* nullUAVs[2] = { nullptr, nullptr };
-	DevCon->CSSetUnorderedAccessViews(0, 2, nullUAVs, nullptr);
+	ID3D11UnorderedAccessView* pNullUAV = nullptr;
+	DevCon->CSSetUnorderedAccessViews(0, 1, &pNullUAV, nullptr);
 	DevCon->CSSetShader(nullptr, nullptr, 0);
 }
 

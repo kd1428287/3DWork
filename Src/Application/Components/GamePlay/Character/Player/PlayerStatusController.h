@@ -18,6 +18,16 @@ class PlayerFacingComponent;
 class PlayerCombatMovementComponent;
 class HealthComponent;
 
+// 効果音のID(論理IDまたはファイルパス)。空なら鳴らさない。
+// 被弾/ガード/パリィのSEはHitReactionConfig側(SEName)で指定する。
+struct PlayerSoundData
+{
+	std::string attackSwing;		// 攻撃判定の発生時
+	std::string evade;
+	std::string guardRaise;
+	std::string death;
+};
+
 // 初期設定(Prefab/JSONから渡す値)。
 struct PlayerStatusControllerConfig
 {
@@ -25,6 +35,7 @@ struct PlayerStatusControllerConfig
 	GuardData guard;
 	ChargeData charge;
 	StaggerData stagger;
+	PlayerSoundData sound;
 };
 
 // PlayerStatusController(責務再構成版)
@@ -48,6 +59,7 @@ public:
 		SetEvadeAndGuardData(config.evade, config.guard);
 		baseChargeData_ = config.charge;
 		staggerData_ = config.stagger;
+		sound_ = config.sound;
 	}
 
 	void Awake() override;
@@ -86,6 +98,10 @@ public:
 	const GuardData& GetCurrentGuardData() const { return currentGuard_; }
 	const ChargeData& GetChargeData() const { return baseChargeData_; }
 	const StaggerData& GetStaggerData() const { return staggerData_; }
+
+	// --- 効果音(Stateから呼ぶ薄いファサード) ---
+	const PlayerSoundData& GetSoundData() const { return sound_; }
+	void PlaySE(const std::string& id) const;
 
 	// 現在の攻撃に掛けるダメージ倍率(通常攻撃は1.0、チャージ攻撃は溜め量で決まる)。
 	float GetAttackDamageScale() const { return attackDamageScale_; }
@@ -194,6 +210,7 @@ private:
 	GuardData currentGuard_;
 	ChargeData baseChargeData_;
 	StaggerData staggerData_;
+	PlayerSoundData sound_;
 	float attackDamageScale_ = 1.0f;
 
 	// --- Stateインスタンス ---

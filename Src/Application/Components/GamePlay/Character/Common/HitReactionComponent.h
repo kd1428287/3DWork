@@ -28,6 +28,10 @@ struct ReactionEventConfig
 	std::string effectName = "";
 	std::string SEName = "";
 
+	// SEのピッチ揺らぎの幅(±)。再生ごとに-幅〜+幅の範囲でランダムにずらす。
+	// ピッチは-1.0〜1.0(±1.0がちょうど1オクターブ)で、0なら揺らさない。
+	float sePitchRandom = 0.0f;
+
 	// true: 衝突法線と反射ベクトルを合成した方向で出す(SpawnRefrectEffect)。
 	// false: 衝突法線方向で出す(SpawnNormalEffect)。
 	bool useReflectDirection = false;

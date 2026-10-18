@@ -2,12 +2,23 @@
 #include "../Common/CharacterEvents.h"
 #include "WeaponComponent.h"
 #include <algorithm>
+#include <random>
 #include "ShapeSurfaceQuery.h"
+#include "Application/Core/EventBus/Events/AudioEvents.h"
 
 namespace
 {
 	// 武器の判定形状名(WeaponComponent::SetHitBoxEnabledと同じ)。
 	constexpr const char* kWeaponShapeName = "HitBox";
+
+	// SEのピッチ揺らぎ。-range〜+rangeの一様乱数を返す(range<=0なら0)。
+	float RandomPitchOffset(float range)
+	{
+		if (range <= 0.0f) return 0.0f;
+
+		static thread_local std::mt19937 s_rng{ std::random_device{}() };
+		return std::uniform_real_distribution<float>(-range, range)(s_rng);
+	}
 }
 
 void HitReactionComponent::Awake()
@@ -143,6 +154,12 @@ void HitReactionComponent::SpawnNormalEffect(const ReactionEventConfig& config, 
 void HitReactionComponent::HitReaction(const ReactionEventConfig& config, const Events::AttackHit& ctx)
 {
 	EventBus& bus = *GetOwner()->GetContext()->eventBus;
+
+	// 被弾/ブロック/パリィのSE(攻撃を受ける側のキャラが鳴らす)
+	if (!config.SEName.empty()) {
+		Events::PublishSoundPlayEvent(*GlobalEventBus::Instance(), config.SEName,
+			false, 1.0f, RandomPitchOffset(config.sePitchRandom));
+	}
 
 	if (config.enableCameraShake) {
 		Events::PublishCameraShake(bus, config.cameraShakeIntensity);

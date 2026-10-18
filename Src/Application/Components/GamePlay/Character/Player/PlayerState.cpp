@@ -54,6 +54,7 @@ void StateAttack::Update(PlayerStatusController* controller, float deltaTime) {
 		weaponSet_->SetTrailEmitting(data.weaponSlots, true); // 武器の軌跡エフェクトもHitBoxと同じ窓で記録開始
 
 		controller->PlayAnimation(data.phaseData.active);
+		controller->PlaySE(controller->GetSoundData().attackSwing); // 振りの音は判定発生に合わせる
 	}
 	else if (phase_ == CombatState::AttackActive && elapsed_ >= data.phaseData.active.duration) {
 		phase_ = CombatState::AttackRecovery;
@@ -138,6 +139,7 @@ void StateEvade::Enter(PlayerStatusController* controller) {
 	// 決める必要があるため。詳細は別途相談)。
 	const float targetDuration = data.activeDuration + data.recoveryDuration;
 	controller->PlayAnimation(data.GetAnimationName(evadeDir), false, targetDuration, data.useRootMotion);
+	controller->PlaySE(controller->GetSoundData().evade);
 	if (!data.useRootMotion) {
 		//controller->RequestStepMove(data.evadeDirection, data.evadeDistance, data.activeDuration + data.recoveryDuration);
 	}
@@ -189,6 +191,7 @@ void StateGuard::Enter(PlayerStatusController* controller) {
 
 	// 構え動作を単発再生する
 	controller->PlayAnimation(controller->GetCurrentGuardData().start);
+	controller->PlaySE(controller->GetSoundData().guardRaise);
 }
 
 void StateGuard::Exit(PlayerStatusController* controller) {
@@ -382,6 +385,7 @@ void StateDead::Enter(PlayerStatusController* controller) {
 	controller->ClearRootMotionWarp();
 	controller->ClearLockOn(); // カメラが死体を追い続けないようロック解除
 	controller->PlayAnimation(kDeathAnimationName, false, kDeathAnimationDuration, false);
+	controller->PlaySE(controller->GetSoundData().death);
 }
 
 void StateDead::Update(PlayerStatusController* controller, float deltaTime) {
@@ -391,7 +395,7 @@ void StateDead::Update(PlayerStatusController* controller, float deltaTime) {
 	// アニメ終了時に一度だけシーンのリロードを要求する。
 	reloadRequested_ = true;
 	//GLOBALEVENT->Publish(Events::ReloadingScene{});
-	GLOBALEVENT->Publish(Events::SceneChangeRequest{SceneType::Title});
+	GLOBALEVENT->Publish(Events::SceneChangeRequest{ SceneType::Title });
 }
 
 void StateDead::Exit(PlayerStatusController* controller) {

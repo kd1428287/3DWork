@@ -43,6 +43,9 @@ protected:
 	virtual void OnDrawLiquid() {}
 	virtual void OnDrawBackground() {}
 
+	// スプライト描画の最後(objManager_のUIより後、Begin/Endの間)に呼ばれる
+	virtual void OnDrawSprite() {}
+
 	bool LoadUI(const std::string& path);
 
 	// 宣言順の逆に破棄される(派生メンバ → systemManager_ → objManager_ → localBus_)

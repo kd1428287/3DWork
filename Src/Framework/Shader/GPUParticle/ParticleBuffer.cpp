@@ -12,6 +12,7 @@ bool ParticleBuffer::Init(UINT maxParticleNum)
 	Release();
 
 	maxParticleNum_ = maxParticleNum;
+	emitCursor_ = 0;
 
 	if (!CreateBuffers(maxParticleNum)) { return false; }
 
@@ -72,41 +73,6 @@ bool ParticleBuffer::CreateBuffers(UINT maxParticleNum)
 		}
 	}
 
-	//------------------------------------------
-	// 発生用リングバッファの書き込みカーソル(要素数1)
-	//------------------------------------------
-	{
-		UINT initialValue = 0;
-
-		D3D11_BUFFER_DESC desc = {};
-		desc.ByteWidth = sizeof(UINT);
-		desc.Usage = D3D11_USAGE_DEFAULT;
-		desc.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
-		desc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
-		desc.StructureByteStride = sizeof(UINT);
-
-		D3D11_SUBRESOURCE_DATA initData = {};
-		initData.pSysMem = &initialValue;
-
-		if (FAILED(Dev->CreateBuffer(&desc, &initData, &emitCounterBuffer_)))
-		{
-			assert(0 && "GPUパーティクル：発生カウンタバッファ作成失敗");
-			return false;
-		}
-
-		D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
-		uavDesc.Format = DXGI_FORMAT_UNKNOWN;
-		uavDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
-		uavDesc.Buffer.FirstElement = 0;
-		uavDesc.Buffer.NumElements = 1;
-
-		if (FAILED(Dev->CreateUnorderedAccessView(emitCounterBuffer_, &uavDesc, &emitCounterUAV_)))
-		{
-			assert(0 && "GPUパーティクル：発生カウンタUAV作成失敗");
-			return false;
-		}
-	}
-
 	return true;
 }
 
@@ -119,9 +85,6 @@ void ParticleBuffer::Release()
 	KdSafeRelease(particleSRV_);
 	KdSafeRelease(particleBuffer_);
 
-	KdSafeRelease(emitCounterUAV_);
-	KdSafeRelease(emitCounterBuffer_);
-
 	initialized_ = false;
 	maxParticleNum_ = 0;
 }
@@ -133,8 +96,13 @@ void ParticleBuffer::Emit(const EmitParameter& param, UINT count)
 {
 	if (!initialized_ || count == 0) { return; }
 
+	// 最大数を超える発生は切り捨てる(CS側と同じ)
+	count = std::min(count, maxParticleNum_);
+
 	KdShaderManager::Instance().m_particleShader.Emit(
-		particleUAV_, emitCounterUAV_, maxParticleNum_, param, count);
+		particleUAV_, maxParticleNum_, param, count, emitCursor_);
+
+	emitCursor_ = (emitCursor_ + count) % maxParticleNum_;
 }
 
 void ParticleBuffer::Update(float deltaTime, const Math::Vector3& gravity)

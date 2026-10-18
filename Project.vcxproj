@@ -364,6 +364,7 @@
     <ClInclude Include="Src\Application\Core\EventBus\EventBus.h" />
     <ClInclude Include="Src\Application\Core\EventBus\Events\CameraEvents.h" />
     <ClInclude Include="Src\Application\Core\EventBus\Events\CollisionEvents.h" />
+    <ClInclude Include="Src\Application\Core\EventBus\Events\DebugEvents.h" />
     <ClInclude Include="Src\Application\Core\EventBus\Events\EffectEvents.h" />
     <ClInclude Include="Src\Application\Core\EventBus\Events\Event.h" />
     <ClInclude Include="Src\Application\Core\EventBus\Events\CombatEvents.h" />
@@ -379,6 +380,7 @@
     <ClInclude Include="Src\Application\Core\Scene\TransitionController.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\Blackboard.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\BTBlackboardConditions.h" />
+    <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\BTCommittedSelector.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\BTComposite.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\BTCondition.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\BTNodeStatus.h" />
@@ -476,6 +478,8 @@
     <ClInclude Include="Src\Application\Systems\GamePlay\CameraSystem.h" />
     <ClInclude Include="Src\Application\Systems\GamePlay\ComboSystem.h" />
     <ClInclude Include="Src\Application\Systems\GamePlay\GameInputSystem.h" />
+    <ClInclude Include="Src\Application\Systems\GamePlay\ResultController.h" />
+    <ClInclude Include="Src\Application\Systems\GamePlay\ResultView.h" />
     <ClInclude Include="Src\Application\Systems\GamePlay\TimeScaleSystem.h" />
     <ClInclude Include="Src\Application\Systems\InputSystem.h" />
     <ClInclude Include="Src\Application\Systems\SelectableManager.h" />
@@ -612,6 +616,7 @@
     <ClCompile Include="Src\Application\Scene\GameScene\GameScene.cpp" />
     <ClCompile Include="Src\Application\Scene\ResultScene\ResultScene.cpp" />
     <ClCompile Include="Src\Application\Scene\TitleScene\TitleScene.cpp" />
+    <ClCompile Include="Src\Application\Systems\GamePlay\ResultView.cpp" />
     <ClCompile Include="Src\Application\Systems\SelectableManager.cpp" />
     <ClCompile Include="Src\Framework\Audio\KdSoundDef.cpp" />
     <ClCompile Include="Src\Framework\Direct3D\KdMaterial.cpp">
@@ -731,6 +736,9 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_InkWash.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_LiquidInk.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>

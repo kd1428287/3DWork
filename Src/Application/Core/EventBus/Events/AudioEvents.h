@@ -30,6 +30,7 @@ namespace Events
 		bool loop = false;
 		float volume = 1.0f;
 		float pitch = 0.0f;
+		float fadeIn = 0.0f;			// フェードイン時間(秒)。0以下ならフェードしない
 		SoundHandle handle;			// 無効なら再生側で発行する
 	};
 
@@ -42,6 +43,14 @@ namespace Events
 	struct SoundVolumeChangeRequested : public Event {
 		SoundHandle handle;
 		float volume = 1.0f;
+	};
+
+	// 指定した音のフェードが要求された(現在の音量から目標音量へ線形に変化)
+	struct SoundFadeRequested : public Event {
+		SoundHandle handle;
+		float targetVolume = 0.0f;
+		float duration = 1.0f;			// 秒
+		bool stopOnEnd = false;			// 完了時に停止する(フェードアウト用)
 	};
 
 	// 種別ごとの音量変更が要求された
@@ -63,20 +72,21 @@ namespace Events
 		SoundHandle handle;
 	};
 
-	inline SoundHandle PublishSoundPlayEvent(EventBus& bus, std::string_view soundId, bool loop = false, float volume = 1.0f, float pitch = 0.0f)
+	inline SoundHandle PublishSoundPlayEvent(EventBus& bus, std::string_view soundId, bool loop = false, float volume = 1.0f, float pitch = 0.0f, float fadeIn = 0.0f)
 	{
 		SoundPlayRequested e;
 		e.soundId = soundId;
 		e.loop = loop;
 		e.volume = volume;
 		e.pitch = pitch;
+		e.fadeIn = fadeIn;
 		e.handle = SoundHandle::Issue();
 		bus.Publish(e);
 
 		return e.handle;
 	}
 
-	inline SoundHandle PublishSoundPlay3DEvent(EventBus& bus, std::string_view soundId, const Math::Vector3& pos, bool loop = false, float volume = 1.0f, float pitch = 0.0f)
+	inline SoundHandle PublishSoundPlay3DEvent(EventBus& bus, std::string_view soundId, const Math::Vector3& pos, bool loop = false, float volume = 1.0f, float pitch = 0.0f, float fadeIn = 0.0f)
 	{
 		SoundPlayRequested e;
 		e.soundId = soundId;
@@ -85,6 +95,7 @@ namespace Events
 		e.loop = loop;
 		e.volume = volume;
 		e.pitch = pitch;
+		e.fadeIn = fadeIn;
 		e.handle = SoundHandle::Issue();
 		bus.Publish(e);
 
@@ -112,5 +123,22 @@ namespace Events
 		e.handle = handle;
 		e.volume = volume;
 		bus.Publish(e);
+	}
+
+	// 目標音量へフェードする(クロスフェードなど)
+	inline void PublishSoundFadeEvent(EventBus& bus, SoundHandle handle, float targetVolume, float duration, bool stopOnEnd = false)
+	{
+		SoundFadeRequested e;
+		e.handle = handle;
+		e.targetVolume = targetVolume;
+		e.duration = duration;
+		e.stopOnEnd = stopOnEnd;
+		bus.Publish(e);
+	}
+
+	// フェードアウトして停止する
+	inline void PublishSoundFadeOutEvent(EventBus& bus, SoundHandle handle, float duration)
+	{
+		PublishSoundFadeEvent(bus, handle, 0.0f, duration, true);
 	}
 }

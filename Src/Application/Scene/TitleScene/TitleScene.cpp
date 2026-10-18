@@ -4,7 +4,7 @@
 #include "Application/Components/Core/TransformComponent.h"
 
 #include "Application/Core/EventBus/Events/SceneEvents.h"
-#include "Application/Core/EventBus/Events/TransitionEvents.h""
+#include "Application/Core/EventBus/Events/TransitionEvents.h"
 
 #include "Application/Factories/PrefabFactory.h"
 
@@ -12,6 +12,13 @@ namespace
 {
 	constexpr float kSplatRadius = 0.05f;	// 画面の高さに対する比率
 	constexpr float kSplatDensity = 0.6f;
+
+	// 仮のアセット名(実ファイルに合わせて変更する)
+	constexpr const char* kTitleBgm = "Asset/Sounds/Title/tenkai-yashiro.wav";
+	constexpr const char* kClickSe = "Asset/Sounds/Title/wadaiko.wav";
+
+	constexpr float kBgmFadeIn = 1.5f;
+	constexpr float kBgmFadeOut = 0.8f;
 }
 
 void TitleScene::OnEnter()
@@ -29,14 +36,27 @@ void TitleScene::OnEnter()
 		[this](float dt) { objManager_->PostUpdate(dt); },
 		[this](float dt) { objManager_->Flush(); }
 	);
+
+	bgm_ = Events::PublishSoundPlayEvent(*GLOBALEVENT, kTitleBgm, true, 1.0f, 0.0f, kBgmFadeIn);
+}
+
+void TitleScene::OnExit()
+{
+	Events::PublishSoundFadeOutEvent(*GLOBALEVENT, bgm_, kBgmFadeOut);
 }
 
 void TitleScene::OnUpdate(float /*deltaTime*/)
 {
 	// クリック(Attack)でGameSceneへの遷移をリクエストする。
 	// SceneManagerを直接知らなくてよくなった(疎結合)。
-	if (KdInputManager::Instance().IsPress("Attack"))
+	if (!leaving_ && KdInputManager::Instance().IsPress("Attack"))
 	{
+		leaving_ = true;
+
+		// 暗転に合わせてBGMを絞る(シーン破棄後もマネージャ側で継続する)
+		Events::PublishSoundPlayEvent(*GLOBALEVENT, kClickSe);
+		Events::PublishSoundFadeOutEvent(*GLOBALEVENT, bgm_, kBgmFadeOut);
+
 		GLOBALEVENT->Publish(Events::SceneChangeRequest{ SceneType::Game });
 	}
 

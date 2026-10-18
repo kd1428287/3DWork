@@ -73,7 +73,7 @@ public:
 		float			SizeEnd = 0.0f;			// 消滅時サイズ(旧_pad を転用)
 
 		Math::Vector3	Axis = { 0,0,1 };		// Beam専用：伸びる向き(固定。速度とは無関係)
-		float			Distribution;			// 0: Directional, 1: RadialInPlane, 2: Converge
+		float			Distribution = 0.0f;	// 0: Directional, 1: RadialInPlane, 2: Converge
 		Math::Vector3	ConvergeCenter = { 0.f,0.f,0.f };
 		float			_pad = 0;
 	};
@@ -155,7 +155,6 @@ private:
 	ID3D11UnorderedAccessView* particleUAV_ = nullptr;
 	ID3D11ShaderResourceView* particleSRV_ = nullptr;
 
-	// 発生用リングバッファの書き込みカーソル(要素数1)
-	ID3D11Buffer* emitCounterBuffer_ = nullptr;
-	ID3D11UnorderedAccessView* emitCounterUAV_ = nullptr;
+	// 発生用リングバッファの書き込みカーソル(CPU側で管理し、Emit時にCSへ渡す)
+	UINT emitCursor_ = 0;
 };

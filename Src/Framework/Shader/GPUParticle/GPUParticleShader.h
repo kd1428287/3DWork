@@ -27,9 +27,9 @@ public:
 	// 指定UAVの全要素を「死亡」状態に初期化(ParticleBuffer::Init()から呼ばれる)
 	void InitParticles(ID3D11UnorderedAccessView* particleUAV, UINT maxParticleNum);
 
-	// count個ぶん発生させる
-	void Emit(ID3D11UnorderedAccessView* particleUAV, ID3D11UnorderedAccessView* emitCounterUAV,
-		UINT maxParticleNum, const ParticleBuffer::EmitParameter& param, UINT count);
+	// count個ぶん発生させる(startIndex：リングバッファの書き込み開始位置。ParticleBuffer側で管理)
+	void Emit(ID3D11UnorderedAccessView* particleUAV,
+		UINT maxParticleNum, const ParticleBuffer::EmitParameter& param, UINT count, UINT startIndex);
 
 	// 1フレームぶんのシミュレーション更新
 	void Update(ID3D11UnorderedAccessView* particleUAV, UINT maxParticleNum,
@@ -96,7 +96,7 @@ private:
 		float			EmitSizeEndMax = 0.0f;
 
 		// ※必ず末尾に追加する事(途中に挿すとHLSL側とオフセットがズレる。過去に実際発生した事故)
-		float			EmitDistribution = 0.0f;	// 0:Directional 1:RadialInPlane
+		float			EmitDistribution = 0.0f;	// 0:Directional 1:RadialInPlane 2:Converge
 		float			EmitRadialSpeedMin = 0.0f;
 		float			EmitRadialSpeedMax = 0.0f;
 		float			_padDistribution = 0.0f;
@@ -106,7 +106,8 @@ private:
 
 		float			EmitConvergeRadius = 5.0f;	// 収束開始半径（周囲の広がり具合）
 		float			EmitConvergeSpeed = 5.0f;	// 収束速度（または 0指定で 寿命から自動計算）
-		float			_padConverge[2] = {};	// 16バイト境界合わせ用パディング
+		UINT			EmitStartIndex = 0;		// リングバッファの書き込み開始位置(HLSL側g_EmitStartIndex)
+		float			_padEmit = 0.0f;		// 16バイト境界合わせ
 	};
 	KdConstantBuffer<cbEmit> m_cb0_Emit;
 

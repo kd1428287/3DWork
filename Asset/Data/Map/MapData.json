@@ -4,12 +4,20 @@
       "components": [
         {
           "params": {
+            "bodyShapeName": "",
             "ignoreParent": false,
             "shapes": [
               {
+                "capsuleEnd": [
+                  0.0,
+                  1.0,
+                  0.0
+                ],
                 "categoryMask": [
                   "Ground"
                 ],
+                "collideMask": [],
+                "enabled": true,
                 "halfExtents": [
                   500.0,
                   0.5,
@@ -20,9 +28,10 @@
                 "name": "Ground",
                 "offset": [
                   0.0,
-                  -0.5,
-                  0.0
+                  6.9981536865234375,
+                  -3.5323691368103027
                 ],
+                "radius": 0.5,
                 "shape": "Box",
                 "useDefaultCollideMask": true,
                 "wantsStayEvent": false
@@ -88,7 +97,7 @@
                 "name": "shape0",
                 "offset": [
                   0.04999999329447746,
-                  -0.007946758531033993,
+                  0.0,
                   0.04999999329447746
                 ],
                 "radius": 0.5,
@@ -357,90 +366,6 @@
     {
       "components": [
         {
-          "params": {},
-          "type": "GroundRender"
-        }
-      ],
-      "id": 10,
-      "name": "Object10",
-      "pos": [
-        0.0,
-        0.0,
-        0.0
-      ],
-      "rotation": [
-        0.0,
-        0.0,
-        0.0,
-        1.0
-      ],
-      "scale": [
-        1.0,
-        1.0,
-        1.0
-      ]
-    },
-    {
-      "components": [
-        {
-          "params": {
-            "animations": "",
-            "model": "Asset/Models/Character/Kachujin/kachujin.gltf"
-          },
-          "type": "ModelRender"
-        }
-      ],
-      "id": 11,
-      "name": "Object11",
-      "pos": [
-        0.0,
-        -38.18043518066406,
-        0.0
-      ],
-      "rotation": [
-        -0.0,
-        0.0,
-        -0.0,
-        1.0
-      ],
-      "scale": [
-        1.0,
-        1.0,
-        1.0
-      ]
-    },
-    {
-      "components": [
-        {
-          "params": {
-            "animations": "",
-            "model": "Asset/Models/Character/Masks/DemonMask.gltf"
-          },
-          "type": "ModelRender"
-        }
-      ],
-      "id": 12,
-      "name": "Object12",
-      "pos": [
-        0.0,
-        4.098996639251709,
-        -0.12959341704845428
-      ],
-      "rotation": [
-        -0.0,
-        0.0,
-        -0.0,
-        1.0
-      ],
-      "scale": [
-        0.30000001192092896,
-        0.30000001192092896,
-        0.30000001192092896
-      ]
-    },
-    {
-      "components": [
-        {
           "params": {
             "animations": "",
             "model": "Asset/Models/Character/Masks/DemonMask.gltf"
@@ -481,8 +406,8 @@
       "name": "PlayerStart",
       "pos": [
         0.0,
-        2.722020149230957,
-        12.170656204223633
+        3.0,
+        12.0
       ],
       "rotation": [
         -0.0,
@@ -518,6 +443,32 @@
         1.0,
         0.0,
         0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "components": [
+        {
+          "params": {},
+          "type": "GroundRender"
+        }
+      ],
+      "id": 16,
+      "name": "GroundTexture",
+      "pos": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
       ],
       "scale": [
         1.0,

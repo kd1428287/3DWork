@@ -41,6 +41,20 @@ struct EnemyAttackFacingData
 	float activeTurnSpeed = 0.0f;
 };
 
+// 予備動作エフェクトの警告種別(演出の色分け等の拡張用)。
+enum class TelegraphType { None, Normal, Danger };
+
+// 攻撃の予備動作エフェクト。Windup中、判定発生のleadTime前に1回だけ出す。
+struct EnemyAttackTelegraphData
+{
+	// 既定はStarConvergeを出す。出したくない技はtype=Noneにする。
+	TelegraphType type = TelegraphType::Normal;
+	std::string effectName = "StarConverge";
+	std::string anchorSlot;                   // 基準オブジェクトの武器スロット名("Main"等。空ならルート)
+	Math::Vector3 offset = Math::Vector3(0.0f, 2.0f, 0.0f); // 基準位置からのオフセット(敵の向きで回転、メートル)
+	float leadTime = 0.4f;                    // 判定発生の何秒前に出すか
+};
+
 // 攻撃1種類分のデータ。ダメージ/体幹ダメージ、windup/active/recoveryの
 // 3フェーズ構成、モーション制御、キャンセル設定等は汎用のAttackData
 // (CombatData.h、Player側のAttackDataと共通)にまとめてあり、ここには
@@ -60,6 +74,9 @@ struct EnemyAttackDefinition
 
 	// 攻撃中の向き制御(ターゲット追従の速さ)。
 	EnemyAttackFacingData facing;
+
+	// 予備動作エフェクト。
+	EnemyAttackTelegraphData telegraph;
 };
 
 // 常時ループする移動系アニメーションの名前。全敵種が必ず持つ役割

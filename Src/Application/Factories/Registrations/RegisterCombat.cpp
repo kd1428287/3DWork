@@ -1,4 +1,4 @@
-// 戦闘(共通)と、武器・ボーンソケットまわりのコンポーネント登録。
+﻿// 戦闘(共通)と、武器・ボーンソケットまわりのコンポーネント登録。
 
 #include "Application/Factories/ComponentRegistry.h"
 #include "Application/Factories/Registrations/RegisterFunctions.h"
@@ -24,12 +24,12 @@ using namespace Registration;
 
 COMPONENT_PARAMS_DEFINE_TYPE(PostureConfig, max, lowerLimit, regenPerSecond, regenDelaySeconds)
 COMPONENT_PARAMS_DEFINE_TYPE(HealthConfig, max)
-COMPONENT_PARAMS_DEFINE_TYPE(ReactionEventConfig, enableCameraShake, enableHitStop, enableEffect,enableDistortion,
-	effectName, cameraShakeIntensity, hitStopDurationSeconds, knockbackPower)
-COMPONENT_PARAMS_DEFINE_TYPE(HitReactionConfig, hit, block, parry, hitStopDelaySeconds, largeStaggerDuration)
+COMPONENT_PARAMS_DEFINE_TYPE(ReactionEventConfig, enableCameraShake, enableHitStop, enableEffect, enableDistortion,
+	effectName, SEName, sePitchRandom, cameraShakeIntensity, hitStopDurationSeconds, knockbackPower)
+	COMPONENT_PARAMS_DEFINE_TYPE(HitReactionConfig, hit, block, parry, hitStopDelaySeconds, largeStaggerDuration)
 
-// 接続を伴う型のparams。ODR違反を避けるため、マクロも含めて無名名前空間に入れる。
-namespace
+	// 接続を伴う型のparams。ODR違反を避けるため、マクロも含めて無名名前空間に入れる。
+	namespace
 {
 	// 武器(攻撃部位)を登録するスロット名。未指定ならPlayer同様"Main"扱い
 	// (既存Prefabは変更不要)。敵が複数の攻撃部位を持つ場合に指定する。
@@ -39,15 +39,15 @@ namespace
 	};
 	COMPONENT_PARAMS_DEFINE_TYPE(WeaponParams, slot)
 
-	// 親のボーンに追従するソケット用オブジェクトを、boneごとに生成する。
-	struct BoneSocketsParams
+		// 親のボーンに追従するソケット用オブジェクトを、boneごとに生成する。
+		struct BoneSocketsParams
 	{
 		std::vector<std::string> bones;
 	};
 	COMPONENT_PARAMS_DEFINE_TYPE(BoneSocketsParams, bones)
 
-	// rotationEulerDegのx/y/zは、それぞれYaw/Pitch/Rollとして渡す(既存の挙動)。
-	struct AttachToBoneParams
+		// rotationEulerDegのx/y/zは、それぞれYaw/Pitch/Rollとして渡す(既存の挙動)。
+		struct AttachToBoneParams
 	{
 		std::string   bone;
 		Math::Vector3 position = { 0.0f, 0.0f, 0.0f };
@@ -55,7 +55,7 @@ namespace
 	};
 	COMPONENT_PARAMS_DEFINE_TYPE(AttachToBoneParams, bone, position, rotationEulerDeg)
 
-	struct TwoBoneIKParams
+		struct TwoBoneIKParams
 	{
 		std::string rootBone;
 		std::string midBone;
@@ -64,7 +64,7 @@ namespace
 	};
 	COMPONENT_PARAMS_DEFINE_TYPE(TwoBoneIKParams, rootBone, midBone, tipParentBone, tipBone)
 
-	void BuildBoneSockets(BuildContext& ctx, const BoneSocketsParams& p)
+		void BuildBoneSockets(BuildContext& ctx, const BoneSocketsParams& p)
 	{
 		SkeletonComponent* skeleton = RequireSkeleton(&ctx.self, "BoneSockets");
 		for (const std::string& bone : p.bones) CreateBoneSocket(ctx.objectManager, skeleton, bone);

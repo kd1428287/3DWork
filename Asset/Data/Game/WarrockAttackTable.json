@@ -4,6 +4,13 @@
 	"attacks": [
 		{
 			"name": "Punch",
+			"telegraph": {
+				"type": "Normal",
+				"effectName": "StarConverge",
+				"anchorSlot": "Main",
+				"offset": [ 0.0, 0.0, 0.0 ],
+				"leadTime": 0.4
+			},
 			"minRange": 0.0,
 			"maxRange": 3.0,
 			"weight": 2.0,
@@ -63,6 +70,13 @@
 		},
 		{
 			"name": "Kick",
+			"telegraph": {
+				"type": "Normal",
+				"effectName": "StarConverge",
+				"anchorSlot": "Foot",
+				"offset": [ 0.0, 0.0, 0.0 ],
+				"leadTime": 0.4
+			},
 			"minRange": 0.0,
 			"maxRange": 3.5,
 			"weight": 1.5,
@@ -122,6 +136,13 @@
 		},
 		{
 			"name": "Swipe",
+			"telegraph": {
+				"type": "Normal",
+				"effectName": "StarConverge",
+				"anchorSlot": "Off",
+				"offset": [ 0.0, 0.0, 0.0 ],
+				"leadTime": 0.4
+			},
 			"minRange": 0.0,
 			"maxRange": 4.5,
 			"weight": 1.0,
@@ -176,11 +197,18 @@
 					"recoveryAttackCancelStart": 0.2,
 					"comboWindowAfterRecovery": 0.2
 				},
-				"weaponSlots": [ "Off" ]
+				"weaponSlots": [ "Off", "Body" ]
 			}
 		},
 		{
 			"name": "Spinning",
+			"telegraph": {
+				"type": "Normal",
+				"effectName": "StarConverge",
+				"anchorSlot": "Main",
+				"offset": [ 0.0, 0.0, 0.0 ],
+				"leadTime": 0.2
+			},
 			"minRange": 0.0,
 			"maxRange": 4.0,
 			"weight": 1.0,
@@ -243,6 +271,13 @@
 	"gapCloserAttacks": [
 		{
 			"name": "JumpAttack",
+			"telegraph": {
+				"type": "Normal",
+				"effectName": "StarConverge",
+				"anchorSlot": "Body",
+				"offset": [ 0.0, 0.0, 0.0 ],
+				"leadTime": 0.4
+			},
 			"minRange": 5.0,
 			"maxRange": 9.0,
 			"weight": 1.0,
@@ -297,7 +332,7 @@
 					"recoveryAttackCancelStart": 0.3,
 					"comboWindowAfterRecovery": 0.2
 				},
-				"weaponSlots": [ "Main" ]
+				"weaponSlots": [ "Main", "Off", "Body" ]
 			}
 		}
 	]

@@ -47,7 +47,7 @@ public:
 private:
 	Math::Vector2 lookDelta_ = Math::Vector2::Zero;
 
-	float yaw_ = 0.0f;
+	float yaw_ = DirectX::XM_PI;
 	float pitch_ = 0.0f;
 	float sensitivity_ = 0.0025f;
 

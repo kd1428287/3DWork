@@ -24,7 +24,17 @@
 #include "../../../Graphics/Animation/ModelAnimatorComponent.h"
 
 #include "Application/Core/EventBus/Events/CombatEvents.h"
+#include "Application/Core/EventBus/Events/DebugEvents.h"
 
+
+// 効果音のID(論理IDまたはファイルパス)。空なら鳴らさない。
+// 被弾/ブロックのSEはHitReactionConfig側(SEName)で指定する。
+struct EnemySoundData
+{
+	std::string attackSwing;	// 攻撃判定の発生時
+	std::string roar = "Asset/Sounds/Game/Roar.wav";			// 咆哮(Behaviorから使う)
+	std::string death;
+};
 
 // ============================================================
 // 【WeaponSetComponent/HitReactionComponentへの統合について】
@@ -57,7 +67,8 @@ class EnemyAIController : public ComponentBase, public IMovementSource, public I
 {
 public:
 	EnemyAIController(GameObject* owner, const EnemyAIData& data, std::unique_ptr<IEnemyBehavior> behavior)
-		: ComponentBase(owner), data_(data), behavior_(std::move(behavior)) {}
+		: ComponentBase(owner), data_(data), behavior_(std::move(behavior)) {
+	}
 
 	void Awake() override
 	{
@@ -103,8 +114,16 @@ public:
 				[this](const Events::Died& e) { OnDied(); });
 		}
 
-		diedSubscriber_ = GetOwner()->GetLocalEventBus().SubscribeScoped<Events::ParrySucceeded>(
+		ParrySucceededSubscriber_ = GetOwner()->GetLocalEventBus().SubscribeScoped<Events::ParrySucceeded>(
 			[this](const Events::ParrySucceeded& e) { OnParrySucceeded(e); });
+
+		enemyKillSubscriber_ = GLOBALEVENT->SubscribeScoped<Events::EnemyKill>(
+			[this](const Events::EnemyKill& e) {
+				if (healthComponent_ != nullptr) {
+					healthComponent_->SetCurrent(0);
+					// healthComponent_->SetCurrentHealth(0.0f);
+				}
+			});
 
 		root_ = behavior_->BuildTree(this);
 		behavior_->OnSpawned(this);
@@ -138,6 +157,8 @@ public:
 		blackboard_.SetBool(EnemyBlackboardKeys::IsTargetInGapCloserRange, IsTargetInGapCloserRange());
 
 		if (root_ != nullptr) root_->Tick(this, deltaTime);
+
+		UpdateTelegraphEffect(); // 基準オブジェクトへ追従
 
 		ApplyRootMotion();
 	}
@@ -357,6 +378,18 @@ public:
 	// 開始/終了(通常完了・中断の両方)に合わせて書き換える。
 	void SetVulnerable(bool vulnerable) { isVulnerable_ = vulnerable; }
 
+	// 攻撃の予備動作エフェクトを出す(BTWeightedAttackAction::Tick()から呼ばれる)。
+	void PlayTelegraphEffect(const EnemyAttackTelegraphData& data);
+	void StopTelegraphEffect();
+
+	// --- 効果音 --------------------------------------------------------
+	const EnemySoundData& GetSoundData() const { return sound_; }
+	void SetSoundData(const EnemySoundData& sound) { sound_ = sound; }
+	void PlaySE(const std::string& id) const;
+
+	// 攻撃の振り音(BTWeightedAttackAction::Tick()から呼ばれる)。
+	void PlayAttackSwingSE() const { PlaySE(sound_.attackSwing); }
+
 	// --- 体幹 --------------------------------------------------------------
 	PostureComponent* GetPostureComponent() const { return postureComponent_; }
 
@@ -367,6 +400,8 @@ public:
 
 private:
 	void UpdateTargetAcquisition();
+	void UpdateTelegraphEffect();
+	Math::Vector3 ComputeTelegraphPosition() const;
 	TransformComponent* FindPlayerTransform() const;
 	void OnParrySucceeded(const Events::ParrySucceeded& e);
 	void OnDied();
@@ -374,6 +409,7 @@ private:
 	void ApplyRootMotion();
 
 	EnemyAIData data_;
+	EnemySoundData sound_;
 	std::unique_ptr<IEnemyBehavior> behavior_;
 
 	// BTノードから見える動的な実行時状態(HasTarget/DistanceToTarget/
@@ -418,10 +454,15 @@ private:
 	TransformComponent* targetTransform_ = nullptr;
 
 	bool isDead_ = false;
+
+	// 再生中の予備動作エフェクト(キーが空なら未再生)
+	std::string telegraphKey_;
+	EnemyAttackTelegraphData telegraphData_;
 	float despawnTimer_ = 0.0f;
 
 	ScopedSubscriber ParrySucceededSubscriber_;
 	ScopedSubscriber diedSubscriber_;
+	ScopedSubscriber enemyKillSubscriber_;
 
 	std::unique_ptr<IBTNode<EnemyAIController>> root_;
 };

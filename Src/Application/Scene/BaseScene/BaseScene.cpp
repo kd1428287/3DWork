@@ -1,4 +1,4 @@
-#include "BaseScene.h"
+﻿#include "BaseScene.h"
 #include "Application/main.h"
 #include "Application/Editor/Tools/MapEditor.h"
 #include "Application/Definitions/Loaders/UILoader.h"
@@ -108,6 +108,9 @@ void BaseScene::DrawSprite()
 		objManager_->DrawSprite();
 
 		KdShaderManager::Instance().m_spriteShader.SetMatrix(Math::Matrix::Identity);
+
+		// リザルトUIなどのカスタムスプライト描画
+		OnDrawSprite();
 	}
 	KdShaderManager::Instance().m_spriteShader.End();
 }

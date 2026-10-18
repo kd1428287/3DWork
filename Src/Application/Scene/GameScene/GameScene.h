@@ -1,6 +1,7 @@
 ﻿#pragma once
 
-#include"../BaseScene/BaseScene.h"
+#include "../BaseScene/BaseScene.h"
+#include "Application/Core/EventBus/Events/AudioEvents.h"
 
 class EffectDispatcher;
 class SlashTrailDispatcher;
@@ -12,12 +13,16 @@ class ColliderRegistry;
 class CollisionSystem;
 class RaycastSystem;
 
+class GameObject;
+class ResultController;
+class ResultView;
+
 class GameScene : public BaseScene
 {
 public:
 
 	GameScene();
-	~GameScene()override;
+	~GameScene() override;
 
 private:
 
@@ -27,6 +32,7 @@ private:
 	void OnPreDraw(float deltaTime) override;
 	void OnDrawEffects() override;
 	void OnDrawBright() override;
+	void OnDrawSprite() override;
 
 	// SceneManagerがEnter()経由で呼ぶ。コンストラクタからは呼ばない
 	void OnEnter() override;
@@ -37,6 +43,12 @@ private:
 	void BuildSystems();
 	void SetupEnvironment();
 
+	// ボス撃破後のリザルト演出(別シーンにせずGameScene内で完結させる)
+	void SetupResult();
+	void WatchEnemy(GameObject& enemy);
+	void OnEnemyDied();
+	bool PollConfirm();
+
 	std::unique_ptr<EffectDispatcher> effectDispatcher_ = nullptr;
 	std::unique_ptr<SlashTrailDispatcher> slashTrailDispatcher_ = nullptr;
 	std::unique_ptr<InputSystem> inputSystem_ = nullptr;
@@ -44,4 +56,11 @@ private:
 	std::unique_ptr<CameraSystem> cameraSystem_ = nullptr;
 	std::unique_ptr<ColliderRegistry> colliderRegistry_ = nullptr;
 	std::unique_ptr<CollisionSystem> collisionSystem_ = nullptr;
+
+	std::unique_ptr<ResultController> result_ = nullptr;
+	std::unique_ptr<ResultView> resultView_ = nullptr;
+	int aliveEnemies_ = 0;
+	bool prevConfirm_ = false;
+
+	SoundHandle bgm_;
 };

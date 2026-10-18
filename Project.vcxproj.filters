@@ -1080,6 +1080,18 @@
     <ClInclude Include="Src\Application\Definitions\Map\SpawnMarker.h">
       <Filter>Src\Application\Definitions\Map</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\BTCommittedSelector.h">
+      <Filter>Src\Application\Definitions\Character\Common\BehaviorTree</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Core\EventBus\Events\DebugEvents.h">
+      <Filter>Src\Application\Core\EventBus\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Systems\GamePlay\ResultController.h">
+      <Filter>Src\Application\Systems\GamePlay</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Systems\GamePlay\ResultView.h">
+      <Filter>Src\Application\Systems\GamePlay</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -1463,6 +1475,9 @@
     <ClCompile Include="Src\Application\Factories\Registrations\RegisterMap.cpp">
       <Filter>Src\Application\Factories\Registrations</Filter>
     </ClCompile>
+    <ClCompile Include="Src\Application\Systems\GamePlay\ResultView.cpp">
+      <Filter>Src\Application\Systems\GamePlay</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Src\Framework\Shader\inc_KdCommon.hlsli">
@@ -1582,6 +1597,9 @@
       <Filter>Src\Framework\Shader\PostProcessShader</Filter>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_TransitionWarp.hlsl">
+      <Filter>Src\Framework\Shader\PostProcessShader</Filter>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_InkWash.hlsl">
       <Filter>Src\Framework\Shader\PostProcessShader</Filter>
     </FxCompile>
   </ItemGroup>

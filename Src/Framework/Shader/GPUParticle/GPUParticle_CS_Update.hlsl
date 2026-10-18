@@ -11,8 +11,6 @@ cbuffer cbGPUParticleUpdate : register(b0)
 
 	float3	g_Gravity;			// 重力(加速度)
 	float	_pad1;
-
-	float3 g_ConvergeCenter;
 };
 
 static const int EMIT_DIST_CONVERGE = 2;
@@ -50,7 +48,8 @@ void main(uint3 id : SV_DispatchThreadID)
 			float3 toCenter = p.ConvergeCenter - p.Position;
 			float dist = length(toCenter);
 
-			if (dist < 0.05f) // 中心点（または敷居値）に到達したら消去
+			// 1フレームで届く距離なら到達とみなす(中心の通り抜け防止)
+			if (dist <= length(p.Velocity) * g_DeltaTime)
 			{
 				p.Life = 0.0f;
 			}

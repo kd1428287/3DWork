@@ -1,5 +1,6 @@
-#include "GameScene.h"
-#include"Application/Core/Scene/SceneManager.h"
+﻿#include "GameScene.h"
+#include "Application/main.h"
+#include "Application/Core/Scene/SceneManager.h"
 
 // system
 #include "Application/Systems/InputSystem.h"
@@ -25,9 +26,28 @@
 #include "Application/Components/Graphics/Animation/ModelAnimatorComponent.h"
 #include "Application/Components/Graphics/Render/ModelRenderComponent.h"
 
+// result
+#include "Application/Systems/GamePlay/ResultController.h"
+#include "Application/Systems/GamePlay/ResultView.h"
+
+// event
+#include "Application/Core/EventBus/Events/CombatEvents.h"
+#include "Application/Core/EventBus/Events/SceneEvents.h"
+#include "Application/Core/EventBus/Events/TimeScaleEvents.h"
+
 namespace
 {
 	constexpr const char* kDefaultPlayerPrefab = "Asset/Data/Game/Player.json";
+
+	// BGM関連
+	constexpr const char* kGameBgm = "Asset/Sounds/Game/Magatukami.wav";
+	constexpr float kBgmFadeIn = 2.0f;
+	constexpr float kBgmFadeOut = 1.0f;
+
+	// リザルト・水墨画演出関連
+	constexpr int kResultFontNo = 0;                // 衡山毛筆のKdFontManager登録番号
+	constexpr float kResultTimeScale = 0.1f;        // 撃破後のスロー倍率
+	const Math::Vector2 kInkCenter = { 0.5f, 0.5f }; // 墨が広がる起点(画面中央)
 
 	// マーカーの位置・向きでPrefabを生成する。読み込みに失敗したらnullptr
 	GameObject* SpawnAtMarker(ObjectManager& om, const std::string& path, const SpawnMarkerDef& m)
@@ -46,6 +66,15 @@ GameScene::~GameScene() = default;
 
 void GameScene::OnUpdate(float deltaTime)
 {
+#ifdef _DEBUG
+	// 開発用: F7で撃破扱いにして演出を確認する
+	if (GetAsyncKeyState(VK_F7) & 0x8000) { result_->Start(); }
+#endif
+
+	result_->Update(deltaTime, PollConfirm());
+
+	// リザルト進行度に応じた水墨画風ポストプロセスの更新
+	KdShaderManager::Instance().m_postProcessShader.SetInkWash(result_->GetInkProgress(), kInkCenter, result_->GetTime());
 }
 
 void GameScene::OnPreDraw(float deltaTime)
@@ -66,16 +95,32 @@ void GameScene::OnDrawBright()
 	slashTrailDispatcher_->Draw(ParticleDrawPass::Bright);
 }
 
+void GameScene::OnDrawSprite()
+{
+	// リザルト演出用UIの描画
+	resultView_->Draw(*result_);
+}
+
 void GameScene::OnEnter()
 {
+	SetupResult();
 	BuildWorld();
 	BuildSystems();
 	SetupEnvironment();
 	Application::Instance().ShowCursolEnable(false);
+
+	// 明転(In)に合わせてBGMをフェードイン再生
+	bgm_ = Events::PublishSoundPlayEvent(*GLOBALEVENT, kGameBgm, true, 1.0f, 0.0f, kBgmFadeIn);
 }
 
 void GameScene::OnExit()
 {
+	// BGMのフェードアウト
+	Events::PublishSoundFadeOutEvent(*GLOBALEVENT, bgm_, kBgmFadeOut);
+
+	// ポストプロセスは共有なので、次のシーンへ水墨画化を持ち越さない
+	KdShaderManager::Instance().m_postProcessShader.SetInkWash(0.0f, kInkCenter, 0.0f);
+
 	KdInputManager::Instance().SetAxisConfineToWindowCenter("Look", false);
 	Application::Instance().ShowCursolEnable(true);
 }
@@ -106,10 +151,14 @@ void GameScene::BuildWorld()
 		}
 		if (m.role != SpawnRole::Enemy) continue;
 
-		if (m.prefab.empty() || !SpawnAtMarker(*objManager_, m.prefab, m))
+		GameObject* enemy = m.prefab.empty() ? nullptr : SpawnAtMarker(*objManager_, m.prefab, m);
+		if (!enemy)
 		{
 			std::cerr << "[Spawn] enemy marker " << m.id << " failed: " << m.prefab << std::endl;
+			continue;
 		}
+		// 敵の生存・撃破を監視対象に登録
+		WatchEnemy(*enemy);
 	}
 
 	// プレイヤー(最初のPlayerマーカーを採用)
@@ -191,7 +240,7 @@ void GameScene::SetupEnvironment()
 	post.SetFocusRange(0, 50.0f);
 	post.SetExposure(1.05f);
 	post.SetContrast(1.25f);
-	post.SetSaturation(0.85f);
+	post.SetSaturation(0.35f);
 	post.SetTemperature(-0.3f);
 	post.SetTint(-0.15f);
 
@@ -201,4 +250,57 @@ void GameScene::SetupEnvironment()
 	post.SetSurfaceLumaRange(0.4f, 1.2f);
 	post.SetSurfaceTransform({ 2.0f, 2.0f }, { 0, 0 });
 	post.SetSurfaceJitter(0.15f);
+}
+
+void GameScene::SetupResult()
+{
+	result_ = std::make_unique<ResultController>();
+	resultView_ = std::make_unique<ResultView>();
+	resultView_->SetFontNo(kResultFontNo);
+
+	ResultController::Config cfg;
+	cfg.lineCount = ResultView::kLineCount;
+	result_->SetConfig(cfg);
+
+	result_->onPhaseChanged = [this](ResultController::Phase phase)
+		{
+			switch (phase)
+			{
+			case ResultController::Phase::Slow:
+				// 撃破の瞬間にスローへ。文字テクスチャもスローの間に作っておく
+				Events::PublishHitStop(*localBus_, kResultTimeScale, -1.0f);
+				resultView_->Build(result_->GetPlayTime());
+				break;
+			case ResultController::Phase::Exit:
+				GLOBALEVENT->Publish(Events::SceneChangeRequest(SceneType::Title, true));
+				break;
+			default:
+				break;
+			}
+		};
+}
+
+void GameScene::WatchEnemy(GameObject& enemy)
+{
+	// 敵ごとのバスを購読する(誰が死んだかをHandleで比べずに済む)
+	++aliveEnemies_;
+	enemy.GetLocalEventBus().Subscribe<Events::Died>([this](const Events::Died&) { OnEnemyDied(); });
+}
+
+void GameScene::OnEnemyDied()
+{
+	// 配置した敵を全滅させたらボス撃破とみなす
+	if (aliveEnemies_ > 0 && --aliveEnemies_ == 0)
+	{
+		result_->Start();
+	}
+}
+
+bool GameScene::PollConfirm()
+{
+	// 押した瞬間だけtrue。入力アクションを登録したらIsPress("名前")へ差し替える
+	const bool now = (GetAsyncKeyState(VK_RETURN) & 0x8000) != 0;
+	const bool pressed = now && !prevConfirm_;
+	prevConfirm_ = now;
+	return pressed;
 }
