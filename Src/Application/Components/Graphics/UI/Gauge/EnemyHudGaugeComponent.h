@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "GaugeBar.h"
 #include "GaugeWatcher.h"
 
@@ -26,6 +26,8 @@ public:
 
 	void Awake() override
 	{
+		// 敵HPは濃い赤で自機と区別する(Loadより前に上書き)
+		healthBar_.Preset().fillColor = { 0.55f, 0.05f, 0.08f, 1.0f };
 		healthBar_.Load();
 		postureBar_.Load();
 	}

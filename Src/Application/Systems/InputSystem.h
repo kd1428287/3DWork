@@ -7,7 +7,6 @@
 #include "Application/Core/EventBus/Events/SceneEvents.h"
 #include "Application/Core/EventBus/Events/DebugEvents.h"
 
-
 class InputSystem
 {
 public:
@@ -29,7 +28,6 @@ public:
 		}
 
 		// Debug
-
 		if (KdInputManager::Instance().IsPress("Debug2"))
 		{
 			GLOBALEVENT->Publish(Events::SceneChangeRequest(SceneType::Title));

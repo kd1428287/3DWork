@@ -11,6 +11,8 @@ public:
 
 	void Awake() override
 	{
+		// 自機HPは薄い赤で敵と区別する(Loadより前に上書き)
+		healthBar_.Preset().fillColor = { 1.0f, 0.4f, 0.4f, 1.0f };
 		healthBar_.Load();
 		postureBar_.Load();
 	}
