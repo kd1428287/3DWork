@@ -158,24 +158,6 @@
 			"type": "LockOnTarget"
 		},
 		{
-			"type": "EnemyOverheadGauge",
-			"params": {
-				"worldOffset": [
-					0.0,
-					2.0,
-					0.0
-				],
-				"healthBarSize": [
-					80.0,
-					10.0
-				],
-				"postureBarSize": [
-					80.0,
-					6.0
-				]
-			}
-		},
-		{
 			"type": "WeaponSet"
 		},
 		{
@@ -505,6 +487,32 @@
 					"type": "Weapon",
 					"params": {
 						"slot": "Foot"
+					}
+				}
+			]
+		},
+		{
+			"name": "HudGauge",
+			"components": [
+				{
+					"type": "EnemyHudGauge",
+					"params": {
+						"healthBarPos": [
+							-600.0,
+							300.0
+						],
+						"healthBarSize": [
+							300.0,
+							14.0
+						],
+						"postureBarPos": [
+							-250.0,
+							300.0
+						],
+						"postureBarSize": [
+							500.0,
+							10.0
+						]
 					}
 				}
 			]
