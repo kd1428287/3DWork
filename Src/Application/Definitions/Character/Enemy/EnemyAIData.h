@@ -72,6 +72,8 @@ struct EnemyAttackDefinition
 
 	float weight = 1.0f;
 
+	float windupJitterRatio = 0.0f; // 予備動作時間のゆらぎ率(0.2なら±20%)。0なら固定
+
 	// 攻撃中の向き制御(ターゲット追従の速さ)。
 	EnemyAttackFacingData facing;
 

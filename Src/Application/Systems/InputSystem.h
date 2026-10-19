@@ -52,6 +52,14 @@ public:
 
 		if (KdInputManager::Instance().IsPress("Debug6"))
 		{
+			Application::Instance().ShowCursolEnable(true);
+			KdInputManager::Instance().SetAxisConfineToWindowCenter("Look", false);
+		}
+
+		if (KdInputManager::Instance().IsPress("Debug7"))
+		{
+			Application::Instance().ShowCursolEnable(false);
+			KdInputManager::Instance().SetAxisConfineToWindowCenter("Look", true);
 		}
 	}
 

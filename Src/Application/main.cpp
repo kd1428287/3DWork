@@ -331,6 +331,7 @@ bool Application::Init(int w, int h)
 	keyboardDevice->AddButton("Debug4", new KdInputButtonForWindows({ '4' }));
 	keyboardDevice->AddButton("Debug5", new KdInputButtonForWindows({ '5' }));
 	keyboardDevice->AddButton("Debug6", new KdInputButtonForWindows({ '6' }));
+	keyboardDevice->AddButton("Debug7", new KdInputButtonForWindows({ '7' }));
 
 	std::string buff;
 	for (int i = 0; i < 10; i++)

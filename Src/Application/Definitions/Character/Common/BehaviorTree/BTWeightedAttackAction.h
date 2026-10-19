@@ -1,4 +1,6 @@
 ﻿#pragma once
+#include <algorithm>
+#include <random>
 #include "IBTNode.h"
 #include "../../Enemy/EnemyAIData.h"
 
@@ -71,6 +73,12 @@
 // なっていた。実際にphaseData.windup/active/recovery.targetDurationを
 // 読むよう修正した。
 //
+// 【予備動作時間のゆらぎについて】
+// EnemyAttackDefinition::windupJitterRatio(0.2なら±20%)に従い、攻撃開始時に
+// 1回だけWindupの長さを抽選してwindupDuration_へ保持する(Windupのみ対象)。
+// アニメーション自体の再生時間は変えないため、ゆらぎはWindup終了の
+// タイミングだけに効く。0なら従来通りの固定時間。
+//
 // 【今後の展望・改善案3】
 // もし「攻撃の形そのもの」(例: JumpAttackだけ移動を伴う突進にする等)
 // がWarrock固有に崩れてきたら、この共通化は足かせになる可能性がある。
@@ -99,6 +107,7 @@ public:
 			phase_ = Phase::Windup;
 			elapsed_ = 0.0f;
 			telegraphFired_ = false;
+			windupDuration_ = RollWindupDuration(*current_);
 
 			context->StopMovement();
 			// 追従しない技(windupTurnSpeed<=0)だけ、ここで一度だけ瞬時に正対する。
@@ -116,11 +125,11 @@ public:
 		case Phase::Windup:
 			// 判定発生のleadTime前に1回だけ予備動作エフェクトを出す
 			if (!telegraphFired_ && current_->telegraph.type != TelegraphType::None &&
-				elapsed_ >= phaseData.windup.duration - current_->telegraph.leadTime) {
+				elapsed_ >= windupDuration_ - current_->telegraph.leadTime) {
 				telegraphFired_ = true;
 				context->PlayTelegraphEffect(current_->telegraph);
 			}
-			if (elapsed_ >= phaseData.windup.duration) {
+			if (elapsed_ >= windupDuration_) {
 				phase_ = Phase::Active;
 				elapsed_ = 0.0f;
 				// 攻撃判定が実際に発生する一瞬だけ有効化(Player同様
@@ -201,6 +210,18 @@ public:
 	}
 
 private:
+	// Windupの長さを、基準時間±windupJitterRatioの範囲で抽選する。
+	static float RollWindupDuration(const EnemyAttackDefinition& def)
+	{
+		const float base = def.attackData.phaseData.windup.duration;
+		const float ratio = std::clamp(def.windupJitterRatio, 0.0f, 0.99f);
+		if (ratio <= 0.0f) return base;
+
+		static thread_local std::mt19937 rng{ std::random_device{}() };
+		std::uniform_real_distribution<float> dist(1.0f - ratio, 1.0f + ratio);
+		return base * dist(rng);
+	}
+
 	// 現在のフェーズに応じて、ターゲットへの向き直りを開始/更新/解除する。
 	// Windup/Activeのturn速度>0なら追従し、それ以外(0以下、Recovery)は解除する。
 	void UpdateFacing(T* context) const
@@ -219,6 +240,7 @@ private:
 	enum class Phase { NotStarted, Windup, Active, Recovery };
 	Phase phase_ = Phase::NotStarted;
 	float elapsed_ = 0.0f;
+	float windupDuration_ = 0.0f; // 今回の攻撃で抽選したWindupの長さ
 	bool telegraphFired_ = false; // 今回の攻撃で予備動作を出したか
 	const EnemyAttackDefinition* current_ = nullptr;
 

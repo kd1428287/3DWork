@@ -1,4 +1,4 @@
-﻿#include "TitleScene.h"
+#include "TitleScene.h"
 #include "Application/main.h"
 
 #include "Application/Components/Core/TransformComponent.h"
@@ -19,6 +19,8 @@ namespace
 
 	constexpr float kBgmFadeIn = 1.5f;
 	constexpr float kBgmFadeOut = 0.8f;
+
+	constexpr int kClickToggleKey = '8';	// クリック反応の切り替えキー
 }
 
 void TitleScene::OnEnter()
@@ -47,9 +49,11 @@ void TitleScene::OnExit()
 
 void TitleScene::OnUpdate(float /*deltaTime*/)
 {
+	UpdateClickToggle();
+
 	// クリック(Attack)でGameSceneへの遷移をリクエストする。
 	// SceneManagerを直接知らなくてよくなった(疎結合)。
-	if (!leaving_ && KdInputManager::Instance().IsPress("Attack"))
+	if (clickEnabled_ && !leaving_ && KdInputManager::Instance().IsPress("Attack"))
 	{
 		leaving_ = true;
 
@@ -61,6 +65,20 @@ void TitleScene::OnUpdate(float /*deltaTime*/)
 	}
 
 	AddCursorSplat();
+}
+
+void TitleScene::UpdateClickToggle()
+{
+	// 非アクティブ時はキー入力を拾わない
+	HWND hwnd = Application::Instance().GetWindowHandle();
+	bool down = GetForegroundWindow() == hwnd && (GetAsyncKeyState(kClickToggleKey) & 0x8000) != 0;
+
+	if (down && !prevToggleDown_)
+	{
+		clickEnabled_ = !clickEnabled_;
+	}
+
+	prevToggleDown_ = down;
 }
 
 void TitleScene::AddCursorSplat()

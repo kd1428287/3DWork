@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include"../BaseScene/BaseScene.h"
 #include "Application/Core/EventBus/Events/AudioEvents.h"
@@ -31,10 +31,16 @@ private:
 	// カーソルの移動を流体への入力にする
 	void AddCursorSplat();
 
+	// 8キーの押下エッジでクリック反応のON/OFFを切り替える
+	void UpdateClickToggle();
+
 	FluidSimulator	fluid_;
 	Math::Vector2	prevCursorUV_ = { 0.0f, 0.0f };
 	bool			hasPrevCursor_ = false;
 
 	SoundHandle		bgm_;
 	bool			leaving_ = false;	// 遷移要求済み(SEとフェードを1回だけ発行する)
+
+	bool			clickEnabled_ = true;	// falseの間はクリックで遷移しない
+	bool			prevToggleDown_ = false;	// 8キーの前フレーム状態(エッジ検出用)
 };

@@ -241,7 +241,7 @@ void GameScene::SetupEnvironment()
 	post.SetFocusRange(0, 50.0f);
 	post.SetExposure(1.05f);
 	post.SetContrast(1.25f);
-	post.SetSaturation(0.35f);
+	post.SetSaturation(0.85f);
 	post.SetTemperature(-0.3f);
 	post.SetTint(-0.15f);
 
