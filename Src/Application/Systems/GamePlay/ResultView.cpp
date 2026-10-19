@@ -35,7 +35,7 @@ void ResultView::Build(float playTimeSec)
 	{
 		L"\u6483\u7834",	// 撃破
 		timeText,
-		L"Clickでタイトルへ",	// Enterキーでタイトルへ
+		L"クリックでタイトルへ",
 	};
 	const float scales[kLineCount] = { 2.0f, 1.0f, 0.8f };
 	const float ys[kLineCount] = { 60.0f, -40.0f, -150.0f };

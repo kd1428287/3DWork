@@ -456,6 +456,27 @@
         {
           "params": {},
           "type": "PlayerHudGauge"
+        },
+        {
+          "params": {
+            "healthBarPos": [
+              -600.0,
+              300.0
+            ],
+            "healthBarSize": [
+              300.0,
+              14.0
+            ],
+            "postureBarPos": [
+              -250.0,
+              300.0
+            ],
+            "postureBarSize": [
+              500.0,
+              10.0
+            ]
+          },
+          "type": "EnemyHudGauge"
         }
       ],
       "id": 17,

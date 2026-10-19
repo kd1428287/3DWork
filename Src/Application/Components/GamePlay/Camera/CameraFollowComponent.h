@@ -37,6 +37,12 @@ public:
 		lockOnPositionPitch_ = positionPitch;
 	}
 
+	// ロック中のみ、追従の中心を上下にずらす量(負で下げる)
+	void SetLockOnAnchorOffsetY(float offsetY) { lockOnAnchorOffsetY_ = offsetY; }
+
+	// ロック対象の注視点をY方向にずらす量(正で上がる)
+	void SetLockOnTargetOffsetY(float offsetY) { lockOnTargetOffsetY_ = offsetY; }
+
 	void Resolve(float deltaTime) {
 		if (transform_ == nullptr) return;
 
@@ -156,7 +162,8 @@ private:
 			Math::Quaternion::CreateFromYawPitchRoll(aimYaw + lockOnYawBias_, lockOnPositionPitch_, 0.0f);
 
 		const Math::Vector3 worldOffset = Math::Vector3::Transform(Math::Vector3::Forward, positionRotation) * cameraDistance_;
-		outPosition = playerPos + worldOffset;
+		// 追従の中心を下げる。切り替え時の位置の飛びはpositionEaseOffset_が吸収する
+		outPosition = playerPos + Math::Vector3(0.0f, lockOnAnchorOffsetY_, 0.0f) + worldOffset;
 		return true;
 	}
 
@@ -193,7 +200,8 @@ private:
 		TransformComponent* targetTransform = target->GetComponent<TransformComponent>();
 		if (targetTransform == nullptr) return false;
 
-		const Math::Vector3 dir = targetTransform->GetPosition() - transform_->GetPosition();
+		const Math::Vector3 aimPoint = targetTransform->GetPosition() + Math::Vector3(0.0f, lockOnTargetOffsetY_, 0.0f);
+		const Math::Vector3 dir = aimPoint - transform_->GetPosition();
 		const float horizontalLenSq = dir.x * dir.x + dir.z * dir.z;
 		if (horizontalLenSq <= kMinDirectionLengthSq) return false;
 
@@ -255,6 +263,10 @@ private:
 	float lockOnYawBias_ = 0.5f;
 	// ロック中の位置の見下ろし角度
 	float lockOnPositionPitch_ = 0.35f;
+	// ロック中、追従の中心をY方向にずらす量(負で下がる)
+	float lockOnAnchorOffsetY_ = -0.4f;
+	// ロック対象の注視点をY方向にずらす量(正で上がる)
+	float lockOnTargetOffsetY_ = 1.0f;
 
 	// ロック対象方向の水平成分がこれ以下の場合は向きを更新しない閾値
 	static constexpr float kMinDirectionLengthSq = 1e-6f;

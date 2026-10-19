@@ -10,6 +10,7 @@
 #include "Application/Components/Graphics/UI/Gauge/PlayerHudGaugeComponent.h"
 #include "Application/Components/Graphics/UI/Gauge/EnemyWorldGaugeComponent.h"
 #include "Application/Components/Graphics/UI/Gauge/EnemyOverheadGaugeComponent.h"
+#include "Application/Components/Graphics/UI/Gauge/EnemyHudGaugeComponent.h"
 #include "Application/Components/Graphics/UI/UITransformComponent.h"
 #include "Application/Components/Graphics/UI/Text/TextComponent.h"
 #include "Application/Components/Graphics/UI/Image/UIImageComponent.h"
@@ -179,6 +180,27 @@ NLOHMANN_JSON_SERIALIZE_ENUM(UITransformComponent::Space, {
 			Math::Vector2(p.postureBarSize[0], p.postureBarSize[1]));
 	}
 
+	// 敵Prefabの子として付け、親の敵をターゲットにした画面固定のHP/体幹ゲージ(ボス戦の画面上部など)を描く。
+	// 位置・サイズはピクセル(画面中心原点、PlayerHudGaugeと同じ座標系)。
+	struct EnemyHudGaugeParams
+	{
+		std::array<float, 2> healthBarPos = { -600.0f, 300.0f };
+		std::array<float, 2> healthBarSize = { 300.0f, 14.0f };
+		std::array<float, 2> postureBarPos = { -250.0f, 300.0f };
+		std::array<float, 2> postureBarSize = { 500.0f, 10.0f };
+	};
+	COMPONENT_PARAMS_DEFINE_TYPE(EnemyHudGaugeParams, healthBarPos, healthBarSize, postureBarPos, postureBarSize)
+
+		void BuildEnemyHudGauge(BuildContext& ctx, const EnemyHudGaugeParams& p)
+	{
+		auto* gauge = ctx.Add<EnemyHudGaugeComponent>();
+		gauge->SetTarget(Handle<GameObject>(RequireParent(ctx, "EnemyHudGauge")));
+		gauge->SetHealthRect(Math::Vector2(p.healthBarPos[0], p.healthBarPos[1]),
+			Math::Vector2(p.healthBarSize[0], p.healthBarSize[1]));
+		gauge->SetPostureRect(Math::Vector2(p.postureBarPos[0], p.postureBarPos[1]),
+			Math::Vector2(p.postureBarSize[0], p.postureBarSize[1]));
+	}
+
 	// 親の敵をターゲットにした頭上ゲージUIを組み立てる。
 	void BuildEnemyWorldGauge(BuildContext& ctx, const nlohmann::json&)
 	{
@@ -191,6 +213,7 @@ void RegisterUIComponents(ComponentRegistry& registry)
 	// PlayerHudGaugeは独立Prefab(Hud.json)で生成し、ctx->playerを追う。EnemyWorldGaugeは敵Prefabの子として使う。
 	registry.Add<PlayerHudGaugeComponent>("PlayerHudGauge");
 	registry.AddRaw("EnemyWorldGauge", BuildEnemyWorldGauge);
+	registry.AddWithParams<EnemyHudGaugeParams>("EnemyHudGauge", BuildEnemyHudGauge);
 	registry.AddWithParams<EnemyOverheadGaugeParams>("EnemyOverheadGauge", BuildEnemyOverheadGauge);
 	registry.AddWithParams<UITransformParams>("UITransform", BuildUITransform);
 	registry.AddWithParams<TextParams>("Text", BuildText);

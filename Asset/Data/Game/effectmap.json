@@ -1923,7 +1923,7 @@
               0.3779555559158325,
               1.0
             ],
-            "convergeRadius": 3.0,
+            "convergeRadius": 2.0,
             "convergeSpeed": 0.0,
             "count": 200,
             "dirScaleMax": 4.0,

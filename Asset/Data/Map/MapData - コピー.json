@@ -1,0 +1,724 @@
+{
+	"entities": [
+		{
+			"components": [
+				{
+					"params": {
+						"bodyShapeName": "",
+						"ignoreParent": false,
+						"shapes": [
+							{
+								"capsuleEnd": [
+									0.0,
+									1.0,
+									0.0
+								],
+								"categoryMask": [
+									"Ground"
+								],
+								"collideMask": [],
+								"enabled": true,
+								"halfExtents": [
+									500.0,
+									0.5,
+									500.0
+								],
+								"isStatic": true,
+								"isTrigger": false,
+								"name": "Ground",
+								"offset": [
+									0.0,
+									6.9981536865234375,
+									-3.5323691368103027
+								],
+								"radius": 0.5,
+								"shape": "Box",
+								"useDefaultCollideMask": true,
+								"wantsStayEvent": false
+							}
+						],
+						"wireFrame": false
+					},
+					"type": "Collider"
+				}
+			],
+			"id": 1,
+			"name": "Ground",
+			"pos": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"rotation": [
+				0.0,
+				0.0,
+				0.0,
+				1.0
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			]
+		},
+		{
+			"components": [
+				{
+					"params": {
+						"animations": "",
+						"model": "Asset/Models/Terrains/Stage/Stage.gltf"
+					},
+					"type": "ModelRender"
+				},
+				{
+					"params": {
+						"bodyShapeName": "",
+						"ignoreParent": false,
+						"shapes": [
+							{
+								"capsuleEnd": [
+									0.0,
+									1.0,
+									0.0
+								],
+								"categoryMask": [
+									"Bump",
+									"Ground"
+								],
+								"collideMask": [],
+								"enabled": true,
+								"halfExtents": [
+									0.3199999928474426,
+									0.10000000149011612,
+									0.3499999940395355
+								],
+								"isStatic": true,
+								"isTrigger": false,
+								"name": "shape0",
+								"offset": [
+									0.04999999329447746,
+									0.0,
+									0.04999999329447746
+								],
+								"radius": 0.5,
+								"shape": "Box",
+								"useDefaultCollideMask": true,
+								"wantsStayEvent": false
+							},
+							{
+								"capsuleEnd": [
+									0.0,
+									1.0,
+									0.0
+								],
+								"categoryMask": [
+									"Bump",
+									"CameraBump"
+								],
+								"collideMask": [],
+								"enabled": true,
+								"halfExtents": [
+									0.3499999940395355,
+									0.5,
+									0.009999999776482582
+								],
+								"isStatic": true,
+								"isTrigger": false,
+								"name": "shape1",
+								"offset": [
+									0.0,
+									0.0,
+									0.375
+								],
+								"radius": 0.5,
+								"shape": "Box",
+								"useDefaultCollideMask": true,
+								"wantsStayEvent": false
+							},
+							{
+								"capsuleEnd": [
+									0.0,
+									1.0,
+									0.0
+								],
+								"categoryMask": [
+									"Bump",
+									"CameraBump"
+								],
+								"collideMask": [],
+								"enabled": true,
+								"halfExtents": [
+									0.01078187208622694,
+									0.5,
+									0.020001793280243874
+								],
+								"isStatic": true,
+								"isTrigger": false,
+								"name": "Box",
+								"offset": [
+									0.25710737705230713,
+									0.0,
+									-0.29458436369895935
+								],
+								"radius": 0.5,
+								"shape": "Box",
+								"useDefaultCollideMask": true,
+								"wantsStayEvent": false
+							},
+							{
+								"capsuleEnd": [
+									0.0,
+									1.0,
+									0.0
+								],
+								"categoryMask": [
+									"Bump",
+									"CameraBump"
+								],
+								"collideMask": [],
+								"enabled": true,
+								"halfExtents": [
+									0.05000000074505806,
+									0.5,
+									0.07520167529582977
+								],
+								"isStatic": true,
+								"isTrigger": false,
+								"name": "Box2",
+								"offset": [
+									0.27841708064079285,
+									0.0,
+									0.326108455657959
+								],
+								"radius": 0.5,
+								"shape": "Box",
+								"useDefaultCollideMask": true,
+								"wantsStayEvent": false
+							},
+							{
+								"capsuleEnd": [
+									0.0,
+									1.0,
+									0.0
+								],
+								"categoryMask": [
+									"Ground",
+									"Bump"
+								],
+								"collideMask": [],
+								"enabled": true,
+								"halfExtents": [
+									0.5,
+									0.009999999776482582,
+									0.10000000149011612
+								],
+								"isStatic": true,
+								"isTrigger": false,
+								"name": "Box3",
+								"offset": [
+									0.0,
+									0.08699999749660492,
+									0.4093819260597229
+								],
+								"radius": 0.5,
+								"shape": "Box",
+								"useDefaultCollideMask": true,
+								"wantsStayEvent": false
+							},
+							{
+								"capsuleEnd": [
+									0.0,
+									1.0,
+									0.0
+								],
+								"categoryMask": [
+									"Bump"
+								],
+								"collideMask": [],
+								"enabled": true,
+								"halfExtents": [
+									0.3499999940395355,
+									0.5,
+									0.009999999776482582
+								],
+								"isStatic": true,
+								"isTrigger": false,
+								"name": "shape12",
+								"offset": [
+									0.0,
+									0.05631355196237564,
+									-0.30893272161483765
+								],
+								"radius": 0.5,
+								"shape": "Box",
+								"useDefaultCollideMask": true,
+								"wantsStayEvent": false
+							},
+							{
+								"capsuleEnd": [
+									0.0,
+									1.0,
+									0.0
+								],
+								"categoryMask": [
+									"Bump"
+								],
+								"collideMask": [],
+								"enabled": true,
+								"halfExtents": [
+									0.009999999776482582,
+									0.5,
+									0.3499999940395355
+								],
+								"isStatic": true,
+								"isTrigger": false,
+								"name": "shape122",
+								"offset": [
+									-0.2787091135978699,
+									0.05631355196237564,
+									0.02610178478062153
+								],
+								"radius": 0.5,
+								"shape": "Box",
+								"useDefaultCollideMask": true,
+								"wantsStayEvent": false
+							},
+							{
+								"capsuleEnd": [
+									0.0,
+									1.0,
+									0.0
+								],
+								"categoryMask": [
+									"Bump"
+								],
+								"collideMask": [],
+								"enabled": true,
+								"halfExtents": [
+									0.009999999776482582,
+									0.5,
+									0.3499999940395355
+								],
+								"isStatic": true,
+								"isTrigger": false,
+								"name": "shape1222",
+								"offset": [
+									0.2772672474384308,
+									0.05631355196237564,
+									0.02610178478062153
+								],
+								"radius": 0.5,
+								"shape": "Box",
+								"useDefaultCollideMask": true,
+								"wantsStayEvent": false
+							},
+							{
+								"capsuleEnd": [
+									0.0,
+									1.0,
+									0.0
+								],
+								"categoryMask": [
+									"Bump",
+									"CameraBump"
+								],
+								"collideMask": [],
+								"enabled": true,
+								"halfExtents": [
+									0.01078187208622694,
+									0.5,
+									0.020001793280243874
+								],
+								"isStatic": true,
+								"isTrigger": false,
+								"name": "Box4",
+								"offset": [
+									-0.26034054160118103,
+									0.0,
+									-0.29458436369895935
+								],
+								"radius": 0.5,
+								"shape": "Box",
+								"useDefaultCollideMask": true,
+								"wantsStayEvent": false
+							}
+						],
+						"wireFrame": false
+					},
+					"type": "Collider"
+				}
+			],
+			"id": 9,
+			"name": "Stage",
+			"pos": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"rotation": [
+				0.0,
+				0.9999998807907104,
+				0.0,
+				-1.1920928955078125e-07
+			],
+			"scale": [
+				50.0,
+				25.0,
+				50.0
+			]
+		},
+		{
+			"components": [
+				{
+					"params": {
+						"prefab": "",
+						"role": "Player"
+					},
+					"type": "SpawnMarker"
+				}
+			],
+			"id": 14,
+			"name": "PlayerStart",
+			"pos": [
+				0.0,
+				3.0,
+				12.0
+			],
+			"rotation": [
+				-0.0,
+				0.0,
+				-0.0,
+				1.0
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			]
+		},
+		{
+			"components": [
+				{
+					"params": {
+						"prefab": "Asset/Data/Game/Warrock.json",
+						"role": "Enemy"
+					},
+					"type": "SpawnMarker"
+				}
+			],
+			"id": 15,
+			"name": "Enemy_Warrock",
+			"pos": [
+				0.0,
+				2.3969080448150635,
+				-11.575162887573242
+			],
+			"rotation": [
+				0.0,
+				1.0,
+				0.0,
+				0.0
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			]
+		},
+		{
+			"components": [
+				{
+					"params": {},
+					"type": "GroundRender"
+				}
+			],
+			"id": 16,
+			"name": "GroundTexture",
+			"pos": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"rotation": [
+				0.0,
+				0.0,
+				0.0,
+				1.0
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			]
+		},
+		{
+			"components": [
+				{
+					"params": {},
+					"type": "PlayerHudGauge"
+				}
+			],
+			"id": 17,
+			"name": "HUD",
+			"pos": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"rotation": [
+				0.0,
+				0.0,
+				0.0,
+				1.0
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			]
+		},
+		{
+			"components": [
+				{
+					"type": "UITransform",
+					"params": {
+						"space": "Screen",
+						"anchor": [
+							0.0,
+							0.0
+						],
+						"pivot": [
+							0.0,
+							0.0
+						],
+						"position": [
+							30.0,
+							30.0
+						],
+						"size": [
+							0.0,
+							0.0
+						]
+					}
+				},
+				{
+					"type": "UIImage",
+					"params": {
+						"texture": "Asset/Textures/UI/Mouse_Left.png",
+						"color": [
+							1,
+							1,
+							1,
+							1
+						]
+					}
+				}
+			],
+			"id": 18,
+			"name": "Hint_Attack_Icon",
+			"pos": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"rotation": [
+				0.0,
+				0.0,
+				0.0,
+				1.0
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			]
+		},
+		{
+			"components": [
+				{
+					"type": "UITransform",
+					"params": {
+						"space": "Screen",
+						"anchor": [
+							0.0,
+							0.0
+						],
+						"pivot": [
+							0.0,
+							0.5
+						],
+						"position": [
+							86.0,
+							54.0
+						],
+						"size": [
+							0.0,
+							0.0
+						]
+					}
+				},
+				{
+					"type": "Text",
+					"params": {
+						"text": "攻撃",
+						"fontNo": 0,
+						"align": "Left",
+						"color": [
+							1,
+							1,
+							1,
+							1
+						],
+						"outlineWidth": 2,
+						"outlineColor": [
+							0,
+							0,
+							0,
+							1
+						]
+					}
+				}
+			],
+			"id": 19,
+			"name": "Hint_Attack_Text",
+			"pos": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"rotation": [
+				0.0,
+				0.0,
+				0.0,
+				1.0
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			]
+		},
+		{
+			"components": [
+				{
+					"type": "UITransform",
+					"params": {
+						"space": "Screen",
+						"anchor": [
+							0.0,
+							0.0
+						],
+						"pivot": [
+							0.0,
+							0.0
+						],
+						"position": [
+							200.0,
+							30.0
+						],
+						"size": [
+							0.0,
+							0.0
+						]
+					}
+				},
+				{
+					"type": "UIImage",
+					"params": {
+						"texture": "Asset/Textures/UI/Mouse_Right.png",
+						"color": [
+							1,
+							1,
+							1,
+							1
+						]
+					}
+				}
+			],
+			"id": 20,
+			"name": "Hint_Parry_Icon",
+			"pos": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"rotation": [
+				0.0,
+				0.0,
+				0.0,
+				1.0
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			]
+		},
+		{
+			"components": [
+				{
+					"type": "UITransform",
+					"params": {
+						"space": "Screen",
+						"anchor": [
+							0.0,
+							0.0
+						],
+						"pivot": [
+							0.0,
+							0.5
+						],
+						"position": [
+							256.0,
+							54.0
+						],
+						"size": [
+							0.0,
+							0.0
+						]
+					}
+				},
+				{
+					"type": "Text",
+					"params": {
+						"text": "弾き",
+						"fontNo": 0,
+						"align": "Left",
+						"color": [
+							1,
+							1,
+							1,
+							1
+						],
+						"outlineWidth": 2,
+						"outlineColor": [
+							0,
+							0,
+							0,
+							1
+						]
+					}
+				}
+			],
+			"id": 21,
+			"name": "Hint_Parry_Text",
+			"pos": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"rotation": [
+				0.0,
+				0.0,
+				0.0,
+				1.0
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			]
+		}
+	],
+	"version": 2
+}

@@ -1095,6 +1095,9 @@
     <ClInclude Include="Src\Application\Core\EventBus\Events\InputLockEvents.h">
       <Filter>Src\Application\Core\EventBus\Events</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\EnemyHudGaugeComponent.h">
+      <Filter>Src\Application\Components\Graphics\UI\Gauge</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">

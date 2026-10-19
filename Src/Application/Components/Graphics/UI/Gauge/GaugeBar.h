@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "GaugeBarRenderer.h"
+#include "GaugeBarWorldRenderer.h"
 
 //===================================================
 //
@@ -95,6 +96,13 @@ public:
 		skin_.fillColor = preset_.fillColor;
 	}
 
+	// ワールド空間(ビルボード)で描く場合はLoadの代わりにこちらを呼ぶ
+	void LoadWorld()
+	{
+		Load();
+		world_.Load(skin_);
+	}
+
 	// 毎フレーム呼ぶ。dtにはUIなのでスケールされていない経過時間を渡す
 	void Update(float dt, float targetRatio)
 	{
@@ -144,6 +152,17 @@ public:
 		GaugeBarRenderer::Draw(shader, pos, size, display_, skin_, t, pivot);
 	}
 
+	// ワールド空間版。topCenterはビルボード平面上(m)でのバー上辺の中央、sizeもm
+	void DrawWorld(KdStandardShader& shader, const Math::Matrix& billboard, const Math::Vector2& topCenter,
+		const Math::Vector2& size, float metersPerPixel, const Math::Color& tint = kWhiteColor)
+	{
+		if (alpha_ <= 0.0f) { return; }
+
+		Math::Color t = tint;
+		t.w *= alpha_;
+		world_.Draw(shader, billboard, topCenter, size, display_, skin_, t, metersPerPixel);
+	}
+
 private:
 	// 色の段階→脈動→フラッシュの順に重ねる(見た目に合わせて表示割合で判定する)
 	Math::Color CalcFillColor() const
@@ -173,6 +192,7 @@ private:
 
 	GaugeBarPreset preset_;
 	GaugeBarSkin skin_;
+	GaugeBarWorldRenderer world_;
 	float display_ = 0.0f;
 	float prevTarget_ = 0.0f;
 	float alpha_ = 1.0f;

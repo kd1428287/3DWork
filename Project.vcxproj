@@ -332,6 +332,7 @@
     <ClInclude Include="Src\Application\Components\Graphics\Render\SpriteRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\WireFrameComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Button\SelectableComponent.h" />
+    <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\EnemyHudGaugeComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\EnemyOverheadGaugeComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\EnemyWorldGaugeComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\GaugeBar.h" />
