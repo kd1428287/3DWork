@@ -469,19 +469,10 @@ bool EffectEditor::DrawLayerInspector(GPUParticleLayer& layer, int index)
 				{ "Converge", ParticleEmitDistribution::Converge },
 			};
 
-			// 1. ラベル一覧の配列を作成
-			static const char* labels[IM_ARRAYSIZE(kDistributionOptions)];
-			static bool initialized = false;
-			if (!initialized)
-			{
-				for (int i = 0; i < IM_ARRAYSIZE(kDistributionOptions); ++i)
-				{
-					labels[i] = kDistributionOptions[i].label;
-				}
-				initialized = true;
-			}
+			// コンボ表示用のラベル一覧
+			static const char* const labels[] = { "Directional", "Radial In Plane", "Converge" };
 
-			// 2. 現在のインデックスを取得
+			// 現在値のインデックスを取得
 			int currentDistributionIdx = 0;
 			for (int i = 0; i < IM_ARRAYSIZE(kDistributionOptions); ++i)
 			{
@@ -492,18 +483,32 @@ bool EffectEditor::DrawLayerInspector(GPUParticleLayer& layer, int index)
 				}
 			}
 
-			// 3. 標準の const char*[] 版 ImGui::Combo を呼び出す
-			if (ImGui::Combo("Distribution", &currentDistributionIdx, labels, IM_ARRAYSIZE(kDistributionOptions)))
+			// 選択が変わったらenumへ反映
+			if (ImGui::Combo("Distribution", &currentDistributionIdx, labels, IM_ARRAYSIZE(labels)))
 			{
 				shape.Distribution = kDistributionOptions[currentDistributionIdx].value;
 			}
 		}
 
-		if (shape.Distribution == ParticleEmitDistribution::Converge)
+		// Distributionごとに必要なパラメータだけを表示する
+		switch (shape.Distribution)
 		{
+		case ParticleEmitDistribution::Directional:
+			ImGui::DragFloat2("DirScale", &shape.DirScaleMin /* Min/Maxを並べる */);
+			ImGui::DragFloat3("OffsetMin", &shape.OffsetMin.x);
+			ImGui::DragFloat3("OffsetMax", &shape.OffsetMax.x);
+			break;
+
+		case ParticleEmitDistribution::RadialInPlane:
+			ImGui::DragFloat2("Radial Speed", &shape.RadialSpeedMin /* Min/Maxを並べる */);
+			ImGui::TextDisabled("水平面内のランダムな角度へ均等に飛ばす(角度はGPU側で毎粒子ごとに決定)");
+			break;
+
+		case ParticleEmitDistribution::Converge:
 			ImGui::DragFloat("Converge Radius", &shape.ConvergeRadius, 0.05f, 0.1f, 100.0f);
 			ImGui::DragFloat("Converge Speed", &shape.ConvergeSpeed, 0.05f, 0.0f, 100.0f);
 			ImGui::TextDisabled("Speed=0で寿命ぴったりに中心(発生位置)へ到達");
+			break;
 		}
 
 		ImGui::SeparatorText("Appearance");
