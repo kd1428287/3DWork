@@ -33,6 +33,9 @@
 //   activeInstances_ ：EffectAttachSpawnEventで生成される、InstanceKeyごとに独立した
 //                       実行時インスタンス。Play()され、EffectPositionUpdateEventで
 //                       毎フレーム位置を追従させ、EffectDetachEventで破棄される。
+//                       エフェクト名の代わりにグループ名を渡すと、メンバー全てがまとめて追従する。
+//                       EffectFollowSpawnEventで生成されたものは単発発生で、位置更新の
+//                       移動量を粒子ごと平行移動し、全粒子の寿命が尽きたら自動で破棄される。
 //
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 【イベント処理のタイミングについて(重要)】
@@ -109,6 +112,15 @@ private:
 		std::string						InstanceKey;
 		std::string						EffectName;
 		DirectX::SimpleMath::Vector3	Position;
+		float							MaxDuration = 0.0f;
+	};
+	struct PendingFollowSpawn
+	{
+		std::string						InstanceKey;
+		std::string						EffectName;
+		DirectX::SimpleMath::Vector3	Position;
+		float							ConvergeDuration = 0.0f;
+		float							SpawnSpread = 0.0f;
 	};
 	struct PendingPositionUpdate
 	{
@@ -119,13 +131,19 @@ private:
 	{
 		std::string	InstanceKey;
 	};
-	using PendingEvent = std::variant<PendingSpawn, PendingAttach, PendingPositionUpdate, PendingDetach>;
+	struct PendingStop
+	{
+		std::string	InstanceKey;
+	};
+	using PendingEvent = std::variant<PendingSpawn, PendingAttach, PendingFollowSpawn, PendingPositionUpdate, PendingDetach, PendingStop>;
 
 	// イベントハンドラ：pendingEvents_へ積むだけ(mutexで保護)
 	void OnGenericEffectSpawn(const Events::GenericEffectSpawn& e);
 	void OnEffectAttachSpawn(const Events::EffectAttachSpawn& e);
+	void OnEffectFollowSpawn(const Events::EffectFollowSpawn& e);
 	void OnEffectPositionUpdate(const Events::EffectPositionUpdate& e);
 	void OnEffectDetach(const Events::EffectDetach& e);
+	void OnEffectStop(const Events::EffectStop& e);
 
 	// pendingEvents_を取り出して1件ずつ処理する(Update()冒頭から呼ばれる)
 	void ProcessPendingEvents();
@@ -139,10 +157,32 @@ private:
 
 	struct ActiveInstance
 	{
-		EffectInstance					instance;
+		std::vector<EffectInstance>		instances;	// 単体なら1個、グループならメンバー数ぶん
 		DirectX::SimpleMath::Vector3	position = { 0, 0, 0 };
+
+		std::vector<std::string>		effectNames;	// instancesと同じ並び(使い回しプールの引き当て用)
+
+		bool	followParticles = false;	// trueなら位置更新の移動量を粒子ごと平行移動する
+		float	lifeRemaining = -1.0f;		// 0以上なら残り秒数で自動破棄(負なら無期限)
+		float	maxDurationRemaining = -1.0f;	// 0以上なら残り秒数でStopする(負なら無期限)
 	};
 	std::unordered_map<std::string, ActiveInstance> activeInstances_;
+
+	// nameがエフェクト名ならそれ1個、グループ名なら全メンバーぶんのインスタンスをactiveへ作る(1つも作れなければfalse)
+	bool CreateActiveInstances(const std::string& name, ActiveInstance& active);
+
+	// activeのインスタンスを後始末して使い回しプールへ返す(activeInstances_から消す前に呼ぶ)
+	void RecycleActive(ActiveInstance& active);
+
+	// 同じキーが既にあれば返却してから、activeを登録する
+	void StoreActive(const std::string& key, ActiveInstance&& active);
+
+	// 新規発生を止め、残りの粒子が尽きたら自動で破棄されるようにする
+	void GracefulStop(ActiveInstance& active);
+
+	// 使い回し用のインスタンス(エフェクト名ごと)。データ再ロード時に破棄する
+	std::unordered_map<std::string, std::vector<EffectInstance>> instancePool_;
+	static constexpr size_t kMaxPooledPerEffect = 8;
 
 	KdAssetsTextureProvider textureProvider_;
 

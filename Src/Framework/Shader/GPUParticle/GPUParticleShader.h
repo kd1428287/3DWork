@@ -33,7 +33,7 @@ public:
 
 	// 1フレームぶんのシミュレーション更新
 	void Update(ID3D11UnorderedAccessView* particleUAV, UINT maxParticleNum,
-		float deltaTime, const Math::Vector3& gravity);
+		float deltaTime, const Math::Vector3& gravity, const Math::Vector3& followDelta = Math::Vector3::Zero);
 
 	// 描画(ビルボードとしてインスタンシング描画)
 	void Draw(ID3D11ShaderResourceView* particleSRV, UINT maxParticleNum,
@@ -119,6 +119,10 @@ private:
 
 		Math::Vector3	Gravity;
 		float			_pad1 = 0.0f;
+
+		// ※必ず末尾に追加する事(HLSL側g_FollowDeltaとオフセットを一致させる)
+		Math::Vector3	FollowDelta;			// 生きている全粒子への平行移動量
+		float			_pad2 = 0.0f;
 	};
 	KdConstantBuffer<cbUpdate> m_cb0_Update;
 };

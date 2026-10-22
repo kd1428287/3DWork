@@ -49,7 +49,7 @@ struct EnemyAttackTelegraphData
 {
 	// 既定はStarConvergeを出す。出したくない技はtype=Noneにする。
 	TelegraphType type = TelegraphType::Normal;
-	std::string effectName = "StarConverge";
+	std::string effectName = "PreConverge";
 	std::string anchorSlot;                   // 基準オブジェクトの武器スロット名("Main"等。空ならルート)
 	Math::Vector3 offset = Math::Vector3(0.0f, 2.0f, 0.0f); // 基準位置からのオフセット(敵の向きで回転、メートル)
 	float leadTime = 0.4f;                    // 判定発生の何秒前に出すか
@@ -70,9 +70,7 @@ struct EnemyAttackDefinition
 	float minRange = 0.0f;
 	float maxRange = 2.0f;
 
-	float weight = 1.0f;
-
-	float windupJitterRatio = 0.0f; // 予備動作時間のゆらぎ率(0.2なら±20%)。0なら固定
+	float weight = 1.0f;	// 抽選重み
 
 	// 攻撃中の向き制御(ターゲット追従の速さ)。
 	EnemyAttackFacingData facing;

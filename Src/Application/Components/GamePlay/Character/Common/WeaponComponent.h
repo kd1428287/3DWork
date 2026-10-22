@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "../../../Physics/Collision/ColliderComponent.h"
 #include "../../../Graphics/Effect/SlashTrailComponent.h"
 #include "AttackSourceComponent.h"
@@ -76,6 +76,7 @@ public:
 	}
 
 	void SetAttackDamageData(AttackDamageData info) { attackSource_->SetAttackDamageData(info); }
+	void SetAttackVisualData(const AttackVisualData& data) { attackSource_->SetAttackVisualData(data); }
 
 	void OnCollisionEnter(const Events::CollisionEnterEvent& e)
 	{
@@ -88,6 +89,7 @@ public:
 		c.weaponObject = Handle<GameObject>(GetOwner());
 		c.lastValidSwingDir = lastValidSwingDir_;
 		c.damageData = attackSource_->GetAttackDamageData();
+		c.visualData = attackSource_->GetAttackVisualData();
 		e.otherObject->GetLocalEventBus().Publish(c);
 	}
 

@@ -13,6 +13,7 @@ bool ParticleBuffer::Init(UINT maxParticleNum)
 
 	maxParticleNum_ = maxParticleNum;
 	emitCursor_ = 0;
+	drawCount_ = 0;
 
 	if (!CreateBuffers(maxParticleNum)) { return false; }
 
@@ -87,6 +88,8 @@ void ParticleBuffer::Release()
 
 	initialized_ = false;
 	maxParticleNum_ = 0;
+	emitCursor_ = 0;
+	drawCount_ = 0;
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -103,18 +106,36 @@ void ParticleBuffer::Emit(const EmitParameter& param, UINT count)
 		particleUAV_, maxParticleNum_, param, count, emitCursor_);
 
 	emitCursor_ = (emitCursor_ + count) % maxParticleNum_;
+	drawCount_ = std::min(drawCount_ + count, maxParticleNum_);
 }
 
-void ParticleBuffer::Update(float deltaTime, const Math::Vector3& gravity)
+void ParticleBuffer::Clear()
 {
 	if (!initialized_) { return; }
 
-	KdShaderManager::Instance().m_particleShader.Update(particleUAV_, maxParticleNum_, deltaTime, gravity);
+	KdShaderManager::Instance().m_particleShader.InitParticles(particleUAV_, maxParticleNum_);
+
+	emitCursor_ = 0;
+	drawCount_ = 0;
+}
+
+void ParticleBuffer::Rewind()
+{
+	emitCursor_ = 0;
+	drawCount_ = 0;
+}
+
+void ParticleBuffer::Update(float deltaTime, const Math::Vector3& gravity, const Math::Vector3& followDelta)
+{
+	// 生きうる範囲(先頭からdrawCount_個)だけを更新する
+	if (!initialized_ || drawCount_ == 0) { return; }
+
+	KdShaderManager::Instance().m_particleShader.Update(particleUAV_, drawCount_, deltaTime, gravity, followDelta);
 }
 
 void ParticleBuffer::Draw(const std::shared_ptr<KdTexture>& texture, ParticleBlendMode blendMode)
 {
-	if (!initialized_) { return; }
+	if (!initialized_ || drawCount_ == 0) { return; }
 
-	KdShaderManager::Instance().m_particleShader.Draw(particleSRV_, maxParticleNum_, texture, blendMode);
+	KdShaderManager::Instance().m_particleShader.Draw(particleSRV_, drawCount_, texture, blendMode);
 }

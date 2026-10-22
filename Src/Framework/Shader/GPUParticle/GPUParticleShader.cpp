@@ -205,7 +205,7 @@ void GPUParticleShader::Emit(ID3D11UnorderedAccessView* particleUAV,
 // 1フレームぶんのシミュレーション更新
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void GPUParticleShader::Update(ID3D11UnorderedAccessView* particleUAV, UINT maxParticleNum,
-	float deltaTime, const Math::Vector3& gravity)
+	float deltaTime, const Math::Vector3& gravity, const Math::Vector3& followDelta)
 {
 	if (!m_initialized) { return; }
 
@@ -213,6 +213,7 @@ void GPUParticleShader::Update(ID3D11UnorderedAccessView* particleUAV, UINT maxP
 	update.MaxParticleNum = maxParticleNum;
 	update.DeltaTime = deltaTime;
 	update.Gravity = gravity;
+	update.FollowDelta = followDelta;
 
 	m_cb0_Update.Write();
 
@@ -246,8 +247,12 @@ void GPUParticleShader::Draw(ID3D11ShaderResourceView* particleSRV, UINT maxPart
 	shaderMgr.SetVertexShader(m_VS);
 	DevCon->IASetInputLayout(nullptr);
 
+	// エフェクト層へ描く間は、マスクを使わず専用ブレンドで描く(液体の密度描画は従来のまま)
+	const bool effectLayer = shaderMgr.m_postProcessShader.IsEffectLayerActive() && blendMode != ParticleBlendMode::LiquidInk;
+	const bool isAlpha = (blendMode == ParticleBlendMode::Alpha);
+
 	// Alphaブレンド時のみ、カラーグレード除外マスクを書き込むPSへ切り替える
-	shaderMgr.SetPixelShader(blendMode == ParticleBlendMode::Alpha ? m_PS_Masked : m_PS);
+	shaderMgr.SetPixelShader((isAlpha && !effectLayer) ? m_PS_Masked : m_PS);
 
 	// パーティクル本体バッファをVS用SRVとしてセット
 	DevCon->VSSetShaderResources(0, 1, &particleSRV);
@@ -262,7 +267,8 @@ void GPUParticleShader::Draw(ID3D11ShaderResourceView* particleSRV, UINT maxPart
 	shaderMgr.ChangeSamplerState(KdSamplerState::Linear_Clamp, 0);
 
 	// ブレンドモードの切り替え・Z書き込み無効(重なった時に不透明に潰れないように)
-	const KdBlendState blendState = (blendMode == ParticleBlendMode::Alpha) ? KdBlendState::AlphaMasked : KdBlendState::Add;
+	KdBlendState blendState = isAlpha ? KdBlendState::AlphaMasked : KdBlendState::Add;
+	if (effectLayer) { blendState = isAlpha ? KdBlendState::EffectAlpha : KdBlendState::EffectAdd; }
 	shaderMgr.ChangeBlendState(blendState);
 	shaderMgr.ChangeDepthStencilState(KdDepthStencilState::ZWriteDisable);
 

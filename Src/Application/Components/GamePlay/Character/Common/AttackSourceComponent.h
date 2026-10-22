@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Application/Definitions/Character/Common/CombatData.h"
 
@@ -22,28 +22,17 @@ class AttackSourceComponent : public ComponentBase {
 public:
 	explicit AttackSourceComponent(GameObject* owner) : ComponentBase(owner) {}
 
-	// パリィされた際に、攻撃者自身(ownerCharacter)のローカルEventBusへ
-	// 発行されるイベント。「反応するかどうか」「どう反応するか」は
-	// 完全に攻撃者側(購読する側)に委ねる。被弾側(PlayerStatusController等)
-	// はGameObjectの具体的な型を一切知らずにこれをPublish()するだけで
-	// 済む(HealthComponent::DiedEvent/Events::Collision::CollisionEnterEvent
-	// と同じ、GameObjectローカルバス経由の疎結合パターン)。
-	//
-	// 【現状】パリィ時のリアクション自体は未実装(一旦保留)。将来Enemy側に
-	// 反応を実装する際は、そのコンポーネントのStart()でこのイベントを
-	// Subscribe<AttackSourceComponent::ParrySucceeded>()すればよい。
-	
-
-	
-	
-
 	void SetAttackDamageData(AttackDamageData data) { damageData_ = data; }
+	void SetAttackVisualData(const AttackVisualData& data) { visualData_ = data; }
 	void SetOwner(Handle<GameObject> owner) { ownerCharacter_ = owner; }
 	void Hit(GameObject* victim) { alreadyHit_.emplace(Handle<GameObject>(victim)); }
 	void Hit(Handle<GameObject> victim) { alreadyHit_.emplace(victim); }
 
 	const AttackDamageData& GetAttackDamageData() const { return damageData_; }
-	const GameObject* GetOwner()const { return ownerCharacter_.Resolve(); }
+	const AttackVisualData& GetAttackVisualData() const { return visualData_; }
+
+	// 攻撃の持ち主(キャラクター)。基底のGetOwner()(このコンポーネントの所有GameObject)と区別する。
+	const GameObject* GetOwnerCharacter() const { return ownerCharacter_.Resolve(); }
 	Handle<GameObject> GetOwnerHandle() { return ownerCharacter_; }
 	bool IsAlreadyHit(Handle<GameObject> victim) const { return alreadyHit_.contains(victim); }
 
@@ -51,6 +40,7 @@ public:
 
 private:
 	AttackDamageData damageData_;
+	AttackVisualData visualData_;
 	// この攻撃の持ち主(武器なら、武器を装備しているキャラクター本体)への弱参照
 	Handle<GameObject> ownerCharacter_;
 	std::unordered_set<Handle<GameObject>> alreadyHit_;

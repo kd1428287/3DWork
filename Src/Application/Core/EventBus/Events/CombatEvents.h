@@ -31,6 +31,7 @@ namespace Events
 		Handle<AttackSourceComponent> attackSource;
 		Handle<GameObject> weaponObject;
 		AttackDamageData damageData;
+		AttackVisualData visualData;
 		Math::Vector3 lastValidSwingDir;
 	};
 

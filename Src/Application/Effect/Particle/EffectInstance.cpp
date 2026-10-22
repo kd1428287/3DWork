@@ -1,5 +1,7 @@
 ﻿#include "Application/main.h"
 #include "EffectInstance.h"
+#include <algorithm>
+#include <random>
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 生成
@@ -20,7 +22,12 @@ bool EffectInstance::Init(const GPUParticleParams& params, ITextureProvider* tex
 
 	isPlaying_ = false;
 	burstTimer_ = 0.0f;
+	aliveTimer_ = 0.0f;
 	continuousAccum_.assign(params_.Layers.size(), 0.0f);
+
+	staggered_.clear();
+	staggerDuration_ = 0.0f;
+	staggerElapsed_ = 0.0f;
 
 	ResolveTexture(textureProvider);
 
@@ -62,7 +69,20 @@ void EffectInstance::Update(float deltaTime, const DirectX::SimpleMath::Vector3&
 {
 	if (!particle_) { return; }
 
-	particle_->Update(deltaTime, params_.Gravity);
+	// 全粒子が死んでいる間は更新を省く。尽きた瞬間に書き込み位置を先頭へ戻す
+	const bool wasAlive = aliveTimer_ > 0.0f;
+	aliveTimer_ = std::max(0.0f, aliveTimer_ - deltaTime);
+	if (aliveTimer_ > 0.0f)
+	{
+		particle_->Update(deltaTime, params_.Gravity, pendingFollowDelta_);
+	}
+	else if (wasAlive)
+	{
+		particle_->Rewind();
+	}
+	pendingFollowDelta_ = { 0,0,0 };
+
+	if (staggerDuration_ > 0.0f) { EmitStaggered(deltaTime, worldPos, baseDir); }
 
 	if (!isPlaying_) { return; }
 
@@ -85,7 +105,7 @@ void EffectInstance::Update(float deltaTime, const DirectX::SimpleMath::Vector3&
 			if (emitNum > 0)
 			{
 				continuousAccum_[i] -= (float)emitNum;
-				particle_->Emit(layer.ToEmitParameter(worldPos, baseDir), emitNum);
+				EmitInternal(layer.ToEmitParameter(worldPos, baseDir), emitNum);
 			}
 		}
 	}
@@ -113,7 +133,87 @@ void EffectInstance::Emit(const DirectX::SimpleMath::Vector3& worldPos, const Di
 	{
 		if (layer.Count <= 0) { continue; }
 
-		particle_->Emit(layer.ToEmitParameter(worldPos, baseDir), (UINT)layer.Count);
+		EmitInternal(layer.ToEmitParameter(worldPos, baseDir), (UINT)layer.Count);
+	}
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 単発発生(追従エフェクト用)：全Layersを1回だけ発生させ、最長の粒子寿命を返す
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+float EffectInstance::EmitOnce(const DirectX::SimpleMath::Vector3& worldPos, const DirectX::SimpleMath::Vector3& baseDir, float convergeDuration, float spawnSpread)
+{
+	if (!particle_) { return 0.0f; }
+
+	staggered_.clear();
+	staggerDuration_ = 0.0f;
+	staggerElapsed_ = 0.0f;
+
+	// 最後の粒子にも最低限の移動時間を残す
+	const float spread = std::clamp(spawnSpread, 0.0f, 0.95f);
+
+	float maxLife = 0.0f;
+	for (size_t i = 0; i < params_.Layers.size(); ++i)
+	{
+		const auto& layer = params_.Layers[i];
+		if (layer.Count <= 0) { continue; }
+
+		ParticleBuffer::EmitParameter param = layer.ToEmitParameter(worldPos, baseDir);
+
+		if (convergeDuration > 0.0f && param.Distribution == ParticleEmitDistribution::Converge)
+		{
+			// ばらけ発生：各粒子の発生時刻を抽選し、Update()側で予定時刻に発生させる
+			if (spread > 0.0f)
+			{
+				static thread_local std::mt19937 rng{ std::random_device{}() };
+				std::uniform_real_distribution<float> dist(0.0f, convergeDuration * spread);
+
+				StaggeredLayer staggered;
+				staggered.layerIndex = i;
+				staggered.times.resize((size_t)layer.Count);
+				for (float& t : staggered.times) { t = dist(rng); }
+				std::sort(staggered.times.begin(), staggered.times.end());
+
+				staggered_.push_back(std::move(staggered));
+				staggerDuration_ = convergeDuration;
+				maxLife = std::max(maxLife, convergeDuration);
+				continue;
+			}
+
+			// 一括発生：寿命=収束時間にし、速度は寿命から自動計算させる(ConvergeSpeed=0)
+			param.LifeMin = convergeDuration;
+			param.LifeMax = convergeDuration;
+			param.ConvergeSpeed = 0.0f;
+		}
+
+		maxLife = std::max(maxLife, param.LifeMax);
+		EmitInternal(param, (UINT)layer.Count);
+	}
+	return maxLife;
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// ばらけ発生：予定時刻に達した粒子を、残り時間を寿命として発生させる(全粒子が同時刻に収束する)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void EffectInstance::EmitStaggered(float deltaTime, const DirectX::SimpleMath::Vector3& worldPos, const DirectX::SimpleMath::Vector3& baseDir)
+{
+	staggerElapsed_ += deltaTime;
+	const float remaining = std::max(staggerDuration_ - staggerElapsed_, 0.001f);
+
+	for (auto& s : staggered_)
+	{
+		UINT num = 0;
+		while (s.cursor < s.times.size() && s.times[s.cursor] <= staggerElapsed_)
+		{
+			++s.cursor;
+			++num;
+		}
+		if (num == 0) { continue; }
+
+		ParticleBuffer::EmitParameter param = params_.Layers[s.layerIndex].ToEmitParameter(worldPos, baseDir);
+		param.LifeMin = remaining;	// 残り時間が寿命：発生が遅い粒子ほど速く動く
+		param.LifeMax = remaining;
+		param.ConvergeSpeed = 0.0f;
+		EmitInternal(param, num);
 	}
 }
 
@@ -150,12 +250,43 @@ void EffectInstance::Stop()
 	isPlaying_ = false;
 }
 
+void EffectInstance::StopEmission()
+{
+	isPlaying_ = false;
+	staggered_.clear();
+	staggerDuration_ = 0.0f;
+}
+
+void EffectInstance::Recycle()
+{
+	isPlaying_ = false;
+	burstTimer_ = 0.0f;
+	staggered_.clear();
+	staggerDuration_ = 0.0f;
+	staggerElapsed_ = 0.0f;
+	pendingFollowDelta_ = { 0,0,0 };
+
+	if (particle_)
+	{
+		// 残っている粒子があれば消す(使い回し先に幽霊を残さない)
+		if (aliveTimer_ > 0.0f) { particle_->Clear(); }
+		else { particle_->Rewind(); }
+	}
+	aliveTimer_ = 0.0f;
+}
+
+void EffectInstance::EmitInternal(const ParticleBuffer::EmitParameter& param, UINT count)
+{
+	particle_->Emit(param, count);
+	aliveTimer_ = std::max(aliveTimer_, param.LifeMax + kAliveMargin);
+}
+
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 描画：テクスチャ・BlendMode込み
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectInstance::Draw() const
 {
-	if (!particle_) { return; }
+	if (!particle_ || !IsActive()) { return; }
 
 	particle_->Draw(texture_, params_.BlendMode);
 }
@@ -177,7 +308,7 @@ void EffectInstance::Draw(ParticleDrawPass pass) const
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectInstance::DrawLiquid() const
 {
-	if (!particle_ || !IsLiquid()) { return; }
+	if (!particle_ || !IsLiquid() || !IsActive()) { return; }
 
 	particle_->Draw(texture_, params_.BlendMode);
 }

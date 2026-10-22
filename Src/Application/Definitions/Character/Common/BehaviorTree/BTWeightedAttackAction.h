@@ -29,7 +29,8 @@
 //   void SetWeaponTrailEmitting(const std::vector<std::string>&, bool)
 //   void NotifyAttackCompleted()
 //   void SetVulnerable(bool)
-//   void PlayTelegraphEffect(const EnemyAttackTelegraphData&)
+//   void PlayTelegraphEffect(const EnemyAttackTelegraphData&, float convergeDuration)
+//   void FinishTelegraphEffect()
 //   void StopTelegraphEffect()
 //   void PlayAttackSwingSE()
 //
@@ -127,7 +128,8 @@ public:
 			if (!telegraphFired_ && current_->telegraph.type != TelegraphType::None &&
 				elapsed_ >= windupDuration_ - current_->telegraph.leadTime) {
 				telegraphFired_ = true;
-				context->PlayTelegraphEffect(current_->telegraph);
+				// Windup終了ちょうどに収束しきるよう、残り時間を渡す
+				context->PlayTelegraphEffect(current_->telegraph, std::max(windupDuration_ - elapsed_, 0.016f));
 			}
 			if (elapsed_ >= windupDuration_) {
 				phase_ = Phase::Active;
@@ -136,7 +138,7 @@ public:
 				// AttackData::weaponSlotsで対象スロットを指定する。
 				// BTWeightedAttackAction冒頭コメントのダックタイピング
 				// 一覧を参照)。
-				context->StopTelegraphEffect(); // 予備動作は判定発生で終了
+				context->FinishTelegraphEffect(); // 収束完了。判定発生へ
 				context->SetWeaponHitBoxEnabled(current_->attackData.weaponSlots, true);
 				context->SetWeaponTrailEmitting(current_->attackData.weaponSlots, true);
 				context->PlayAnimation(current_->attackData.phaseData.active);

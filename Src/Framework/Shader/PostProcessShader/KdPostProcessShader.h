@@ -51,6 +51,13 @@ public:
 	void BeginLiquid(bool useSceneDepth = true);
 	void EndLiquid(LiquidStyle style = LiquidStyle::Ink);
 
+	// エフェクト層：BeginとEndの間に描いたパーティクル等は、シーンとは別のRT(RGB=乗算済みアルファ、A=被覆率)へ溜められ、
+	// カラーグレードの後に合成される(=グレード・DoFの対象外)。深度はシーンのものを共有する。
+	// 本編のシーンRTがバインドされている3D描画中に呼ぶこと
+	void BeginEffectLayer();
+	void EndEffectLayer();
+	bool IsEffectLayerActive() const { return m_effectLayerActive; }
+
 	// 衝撃波(パリィ等)。centerUVは0〜1の画面座標、maxRadiusは画面の高さに対する比率
 	void AddShockwave(const Math::Vector2& centerUV, float duration, float maxRadius, float strength);
 	// ワールド座標指定版(カメラの背後なら何もしない)
@@ -326,6 +333,11 @@ private:
 	KdRenderTargetChanger m_postEffectRTChanger;
 	KdRenderTargetChanger m_brightRTChanger;
 	KdRenderTargetChanger m_liquidRTChanger;
+
+	// エフェクト層(カラーグレードの後に合成するため、シーンとは別に描く)
+	KdRenderTargetPack	m_effectRTPack;
+	KdRenderTargetChanger m_effectRTChanger;
+	bool m_effectLayerActive = false;
 
 	// 液体の密度RT(シーンの深度バッファを共有するためフル解像度)と、そのぼかし結果(半解像度)
 	KdRenderTargetPack	m_liquidDensityRTPack;

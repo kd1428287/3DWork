@@ -1882,15 +1882,14 @@
       ]
     },
     {
-      "name": "StarConverge",
+      "name": "InkConverge",
       "params": {
-        "blendMode": "Add",
+        "blendMode": "Alpha",
         "drawPass": [
-          "Default",
-          "Bright"
+          "Default"
         ],
         "emitInterval": 0.0,
-        "emitMode": "Continuous",
+        "emitMode": "Burst",
         "gravity": [
           0.0,
           -0.5,
@@ -1898,34 +1897,34 @@
         ],
         "layers": [
           {
-            "billboardMode": "Normal",
+            "billboardMode": "Stretch",
             "colorMax": [
-              0.9607843160629272,
-              0.7865244150161743,
-              0.7865244150161743,
+              0.03921568766236305,
+              0.03921568766236305,
+              0.03921568766236305,
               1.0
             ],
             "colorMin": [
-              0.9656862616539001,
-              0.7147971987724304,
-              0.7147971987724304,
+              0.0,
+              0.0,
+              0.0,
               1.0
             ],
             "colorStartMax": [
-              0.9803921580314636,
-              0.168769970536232,
-              0.14417533576488495,
+              0.03921568766236305,
+              0.03921568766236305,
+              0.03921568766236305,
               1.0
             ],
             "colorStartMin": [
-              0.720588207244873,
-              0.46865248680114746,
-              0.3779555559158325,
+              0.0,
+              0.0,
+              0.0,
               1.0
             ],
             "convergeRadius": 2.0,
             "convergeSpeed": 0.0,
-            "count": 200,
+            "count": 100,
             "dirScaleMax": 4.0,
             "dirScaleMin": 1.0,
             "distribution": "Converge",
@@ -1943,15 +1942,15 @@
             ],
             "radialSpeedMax": 4.0,
             "radialSpeedMin": 1.0,
-            "sizeEndMax": 0.05999999865889549,
+            "sizeEndMax": 0.03999999910593033,
             "sizeEndMin": 0.019999999552965164,
-            "sizeMax": 0.10000000149011612,
-            "sizeMin": 0.05999999865889549,
-            "stretchScale": 0.15000000596046448
+            "sizeMax": 0.05999999865889549,
+            "sizeMin": 0.03999999910593033,
+            "stretchScale": 10.0
           }
         ],
         "maxParticleNum": 500,
-        "texture": "star.png"
+        "texture": "circle.png"
       },
       "pos": [
         0.0,
@@ -2055,6 +2054,94 @@
         1.0,
         1.0
       ]
+    },
+    {
+      "name": "InkConvergeHighlight",
+      "params": {
+        "blendMode": "Add",
+        "drawPass": [
+          "Default",
+          "Bright"
+        ],
+        "emitInterval": 0.0,
+        "emitMode": "Burst",
+        "gravity": [
+          0.0,
+          -0.5,
+          0.0
+        ],
+        "layers": [
+          {
+            "billboardMode": "Stretch",
+            "colorMax": [
+              1.0,
+              0.5882353186607361,
+              0.03921568766236305,
+              1.0
+            ],
+            "colorMin": [
+              1.0,
+              0.5882353186607361,
+              0.03921568766236305,
+              1.0
+            ],
+            "colorStartMax": [
+              1.0,
+              0.5882353186607361,
+              0.03921568766236305,
+              1.0
+            ],
+            "colorStartMin": [
+              1.0,
+              0.5882353186607361,
+              0.03921568766236305,
+              1.0
+            ],
+            "convergeRadius": 2.0,
+            "convergeSpeed": 0.0,
+            "count": 20,
+            "dirScaleMax": 4.0,
+            "dirScaleMin": 1.0,
+            "distribution": "Converge",
+            "lifeMax": 0.800000011920929,
+            "lifeMin": 0.44999998807907104,
+            "offsetMax": [
+              1.0,
+              1.5,
+              1.0
+            ],
+            "offsetMin": [
+              1.0,
+              0.5,
+              1.0
+            ],
+            "radialSpeedMax": 4.0,
+            "radialSpeedMin": 1.0,
+            "sizeEndMax": 0.009999999776482582,
+            "sizeEndMin": 0.019999999552965164,
+            "sizeMax": 0.019999999552965164,
+            "sizeMin": 0.009999999776482582,
+            "stretchScale": 1.0
+          }
+        ],
+        "maxParticleNum": 500,
+        "texture": "circle.png"
+      },
+      "pos": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotate": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
     }
   ],
   "groups": {
@@ -2070,6 +2157,10 @@
       "Flare",
       "Ring",
       "ClashSparkHigh"
+    ],
+    "PreConverge": [
+      "InkConverge",
+      "InkConvergeHighlight"
     ]
   },
   "liquidInk": {

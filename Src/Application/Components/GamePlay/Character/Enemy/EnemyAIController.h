@@ -379,7 +379,11 @@ public:
 	void SetVulnerable(bool vulnerable) { isVulnerable_ = vulnerable; }
 
 	// 攻撃の予備動作エフェクトを出す(BTWeightedAttackAction::Tick()から呼ばれる)。
-	void PlayTelegraphEffect(const EnemyAttackTelegraphData& data);
+	// convergeDuration秒後ちょうどに収束しきる追従エフェクトを出す
+	void PlayTelegraphEffect(const EnemyAttackTelegraphData& data, float convergeDuration);
+	// 正常終了：エフェクトは寿命まで残し、収束完了の演出だけ出して追従を終える
+	void FinishTelegraphEffect();
+	// 中断：エフェクトを即座に消す
 	void StopTelegraphEffect();
 
 	// --- 効果音 --------------------------------------------------------

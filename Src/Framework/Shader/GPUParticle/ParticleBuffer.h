@@ -130,7 +130,14 @@ public:
 	void Emit(const EmitParameter& param, UINT count);
 
 	// 1フレームぶんのシミュレーション更新(コンピュートシェーダーで実行)
-	void Update(float deltaTime, const Math::Vector3& gravity = { 0.0f, -0.5f, 0.0f });
+	// followDelta：生きている全粒子をこのフレームだけ平行移動する量(発生源へ追従させる用)
+	void Update(float deltaTime, const Math::Vector3& gravity = { 0.0f, -0.5f, 0.0f }, const Math::Vector3& followDelta = Math::Vector3::Zero);
+
+	// 全粒子を即座に死亡状態へ戻す(再利用前の後始末用)
+	void Clear();
+
+	// 全粒子が既に死亡している時だけ呼ぶ：書き込み位置を先頭へ戻し、更新・描画の対象数を0へ戻す
+	void Rewind();
 
 	// 描画(ビルボードとして描画)
 	// ※事前にKdShaderManager::WriteCBCamera等でカメラ情報の転送が済んでいる事
@@ -157,4 +164,7 @@ private:
 
 	// 発生用リングバッファの書き込みカーソル(CPU側で管理し、Emit時にCSへ渡す)
 	UINT emitCursor_ = 0;
+
+	// 更新・描画の対象数(リングバッファの先頭からこの数だけが生きうる)。発生のたびに増え、最大数で頭打ち
+	UINT drawCount_ = 0;
 };

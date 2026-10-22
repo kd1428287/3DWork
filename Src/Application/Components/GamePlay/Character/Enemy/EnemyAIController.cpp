@@ -135,14 +135,17 @@ Math::Vector3 EnemyAIController::ComputeTelegraphPosition() const
 	return basePos + Math::Vector3::Transform(telegraphData_.offset, transform_->GetRotation());
 }
 
-void EnemyAIController::PlayTelegraphEffect(const EnemyAttackTelegraphData& data)
+void EnemyAIController::PlayTelegraphEffect(const EnemyAttackTelegraphData& data, float convergeDuration)
 {
 	if (data.effectName.empty() || transform_ == nullptr) return;
 
 	StopTelegraphEffect(); // 二重再生防止
 	telegraphData_ = data;
 	telegraphKey_ = "EnemyTelegraph_" + std::to_string(reinterpret_cast<uintptr_t>(this));
-	Events::PublishEffectAttach(GetOwner()->GetSceneEventBus(), telegraphKey_, data.effectName, ComputeTelegraphPosition());
+	// 発生を収束時間の何割へばらけさせるか(収束時刻は全粒子で同じ)
+	constexpr float kTelegraphSpawnSpread = 0.7f;
+	Events::PublishEffectFollowSpawn(GetOwner()->GetSceneEventBus(), telegraphKey_, data.effectName,
+		ComputeTelegraphPosition(), convergeDuration, kTelegraphSpawnSpread);
 }
 
 void EnemyAIController::UpdateTelegraphEffect()
@@ -151,11 +154,18 @@ void EnemyAIController::UpdateTelegraphEffect()
 	Events::PublishEffectPositionUpdate(GetOwner()->GetSceneEventBus(), telegraphKey_, ComputeTelegraphPosition());
 }
 
+void EnemyAIController::FinishTelegraphEffect()
+{
+	if (telegraphKey_.empty()) return;
+	// 追従エフェクトは寿命で自動破棄されるのでDetachしない
+	Events::PublishGenericEffect(GetOwner()->GetSceneEventBus(), std::string("Star"), ComputeTelegraphPosition());
+	telegraphKey_.clear();
+}
+
 void EnemyAIController::StopTelegraphEffect()
 {
 	if (telegraphKey_.empty()) return;
 	Events::PublishEffectDetach(GetOwner()->GetSceneEventBus(), telegraphKey_);
-	Events::PublishGenericEffect(GetOwner()->GetSceneEventBus(), std::string("Star"),ComputeTelegraphPosition());
 	telegraphKey_.clear();
 }
 

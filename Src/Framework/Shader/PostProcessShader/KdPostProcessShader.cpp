@@ -178,6 +178,9 @@ bool KdPostProcessShader::Init()
 	// ポストプロセス用のシーンの全描画用画像
 	m_postEffectRTPack.CreateRenderTarget(backBuffer->GetWidth(), backBuffer->GetHeight(), true);
 
+	// エフェクト層(RGB=乗算済みアルファ、A=被覆率)
+	m_effectRTPack.CreateRenderTarget(backBuffer->GetWidth(), backBuffer->GetHeight());
+
 	// カラーグレード除外マスク(単チャンネルで十分。深度は不要)
 	// クリア値は0.0(=グレーディング適用がデフォルト)にする
 	m_colorGradeMaskRTPack.CreateRenderTarget(backBuffer->GetWidth(), backBuffer->GetHeight(), false, DXGI_FORMAT_R8_UNORM);
@@ -291,6 +294,9 @@ void KdPostProcessShader::Draw()
 	// 光源描画テクスチャの描画クリア
 	m_brightEffectRTPack.ClearTexture(kBlackColor);
 
+	// エフェクト層のクリア(RGBもAも0=エフェクト無し)
+	m_effectRTPack.ClearTexture(Math::Color(0, 0, 0, 0));
+
 	// レンダーターゲット変更(カラー本体+カラーグレード除外マスクを同時バインド：MRT)
 	// ※通常のLit/UnLit用PSはSV_Target1を出力しないため、マスク側は
 	//   ClearTexture()した0のまま残る。マスクを能動的に立てたい描画
@@ -388,7 +394,8 @@ void KdPostProcessShader::EndLiquid(LiquidStyle style)
 	shaderMgr.SetPixelShader(pPS);
 
 	shaderMgr.ChangeSamplerState(KdSamplerState::Linear_Clamp);
-	shaderMgr.ChangeBlendState(KdBlendState::AlphaMasked);
+	// エフェクト層へ描いている間は、マスクを使わず被覆率を蓄積するブレンドにする
+	shaderMgr.ChangeBlendState(m_effectLayerActive ? KdBlendState::EffectAlpha : KdBlendState::AlphaMasked);
 	shaderMgr.ChangeDepthStencilState(KdDepthStencilState::ZDisable);
 
 	// 出力先を切り替えず、現在のシーンRTへ全画面描画する
@@ -819,13 +826,15 @@ void KdPostProcessShader::ColorGradeProcess()
 	shaderMgr.ChangeSamplerState(KdSamplerState::Linear_Clamp);
 
 	// DoF結果(t0)+カラーグレード除外マスク(t1)を入力として、m_colorGradeRTPack に描画
-	std::shared_ptr<KdTexture> srcTexList[2] =
+	// ＋エフェクト層(t2)。グレードの対象外として、PS内でグレード後の色へ重ねる
+	std::shared_ptr<KdTexture> srcTexList[3] =
 	{
 		m_depthOfFieldRTPack.m_RTTexture,
-		m_colorGradeMaskRTPack.m_RTTexture
+		m_colorGradeMaskRTPack.m_RTTexture,
+		m_effectRTPack.m_RTTexture
 	};
 
-	DrawTexture(srcTexList, 2, m_colorGradeRTPack.m_RTTexture, &m_colorGradeRTPack.m_viewPort);
+	DrawTexture(srcTexList, 3, m_colorGradeRTPack.m_RTTexture, &m_colorGradeRTPack.m_viewPort);
 
 	shaderMgr.UndoSamplerState();
 }
@@ -1050,4 +1059,33 @@ void KdPostProcessShader::SetBrightToDevice()
 	}
 
 	shaderMgr.SetPixelShader(m_PS_Bright);
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// エフェクト層へ切り替える(深度はシーンのものを共有。BeginLiquidと同じ構成)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void KdPostProcessShader::BeginEffectLayer()
+{
+	if (m_effectLayerActive) { return; }
+
+	ID3D11RenderTargetView* rtv = m_effectRTPack.m_RTTexture->WorkRTView();
+
+	ID3D11DepthStencilView* pDSV = m_postEffectRTPack.m_ZBuffer ? m_postEffectRTPack.m_ZBuffer->WorkDSView() : nullptr;
+
+	if (!m_effectRTChanger.ChangeRenderTargets(&rtv, 1, pDSV, &m_postEffectRTPack.m_viewPort))
+	{
+		m_effectRTChanger.UndoRenderTarget();
+		return;
+	}
+
+	m_effectLayerActive = true;
+}
+
+void KdPostProcessShader::EndEffectLayer()
+{
+	if (!m_effectLayerActive) { return; }
+
+	m_effectRTChanger.UndoRenderTarget();
+
+	m_effectLayerActive = false;
 }

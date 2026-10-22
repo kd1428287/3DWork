@@ -53,6 +53,14 @@ public:
 	//	Burst/Continuousどちらのモードでも「今すぐ1回」出したい場合に使える
 	void Emit(const DirectX::SimpleMath::Vector3& worldPos, const DirectX::SimpleMath::Vector3& baseDir = { 0,0,0 });
 
+	// 単発発生(追従エフェクト用)：全Layersを1回だけ発生させ、最も長い粒子寿命(秒)を返す
+	//	convergeDuration>0なら、Converge層がちょうどその時刻に収束しきるようにする
+	//	spawnSpread>0なら、Converge層の発生を収束時間のその割合へばらけさせる(全粒子の収束時刻は同じ)
+	float EmitOnce(const DirectX::SimpleMath::Vector3& worldPos, const DirectX::SimpleMath::Vector3& baseDir = { 0,0,0 }, float convergeDuration = 0.0f, float spawnSpread = 0.0f);
+
+	// 次のUpdate()で、生きている全粒子を平行移動する量を足す(発生源への追従用)
+	void AddFollowDelta(const DirectX::SimpleMath::Vector3& delta) { pendingFollowDelta_ += delta; }
+
 	// 再生開始
 	//	Burst かつ EmitInterval<=0(単発)の場合：即座に1回Emitして終了(IsPlaying()はfalseのまま、Stop()不要)
 	//	それ以外(Burstリピート／Continuous)の場合：isPlaying_=trueになり、以後Update()のたびに自動発生する
@@ -60,6 +68,18 @@ public:
 
 	// 新規発生を止める(既存パーティクルの寿命消化・描画は継続される)
 	void Stop();
+
+	// Stop()に加え、ばらけ発生の未発生分も取り消す(残りの粒子は自然に消える)
+	void StopEmission();
+
+	// 生きている粒子がありうるか(false=更新・描画を省ける)
+	bool IsActive() const { return aliveTimer_ > 0.0f; }
+
+	// 最後の粒子が消えるまでの残り秒数(目安)
+	float GetRemainingLife() const { return aliveTimer_; }
+
+	// 使い回し前の後始末：発生を止め、残っている粒子があれば消す
+	void Recycle();
 
 	bool IsPlaying() const { return isPlaying_; }
 
@@ -85,11 +105,36 @@ private:
 
 	void ResolveTexture(ITextureProvider* textureProvider);
 
+	// ParticleBuffer::Emit()の代わりに使う(最後の粒子が消える時刻を記録する)
+	void EmitInternal(const ParticleBuffer::EmitParameter& param, UINT count);
+
+	static constexpr float kAliveMargin = 0.1f;	// 寿命の見積もりに足す余白(秒)
+
+	// ばらけ発生中のConverge層を、予定時刻に達した分だけ発生させる(Update()から呼ぶ)
+	void EmitStaggered(float deltaTime, const DirectX::SimpleMath::Vector3& worldPos, const DirectX::SimpleMath::Vector3& baseDir);
+
 	GPUParticleParams				params_;
 	std::shared_ptr<ParticleBuffer>	particle_;
 	std::shared_ptr<KdTexture>		texture_;
 
 	UINT	capacity_ = 0;
+
+	float	aliveTimer_ = 0.0f;	// 最後に発生した粒子が尽きるまでの残り秒数(0なら全て死亡)
+
+	DirectX::SimpleMath::Vector3	pendingFollowDelta_ = { 0,0,0 };	// 次のUpdate()で粒子へ適用する平行移動量
+
+	//================================================
+	// ばらけ発生(EmitOnce()のspawnSpread>0)用
+	//================================================
+	struct StaggeredLayer
+	{
+		size_t				layerIndex = 0;
+		std::vector<float>	times;		// 各粒子の発生予定時刻(昇順)
+		size_t				cursor = 0;	// 次に発生させる粒子
+	};
+	std::vector<StaggeredLayer>	staggered_;
+	float	staggerDuration_ = 0.0f;	// 収束しきるまでの時間(0なら無効)
+	float	staggerElapsed_ = 0.0f;
 
 	//================================================
 	// 再生状態(Continuous／Burstリピート用)

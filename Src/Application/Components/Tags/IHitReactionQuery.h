@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 class IHitReactionQuery
 {
@@ -12,7 +12,8 @@ public:
 	virtual bool IsGuarding() const = 0;
 
 	// 通常被弾によるスタン相当の反応に入ってほしい、という通知。
-	virtual void EnterStagger(bool isLarge, float duration) = 0;
+	// スタン時間は受け取った側のStateが決める(isLargeは体幹崩壊による大スタンか)。
+	virtual void EnterStagger(bool isLarge) = 0;
 
 	// パリィが成立した、という通知(自分自身がパリィした側)。
 	// 専用の成功モーションを再生してほしい合図として使う。

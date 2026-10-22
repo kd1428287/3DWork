@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Application/Core/EventBus/Events/CombatEvents.h"
 
 // 初期設定(Prefab/JSONから渡す値)。
@@ -29,10 +29,7 @@ public:
 
 		if (current_ <= 0.0f) {
 			died_ = true;
-			Events::Died e;
-			e.source = Handle<GameObject>(GetOwner());
-			GetOwner()->GetContext()->eventBus->Publish(e);
-			GetOwner()->GetLocalEventBus().Publish(e);
+			PublishDied();
 		}
 	}
 
@@ -46,16 +43,13 @@ public:
 	// 値を問答無用で上書きしたい場合(復活演出後のリセット、初期値の
 	// 個別設定等)に使う。0より大きい値をセットすればdied_も解除される。
 	void SetCurrent(float value) {
+		const bool wasDead = died_;
 		current_ = std::clamp(value, 0.0f, max_);
 		died_ = (current_ <= 0.0f);
 		PublishChanged();
-		if (current_ <= 0.0f) {
-			died_ = true;
-			Events::Died e;
-			e.source = Handle<GameObject>(GetOwner());
-			GetOwner()->GetContext()->eventBus->Publish(e);
-			GetOwner()->GetLocalEventBus().Publish(e);
-		}
+
+		// 生存から死亡に変わった時だけ発行する(0のまま再設定してもDiedは重複しない)。
+		if (!wasDead && died_) PublishDied();
 	}
 
 	// 最大値を変更する。alsoHeal=trueなら同時に全回復させる
@@ -75,6 +69,14 @@ private:
 	void PublishChanged() {
 
 		Events::PublishHealthChangeEvent(*GetOwner()->GetContext()->eventBus, Handle<GameObject>(GetOwner()), GetRatio());
+	}
+
+	// 死亡通知。グローバルバスと自分のローカルバスの両方へ流す。
+	void PublishDied() {
+		Events::Died e;
+		e.source = Handle<GameObject>(GetOwner());
+		GetOwner()->GetContext()->eventBus->Publish(e);
+		GetOwner()->GetLocalEventBus().Publish(e);
 	}
 
 	float max_;

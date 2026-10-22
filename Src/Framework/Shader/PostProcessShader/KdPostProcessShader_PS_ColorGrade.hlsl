@@ -2,6 +2,7 @@
 
 Texture2D g_inputTex : register(t0);
 Texture2D g_colorGradeMaskTex : register(t1); // 追加：カラーグレード除外マスク(R8_UNORM。0=適用,1=除外)
+Texture2D g_effectTex : register(t2); // エフェクト層(rgb=乗算済みアルファ,a=被覆率)。未バインドなら全て0
 SamplerState g_samLinear : register(s0); // 必要に応じてレジスタや定義を確認してください
 
 // 露出などを渡すための定数バッファ（KdPostProcessShader::cbColorGradeInfo と同じレイアウト）
@@ -98,6 +99,13 @@ float4 main(VSOutput input) : SV_Target
 
 	// mask=1の場所だけ経路Bを使う(パーティクルの不透明度に応じて連続的に混ざる)
 	float3 finalColor = lerp(gradedColor, unGradedColor, mask);
+
+	//------------------------------------------------------------
+	// エフェクト層：グレードの対象外。トーンマップ+ガンマのみ通し、グレード済みの色へ重ねる
+	//------------------------------------------------------------
+	float4 effect = g_effectTex.Sample(g_samLinear, input.UV);
+	float3 effectColor = pow(saturate(ACESFilm(effect.rgb)), 1.0f / 2.2f);
+	finalColor = finalColor * (1.0f - saturate(effect.a)) + effectColor;
 
 	return float4(finalColor, 1.0f);
 }

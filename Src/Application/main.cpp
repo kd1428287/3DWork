@@ -326,12 +326,12 @@ bool Application::Init(int w, int h)
 	keyboardDevice->AddButton("UIRight", new KdInputButtonForWindows({ 'D', VK_RIGHT }));
 
 	// Debug用
-	keyboardDevice->AddButton("Debug2", new KdInputButtonForWindows({ '2' }));
-	keyboardDevice->AddButton("Debug3", new KdInputButtonForWindows({ '3' }));
-	keyboardDevice->AddButton("Debug4", new KdInputButtonForWindows({ '4' }));
-	keyboardDevice->AddButton("Debug5", new KdInputButtonForWindows({ '5' }));
-	keyboardDevice->AddButton("Debug6", new KdInputButtonForWindows({ '6' }));
-	keyboardDevice->AddButton("Debug7", new KdInputButtonForWindows({ '7' }));
+	keyboardDevice->AddButton("Debug2", new KdInputButtonForWindows({ VK_F2 }));
+	keyboardDevice->AddButton("Debug3", new KdInputButtonForWindows({ VK_F3 }));
+	keyboardDevice->AddButton("Debug4", new KdInputButtonForWindows({ VK_F4 }));
+	keyboardDevice->AddButton("Debug5", new KdInputButtonForWindows({ VK_F5 }));
+	keyboardDevice->AddButton("Debug6", new KdInputButtonForWindows({ VK_F6 }));
+	keyboardDevice->AddButton("Debug7", new KdInputButtonForWindows({ VK_F7 }));
 
 	std::string buff;
 	for (int i = 0; i < 10; i++)

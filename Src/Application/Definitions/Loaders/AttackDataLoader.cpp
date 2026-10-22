@@ -1,4 +1,4 @@
-﻿#include "AttackDataLoader.h"
+#include "AttackDataLoader.h"
 
 namespace
 {
@@ -29,11 +29,35 @@ namespace
 	void ReadAttackDamageData(const json& j, AttackDamageData& out)
 	{
 		out.damage = j.value("damage", out.damage);
-		out.knockbackPower = j.value("knockbackPower", out.knockbackPower);
-		out.hitStunSeconds = j.value("hitStunSeconds", out.hitStunSeconds);
 		out.postureDamage = j.value("postureDamage", out.postureDamage);
-		out.chipDamageRatio = j.value("chipDamageRatio", out.chipDamageRatio);
+		out.guardDamageRatio = j.value("guardDamageRatio", out.guardDamageRatio);
+		out.guardPostureDamageRatio = j.value("guardPostureDamageRatio", out.guardPostureDamageRatio);
 		out.parryPostureDamage = j.value("parryPostureDamage", out.parryPostureDamage);
+		out.canParried = j.value("canParried", out.canParried);
+	}
+
+	// 状態(hit/block/parry)1つ分の演出設定。無いキーは既定値のまま残す。
+	void ReadReactionEventConfig(const json& j, ReactionEventConfig& out)
+	{
+		out.enableCameraShake = j.value("enableCameraShake", out.enableCameraShake);
+		out.enableHitStop = j.value("enableHitStop", out.enableHitStop);
+		out.enableEffect = j.value("enableEffect", out.enableEffect);
+		out.enableDistortion = j.value("enableDistortion", out.enableDistortion);
+		out.effectName = j.value("effectName", out.effectName);
+		out.SEName = j.value("SEName", out.SEName);
+		out.sePitchRandom = j.value("sePitchRandom", out.sePitchRandom);
+		out.useReflectDirection = j.value("useReflectDirection", out.useReflectDirection);
+		out.normalBlendRatio = j.value("normalBlendRatio", out.normalBlendRatio);
+		out.cameraShakeIntensity = j.value("cameraShakeIntensity", out.cameraShakeIntensity);
+		out.hitStopDurationSeconds = j.value("hitStopDurationSeconds", out.hitStopDurationSeconds);
+	}
+
+	void ReadAttackVisualData(const json& j, AttackVisualData& out)
+	{
+		if (j.contains("hit")) ReadReactionEventConfig(j["hit"], out.hit);
+		if (j.contains("block")) ReadReactionEventConfig(j["block"], out.block);
+		if (j.contains("parry")) ReadReactionEventConfig(j["parry"], out.parry);
+		out.hitStopDelaySeconds = j.value("hitStopDelaySeconds", out.hitStopDelaySeconds);
 	}
 
 	void ReadAttackMoveData(const json& j, AttackMoveData& out)
@@ -63,6 +87,7 @@ namespace
 void AttackDataLoader::ReadAttackData(const nlohmann::json& j, AttackData& out)
 {
 	if (j.contains("damageData")) ReadAttackDamageData(j["damageData"], out.damageData);
+	if (j.contains("visualData")) ReadAttackVisualData(j["visualData"], out.visualData);
 	if (j.contains("moveData")) ReadAttackMoveData(j["moveData"], out.moveData);
 	if (j.contains("phaseData")) ReadAttackPhaseData(j["phaseData"], out.phaseData);
 	if (j.contains("cancelData")) ReadAttackCancelData(j["cancelData"], out.cancelData);

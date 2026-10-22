@@ -34,7 +34,11 @@ std::unique_ptr<IBTNode<EnemyAIController>> WarrockBehavior::BuildTree(EnemyAICo
 			if (pending_.oneShotAnimationKey.empty()) return nullptr;
 			const auto& table = c->GetData().oneShotAnimations;
 			const auto it = table.find(pending_.oneShotAnimationKey);
-			return (it != table.end()) ? &it->second : nullptr;
+			if (it != table.end()) return &it->second;
+			// キー未定義の要求は捨てる(残すと以降の低優先度要求が全て弾かれる)
+			pending_ = PendingReaction();
+			c->GetBlackboard().SetBool(EnemyBlackboardKeys::HasPendingReaction, false);
+			return nullptr;
 		},
 		[this](EnemyAIController* c) {
 			pending_ = PendingReaction();
@@ -105,7 +109,7 @@ void WarrockBehavior::OnStaggered(EnemyAIController* owner, bool isLarge, float 
 // --- 被パリィ処理 ---------------------------------------------------------
 void WarrockBehavior::OnParrySucceeded(EnemyAIController* owner, const Events::ParrySucceeded& event)
 {
-	RequestReaction(owner, "Parried", ReactionPriority::Parried);
+	RequestReaction(owner, "ParrySucceeded", ReactionPriority::Parried);
 
 	if (PostureComponent* posture = owner->GetPostureComponent()) {
 		posture->AddPostureDamage(event.parryPostureDamage);

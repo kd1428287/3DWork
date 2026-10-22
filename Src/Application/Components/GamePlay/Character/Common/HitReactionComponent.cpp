@@ -1,4 +1,4 @@
-﻿#include "HitReactionComponent.h"
+#include "HitReactionComponent.h"
 #include "../Common/CharacterEvents.h"
 #include "WeaponComponent.h"
 #include <algorithm>
@@ -25,13 +25,12 @@ void HitReactionComponent::Awake()
 {
 	postureComponent_ = GetOwner()->GetComponent<PostureComponent>();
 	healthComponent_ = GetOwner()->GetComponent<HealthComponent>();
-	velocityComponent_ = GetOwner()->GetComponent<VelocityComponent>();
 	transform_ = GetOwner()->GetComponent<TransformComponent>();
 
 	subscriber_ = GetOwner()->GetLocalEventBus().SubscribeScoped<Events::AttackHit>([this](const Events::AttackHit& e) {OnHit(e); });
 }
 
-Math::Vector3 HitReactionComponent::ComputeKnockbackDirection(GameObject* attacker) const
+Math::Vector3 HitReactionComponent::ComputeDirectionFromAttacker(GameObject* attacker) const
 {
 	Math::Vector3 dir = (transform_ != nullptr) ? transform_->GetForward() : Math::Vector3::Forward;
 
@@ -55,7 +54,7 @@ Math::Vector3 HitReactionComponent::ComputeIncomingDirection(const Events::Attac
 	// 武器の振り方向。取れなければ攻撃者→自分。
 	Math::Vector3 incoming = ctx.lastValidSwingDir;
 	if (incoming.LengthSquared() < 1e-6f) {
-		return ComputeKnockbackDirection(ctx.attacker.Resolve());
+		return ComputeDirectionFromAttacker(ctx.attacker.Resolve());
 	}
 	incoming.Normalize();
 	return incoming;
@@ -155,7 +154,7 @@ void HitReactionComponent::HitReaction(const ReactionEventConfig& config, const 
 {
 	EventBus& bus = *GetOwner()->GetContext()->eventBus;
 
-	// 被弾/ブロック/パリィのSE(攻撃を受ける側のキャラが鳴らす)
+	// 被弾/ブロック/パリィのSE(設定は攻撃側データ、鳴らすのは受ける側)
 	if (!config.SEName.empty()) {
 		Events::PublishSoundPlayEvent(*GlobalEventBus::Instance(), config.SEName,
 			false, 1.0f, RandomPitchOffset(config.sePitchRandom));
@@ -165,7 +164,7 @@ void HitReactionComponent::HitReaction(const ReactionEventConfig& config, const 
 		Events::PublishCameraShake(bus, config.cameraShakeIntensity);
 	}
 	if (config.enableHitStop) {
-		Events::PublishHitStop(bus, config_.hitStopDelaySeconds, config.hitStopDurationSeconds);
+		Events::PublishHitStop(bus, ctx.visualData.hitStopDelaySeconds, config.hitStopDurationSeconds);
 	}
 	if (config.enableEffect) {
 		// 反射を使う設定なら反射エフェクト、そうでなければ通常エフェクト。
@@ -182,6 +181,9 @@ void HitReactionComponent::OnHit(const Events::AttackHit& ctx)
 {
 	if (query_ == nullptr) return;
 
+	// 死亡済みなら、二重の死亡処理や演出を避けるため無視する。
+	if (healthComponent_ != nullptr && healthComponent_->IsDead()) return;
+
 	AttackSourceComponent* attackSource = ctx.attackSource.Resolve();
 	if (attackSource == nullptr) return;
 	if (attackSource->IsAlreadyHit(Handle<GameObject>(GetOwner()))) return;
@@ -189,8 +191,11 @@ void HitReactionComponent::OnHit(const Events::AttackHit& ctx)
 
 	GameObject* attacker = ctx.attacker.Resolve();
 	const AttackDamageData& attackData = ctx.damageData;
+	const AttackVisualData& visual = ctx.visualData;
 
-	if (query_->IsInParryWindow()) {
+	const bool inParryWindow = query_->IsInParryWindow();
+
+	if (inParryWindow && attackData.canParried) {
 		// パリィ成立: 攻撃側の体幹を削り、パリィ通知を送る。
 		if (attacker != nullptr) {
 			if (PostureComponent* attackerPosture = attacker->GetComponent<PostureComponent>()) {
@@ -198,16 +203,16 @@ void HitReactionComponent::OnHit(const Events::AttackHit& ctx)
 			}
 			attacker->GetLocalEventBus().Publish(Events::ParrySucceeded{});
 		}
-		HitReaction(config_.parry, ctx);
+		HitReaction(visual.parry, ctx);
 
 		query_->NotifyParrySuccess();
 	}
-	else if (query_->IsGuarding()) {
-		// ブロック: 体幹ダメージとHPのチップダメージ、ノックバック。
-		HitReaction(config_.block, ctx);
+	else if (inParryWindow || query_->IsGuarding()) {
+		// ブロック(パリィ不可の攻撃は猶予中でもここに落ちる)。
+		HitReaction(visual.block, ctx);
 
 		if (postureComponent_ != nullptr) {
-			postureComponent_->AddPostureDamage(attackData.postureDamage);
+			postureComponent_->AddPostureDamage(attackData.postureDamage * attackData.guardPostureDamageRatio);
 			if (postureComponent_->IsBroken()) {
 				// TODO: 崩し状態(専用State)への遷移は別途実装。
 				// 【暫定】専用Stateができるまで、満タン固着を防ぐためResetだけ行う。
@@ -215,21 +220,17 @@ void HitReactionComponent::OnHit(const Events::AttackHit& ctx)
 			}
 		}
 		if (healthComponent_ != nullptr) {
-			healthComponent_->TakeDamage(attackData.damage * attackData.chipDamageRatio);
-		}
-		if (velocityComponent_ != nullptr) {
-			velocityComponent_->AddImpulse(ComputeKnockbackDirection(attacker) * config_.block.knockbackPower);
+			healthComponent_->TakeDamage(attackData.damage * attackData.guardDamageRatio);
+			// チップダメージで致死なら、ガード反応で死亡Stateを上書きしない。
+			if (healthComponent_->IsDead()) return;
 		}
 
 		query_->NotifyGuardHit();
 	}
 	else {
-		// 通常被弾: ダメージ・ノックバック・体幹蓄積、体幹崩壊で大スタン。
+		// 通常被弾: ダメージと体幹蓄積、体幹崩壊で大スタン。
 		if (healthComponent_ != nullptr) {
 			healthComponent_->TakeDamage(attackData.damage);
-		}
-		if (velocityComponent_ != nullptr) {
-			velocityComponent_->AddImpulse(ComputeKnockbackDirection(attacker) * attackData.knockbackPower);
 		}
 
 		bool postureBroken = false;
@@ -241,8 +242,10 @@ void HitReactionComponent::OnHit(const Events::AttackHit& ctx)
 			}
 		}
 
-		HitReaction(config_.hit, ctx);
+		HitReaction(visual.hit, ctx);
 
-		query_->EnterStagger(postureBroken, postureBroken ? config_.largeStaggerDuration : attackData.hitStunSeconds);
+		// 致死ならスタガーに入らない(死亡Stateを上書きしないため)。
+		if (healthComponent_ != nullptr && healthComponent_->IsDead()) return;
+		query_->EnterStagger(postureBroken);
 	}
 }

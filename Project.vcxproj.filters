@@ -244,9 +244,6 @@
     <Filter Include="Src\Application\Effect\SlashTrail">
       <UniqueIdentifier>{af4c879a-9c46-4f55-a953-d14711116780}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Src\Application\Definitions\Character\Enemy\Warrock">
-      <UniqueIdentifier>{01429a63-4029-44a3-b006-940f3e7deaff}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Src\Application\Core\Math">
       <UniqueIdentifier>{3f9cad13-59e7-4acd-b405-4865693c76ee}</UniqueIdentifier>
     </Filter>

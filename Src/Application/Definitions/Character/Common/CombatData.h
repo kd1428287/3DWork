@@ -1,26 +1,53 @@
-﻿#pragma once
+#pragma once
+#include <string>
 #include "CharacterDefinitionCommon.h"
 
 // 被弾側も得るデータ構造体
 struct AttackDamageData
 {
-	float damage = 10.0f;
-	float knockbackPower = 6.0f;
-	float hitStunSeconds = 0.5f;
+	float damage = 10.0f;				  // 基本ダメージ量
+	float postureDamage = 20.0f;		  // 基本体幹ダメージ量
+	float guardDamageRatio = 0.1f;		  // ガード時ダメージレシオ
+	float guardPostureDamageRatio = 0.1f; // ガード時体幹ダメージレシオ
+	float parryPostureDamage = 40.0f;	  // パリィされた場合の自身への体幹ダメージ
+	bool  canParried = true;			  // パリィ可能かどうか
+};
 
-	// この攻撃をガードされた時に、被弾側の体幹(PostureComponent)へ
-	// 与えるダメージ量。
-	float postureDamage = 20.0f;
+// 状態(ヒット/ブロック/パリィ)ごとの演出設定。攻撃側が持つ。
+struct ReactionEventConfig
+{
+	bool enableCameraShake = false;
+	bool enableHitStop = false;
+	bool enableEffect = true;
+	bool enableDistortion = false;
 
-	// ガード時のチップダメージ(HP)の割合。damage * chipDamageRatioが
-	// 実際にHealthComponentへ適用される(通常被弾のdamageそのものより
-	// 大幅に軽減される想定)。
-	float chipDamageRatio = 0.1f;
+	std::string effectName = "";
+	std::string SEName = "";
 
-	// この攻撃がジャスト(パリィ)で受けられた時に、攻撃者側の
-	// 体幹(PostureComponent)へ与えるダメージ量。通常のpostureDamageより
-	// 大きくするのが基本(弾き返された側が大きく怯む、という設計のため)。
-	float parryPostureDamage = 40.0f;
+	// SEのピッチ揺らぎの幅(±)。再生ごとに-幅〜+幅の範囲でランダムにずらす。
+	// ピッチは-1.0〜1.0(±1.0がちょうど1オクターブ)で、0なら揺らさない。
+	float sePitchRandom = 0.0f;
+
+	// true: 衝突法線と反射ベクトルを合成した方向で出す。
+	// false: 衝突法線方向で出す。
+	bool useReflectDirection = false;
+
+	// 反射エフェクトの合成比率。1.0で法線のみ、0.0で反射のみ。
+	float normalBlendRatio = 0.5f;
+
+	float cameraShakeIntensity = 0.0f;
+	float hitStopDurationSeconds = 0.0f;
+};
+
+// 攻撃側が決める演出データ(SE/エフェクト/ヒットストップ等)。
+struct AttackVisualData
+{
+	// 標準の斬撃に近い既定値。違う攻撃だけ上書きする。
+	ReactionEventConfig hit = { .enableHitStop = true, .hitStopDurationSeconds = 0.05f };
+	ReactionEventConfig block;
+	ReactionEventConfig parry;
+
+	float hitStopDelaySeconds = 0.0f;
 };
 
 // 攻撃フェーズ管理データ
@@ -55,6 +82,7 @@ struct AttackCancelData
 struct AttackData
 {
 	AttackDamageData damageData;
+	AttackVisualData visualData;
 	AttackMoveData moveData;
 	AttackPhaseData phaseData;
 	AttackCancelData cancelData;
