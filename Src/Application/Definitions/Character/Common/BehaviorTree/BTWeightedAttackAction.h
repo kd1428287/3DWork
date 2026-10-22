@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include <algorithm>
 #include <random>
 #include "IBTNode.h"
@@ -27,6 +27,7 @@
 //   void PlayAnimation(const std::string&, bool, float, bool)
 //   void SetWeaponHitBoxEnabled(const std::vector<std::string>&, bool)
 //   void SetWeaponTrailEmitting(const std::vector<std::string>&, bool)
+//   void ApplyAttackVisualData(const std::vector<std::string>&, const AttackVisualData&)
 //   void NotifyAttackCompleted()
 //   void SetVulnerable(bool)
 //   void PlayTelegraphEffect(const EnemyAttackTelegraphData&, float convergeDuration)
@@ -139,6 +140,7 @@ public:
 				// BTWeightedAttackAction冒頭コメントのダックタイピング
 				// 一覧を参照)。
 				context->FinishTelegraphEffect(); // 収束完了。判定発生へ
+				context->ApplyAttackVisualData(current_->attackData.weaponSlots, current_->attackData.visualData);
 				context->SetWeaponHitBoxEnabled(current_->attackData.weaponSlots, true);
 				context->SetWeaponTrailEmitting(current_->attackData.weaponSlots, true);
 				context->PlayAnimation(current_->attackData.phaseData.active);

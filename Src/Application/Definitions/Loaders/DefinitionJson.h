@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "nlohmann/json.hpp"
 #include "Application/Definitions/Loaders/ComponentParamsOrderedJson.h"
@@ -50,7 +50,13 @@ COMPONENT_PARAMS_DEFINE_TYPE(MotionClipData,
 	animationName, loop, duration, useRootMotion, blendDuration, startFrame, endFrame, isForce)
 
 	COMPONENT_PARAMS_DEFINE_TYPE(AttackDamageData,
-		damage, knockbackPower, hitStunSeconds, postureDamage, chipDamageRatio, parryPostureDamage)
+		damage, postureDamage, guardDamageRatio, guardPostureDamageRatio, parryPostureDamage, canParried)
+
+	COMPONENT_PARAMS_DEFINE_TYPE(ReactionEventConfig,
+		enableCameraShake, enableHitStop, enableEffect, enableDistortion, effectName, SEName,
+		sePitchRandom, useReflectDirection, normalBlendRatio, cameraShakeIntensity, hitStopDurationSeconds)
+
+	COMPONENT_PARAMS_DEFINE_TYPE(AttackVisualData, hit, block, parry, hitStopDelaySeconds)
 
 	COMPONENT_PARAMS_DEFINE_TYPE(AttackPhaseData, windup, active, recovery)
 
@@ -61,4 +67,4 @@ COMPONENT_PARAMS_DEFINE_TYPE(MotionClipData,
 		recoveryMoveCancelStart, recoveryEvadeCancelStart, recoveryAttackCancelStart, comboWindowAfterRecovery)
 
 	COMPONENT_PARAMS_DEFINE_TYPE(AttackData,
-		damageData, moveData, phaseData, cancelData, weaponSlots)
+		damageData, visualData, moveData, phaseData, cancelData, weaponSlots)
