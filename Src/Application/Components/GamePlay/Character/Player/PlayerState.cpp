@@ -1,4 +1,4 @@
-﻿// PlayerState.cpp (StateAttackのCanStartXxx群のみ抜粋変更・他は元のまま)
+// PlayerState.cpp (StateAttackのCanStartXxx群のみ抜粋変更・他は元のまま)
 #include "PlayerStatusController.h"
 #include "PlayerAttackSelector.h"
 #include "../Common/WeaponSetComponent.h"
@@ -30,6 +30,10 @@ void StateAttack::Enter(PlayerStatusController* controller) {
 	auto damageData = data.damageData;
 	damageData.damage *= controller->GetAttackDamageScale(); // チャージ倍率(通常攻撃は1.0)
 	weaponSet_->SetAttackDamageData(data.weaponSlots, damageData);
+	// 演出データ(SE/エフェクト等)も対象スロットの武器へ渡す。
+	for (const std::string& slot : data.weaponSlots) {
+		if (WeaponComponent* weapon = weaponSet_->GetWeapon(slot)) weapon->SetAttackVisualData(data.visualData);
+	}
 
 	controller->PlayAnimation(data.phaseData.windup);
 }
@@ -334,6 +338,7 @@ void StateStagger::Enter(PlayerStatusController* controller) {
 	elapsed_ = 0.0f;
 
 	const StaggerPhaseData& data = GetPhaseData(controller);
+	reactionDuration_ = data.reactionDuration; // 秒数はStaggerData側で決める
 
 	controller->SetRootMotionScale(data.rootMotionScale);
 	controller->PlayAnimation(data.animationName, false, reactionDuration_,

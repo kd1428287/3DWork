@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Application/Definitions/Character/Enemy/EnemyAIData.h"
 #include "Application/Definitions/Character/Enemy/EnemyBlackboardKeys.h"
 #include "../../../Tags/IMovementSource.h"
@@ -28,7 +28,7 @@
 
 
 // 効果音のID(論理IDまたはファイルパス)。空なら鳴らさない。
-// 被弾/ブロックのSEはHitReactionConfig側(SEName)で指定する。
+// 被弾/ブロックのSEは攻撃側のAttackVisualData(SEName)で指定する。
 struct EnemySoundData
 {
 	std::string attackSwing;	// 攻撃判定の発生時
@@ -45,7 +45,7 @@ struct EnemySoundData
 // 同じ配線)。
 //
 // HitReactionComponent::OnCollisionEnter()は多段ヒット防止・ダメージ
-// 適用・ノックバック・体幹ダメージ・体幹崩壊判定まで、以前このクラスの
+// 適用・体幹ダメージ・体幹崩壊判定まで、以前このクラスの
 // OnCollisionEnter()が自前でやっていたことをほぼそのまま代替するため、
 // 旧OnCollisionEnter()は削除しIHitReactionQueryの実装へ置き換えた。
 // Enemy(少なくとも現状のWarrock)は武器を持たない大型モンスターであり、
@@ -173,7 +173,7 @@ public:
 	// (isVulnerable_はBTWeightedAttackAction::Tick()がRecoveryフェーズの
 	// 開始/終了に合わせてSetVulnerable()経由で書き換える。クラス冒頭
 	// コメント参照)。ガード時はHitReactionComponent側がモーション無しで
-	// 体幹ダメージ+チップダメージ(AttackDamageData::chipDamageRatio)を
+	// 体幹ダメージ+チップダメージ(AttackDamageData::guardDamageRatio)を
 	// 処理し、無防備時のみEnterStagger()経由で被弾リアクションが起きる。
 	// パリィはこの敵種には実装しないため常にfalse。
 	bool IsGuarding() const override { return !isVulnerable_; }
@@ -182,10 +182,10 @@ public:
 	void NotifyGuardHit() override {}
 
 	// 通常被弾の結果(体幹が壊れたか=isLarge)を敵種固有のBehaviorへ
-	// そのまま橋渡しするだけ(クラス冒頭コメント参照)。durationは
-	// 意図的に使わない(IEnemyBehavior::OnStaggered()コメント参照)。
-	void EnterStagger(bool isLarge, float duration) override {
-		if (behavior_) behavior_->OnStaggered(this, isLarge, duration);
+	// そのまま橋渡しするだけ(クラス冒頭コメント参照)。スタン時間は
+	// Behavior側が決めるため、OnStaggered()のdurationには0を渡す。
+	void EnterStagger(bool isLarge) override {
+		if (behavior_) behavior_->OnStaggered(this, isLarge, 0.0f);
 	}
 
 	// --- 実行層API(各Behaviorが組み立てるActionノードから呼ばれる) --------
@@ -371,6 +371,15 @@ public:
 	// WeaponComponent::SetTrailEmitting()参照)。
 	void SetWeaponTrailEmitting(const std::vector<std::string>& slots, bool emitting) {
 		if (weaponSet_ != nullptr) weaponSet_->SetTrailEmitting(slots, emitting);
+	}
+
+	// 攻撃の演出データ(SE/エフェクト等)を、対象スロットの武器へ渡す。
+	// 被弾側のHitReactionComponentが、ヒット時にこれを参照する。
+	void ApplyAttackVisualData(const std::vector<std::string>& slots, const AttackVisualData& visual) {
+		if (weaponSet_ == nullptr) return;
+		for (const std::string& slot : slots) {
+			if (WeaponComponent* weapon = weaponSet_->GetWeapon(slot)) weapon->SetAttackVisualData(visual);
+		}
 	}
 
 	// 自分の攻撃のRecoveryフェーズ(隙)中かどうか。IsGuarding()が

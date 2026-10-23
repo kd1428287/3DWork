@@ -34,7 +34,9 @@ public:
 	// 出力テクスチャはsrcColorのサイズに合わせて内部で自動的に作り直される(Resize不要)。
 	// srcBright … Bright(加算合成)専用に描画されたオフスクリーン。省略時はBloomを適用しない
 	// 結果はGetResultTexture()で取得する
-	void Apply(const std::shared_ptr<KdTexture>& srcColor, const std::shared_ptr<KdTexture>& srcBright = nullptr);
+	// srcEffect … エフェクト層(カラーグレードの対象外として最後に重ねる)。省略可
+	void Apply(const std::shared_ptr<KdTexture>& srcColor, const std::shared_ptr<KdTexture>& srcBright = nullptr,
+		const std::shared_ptr<KdTexture>& srcEffect = nullptr);
 
 	// カラーグレード適用後の結果テクスチャ(表示にはこちらを使う)
 	// 一度もApply()していない場合はnullptrを返す

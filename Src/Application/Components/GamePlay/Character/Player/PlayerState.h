@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Application/Definitions/Character/Player/PlayerCombatTypes.h"
 #include "Application/Definitions/Character/Common/StateMachine/StateMachine.h"
 
@@ -195,13 +195,9 @@ private:
 
 class StateStagger : public IPlayerState {
 public:
-	// durationはReaction(怯み/ダウン)の秒数。攻撃側のデータに応じて
-	// 呼び出し側(HitReactionComponent経由)が指定する。Recoveryの尺は
-	// StaggerData側(クリップ内のフレーム範囲)の固定値を使う。
-	void Setup(bool isLarge, float duration) {
-		isLarge_ = isLarge;
-		reactionDuration_ = duration;
-	}
+	// 怯み/ダウンの種別だけを受け取る。Reaction/Recoveryの秒数は
+	// StaggerData(small/large)側の値を使う(Enter()で読み込む)。
+	void Setup(bool isLarge) { isLarge_ = isLarge; }
 
 	void Enter(PlayerStatusController* controller) override;
 	void Update(PlayerStatusController* controller, float deltaTime) override;

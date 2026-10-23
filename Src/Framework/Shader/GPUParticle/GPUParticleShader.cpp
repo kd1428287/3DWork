@@ -268,7 +268,7 @@ void GPUParticleShader::Draw(ID3D11ShaderResourceView* particleSRV, UINT maxPart
 
 	// ブレンドモードの切り替え・Z書き込み無効(重なった時に不透明に潰れないように)
 	KdBlendState blendState = isAlpha ? KdBlendState::AlphaMasked : KdBlendState::Add;
-	if (effectLayer) { blendState = isAlpha ? KdBlendState::EffectAlpha : KdBlendState::EffectAdd; }
+	if (effectLayer) { blendState = isAlpha ? KdBlendState::Alpha : KdBlendState::EffectAdd; }
 	shaderMgr.ChangeBlendState(blendState);
 	shaderMgr.ChangeDepthStencilState(KdDepthStencilState::ZWriteDisable);
 

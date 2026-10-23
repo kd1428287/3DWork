@@ -77,6 +77,24 @@ void KdShaderManager::Init()
 	m_blendStates[(int)KdBlendState::Subtract] = KdDirect3D::Instance().CreateBlendState(KdBlendMode::Subtract);
 	m_blendStates[(int)KdBlendState::PreMultipliedAlpha] = KdDirect3D::Instance().CreateBlendState(KdBlendMode::PreMultipliedAlpha);
 
+	// エフェクト層(カラーグレード後に合成する専用RT)用の加算：RGBだけ加算し、被覆率A(アルファ)は変えない。
+	//	既存のAddはアルファもover合成で蓄積してしまい、層の被覆率が壊れるため別に作る。
+	//	(Alphaは既存のKdBlendState::Alphaがそのままアルファを蓄積するので、新設は不要)
+	{
+		D3D11_BLEND_DESC desc = {};
+		D3D11_RENDER_TARGET_BLEND_DESC& rt = desc.RenderTarget[0];
+		rt.BlendEnable = TRUE;
+		rt.SrcBlend = D3D11_BLEND_SRC_ALPHA;
+		rt.DestBlend = D3D11_BLEND_ONE;
+		rt.BlendOp = D3D11_BLEND_OP_ADD;
+		rt.SrcBlendAlpha = D3D11_BLEND_ZERO;
+		rt.DestBlendAlpha = D3D11_BLEND_ONE;
+		rt.BlendOpAlpha = D3D11_BLEND_OP_ADD;
+		rt.RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+
+		KdDirect3D::Instance().WorkDev()->CreateBlendState(&desc, &m_blendStates[(int)KdBlendState::EffectAdd]);
+	}
+
 	// 初期ブレンドステートの設定
 	KdDirect3D::Instance().WorkDevContext()->OMSetBlendState(m_blendStates[(int)KdBlendState::Alpha], Math::Color(0, 0, 0, 0), 0xFFFFFFFF);
 

@@ -14,6 +14,7 @@ bool EditorPreviewViewport::IsReady() const
 	if (!m_viewport.Color || !m_viewport.Depth) { return false; }
 	if (m_settings.UseMaskRT && !m_viewport.Mask) { return false; }
 	if (m_settings.UseBrightRT && !m_viewport.Bright) { return false; }
+	if (m_settings.UseEffectLayerRT && !m_viewport.Effect) { return false; }
 	return m_viewport.Width > 0 && m_viewport.Height > 0;
 }
 
@@ -68,7 +69,8 @@ void EditorPreviewViewport::Resize(int w, int h)
 	// サイズが変わっておらず、必要なバッファも揃っていれば作り直さない
 	const bool maskOk = !m_settings.UseMaskRT || m_viewport.Mask;
 	const bool brightOk = !m_settings.UseBrightRT || m_viewport.Bright;
-	if (w == m_viewport.Width && h == m_viewport.Height && m_viewport.Color && m_viewport.Depth && maskOk && brightOk) { return; }
+	const bool effectOk = !m_settings.UseEffectLayerRT || m_viewport.Effect;
+	if (w == m_viewport.Width && h == m_viewport.Height && m_viewport.Color && m_viewport.Depth && maskOk && brightOk && effectOk) { return; }
 
 	m_viewport.Width = w;
 	m_viewport.Height = h;
@@ -109,6 +111,13 @@ void EditorPreviewViewport::Resize(int w, int h)
 		m_viewport.Bright = std::make_shared<KdTexture>();
 		m_viewport.Bright->Create(makeDesc(DXGI_FORMAT_R8G8B8A8_UNORM, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE));
 	}
+
+	// エフェクト層(カラーグレードの対象外。1を超える明るさも保てるようHDR形式)
+	if (m_settings.UseEffectLayerRT)
+	{
+		m_viewport.Effect = std::make_shared<KdTexture>();
+		m_viewport.Effect->Create(makeDesc(DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE));
+	}
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -116,7 +125,8 @@ void EditorPreviewViewport::Resize(int w, int h)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EditorPreviewViewport::Render(const DirectX::SimpleMath::Vector3& target,
 	const std::function<void()>& drawSceneFunc,
-	const std::function<void()>& drawBrightFunc)
+	const std::function<void()>& drawBrightFunc,
+	const std::function<void()>& drawEffectFunc)
 {
 	if (!IsReady()) { return; }
 
@@ -152,6 +162,11 @@ void EditorPreviewViewport::Render(const DirectX::SimpleMath::Vector3& target,
 	{
 		context->ClearRenderTargetView(m_viewport.Bright->WorkRTView(), kBlackColor);
 	}
+	if (m_settings.UseEffectLayerRT)
+	{
+		const float zero[4] = { 0.0f, 0.0f, 0.0f, 0.0f };	// RGBもAも0=エフェクト無し
+		context->ClearRenderTargetView(m_viewport.Effect->WorkRTView(), zero);
+	}
 	context->ClearDepthStencilView(m_viewport.Depth->WorkDSView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
 	D3D11_VIEWPORT vp = {};
@@ -166,6 +181,18 @@ void EditorPreviewViewport::Render(const DirectX::SimpleMath::Vector3& target,
 	KdShaderManager::Instance().WriteCBCamera(view.Invert(), GetProjMatrix());
 
 	if (drawSceneFunc) { drawSceneFunc(); }
+
+	// エフェクト層(カラーグレードの対象外)：専用RTへ描き、Apply()で最後に重ねる。深度はColor側と共有
+	if (m_settings.UseEffectLayerRT && drawEffectFunc)
+	{
+		ID3D11RenderTargetView* effectRTV = m_viewport.Effect->WorkRTView();
+		context->OMSetRenderTargets(1, &effectRTV, m_viewport.Depth->WorkDSView());
+
+		KdPostProcessShader& postProcess = KdShaderManager::Instance().m_postProcessShader;
+		postProcess.SetExternalEffectLayerActive(true);
+		drawEffectFunc();
+		postProcess.SetExternalEffectLayerActive(false);
+	}
 
 	// Bloom元となるBright専用RTへの加算描画(本編のBeginBright()/EndBright()と同じ考え方)。
 	// 深度は共有(既に描いたColor側と同じ被写体を対象にするので、Zバッファは引き継いでよい)
@@ -201,7 +228,8 @@ void EditorPreviewViewport::Render(const DirectX::SimpleMath::Vector3& target,
 
 	// 描画が完全に終わった後にBloom→カラーグレードを適用する
 	// ※Apply()内部は自前のRT/ビューポート退避・復元を行うため、ここでの追加の後始末は不要
-	m_postProcess.Apply(m_viewport.Color, m_settings.UseBrightRT ? m_viewport.Bright : nullptr);
+	m_postProcess.Apply(m_viewport.Color, m_settings.UseBrightRT ? m_viewport.Bright : nullptr,
+		m_settings.UseEffectLayerRT ? m_viewport.Effect : nullptr);
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////

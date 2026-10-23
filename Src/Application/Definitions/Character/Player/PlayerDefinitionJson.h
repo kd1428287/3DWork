@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "../../Loaders/DefinitionJson.h"
 #include "Application/Definitions/Loaders/ComponentParamsOrderedJson.h"
@@ -15,7 +15,7 @@ COMPONENT_PARAMS_DEFINE_TYPE(EvadeData,
 
 	COMPONENT_PARAMS_DEFINE_TYPE(StaggerPhaseData,
 		animationName, useRootMotion, rootMotionScale,
-		reactionStartFrame, reactionEndFrame, reactionBlendDuration,
+		reactionStartFrame, reactionEndFrame, reactionBlendDuration, reactionDuration,
 		recoveryEndFrame, recoveryDuration, recoveryBlendDuration, recoveryEvadeCancelStart)
 
 	COMPONENT_PARAMS_DEFINE_TYPE(StaggerData, staggerSmall, staggerLarge)

@@ -1,4 +1,4 @@
-﻿// PlayerStatusController.h
+// PlayerStatusController.h
 #pragma once
 #include "Application/Definitions/Character/Player/PlayerCombatTypes.h"
 #include "../../../Tags/IHitReactionQuery.h"
@@ -19,7 +19,7 @@ class PlayerCombatMovementComponent;
 class HealthComponent;
 
 // 効果音のID(論理IDまたはファイルパス)。空なら鳴らさない。
-// 被弾/ガード/パリィのSEはHitReactionConfig側(SEName)で指定する。
+// 被弾/ガード/パリィのSEは攻撃側のAttackVisualData(SEName)で指定する。
 struct PlayerSoundData
 {
 	std::string attackSwing = "Asset/Sounds/Game/Kazakiri.wav";		// 攻撃判定の発生時
@@ -118,13 +118,13 @@ public:
 
 	// 溜めを解放してチャージ攻撃を発射する。HandleActionInputから呼ぶ。
 	void ReleaseCharge();
-	void ApplyStagger(bool isLarge, float duration);
+	void ApplyStagger(bool isLarge);
 
 	// HPが0になった際に死亡Stateへ強制遷移する(一度入ったら抜けない)。
 	void Die();
 
 	// --- IHitReactionQuery ---
-	void EnterStagger(bool isLarge, float duration) override { ApplyStagger(isLarge, duration); }
+	void EnterStagger(bool isLarge) override { ApplyStagger(isLarge); }
 	void NotifyParrySuccess() override;
 	void NotifyGuardHit() override;
 

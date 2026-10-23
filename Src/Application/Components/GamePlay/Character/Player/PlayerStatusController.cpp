@@ -1,4 +1,4 @@
-﻿// PlayerStatusController.cpp
+// PlayerStatusController.cpp
 #include "PlayerStatusController.h"
 
 #include "PlayerAttackSelector.h"
@@ -186,10 +186,10 @@ void PlayerStatusController::ReleaseCharge()
 	ForceTransitionTo(&stateAttack_);
 }
 
-void PlayerStatusController::ApplyStagger(bool isLarge, float duration)
+void PlayerStatusController::ApplyStagger(bool isLarge)
 {
 	if (IsDead()) return; // 死亡後のよろけで上書きされない
-	stateStagger_.Setup(isLarge, duration);
+	stateStagger_.Setup(isLarge); // 継続時間はStateStagger側がGetStaggerData()から決める
 	ForceTransitionTo(&stateStagger_);
 }
 

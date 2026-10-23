@@ -152,6 +152,11 @@ void EffectEditor::Update()
 // プレビュー中のGPUパーティクルを描画する
 void EffectEditor::DrawPreviewParticles(ParticleDrawPass pass)
 {
+	// Defaultパスはエフェクト層へ描く(カラーグレードの対象外)。Brightパスは従来どおり光源用RTへ
+	KdPostProcessShader& postProcess = KdShaderManager::Instance().m_postProcessShader;
+	const bool useEffectLayer = (pass == ParticleDrawPass::Default);
+	if (useEffectLayer) { postProcess.BeginEffectLayer(); }
+
 	// 液体はDraw(pass)では描画されないため、Defaultのタイミングで他の粒子より先にまとめて描く
 	if (pass == ParticleDrawPass::Default)
 	{
@@ -168,6 +173,8 @@ void EffectEditor::DrawPreviewParticles(ParticleDrawPass pass)
 			obj.previewInstance.Draw(pass);
 		}
 	}
+
+	if (useEffectLayer) { postProcess.EndEffectLayer(); }
 }
 
 // 選択中の1エフェクト(またはプレビュー中グループの全メンバー)を、専用カメラ・専用バッファへ描画する
@@ -211,20 +218,22 @@ void EffectEditor::RenderPreviewViewport()
 	// 本編のDrawLit/DrawBloomと同じく、Default(通常合成)とBright(Bloom用に加算描画)を
 	// 呼び分ける。EffectInstance::Draw()(無条件版)ではなくDraw(pass)を使うのがポイント
 	m_preview.Render(target,
-		[&]()
-		{
-			DrawLiquidObjects(drawTargets, false);
-
-			for (EffectObject* obj : drawTargets)
-			{
-				if (obj->playing) { obj->previewInstance.Draw(ParticleDrawPass::Default); }
-			}
-		},
+		nullptr,	// Color側へ直接描くものは無い(エフェクトはエフェクト層へ)
 		[&]()
 		{
 			for (EffectObject* obj : drawTargets)
 			{
 				if (obj->playing) { obj->previewInstance.Draw(ParticleDrawPass::Bright); }
+			}
+		},
+		[&]()
+		{
+			// Default(通常合成)：液体も含め、カラーグレードの対象外のエフェクト層へ描く
+			DrawLiquidObjects(drawTargets, false);
+
+			for (EffectObject* obj : drawTargets)
+			{
+				if (obj->playing) { obj->previewInstance.Draw(ParticleDrawPass::Default); }
 			}
 		});
 }
@@ -342,6 +351,11 @@ void EffectEditor::DrawInspector()
 
 	ImGui::DragFloat3("Gravity", &params.Gravity.x, 0.05f);
 
+	ImGui::DragFloat("Max Duration(sec)", &params.MaxDuration, 0.1f, 0.0f, 600.0f);
+	ImGui::TextDisabled("継続/リピート再生の最大時間。過ぎたら自動で停止(0=無期限。ゲーム内のEffectDispatcherで有効)");
+	ImGui::SliderFloat("Spawn Spread", &params.SpawnSpread, 0.0f, 1.0f);
+	ImGui::TextDisabled("Converge層の発生を収束時間のこの割合へばらけさせる(収束時刻は全粒子で同じ。0=一括。単発追従再生で有効)");
+
 	ImGui::Separator();
 	ImGui::Text("Material (WIP)");
 	ImGui::Text("Texture : %s", params.TexturePath.empty() ? "(None)" : params.TexturePath.c_str());
@@ -435,6 +449,19 @@ void EffectEditor::DrawInspector()
 		ImGui::SameLine();
 
 		if (ImGui::Button("Restart")) PlayPreview(obj);
+	}
+
+	// Converge層があれば、単発・指定秒数ちょうどで全粒子が収束する再生(EffectFollowSpawn相当)を確認できる
+	bool hasConverge = false;
+	for (const auto& layer : params.Layers)
+	{
+		hasConverge |= (layer.Shape.Distribution == ParticleEmitDistribution::Converge);
+	}
+	if (hasConverge)
+	{
+		ImGui::Separator();
+		ImGui::DragFloat("Converge Duration(sec)", &m_convergePreviewDuration, 0.05f, 0.05f, 10.0f);
+		if (ImGui::Button("Play Converge (OneShot)")) { PlayConvergePreview(obj, m_convergePreviewDuration); }
 	}
 
 	ImGui::End();
@@ -863,13 +890,24 @@ EffectEditor::EffectEditor()
 	EditorPreviewViewport::Settings previewSettings;
 	previewSettings.UseMaskRT = true;
 	previewSettings.UseBrightRT = true;	// ParticleDrawPass::Bright(Bloom用)のプレビューに必要
-	previewSettings.FarZ = 100.0f;
+	previewSettings.UseEffectLayerRT = true;	// エフェクトをカラーグレードの対象外にして確認する	previewSettings.FarZ = 100.0f;
 	previewSettings.InitialDistance = 3.0f;
 	previewSettings.MaxDistance = 50.0f;
 	previewSettings.WheelSensitivity = 0.3f;
 	m_preview.Configure(previewSettings);
 
 	Load(m_filePathBuf);
+}
+
+void EffectEditor::PlayConvergePreview(EffectObject& obj, float duration)
+{
+	obj.previewInstance.Reconfigure(obj.params, &m_textureProvider);
+
+	obj.playing = true;
+	obj.paused = false;
+
+	// spawnSpreadはparamsの値(SpawnSpread)が使われる
+	obj.previewInstance.EmitOnce(obj.pos, { 0,0,0 }, duration);
 }
 
 void EffectEditor::PlayPreview(EffectObject& obj)
@@ -887,7 +925,7 @@ void EffectEditor::StopPreview(EffectObject& obj)
 	obj.playing = false;
 	obj.paused = false;
 
-	obj.previewInstance.Stop();
+	obj.previewInstance.StopEmission();	// ばらけ発生の未発生分も取り消す
 }
 
 void EffectEditor::SetPreviewPause(EffectObject& obj, bool pause)

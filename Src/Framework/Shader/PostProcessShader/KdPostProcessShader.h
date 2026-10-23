@@ -58,6 +58,13 @@ public:
 	void EndEffectLayer();
 	bool IsEffectLayerActive() const { return m_effectLayerActive; }
 
+	// falseにすると、エフェクト層を使わず従来どおりシーンRTへ直接描く(不具合の切り分け用)
+	void SetEffectLayerEnabled(bool enabled) { m_effectLayerEnabled = enabled; }
+
+	// エディタプレビュー等、呼び出し側が自前のエフェクト層RTをバインドして描く間だけtrueにする
+	//	(RTの切り替えはせず、パーティクルのブレンド選択だけをエフェクト層用にする)
+	void SetExternalEffectLayerActive(bool active) { m_effectLayerActive = active; }
+
 	// 衝撃波(パリィ等)。centerUVは0〜1の画面座標、maxRadiusは画面の高さに対する比率
 	void AddShockwave(const Math::Vector2& centerUV, float duration, float maxRadius, float strength);
 	// ワールド座標指定版(カメラの背後なら何もしない)
@@ -107,8 +114,9 @@ public:
 	//	・srcMask  … カラーグレード除外マスク入力(t1)。本編と違いこの用途向けの専用マスクを
 	//	  持たない場合は、呼び出し側で1x1の黒ダミーテクスチャを用意して渡すこと(黒=グレーディング適用)
 	//	・dstColor … 結果の書き込み先。srcColorとは別のテクスチャであること(同一不可)
+	//	・srcEffect … エフェクト層(rgb=乗算済みアルファ、a=被覆率)。指定するとグレード対象外として結果に重ねる(省略可)
 	void ApplyColorGradeOnly(std::shared_ptr<KdTexture> srcColor, std::shared_ptr<KdTexture> srcMask,
-		std::shared_ptr<KdTexture> dstColor, D3D11_VIEWPORT* pVP);
+		std::shared_ptr<KdTexture> dstColor, D3D11_VIEWPORT* pVP, std::shared_ptr<KdTexture> srcEffect = nullptr);
 
 	void GenerateBlurTexture(std::shared_ptr<KdTexture>& spSrcTex, std::shared_ptr<KdTexture>& spDstTex, D3D11_VIEWPORT& VP, int blurRadius);
 
@@ -338,6 +346,7 @@ private:
 	KdRenderTargetPack	m_effectRTPack;
 	KdRenderTargetChanger m_effectRTChanger;
 	bool m_effectLayerActive = false;
+	bool m_effectLayerEnabled = true;
 
 	// 液体の密度RT(シーンの深度バッファを共有するためフル解像度)と、そのぼかし結果(半解像度)
 	KdRenderTargetPack	m_liquidDensityRTPack;

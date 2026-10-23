@@ -133,6 +133,9 @@ private:
 	// テクスチャ用アセットディレクトリ以下を走査して画像ファイル一覧を更新する
 	void RefreshTextureFileList();
 
+	// Converge層を「単発・指定秒数ちょうどで全粒子が収束」で再生する(EffectFollowSpawn相当の確認用)
+	void PlayConvergePreview(EffectObject& obj, float duration);
+
 	// プレビュー再生の開始/停止/一時停止
 	void PlayPreview(EffectObject& obj);
 	void StopPreview(EffectObject& obj);
@@ -151,6 +154,9 @@ private:
 	// 現在Effect Previewウィンドウに表示しているグループ名。空なら従来通りm_selected単体を表示する。
 	// Hierarchyで個別オブジェクトを選択した瞬間にクリアされる(単体プレビューへ戻る)
 	std::string					m_previewedGroup;
+
+	// Converge単発プレビューの収束時間(秒)
+	float						m_convergePreviewDuration = 1.0f;
 
 	// テクスチャ取得(EffectInstance用。EffectDispatcherと共通の実装)
 	KdAssetsTextureProvider		m_textureProvider;

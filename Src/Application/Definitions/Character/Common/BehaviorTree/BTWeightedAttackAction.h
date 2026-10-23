@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <algorithm>
 #include <random>
 #include "IBTNode.h"
@@ -109,7 +109,7 @@ public:
 			phase_ = Phase::Windup;
 			elapsed_ = 0.0f;
 			telegraphFired_ = false;
-			windupDuration_ = RollWindupDuration(*current_);
+			windupDuration_ = current_->attackData.phaseData.windup.duration;
 
 			context->StopMovement();
 			// 追従しない技(windupTurnSpeed<=0)だけ、ここで一度だけ瞬時に正対する。
@@ -214,18 +214,6 @@ public:
 	}
 
 private:
-	// Windupの長さを、基準時間±windupJitterRatioの範囲で抽選する。
-	static float RollWindupDuration(const EnemyAttackDefinition& def)
-	{
-		const float base = def.attackData.phaseData.windup.duration;
-		const float ratio = std::clamp(def.windupJitterRatio, 0.0f, 0.99f);
-		if (ratio <= 0.0f) return base;
-
-		static thread_local std::mt19937 rng{ std::random_device{}() };
-		std::uniform_real_distribution<float> dist(1.0f - ratio, 1.0f + ratio);
-		return base * dist(rng);
-	}
-
 	// 現在のフェーズに応じて、ターゲットへの向き直りを開始/更新/解除する。
 	// Windup/Activeのturn速度>0なら追従し、それ以外(0以下、Recovery)は解除する。
 	void UpdateFacing(T* context) const

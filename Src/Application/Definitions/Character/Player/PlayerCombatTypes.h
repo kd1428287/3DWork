@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "../Common/CombatData.h"
 #include "../Common/CharacterDefinitionCommon.h"
@@ -338,11 +338,8 @@ struct GuardData
 // 「怯み→基の姿勢に戻る」までが1本のクリップに収録されているため、
 // AttackData::phaseDataと同じ考え方(同じクリップをstartFrame/endFrameで
 // 区切り、複数フェーズとして繋げて再生する)を採用する。
-// Reaction(怯み/ダウン)の秒数は攻撃側(hitStunSeconds/largeStaggerDuration等)が
-// EnterStagger/ApplyStaggerへ渡す値に従う(技によってスタン尺を変えたいため、
-// ここでは「クリップ内のどこからどこまでか」というフレーム範囲だけを持ち、
-// 秒数そのものは持たない)。Recovery(復帰動作)は食らった側の固定動作のため、
-// フレーム範囲・秒数・キャンセル猶予をここに持つ。
+// Reaction/Recoveryとも、クリップ内のフレーム範囲・秒数・キャンセル猶予を持つ
+// (スタン時間は攻撃側ではなく、食らった側のStateが決める)。
 struct StaggerPhaseData
 {
 	std::string animationName; // Reaction/Recovery共通の1本のクリップ
@@ -352,6 +349,7 @@ struct StaggerPhaseData
 	int reactionStartFrame = 0;
 	int reactionEndFrame = 0;     // ここまでがReaction(Recoveryはこの続きから再生する)
 	float reactionBlendDuration = 0.1f; // Reaction開始時(直前の別アニメーションからの遷移)のブレンド秒数
+	float reactionDuration = 0.4f;      // Reaction区間の再生秒数。アニメ速度のスケーリングと終了判定に使う
 
 	int recoveryEndFrame = 0;     // ここまでがRecovery(クリップ末尾)
 	float recoveryDuration = 0.15f;     // Recovery区間の再生秒数。アニメ速度のスケーリングと
@@ -363,7 +361,7 @@ struct StaggerPhaseData
 struct StaggerData
 {
 	StaggerPhaseData staggerSmall;
-	StaggerPhaseData staggerLarge;
+	StaggerPhaseData staggerLarge = { .reactionDuration = 0.6f }; // 大スタンの既定は小より長め
 };
 
 // --- チャージ攻撃の溜めデータ ----------------------------------------

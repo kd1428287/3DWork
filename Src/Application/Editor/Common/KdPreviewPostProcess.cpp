@@ -5,7 +5,8 @@
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // srcColorへ(渡されていればBloom→)カラーグレードを適用し、内部の出力テクスチャへ書き込む
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void KdPreviewPostProcess::Apply(const std::shared_ptr<KdTexture>& srcColor, const std::shared_ptr<KdTexture>& srcBright)
+void KdPreviewPostProcess::Apply(const std::shared_ptr<KdTexture>& srcColor, const std::shared_ptr<KdTexture>& srcBright,
+	const std::shared_ptr<KdTexture>& srcEffect)
 {
 	if (!srcColor) { return; }
 
@@ -30,7 +31,7 @@ void KdPreviewPostProcess::Apply(const std::shared_ptr<KdTexture>& srcColor, con
 	// 本編用シングルトンのカラーグレードVS/PS/定数バッファ(パラメータも共通)をそのまま使い回す。
 	// srcColor(プレビューの生の描画結果) → m_resultTex(グレーディング後)
 	KdShaderManager::Instance().m_postProcessShader.ApplyColorGradeOnly(
-		srcColor, m_dummyMaskTex, m_resultTex, &vp);
+		srcColor, m_dummyMaskTex, m_resultTex, &vp, srcEffect);
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////

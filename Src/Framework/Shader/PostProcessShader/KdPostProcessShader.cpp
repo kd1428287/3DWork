@@ -395,7 +395,7 @@ void KdPostProcessShader::EndLiquid(LiquidStyle style)
 
 	shaderMgr.ChangeSamplerState(KdSamplerState::Linear_Clamp);
 	// エフェクト層へ描いている間は、マスクを使わず被覆率を蓄積するブレンドにする
-	shaderMgr.ChangeBlendState(m_effectLayerActive ? KdBlendState::EffectAlpha : KdBlendState::AlphaMasked);
+	shaderMgr.ChangeBlendState(m_effectLayerActive ? KdBlendState::Alpha : KdBlendState::AlphaMasked);
 	shaderMgr.ChangeDepthStencilState(KdDepthStencilState::ZDisable);
 
 	// 出力先を切り替えず、現在のシーンRTへ全画面描画する
@@ -848,7 +848,7 @@ void KdPostProcessShader::ColorGradeProcess()
 //	  自動的に退避・復元するため、呼び出し側で特別な後始末は不要
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void KdPostProcessShader::ApplyColorGradeOnly(std::shared_ptr<KdTexture> srcColor, std::shared_ptr<KdTexture> srcMask,
-	std::shared_ptr<KdTexture> dstColor, D3D11_VIEWPORT* pVP)
+	std::shared_ptr<KdTexture> dstColor, D3D11_VIEWPORT* pVP, std::shared_ptr<KdTexture> srcEffect)
 {
 	if (!srcColor || !srcMask || !dstColor) { return; }
 
@@ -868,9 +868,10 @@ void KdPostProcessShader::ApplyColorGradeOnly(std::shared_ptr<KdTexture> srcColo
 
 	shaderMgr.ChangeSamplerState(KdSamplerState::Linear_Clamp);
 
-	std::shared_ptr<KdTexture> srcTexList[2] = { srcColor, srcMask };
+	// srcEffectがあればt2へ渡す(無ければ未バインド=エフェクト無し扱い)
+	std::shared_ptr<KdTexture> srcTexList[3] = { srcColor, srcMask, srcEffect };
 
-	DrawTexture(srcTexList, 2, dstColor, pVP);
+	DrawTexture(srcTexList, srcEffect ? 3 : 2, dstColor, pVP);
 
 	shaderMgr.UndoSamplerState();
 }
@@ -1066,7 +1067,7 @@ void KdPostProcessShader::SetBrightToDevice()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void KdPostProcessShader::BeginEffectLayer()
 {
-	if (m_effectLayerActive) { return; }
+	if (!m_effectLayerEnabled || m_effectLayerActive) { return; }
 
 	ID3D11RenderTargetView* rtv = m_effectRTPack.m_RTTexture->WorkRTView();
 

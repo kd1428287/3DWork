@@ -53,6 +53,7 @@ enum class KdBlendState
 	Multiply,				// 乗算	
 	Subtract,				// 減算
 	PreMultipliedAlpha,		// 乗算済みアルファ
+	EffectAdd,				// エフェクト層用：加算(RGBのみ加算し、被覆率A(アルファ)は変えない)
 	Max
 };
 
