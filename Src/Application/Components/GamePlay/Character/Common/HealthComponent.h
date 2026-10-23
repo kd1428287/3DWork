@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Application/Core/EventBus/Events/CombatEvents.h"
 
 // 初期設定(Prefab/JSONから渡す値)。
@@ -17,11 +17,19 @@ public:
 		: ComponentBase(owner), max_(maxHealth), current_(maxHealth) {
 	}
 
+	void Awake() override
+	{
+		sub_ = GetOwner()->GetLocalEventBus().SubscribeScoped<Events::Resurrect>(
+			[this]( const Events::Resurrect& e) { Resurrect(); }
+		);
+	}
+
 	// 最大値を設定し、全回復した状態で始める。
 	void SetConfig(const Config& config) { SetMax(config.max, true); }
 
 	// 外部から値を変更する(ダメージ)
-	void TakeDamage(float amount) {
+	void TakeDamage(float amount) 
+	{
 		if (amount <= 0.0f || died_) return;
 
 		current_ = std::max(0.0f, current_ - amount);
@@ -29,12 +37,13 @@ public:
 
 		if (current_ <= 0.0f) {
 			died_ = true;
-			PublishDied();
+			PublishDown();
 		}
 	}
 
 	// 外部から値を変更する(回復)
-	void Heal(float amount) {
+	void Heal(float amount) 
+	{
 		if (amount <= 0.0f || died_) return;
 		current_ = std::min(max_, current_ + amount);
 		PublishChanged();
@@ -42,18 +51,20 @@ public:
 
 	// 値を問答無用で上書きしたい場合(復活演出後のリセット、初期値の
 	// 個別設定等)に使う。0より大きい値をセットすればdied_も解除される。
-	void SetCurrent(float value) {
+	void SetCurrent(float value) 
+	{
 		const bool wasDead = died_;
 		current_ = std::clamp(value, 0.0f, max_);
 		died_ = (current_ <= 0.0f);
 		PublishChanged();
 
 		// 生存から死亡に変わった時だけ発行する(0のまま再設定してもDiedは重複しない)。
-		if (!wasDead && died_) PublishDied();
+		if (!wasDead && died_) PublishDown();
 	}
 
 	// 最大値を変更する。alsoHeal=trueなら同時に全回復させる
-	void SetMax(float value, bool alsoHeal = false) {
+	void SetMax(float value, bool alsoHeal = false) 
+	{
 		max_ = value;
 		current_ = alsoHeal ? max_ : std::min(current_, max_);
 		PublishChanged();
@@ -66,20 +77,37 @@ public:
 
 private:
 	// HPが変化するAPIの末尾で必ず呼び、HealthChangedEventを発行する
-	void PublishChanged() {
+	void PublishChanged() 
+	{
 
-		Events::PublishHealthChangeEvent(*GetOwner()->GetContext()->eventBus, Handle<GameObject>(GetOwner()), GetRatio());
+		Events::PublishHealthChangeEvent(GetOwner()->GetSceneEventBus(), Handle<GameObject>(GetOwner()), GetRatio());
 	}
 
 	// 死亡通知。グローバルバスと自分のローカルバスの両方へ流す。
-	void PublishDied() {
+	void PublishDied() 
+	{
 		Events::Died e;
 		e.source = Handle<GameObject>(GetOwner());
-		GetOwner()->GetContext()->eventBus->Publish(e);
+		GetOwner()->GetSceneEventBus().Publish(e);
 		GetOwner()->GetLocalEventBus().Publish(e);
+	}
+
+	void PublishDown()
+	{
+		Events::Down e;
+		GetOwner()->GetSceneEventBus().Publish(e);
+		GetOwner()->GetLocalEventBus().Publish(e);
+	}
+
+	void Resurrect()
+	{
+		died_ = true;
+		Heal(max_);
 	}
 
 	float max_;
 	float current_;
 	bool died_ = false;
+
+	ScopedSubscriber sub_;
 };

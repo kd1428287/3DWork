@@ -19,6 +19,9 @@ namespace Events
 		Handle<GameObject> source;
 	};
 
+	struct Down : public Event {};
+	struct Resurrect : public Event {};
+
 	// 体幹値が変化した(被弾/自然回復/リセット時)
 	struct PostureChanged : public Event {
 		Handle<GameObject> source;

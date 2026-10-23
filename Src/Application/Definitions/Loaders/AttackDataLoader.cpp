@@ -1,4 +1,4 @@
-#include "AttackDataLoader.h"
+﻿#include "AttackDataLoader.h"
 
 namespace
 {
@@ -33,7 +33,8 @@ namespace
 		out.guardDamageRatio = j.value("guardDamageRatio", out.guardDamageRatio);
 		out.guardPostureDamageRatio = j.value("guardPostureDamageRatio", out.guardPostureDamageRatio);
 		out.parryPostureDamage = j.value("parryPostureDamage", out.parryPostureDamage);
-		out.canParried = j.value("canParried", out.canParried);
+		out.isParriable = j.value("isReboundable", out.isParriable);
+		out.isReboundable = j.value("isParriable", out.isReboundable);
 	}
 
 	// 状態(hit/block/parry)1つ分の演出設定。無いキーは既定値のまま残す。

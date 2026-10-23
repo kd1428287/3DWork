@@ -1,13 +1,9 @@
-#pragma once
+﻿#pragma once
 #include "../../../Physics/Collision/ColliderComponent.h"
 #include "../../../Graphics/Effect/SlashTrailComponent.h"
 #include "AttackSourceComponent.h"
 #include "Application/Core/EventBus/Events/CollisionEvents.h"
 #include "Application/Core/EventBus/Events/CombatEvents.h"
-
-namespace Events {
-
-}
 
 // ============================================================
 // WeaponComponent

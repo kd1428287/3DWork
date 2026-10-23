@@ -1,4 +1,4 @@
-// 戦闘(共通)と、武器・ボーンソケットまわりのコンポーネント登録。
+﻿// 戦闘(共通)と、武器・ボーンソケットまわりのコンポーネント登録。
 
 #include "Application/Factories/ComponentRegistry.h"
 #include "Application/Factories/Registrations/RegisterFunctions.h"
@@ -15,6 +15,7 @@
 
 #include "Application/Components/GamePlay/Character/Common/AttackSourceComponent.h"
 #include "Application/Components/GamePlay/Character/Common/HealthComponent.h"
+#include "Application/Components/GamePlay/Character/Common/LifeComponent.h"
 #include "Application/Components/GamePlay/Character/Common/HitReactionComponent.h"
 #include "Application/Components/GamePlay/Character/Common/PostureComponent.h"
 #include "Application/Components/GamePlay/Character/Common/WeaponComponent.h"
@@ -24,6 +25,7 @@ using namespace Registration;
 
 COMPONENT_PARAMS_DEFINE_TYPE(PostureConfig, max, lowerLimit, regenPerSecond, regenDelaySeconds)
 COMPONENT_PARAMS_DEFINE_TYPE(HealthConfig, max)
+COMPONENT_PARAMS_DEFINE_TYPE(LifeConfig, max)
 
 	// 接続を伴う型のparams。ODR違反を避けるため、マクロも含めて無名名前空間に入れる。
 	namespace
@@ -105,6 +107,7 @@ void RegisterCombatComponents(ComponentRegistry& registry)
 	registry.Add<WeaponSetComponent>("WeaponSet");
 	registry.Add<PostureComponent>("Posture");
 	registry.Add<HealthComponent>("Health");
+	registry.Add<LifeComponent>("Life");
 
 	// --- 武器・ソケット ---
 	registry.AddWithParams<BoneSocketsParams>("BoneSockets", BuildBoneSockets);

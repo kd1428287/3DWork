@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <string>
 #include "CharacterDefinitionCommon.h"
 
@@ -10,7 +10,8 @@ struct AttackDamageData
 	float guardDamageRatio = 0.1f;		  // ガード時ダメージレシオ
 	float guardPostureDamageRatio = 0.1f; // ガード時体幹ダメージレシオ
 	float parryPostureDamage = 40.0f;	  // パリィされた場合の自身への体幹ダメージ
-	bool  canParried = true;			  // パリィ可能かどうか
+	bool  isParriable = true;			  // パリィ可能かどうか
+	bool  isReboundable = true;			  // パリィ時怯むかどうか
 };
 
 // 状態(ヒット/ブロック/パリィ)ごとの演出設定。攻撃側が持つ。
