@@ -1,6 +1,7 @@
-#pragma once
+﻿#pragma once
 #include "SkeletonComponent.h"
 #include "../../Tags/IAnimationPostProcess.h"
+#include "Application/Core/EventBus/Events/CombatEvents.h"
 
 // 名前付きボーン鎖(RightArm等)とバネの設定(Prefab/JSONから渡す値)
 struct BoneOffsetChainConfig
@@ -42,6 +43,10 @@ public:
 	{
 		skeleton_ = GetOwner()->GetComponent<SkeletonComponent>();
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
+
+		// 自分の攻撃がパリィされたときだけ届く(解除はScopedSubscriberの破棄で自動)
+		parrySub_ = GetOwner()->GetLocalEventBus().SubscribeScoped<Events::ParrySucceeded>(
+			[this](const Events::ParrySucceeded& e) { OnParrySucceeded(e); });
 	}
 
 	// 名前chainNameの鎖を跳ね返す。recoilDirWorldは押し戻したい向き(ワールド)、strengthはimpulseへの倍率
@@ -118,6 +123,13 @@ public:
 	}
 
 private:
+	void OnParrySucceeded(const Events::ParrySucceeded& e)
+	{
+		if (e.reaction.recoilChain.empty()) { return; }
+
+		Trigger(e.reaction.recoilChain, -e.incomingDir, e.reaction.recoilStrength);
+	}
+
 	struct BoneRef
 	{
 		int		index = 0;
@@ -159,4 +171,5 @@ private:
 	TransformComponent*	transform_ = nullptr;
 	std::vector<Chain>	chains_;
 	bool				resolved_ = false;
+	ScopedSubscriber	parrySub_;
 };

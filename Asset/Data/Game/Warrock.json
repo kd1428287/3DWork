@@ -38,6 +38,64 @@
 			}
 		},
 		{
+			"type": "BoneOffset",
+			"params": {
+				"chains": [
+					{
+						"name": "RightArm",
+						"bones": [
+							"mixamorig:RightArm",
+							"mixamorig:RightForeArm",
+							"mixamorig:RightHand"
+						],
+						"weights": [
+							0.3,
+							0.6,
+							1.0
+						],
+						"impulse": 12.0,
+						"stiffness": 180.0,
+						"damping": 8.0,
+						"maxAngle": 1.2
+					},
+					{
+						"name": "LeftArm",
+						"bones": [
+							"mixamorig:LeftArm",
+							"mixamorig:LeftForeArm",
+							"mixamorig:LeftHand"
+						],
+						"weights": [
+							0.3,
+							0.6,
+							1.0
+						],
+						"impulse": 12.0,
+						"stiffness": 180.0,
+						"damping": 8.0,
+						"maxAngle": 1.2
+					},
+					{
+						"name": "RightLeg",
+						"bones": [
+							"mixamorig:RightUpLeg",
+							"mixamorig:RightLeg",
+							"mixamorig:RightFoot"
+						],
+						"weights": [
+							0.3,
+							0.6,
+							1.0
+						],
+						"impulse": 8.0,
+						"stiffness": 220.0,
+						"damping": 10.0,
+						"maxAngle": 0.8
+					}
+				]
+			}
+		},
+		{
 			"type": "RootMotionApplier"
 		},
 		{

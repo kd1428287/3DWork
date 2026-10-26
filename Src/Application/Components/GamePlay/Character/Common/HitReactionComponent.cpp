@@ -1,4 +1,4 @@
-﻿#include "HitReactionComponent.h"
+#include "HitReactionComponent.h"
 #include "../Common/CharacterEvents.h"
 #include "WeaponComponent.h"
 #include <algorithm>
@@ -201,7 +201,10 @@ void HitReactionComponent::OnHit(const Events::AttackHit& ctx)
 			if (PostureComponent* attackerPosture = attacker->GetComponent<PostureComponent>()) {
 				attackerPosture->AddPostureDamage(attackData.parryPostureDamage);
 			}
-			attacker->GetLocalEventBus().Publish(Events::ParrySucceeded{});
+			Events::ParrySucceeded parried;
+			parried.incomingDir = ComputeIncomingDirection(ctx);
+			parried.reaction = visual.parry;
+			attacker->GetLocalEventBus().Publish(parried);
 		}
 		HitReaction(visual.parry, ctx);
 

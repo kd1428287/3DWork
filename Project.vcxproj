@@ -313,6 +313,7 @@
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerState.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerStatusController.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Animation\ArmIKComponents.h" />
+    <ClInclude Include="Src\Application\Components\Graphics\Animation\BoneOffsetComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Animation\FacingDirectionComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Animation\ModelAnimatorComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Animation\RootMotionApplierComponent.h" />

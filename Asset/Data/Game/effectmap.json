@@ -2142,6 +2142,93 @@
         1.0,
         1.0
       ]
+    },
+    {
+      "name": "InkLiquidConverge",
+      "params": {
+        "blendMode": "LiquidInk",
+        "drawPass": [
+          "Default"
+        ],
+        "emitInterval": 0.0,
+        "emitMode": "Burst",
+        "gravity": [
+          0.0,
+          -0.5,
+          0.0
+        ],
+        "layers": [
+          {
+            "billboardMode": "Stretch",
+            "colorMax": [
+              0.03921568766236305,
+              0.03921568766236305,
+              0.03921568766236305,
+              1.0
+            ],
+            "colorMin": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "colorStartMax": [
+              0.03921568766236305,
+              0.03921568766236305,
+              0.03921568766236305,
+              1.0
+            ],
+            "colorStartMin": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "convergeRadius": 2.0,
+            "convergeSpeed": 0.0,
+            "count": 100,
+            "dirScaleMax": 4.0,
+            "dirScaleMin": 1.0,
+            "distribution": "Converge",
+            "lifeMax": 0.800000011920929,
+            "lifeMin": 0.44999998807907104,
+            "offsetMax": [
+              1.0,
+              1.5,
+              1.0
+            ],
+            "offsetMin": [
+              1.0,
+              0.5,
+              1.0
+            ],
+            "radialSpeedMax": 4.0,
+            "radialSpeedMin": 1.0,
+            "sizeEndMax": 0.03999999910593033,
+            "sizeEndMin": 0.019999999552965164,
+            "sizeMax": 0.05999999865889549,
+            "sizeMin": 0.03999999910593033,
+            "stretchScale": 10.0
+          }
+        ],
+        "maxParticleNum": 500,
+        "texture": "circle.png"
+      },
+      "pos": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotate": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
     }
   ],
   "groups": {
@@ -2160,7 +2247,8 @@
     ],
     "PreConverge": [
       "InkConverge",
-      "InkConvergeHighlight"
+      "InkConvergeHighlight",
+      "InkLiquidConverge"
     ]
   },
   "liquidInk": {

@@ -51,6 +51,8 @@ namespace
 		out.normalBlendRatio = j.value("normalBlendRatio", out.normalBlendRatio);
 		out.cameraShakeIntensity = j.value("cameraShakeIntensity", out.cameraShakeIntensity);
 		out.hitStopDurationSeconds = j.value("hitStopDurationSeconds", out.hitStopDurationSeconds);
+		out.recoilChain = j.value("recoilChain", out.recoilChain);
+		out.recoilStrength = j.value("recoilStrength", out.recoilStrength);
 	}
 
 	void ReadAttackVisualData(const json& j, AttackVisualData& out)

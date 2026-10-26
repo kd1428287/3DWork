@@ -82,6 +82,7 @@ private:
 
 	EnemyAttackTable			m_table;
 	std::vector<std::string>	m_animNames;	// テーブル内で使われているクリップ名(選択候補)
+	std::vector<std::string>	m_recoilChains;	// PrefabのBoneOffsetに定義された鎖名(跳ね返しの選択候補)
 	std::vector<SlotInfo>		m_slots;
 
 	// 選択

@@ -1104,6 +1104,9 @@
     <ClInclude Include="Src\Application\Components\Core\AttachBoneToBoneComponent.h">
       <Filter>Src\Application\Components\Core</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Components\Graphics\Animation\BoneOffsetComponent.h">
+      <Filter>Src\Application\Components\Graphics\Animation</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">

@@ -173,7 +173,7 @@ void EnemyAIController::StopTelegraphEffect()
 void EnemyAIController::OnParrySucceeded(const Events::ParrySucceeded& e)
 {
 	if (behavior_) {
-		behavior_->OnParrySucceeded(this, e);
+		//behavior_->OnParrySucceeded(this, e);
 	}
 }
 

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include <string>
 #include "CharacterDefinitionCommon.h"
 
@@ -38,6 +38,10 @@ struct ReactionEventConfig
 
 	float cameraShakeIntensity = 0.0f;
 	float hitStopDurationSeconds = 0.0f;
+
+	// 攻撃側のBoneOffsetComponentの鎖名。空なら跳ね返さない。強さはimpulseへの倍率。
+	std::string recoilChain = "";
+	float recoilStrength = 1.0f;
 };
 
 // 攻撃側が決める演出データ(SE/エフェクト/ヒットストップ等)。

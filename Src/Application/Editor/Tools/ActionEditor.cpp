@@ -496,6 +496,48 @@ void ActionEditor::DrawInspector()
 		checkbox("isReboundable", dd.isReboundable);
 	}
 
+	if (ImGui::CollapsingHeader("Parry Recoil"))
+	{
+		ReactionEventConfig& pr = d.visualData.parry;
+
+		// 空なら跳ね返さない。候補はPrefabのBoneOffsetに定義された鎖
+		if (ImGui::BeginCombo("recoilChain", pr.recoilChain.empty() ? "(none)" : pr.recoilChain.c_str()))
+		{
+			if (ImGui::Selectable("(none)", pr.recoilChain.empty()))
+			{
+				PushUndo();
+				pr.recoilChain.clear();
+				MarkEdited();
+			}
+			for (const std::string& n : m_recoilChains)
+			{
+				if (ImGui::Selectable(n.c_str(), n == pr.recoilChain))
+				{
+					PushUndo();
+					pr.recoilChain = n;
+					MarkEdited();
+				}
+			}
+			ImGui::EndCombo();
+		}
+
+		const bool known = std::find(m_recoilChains.begin(), m_recoilChains.end(), pr.recoilChain) != m_recoilChains.end();
+		if (m_recoilChains.empty())
+		{
+			ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "PrefabにBoneOffsetの鎖が定義されていません");
+		}
+		else if (!pr.recoilChain.empty() && !known)
+		{
+			ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "Prefabに鎖 '%s' がありません", pr.recoilChain.c_str());
+		}
+
+		ImGui::BeginDisabled(pr.recoilChain.empty());
+		dragFloat("recoilStrength", pr.recoilStrength, 0.01f, 0.0f, 10.0f);
+		ImGui::EndDisabled();
+
+		if (!d.damageData.isParryable) { ImGui::TextDisabled("isParryableがfalseのため、パリィされず発動しません"); }
+	}
+
 	ImGui::End();
 }
 
@@ -942,6 +984,20 @@ bool ActionEditor::LoadPrefab(const std::string& path)
 		if (ma->contains("params") && (*ma)["params"].contains("rootMotion"))
 		{
 			m_rootMotionConfig = ReadRootMotionConfig(ToJson((*ma)["params"]["rootMotion"]));
+		}
+	}
+
+	// 跳ね返しの鎖名(BoneOffsetのparams.chains[].name)
+	m_recoilChains.clear();
+	if (nlohmann::ordered_json* bo = FindComponent(root, "BoneOffset"))
+	{
+		if (bo->contains("params") && (*bo)["params"].contains("chains") && (*bo)["params"]["chains"].is_array())
+		{
+			for (auto& c : (*bo)["params"]["chains"])
+			{
+				const std::string n = c.value("name", std::string());
+				if (!n.empty()) { m_recoilChains.push_back(n); }
+			}
 		}
 	}
 
