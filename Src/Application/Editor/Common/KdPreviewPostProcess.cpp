@@ -1,4 +1,4 @@
-﻿#include "Application/main.h"
+#include "Application/main.h"
 
 #include "KdPreviewPostProcess.h"
 
@@ -11,6 +11,7 @@ void KdPreviewPostProcess::Apply(const std::shared_ptr<KdTexture>& srcColor, con
 	if (!srcColor) { return; }
 
 	EnsureDummyMaskTex();
+	EnsureDummyEffectTex();
 
 	ResizeResultTex(srcColor->GetWidth(), srcColor->GetHeight());
 
@@ -28,10 +29,14 @@ void KdPreviewPostProcess::Apply(const std::shared_ptr<KdTexture>& srcColor, con
 	vp.MinDepth = 0.0f;
 	vp.MaxDepth = 1.0f;
 
+	// エフェクト層が無い呼び出しでも、透明ダミーを必ず渡す。
+	// nullptrのままだと入力スロットが未バインドになり、本編側の残りを拾って白くなることがある
+	const std::shared_ptr<KdTexture>& effect = srcEffect ? srcEffect : m_dummyEffectTex;
+
 	// 本編用シングルトンのカラーグレードVS/PS/定数バッファ(パラメータも共通)をそのまま使い回す。
 	// srcColor(プレビューの生の描画結果) → m_resultTex(グレーディング後)
 	KdShaderManager::Instance().m_postProcessShader.ApplyColorGradeOnly(
-		srcColor, m_dummyMaskTex, m_resultTex, &vp, srcEffect);
+		srcColor, m_dummyMaskTex, m_resultTex, &vp, effect);
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -183,4 +188,32 @@ void KdPreviewPostProcess::EnsureDummyMaskTex()
 	// 黒(0)でクリアしておく = 「マスク無し・グレーディングを通常通り適用」を意味する
 	// (本編のm_colorGradeMaskRTPackのクリア値と同じ規約)
 	KdDirect3D::Instance().WorkDevContext()->ClearRenderTargetView(m_dummyMaskTex->WorkRTView(), kBlackColor);
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// エフェクト層入力用の1x1透明ダミーテクスチャを(未生成なら)作る
+//	形式はエフェクト層RT(EditorPreviewViewport::Resize)と同じHDR形式
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void KdPreviewPostProcess::EnsureDummyEffectTex()
+{
+	if (m_dummyEffectTex) { return; }
+
+	D3D11_TEXTURE2D_DESC desc = {};
+	desc.Usage = D3D11_USAGE_DEFAULT;
+	desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	desc.Width = 1;
+	desc.Height = 1;
+	desc.CPUAccessFlags = 0;
+	desc.MipLevels = 1;
+	desc.ArraySize = 1;
+	desc.SampleDesc.Count = 1;
+	desc.SampleDesc.Quality = 0;
+
+	m_dummyEffectTex = std::make_shared<KdTexture>();
+	m_dummyEffectTex->Create(desc);
+
+	// RGBもAも0 = エフェクト無し(EditorPreviewViewport::Renderのクリア値と同じ)
+	const float zero[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	KdDirect3D::Instance().WorkDevContext()->ClearRenderTargetView(m_dummyEffectTex->WorkRTView(), zero);
 }

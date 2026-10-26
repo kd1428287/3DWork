@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "nlohmann/json.hpp"
 #include "Application/Definitions/Loaders/ComponentParamsOrderedJson.h"
@@ -50,7 +50,7 @@ COMPONENT_PARAMS_DEFINE_TYPE(MotionClipData,
 	animationName, loop, duration, useRootMotion, blendDuration, startFrame, endFrame, isForce)
 
 	COMPONENT_PARAMS_DEFINE_TYPE(AttackDamageData,
-		damage, postureDamage, guardDamageRatio, guardPostureDamageRatio, parryPostureDamage, canParried)
+		damage, postureDamage, guardDamageRatio, guardPostureDamageRatio, parryPostureDamage, isParryable, isReboundable)
 
 	COMPONENT_PARAMS_DEFINE_TYPE(ReactionEventConfig,
 		enableCameraShake, enableHitStop, enableEffect, enableDistortion, effectName, SEName,

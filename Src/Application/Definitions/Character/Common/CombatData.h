@@ -10,7 +10,7 @@ struct AttackDamageData
 	float guardDamageRatio = 0.1f;		  // ガード時ダメージレシオ
 	float guardPostureDamageRatio = 0.1f; // ガード時体幹ダメージレシオ
 	float parryPostureDamage = 40.0f;	  // パリィされた場合の自身への体幹ダメージ
-	bool  isParriable = true;			  // パリィ可能かどうか
+	bool  isParryable = true;			  // パリィ可能かどうか
 	bool  isReboundable = true;			  // パリィ時怯むかどうか
 };
 

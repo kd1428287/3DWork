@@ -134,6 +134,7 @@ void EditorPreviewViewport::Render(const DirectX::SimpleMath::Vector3& target,
 
 	// 退避(RTVは2スロットぶん保持し、復元時に元の束縛状態をそのまま戻す)
 	KdShaderManager::cbCamera savedCamera = KdShaderManager::Instance().GetCameraCB();
+	const KdShaderManager::cBright savedLight = KdShaderManager::Instance().GetLightCB();
 
 	ID3D11RenderTargetView* savedRTVs[2] = { nullptr, nullptr };
 	ID3D11DepthStencilView* savedDSV = nullptr;
@@ -180,6 +181,24 @@ void EditorPreviewViewport::Render(const DirectX::SimpleMath::Vector3& target,
 	DirectX::SimpleMath::Matrix view = m_camera.GetView(target);
 	KdShaderManager::Instance().WriteCBCamera(view.Invert(), GetProjMatrix());
 
+	// プレビュー専用のライト。影範囲は注視点中心(本編はカメラ位置中心のため、そのままでは範囲外になりうる)
+	if (m_settings.OverrideLight)
+	{
+		KdShaderManager::cBright light;
+
+		DirectX::SimpleMath::Vector3 dir = m_settings.LightDir;
+		dir.Normalize();
+
+		const DirectX::SimpleMath::Vector3 center = target + m_camera.Pan;
+		const float size = m_settings.ShadowAreaSize;
+
+		light.DirLight_Dir = dir;
+		light.DirLight_mVP = DirectX::XMMatrixLookAtLH(center - dir * size, center, DirectX::SimpleMath::Vector3::Up)
+			* DirectX::XMMatrixOrthographicLH(size, size, 0.0f, size * 2.0f);
+
+		KdShaderManager::Instance().WriteCBLight(light);
+	}
+
 	if (drawSceneFunc) { drawSceneFunc(); }
 
 	// エフェクト層(カラーグレードの対象外)：専用RTへ描き、Apply()で最後に重ねる。深度はColor側と共有
@@ -218,6 +237,8 @@ void EditorPreviewViewport::Render(const DirectX::SimpleMath::Vector3& target,
 
 	// 復元
 	KdShaderManager::Instance().WriteCBCamera(savedCamera.mView.Invert(), savedCamera.mProj);
+
+	if (m_settings.OverrideLight) { KdShaderManager::Instance().WriteCBLight(savedLight); }
 
 	context->OMSetRenderTargets(2, savedRTVs, savedDSV);
 	if (savedRTVs[0]) { savedRTVs[0]->Release(); }

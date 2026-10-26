@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "EnemyAIData.h"
 #include "../../Loaders/DefinitionJson.h" // Math::Vector3 / MotionClipData / AttackData のJSON変換
@@ -14,11 +14,21 @@
 // COMPONENT_PARAMS_DEFINE_TYPEの説明・理由はComponentParamsOrderedJson.hのコメントを参照。
 // ============================================================
 
+// 未知の名前は先頭(None)になる。
+NLOHMANN_JSON_SERIALIZE_ENUM(TelegraphType, {
+	{ TelegraphType::None,   "None" },
+	{ TelegraphType::Normal, "Normal" },
+	{ TelegraphType::Danger, "Danger" },
+	})
+
 COMPONENT_PARAMS_DEFINE_TYPE(EnemyAttackFacingData,
 	windupTurnSpeed, activeTurnSpeed)
 
+	COMPONENT_PARAMS_DEFINE_TYPE(EnemyAttackTelegraphData,
+		type, effectName, anchorSlot, offset, leadTime)
+
 	COMPONENT_PARAMS_DEFINE_TYPE(EnemyAttackDefinition,
-		name, attackData, minRange, maxRange, weight, facing)
+		name, attackData, minRange, maxRange, weight, facing, telegraph)
 
 	COMPONENT_PARAMS_DEFINE_TYPE(EnemyMovementAnimationData,
 		idle, walk, run)

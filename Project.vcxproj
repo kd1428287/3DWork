@@ -275,6 +275,7 @@
     <ClInclude Include="..\Library\tinygltf\stb_image_write.h" />
     <ClInclude Include="..\Library\tinygltf\tiny_gltf.h" />
     <ClInclude Include="CharacterBodyComponent.h" />
+    <ClInclude Include="Src\Application\Components\Core\AttachBoneToBoneComponent.h" />
     <ClInclude Include="Src\Application\Components\Core\AttachToSocketComponent.h" />
     <ClInclude Include="Src\Application\Components\Core\BoneSocketComponent.h" />
     <ClInclude Include="Src\Application\Components\Core\TransformComponent.h" />
@@ -292,6 +293,7 @@
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\FootstepEventComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\HealthComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\HitReactionComponent.h" />
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\LifeComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\PostureComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\ShapeSurfaceQuery.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\WeaponComponent.h" />
@@ -437,6 +439,7 @@
     <ClInclude Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_node_editor.h" />
     <ClInclude Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_node_editor_internal.h" />
     <ClInclude Include="Src\Application\Editor\ThirdParty\ImGuizmo.h" />
+    <ClInclude Include="Src\Application\Editor\Tools\ActionEditor.h" />
     <ClInclude Include="Src\Application\Editor\Tools\BTEditor.h" />
     <ClInclude Include="Src\Application\Editor\Tools\ColliderEditor.h" />
     <ClInclude Include="Src\Application\Editor\Tools\EffectEditor.h" />
@@ -586,6 +589,7 @@
     <ClCompile Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_node_editor.cpp" />
     <ClCompile Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_node_editor_api.cpp" />
     <ClCompile Include="Src\Application\Editor\ThirdParty\ImGuizmo.cpp" />
+    <ClCompile Include="Src\Application\Editor\Tools\ActionEditor.cpp" />
     <ClCompile Include="Src\Application\Editor\Tools\BTEditor.cpp" />
     <ClCompile Include="Src\Application\Editor\Tools\ColliderEditor.cpp" />
     <ClCompile Include="Src\Application\Editor\Tools\EffectEditor.cpp" />

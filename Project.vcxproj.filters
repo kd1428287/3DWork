@@ -1095,6 +1095,15 @@
     <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\EnemyHudGaugeComponent.h">
       <Filter>Src\Application\Components\Graphics\UI\Gauge</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\LifeComponent.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Editor\Tools\ActionEditor.h">
+      <Filter>Src\Application\Editor\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Core\AttachBoneToBoneComponent.h">
+      <Filter>Src\Application\Components\Core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -1480,6 +1489,9 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Systems\GamePlay\ResultView.cpp">
       <Filter>Src\Application\Systems\GamePlay</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Editor\Tools\ActionEditor.cpp">
+      <Filter>Src\Application\Editor\Tools</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

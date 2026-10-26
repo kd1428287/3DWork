@@ -329,7 +329,14 @@ void EffectDispatcher::ProcessPendingEvents()
 
 					active.position = e.Position;
 					for (EffectInstance& instance : active.instances) { instance.Play(active.position); }
-					if (e.MaxDuration > 0.0f) { active.maxDurationRemaining = e.MaxDuration; }
+
+					// 呼び出し側の指定が無ければ、エフェクト定義のMaxDurationを使う
+					float maxDuration = e.MaxDuration;
+					if (maxDuration <= 0.0f)
+					{
+						for (const EffectInstance& instance : active.instances) { maxDuration = std::max(maxDuration, instance.GetParams().MaxDuration); }
+					}
+					if (maxDuration > 0.0f) { active.maxDurationRemaining = maxDuration; }
 
 					StoreActive(e.InstanceKey, std::move(active));
 				}
@@ -389,9 +396,9 @@ void EffectDispatcher::ProcessPendingEvents()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void EffectDispatcher::Draw(ParticleDrawPass pass)
 {
-	// Litパスはエフェクト層へ描く(カラーグレードの対象外)。Bloomパスは従来どおり光源用RTへ
+	// Defaultパスはエフェクト層へ描く(カラーグレードの対象外)。Brightパスは従来どおり光源用RTへ
 	KdPostProcessShader& postProcess = KdShaderManager::Instance().m_postProcessShader;
-	const bool useEffectLayer = (pass == ParticleDrawPass::Lit);
+	const bool useEffectLayer = (pass == ParticleDrawPass::Default);
 	if (useEffectLayer) { postProcess.BeginEffectLayer(); }
 
 	for (auto& pair : simpleEffects_)

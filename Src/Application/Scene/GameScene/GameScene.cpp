@@ -240,10 +240,10 @@ void GameScene::SetupEnvironment()
 	post.SetFarClippingDistance(50.f);
 	post.SetFocusRange(0, 50.0f);
 	post.SetExposure(1.05f);
-	/*post.SetContrast(1.25f);
+	post.SetContrast(1.25f);
 	post.SetSaturation(0.85f);
 	post.SetTemperature(-0.3f);
-	post.SetTint(-0.15f);*/
+	post.SetTint(-0.15f);
 
 	// 画面全体に重ねる質感テクスチャ(約0.15秒ごとに位置を切り替える)
 	post.SetSurfaceTexture(KdAssets::Instance().m_textures.GetData("Asset/Textures/Game/p0028_l.png"));

@@ -570,6 +570,34 @@
 					"params": { "slot": "Main" }
 				}
 			]
+		},
+		{
+			"name": "mask",
+			"components": [
+				{
+					"type": "AttachBoneToBone",
+					"params": {
+						"parentBone": "mask",
+						"childBone": "Nose",
+						"position": [
+							0.0,
+							0.0,
+							0.0
+						],
+						"rotationEulerDeg": [
+							0,
+							180,
+							-90
+						]
+					}
+				},
+				{
+					"type": "ModelRender",
+					"params": {
+						"model": "Asset/Models/Character/Masks/DemonMask.gltf"
+					}
+				}
+			]
 		}
 	]
 }

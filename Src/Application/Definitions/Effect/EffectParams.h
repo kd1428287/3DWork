@@ -177,6 +177,13 @@ struct GPUParticleParams
 	// デフォルトはLitのみ(従来通りの見え方)
 	ParticleDrawPass DrawPassFlags = ParticleDrawPass::Default;
 
+	// Converge層の発生を、収束時間のこの割合(0〜1)へばらけさせる(全粒子の収束時刻は同じ)。0なら最初に一括発生。
+	// EffectFollowSpawnで収束時間を指定して再生した時だけ使われる(呼び出し側で指定した場合はそちらが優先)
+	float SpawnSpread = 0.0f;
+
+	// 継続・リピート再生の最大再生時間(秒)。過ぎたら自動でStopする。0以下なら無期限(Detach漏れの保険)
+	float MaxDuration = 0.0f;
+
 	// Continuous、またはBurstでEmitInterval>0の場合はtrue(=再生中はStop()が必要になる)
 	bool IsLooping() const;
 };

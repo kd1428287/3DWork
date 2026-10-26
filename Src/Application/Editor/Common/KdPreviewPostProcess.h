@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 //============================================================
 // KdPreviewPostProcess
@@ -13,7 +13,7 @@
 //	・VS/PS/定数バッファは本編用シングルトンであるKdPostProcessShaderのものを
 //	  そのまま使い回す(KdPostProcessShader::ApplyColorGradeOnly()/GenerateBlurTexture()経由)。
 //	  このクラス自身が持つのは「プレビューサイズに合わせた出力・Bloom用テクスチャ」と
-//	  「カラーグレードPSが要求するマスク入力(t1)用の黒ダミーテクスチャ」だけ。
+//	  「カラーグレードPSが要求するマスク入力(t1)・エフェクト層入力用の透明ダミーテクスチャ」だけ。
 //	・本編のKdPostProcessShaderが持つ固定サイズのRTPack群(m_postEffectRTPack等)には
 //	  一切触れないため、本編のポストプロセスパイプラインへの影響は無い。
 //
@@ -34,7 +34,8 @@ public:
 	// 出力テクスチャはsrcColorのサイズに合わせて内部で自動的に作り直される(Resize不要)。
 	// srcBright … Bright(加算合成)専用に描画されたオフスクリーン。省略時はBloomを適用しない
 	// 結果はGetResultTexture()で取得する
-	// srcEffect … エフェクト層(カラーグレードの対象外として最後に重ねる)。省略可
+	// srcEffect … エフェクト層(カラーグレードの対象外として最後に重ねる)。
+	//	省略時は透明ダミーを渡す(未バインドのスロットに本編側の残りが残っていて、それを拾うのを防ぐため)
 	void Apply(const std::shared_ptr<KdTexture>& srcColor, const std::shared_ptr<KdTexture>& srcBright = nullptr,
 		const std::shared_ptr<KdTexture>& srcEffect = nullptr);
 
@@ -51,6 +52,9 @@ private:
 	// 黒(0) = 「マスク無し・グレーディングを通常通り適用」を意味する(本編の規約と同じ)
 	void EnsureDummyMaskTex();
 
+	// エフェクト層入力用の1x1透明ダミーテクスチャを(未生成なら)作る。RGBもAも0 = エフェクト無し
+	void EnsureDummyEffectTex();
+
 	// srcBrightをぼかしながら段階的に合成し、srcColorへ加算合成する(srcColor自体を書き換える)
 	void ApplyBloom(const std::shared_ptr<KdTexture>& srcColor, const std::shared_ptr<KdTexture>& srcBright);
 
@@ -59,6 +63,7 @@ private:
 
 	std::shared_ptr<KdTexture>	m_resultTex;		// グレーディング後の出力
 	std::shared_ptr<KdTexture>	m_dummyMaskTex;		// カラーグレードPS用の黒ダミー(1x1、使い回し)
+	std::shared_ptr<KdTexture>	m_dummyEffectTex;	// エフェクト層入力用の透明ダミー(1x1、使い回し)
 
 	int		m_width = 0;
 	int		m_height = 0;

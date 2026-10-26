@@ -209,6 +209,9 @@ public:
 	void WriteCBShadowArea(const Math::Matrix& proj, float dirLightHeight);
 	void WriteCBPointLight(const std::list<PointLight>& pointLights);
 
+	// ライト定数バッファ全体を差し替える(エディタのプレビュー描画で本編の状態を退避・復元するために使う)
+	void WriteCBLight(const cBright& light);
+
 	//==========================
 	//
 	// その他

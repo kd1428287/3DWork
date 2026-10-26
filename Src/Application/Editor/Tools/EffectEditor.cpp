@@ -890,7 +890,8 @@ EffectEditor::EffectEditor()
 	EditorPreviewViewport::Settings previewSettings;
 	previewSettings.UseMaskRT = true;
 	previewSettings.UseBrightRT = true;	// ParticleDrawPass::Bright(Bloom用)のプレビューに必要
-	previewSettings.UseEffectLayerRT = true;	// エフェクトをカラーグレードの対象外にして確認する	previewSettings.FarZ = 100.0f;
+	previewSettings.UseEffectLayerRT = true;	// エフェクトをカラーグレードの対象外にして確認する
+	previewSettings.FarZ = 100.0f;
 	previewSettings.InitialDistance = 3.0f;
 	previewSettings.MaxDistance = 50.0f;
 	previewSettings.WheelSensitivity = 0.3f;

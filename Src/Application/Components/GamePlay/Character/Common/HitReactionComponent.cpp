@@ -1,4 +1,4 @@
-#include "HitReactionComponent.h"
+﻿#include "HitReactionComponent.h"
 #include "../Common/CharacterEvents.h"
 #include "WeaponComponent.h"
 #include <algorithm>
@@ -195,7 +195,7 @@ void HitReactionComponent::OnHit(const Events::AttackHit& ctx)
 
 	const bool inParryWindow = query_->IsInParryWindow();
 
-	if (inParryWindow && attackData.canParried) {
+	if (inParryWindow && attackData.isParryable) {
 		// パリィ成立: 攻撃側の体幹を削り、パリィ通知を送る。
 		if (attacker != nullptr) {
 			if (PostureComponent* attackerPosture = attacker->GetComponent<PostureComponent>()) {
