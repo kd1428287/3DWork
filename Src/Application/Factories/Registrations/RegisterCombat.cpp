@@ -1,4 +1,4 @@
-// 戦闘(共通)と、武器・ボーンソケットまわりのコンポーネント登録。
+﻿// 戦闘(共通)と、武器・ボーンソケットまわりのコンポーネント登録。
 
 #include "Application/Factories/ComponentRegistry.h"
 #include "Application/Factories/Registrations/RegisterFunctions.h"
@@ -28,7 +28,8 @@ using namespace Registration;
 COMPONENT_PARAMS_DEFINE_TYPE(PostureConfig, max, lowerLimit, regenPerSecond, regenDelaySeconds)
 COMPONENT_PARAMS_DEFINE_TYPE(HealthConfig, max)
 COMPONENT_PARAMS_DEFINE_TYPE(LifeConfig, max)
-COMPONENT_PARAMS_DEFINE_TYPE(BoneOffsetChainConfig, name, bones, weights, impulse, stiffness, damping, maxAngle)
+COMPONENT_PARAMS_DEFINE_TYPE(BoneOffsetChainConfig, name, bones, weights, impulse, stiffness, damping, maxAngle,
+	blendInSeconds, holdSeconds, releaseSeconds)
 COMPONENT_PARAMS_DEFINE_TYPE(BoneOffsetConfig, chains)
 
 // 接続を伴う型のparams。ODR違反を避けるため、マクロも含めて無名名前空間に入れる。

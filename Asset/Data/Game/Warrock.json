@@ -178,36 +178,6 @@
 		{
 			"type": "HitReaction",
 			"params": {
-				"hit": {
-					"enableCameraShake": false,
-					"enableHitStop": true,
-					"enableEffect": true,
-					"effectName": "InkHitEffect",
-					"SEName": "Asset/Sounds/Game/SwordHit.wav",
-					"useReflectDirection": false,
-					"cameraShakeIntensity": 1.0,
-					"hitStopDurationSeconds": 0.1
-				},
-				"block": {
-					"enableCameraShake": false,
-					"enableHitStop": true,
-					"enableEffect": true,
-					"effectName": "InkHitEffect",
-					"SEName": "Asset/Sounds/Game/SwordHit.wav",
-					"useReflectDirection": false,
-					"cameraShakeIntensity": 1.0,
-					"hitStopDurationSeconds": 0.1
-				},
-				"parry": {
-					"enableCameraShake": false,
-					"enableHitStop": true,
-					"enableEffect": true,
-					"effectName": "ParryEffect",
-					"SEName": "Asset/Sounds/Game/Hit.wav",
-					"useReflectDirection": true,
-					"cameraShakeIntensity": 1.0,
-					"hitStopDurationSeconds": 0.1
-				},
 				"hitStopDelaySeconds": 0.0,
 				"largeStaggerDuration": 0.6
 			}

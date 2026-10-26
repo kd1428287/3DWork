@@ -54,7 +54,8 @@ COMPONENT_PARAMS_DEFINE_TYPE(MotionClipData,
 
 	COMPONENT_PARAMS_DEFINE_TYPE(ReactionEventConfig,
 		enableCameraShake, enableHitStop, enableEffect, enableDistortion, effectName, SEName,
-		sePitchRandom, useReflectDirection, normalBlendRatio, cameraShakeIntensity, hitStopDurationSeconds)
+		sePitchRandom, useReflectDirection, normalBlendRatio, cameraShakeIntensity, hitStopDurationSeconds,
+		recoilChain, recoilStrength)
 
 	COMPONENT_PARAMS_DEFINE_TYPE(AttackVisualData, hit, block, parry, hitStopDelaySeconds)
 

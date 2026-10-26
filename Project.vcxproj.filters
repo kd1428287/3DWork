@@ -900,9 +900,6 @@
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\WeaponComponent.h">
       <Filter>Src\Application\Components\GamePlay\Character\Common</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Definitions\Loaders\AttackDataLoader.h">
-      <Filter>Src\Application\Definitions\Loaders</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Definitions\Loaders\PlayerAttackTableLoader.h">
       <Filter>Src\Application\Definitions\Loaders</Filter>
     </ClInclude>
@@ -1389,9 +1386,6 @@
       <Filter>Src\Application\Components\GamePlay\Character\Common</Filter>
     </ClCompile>
     <ClCompile Include="Src\Application\Definitions\Loaders\PlayerAttackTableLoader.cpp">
-      <Filter>Src\Application\Definitions\Loaders</Filter>
-    </ClCompile>
-    <ClCompile Include="Src\Application\Definitions\Loaders\AttackDataLoader.cpp">
       <Filter>Src\Application\Definitions\Loaders</Filter>
     </ClCompile>
     <ClCompile Include="Src\Application\Factories\PrefabFactory.cpp">

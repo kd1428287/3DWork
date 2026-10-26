@@ -21,6 +21,48 @@
 					"chipDamageRatio": 0.1,
 					"parryPostureDamage": 30.0
 				},
+				"visualData": {
+					"hit": {
+						"enableCameraShake": false,
+						"enableHitStop": true,
+						"enableEffect": true,
+						"enableDistortion": false,
+						"effectName": "InkHitEffect",
+						"SEName": "Asset/Sounds/Game/SwordHit.wav",
+						"sePitchRandom": 0.0,
+						"useReflectDirection": false,
+						"normalBlendRatio": 0.5,
+						"cameraShakeIntensity": 1.0,
+						"hitStopDurationSeconds": 0.1
+					},
+					"block": {
+						"enableCameraShake": false,
+						"enableHitStop": true,
+						"enableEffect": true,
+						"enableDistortion": false,
+						"effectName": "InkHitEffect",
+						"SEName": "Asset/Sounds/Game/SwordHit.wav",
+						"sePitchRandom": 0.0,
+						"useReflectDirection": false,
+						"normalBlendRatio": 0.5,
+						"cameraShakeIntensity": 1.0,
+						"hitStopDurationSeconds": 0.1
+					},
+					"parry": {
+						"enableCameraShake": false,
+						"enableHitStop": true,
+						"enableEffect": true,
+						"enableDistortion": false,
+						"effectName": "ParryEffect",
+						"SEName": "Asset/Sounds/Game/Hit.wav",
+						"sePitchRandom": 0.0,
+						"useReflectDirection": true,
+						"normalBlendRatio": 0.5,
+						"cameraShakeIntensity": 1.0,
+						"hitStopDurationSeconds": 0.1
+					},
+					"hitStopDelaySeconds": 0.0
+				},
 				"moveData": {
 					"stepDistance": 3.0,
 					"engageDistance": 1.2
@@ -77,6 +119,48 @@
 					"postureDamage": 15.0,
 					"chipDamageRatio": 0.1,
 					"parryPostureDamage": 30.0
+				},
+				"visualData": {
+					"hit": {
+						"enableCameraShake": false,
+						"enableHitStop": true,
+						"enableEffect": true,
+						"enableDistortion": false,
+						"effectName": "InkHitEffect",
+						"SEName": "Asset/Sounds/Game/SwordHit.wav",
+						"sePitchRandom": 0.0,
+						"useReflectDirection": false,
+						"normalBlendRatio": 0.5,
+						"cameraShakeIntensity": 1.0,
+						"hitStopDurationSeconds": 0.1
+					},
+					"block": {
+						"enableCameraShake": false,
+						"enableHitStop": true,
+						"enableEffect": true,
+						"enableDistortion": false,
+						"effectName": "InkHitEffect",
+						"SEName": "Asset/Sounds/Game/SwordHit.wav",
+						"sePitchRandom": 0.0,
+						"useReflectDirection": false,
+						"normalBlendRatio": 0.5,
+						"cameraShakeIntensity": 1.0,
+						"hitStopDurationSeconds": 0.1
+					},
+					"parry": {
+						"enableCameraShake": false,
+						"enableHitStop": true,
+						"enableEffect": true,
+						"enableDistortion": false,
+						"effectName": "ParryEffect",
+						"SEName": "Asset/Sounds/Game/Hit.wav",
+						"sePitchRandom": 0.0,
+						"useReflectDirection": true,
+						"normalBlendRatio": 0.5,
+						"cameraShakeIntensity": 1.0,
+						"hitStopDurationSeconds": 0.1
+					},
+					"hitStopDelaySeconds": 0.0
 				},
 				"moveData": {
 					"stepDistance": 3.0,
@@ -135,6 +219,48 @@
 					"chipDamageRatio": 0.1,
 					"parryPostureDamage": 35.0
 				},
+				"visualData": {
+					"hit": {
+						"enableCameraShake": false,
+						"enableHitStop": true,
+						"enableEffect": true,
+						"enableDistortion": false,
+						"effectName": "InkHitEffect",
+						"SEName": "Asset/Sounds/Game/SwordHit.wav",
+						"sePitchRandom": 0.0,
+						"useReflectDirection": false,
+						"normalBlendRatio": 0.5,
+						"cameraShakeIntensity": 1.0,
+						"hitStopDurationSeconds": 0.1
+					},
+					"block": {
+						"enableCameraShake": false,
+						"enableHitStop": true,
+						"enableEffect": true,
+						"enableDistortion": false,
+						"effectName": "InkHitEffect",
+						"SEName": "Asset/Sounds/Game/SwordHit.wav",
+						"sePitchRandom": 0.0,
+						"useReflectDirection": false,
+						"normalBlendRatio": 0.5,
+						"cameraShakeIntensity": 1.0,
+						"hitStopDurationSeconds": 0.1
+					},
+					"parry": {
+						"enableCameraShake": false,
+						"enableHitStop": true,
+						"enableEffect": true,
+						"enableDistortion": false,
+						"effectName": "ParryEffect",
+						"SEName": "Asset/Sounds/Game/Hit.wav",
+						"sePitchRandom": 0.0,
+						"useReflectDirection": true,
+						"normalBlendRatio": 0.5,
+						"cameraShakeIntensity": 1.0,
+						"hitStopDurationSeconds": 0.1
+					},
+					"hitStopDelaySeconds": 0.0
+				},
 				"moveData": {
 					"stepDistance": 3.0,
 					"engageDistance": 1.2
@@ -191,6 +317,48 @@
 					"postureDamage": 18.0,
 					"chipDamageRatio": 0.1,
 					"parryPostureDamage": 35.0
+				},
+				"visualData": {
+					"hit": {
+						"enableCameraShake": false,
+						"enableHitStop": true,
+						"enableEffect": true,
+						"enableDistortion": false,
+						"effectName": "InkHitEffect",
+						"SEName": "Asset/Sounds/Game/SwordHit.wav",
+						"sePitchRandom": 0.0,
+						"useReflectDirection": false,
+						"normalBlendRatio": 0.5,
+						"cameraShakeIntensity": 1.0,
+						"hitStopDurationSeconds": 0.1
+					},
+					"block": {
+						"enableCameraShake": false,
+						"enableHitStop": true,
+						"enableEffect": true,
+						"enableDistortion": false,
+						"effectName": "InkHitEffect",
+						"SEName": "Asset/Sounds/Game/SwordHit.wav",
+						"sePitchRandom": 0.0,
+						"useReflectDirection": false,
+						"normalBlendRatio": 0.5,
+						"cameraShakeIntensity": 1.0,
+						"hitStopDurationSeconds": 0.1
+					},
+					"parry": {
+						"enableCameraShake": false,
+						"enableHitStop": true,
+						"enableEffect": true,
+						"enableDistortion": false,
+						"effectName": "ParryEffect",
+						"SEName": "Asset/Sounds/Game/Hit.wav",
+						"sePitchRandom": 0.0,
+						"useReflectDirection": true,
+						"normalBlendRatio": 0.5,
+						"cameraShakeIntensity": 1.0,
+						"hitStopDurationSeconds": 0.1
+					},
+					"hitStopDelaySeconds": 0.0
 				},
 				"moveData": {
 					"stepDistance": 3.0,
@@ -249,6 +417,48 @@
 					"chipDamageRatio": 0.1,
 					"parryPostureDamage": 40.0
 				},
+				"visualData": {
+					"hit": {
+						"enableCameraShake": false,
+						"enableHitStop": true,
+						"enableEffect": true,
+						"enableDistortion": false,
+						"effectName": "InkHitEffect",
+						"SEName": "Asset/Sounds/Game/SwordHit.wav",
+						"sePitchRandom": 0.0,
+						"useReflectDirection": false,
+						"normalBlendRatio": 0.5,
+						"cameraShakeIntensity": 1.0,
+						"hitStopDurationSeconds": 0.1
+					},
+					"block": {
+						"enableCameraShake": false,
+						"enableHitStop": true,
+						"enableEffect": true,
+						"enableDistortion": false,
+						"effectName": "InkHitEffect",
+						"SEName": "Asset/Sounds/Game/SwordHit.wav",
+						"sePitchRandom": 0.0,
+						"useReflectDirection": false,
+						"normalBlendRatio": 0.5,
+						"cameraShakeIntensity": 1.0,
+						"hitStopDurationSeconds": 0.1
+					},
+					"parry": {
+						"enableCameraShake": false,
+						"enableHitStop": true,
+						"enableEffect": true,
+						"enableDistortion": false,
+						"effectName": "ParryEffect",
+						"SEName": "Asset/Sounds/Game/Hit.wav",
+						"sePitchRandom": 0.0,
+						"useReflectDirection": true,
+						"normalBlendRatio": 0.5,
+						"cameraShakeIntensity": 1.0,
+						"hitStopDurationSeconds": 0.1
+					},
+					"hitStopDelaySeconds": 0.0
+				},
 				"moveData": {
 					"stepDistance": 3.0,
 					"engageDistance": 1.2
@@ -301,6 +511,48 @@
 					"chipDamageRatio": 0.1,
 					"parryPostureDamage": 60.0
 				},
+				"visualData": {
+					"hit": {
+						"enableCameraShake": false,
+						"enableHitStop": true,
+						"enableEffect": true,
+						"enableDistortion": false,
+						"effectName": "InkHitEffect",
+						"SEName": "Asset/Sounds/Game/SwordHit.wav",
+						"sePitchRandom": 0.0,
+						"useReflectDirection": false,
+						"normalBlendRatio": 0.5,
+						"cameraShakeIntensity": 1.0,
+						"hitStopDurationSeconds": 0.1
+					},
+					"block": {
+						"enableCameraShake": false,
+						"enableHitStop": true,
+						"enableEffect": true,
+						"enableDistortion": false,
+						"effectName": "InkHitEffect",
+						"SEName": "Asset/Sounds/Game/SwordHit.wav",
+						"sePitchRandom": 0.0,
+						"useReflectDirection": false,
+						"normalBlendRatio": 0.5,
+						"cameraShakeIntensity": 1.0,
+						"hitStopDurationSeconds": 0.1
+					},
+					"parry": {
+						"enableCameraShake": false,
+						"enableHitStop": true,
+						"enableEffect": true,
+						"enableDistortion": false,
+						"effectName": "ParryEffect",
+						"SEName": "Asset/Sounds/Game/Hit.wav",
+						"sePitchRandom": 0.0,
+						"useReflectDirection": true,
+						"normalBlendRatio": 0.5,
+						"cameraShakeIntensity": 1.0,
+						"hitStopDurationSeconds": 0.1
+					},
+					"hitStopDelaySeconds": 0.0
+				},
 				"moveData": {
 					"stepDistance": 3.0,
 					"engageDistance": 1.2
@@ -350,6 +602,48 @@
 					"postureDamage": 25.0,
 					"chipDamageRatio": 0.1,
 					"parryPostureDamage": 50.0
+				},
+				"visualData": {
+					"hit": {
+						"enableCameraShake": false,
+						"enableHitStop": true,
+						"enableEffect": true,
+						"enableDistortion": false,
+						"effectName": "InkHitEffect",
+						"SEName": "Asset/Sounds/Game/SwordHit.wav",
+						"sePitchRandom": 0.0,
+						"useReflectDirection": false,
+						"normalBlendRatio": 0.5,
+						"cameraShakeIntensity": 1.0,
+						"hitStopDurationSeconds": 0.1
+					},
+					"block": {
+						"enableCameraShake": false,
+						"enableHitStop": true,
+						"enableEffect": true,
+						"enableDistortion": false,
+						"effectName": "InkHitEffect",
+						"SEName": "Asset/Sounds/Game/SwordHit.wav",
+						"sePitchRandom": 0.0,
+						"useReflectDirection": false,
+						"normalBlendRatio": 0.5,
+						"cameraShakeIntensity": 1.0,
+						"hitStopDurationSeconds": 0.1
+					},
+					"parry": {
+						"enableCameraShake": false,
+						"enableHitStop": true,
+						"enableEffect": true,
+						"enableDistortion": false,
+						"effectName": "ParryEffect",
+						"SEName": "Asset/Sounds/Game/Hit.wav",
+						"sePitchRandom": 0.0,
+						"useReflectDirection": true,
+						"normalBlendRatio": 0.5,
+						"cameraShakeIntensity": 1.0,
+						"hitStopDurationSeconds": 0.1
+					},
+					"hitStopDelaySeconds": 0.0
 				},
 				"moveData": {
 					"stepDistance": 3.0,

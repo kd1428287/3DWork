@@ -407,7 +407,6 @@
     <ClInclude Include="Src\Application\Definitions\Character\Player\PlayerDefinitionJson.h" />
     <ClInclude Include="Src\Application\Definitions\Effect\EffectParams.h" />
     <ClInclude Include="Src\Application\Definitions\Effect\SlashTrailParams.h" />
-    <ClInclude Include="Src\Application\Definitions\Loaders\AttackDataLoader.h" />
     <ClInclude Include="Src\Application\Definitions\Loaders\ComponentParamsOrderedJson.h" />
     <ClInclude Include="Src\Application\Definitions\Loaders\DefinitionJson.h" />
     <ClInclude Include="Src\Application\Definitions\Loaders\EffectDataLoader.h" />
@@ -571,7 +570,6 @@
     <ClCompile Include="Src\Application\Core\Scene\SceneManager.cpp" />
     <ClCompile Include="Src\Application\Core\Scene\TransitionController.cpp" />
     <ClCompile Include="Src\Application\Definitions\Effect\EffectParams.cpp" />
-    <ClCompile Include="Src\Application\Definitions\Loaders\AttackDataLoader.cpp" />
     <ClCompile Include="Src\Application\Definitions\Loaders\EffectDataLoader.cpp" />
     <ClCompile Include="Src\Application\Definitions\Loaders\EnemyAttackTableLoader.cpp" />
     <ClCompile Include="Src\Application\Definitions\Loaders\JsonLoader.cpp" />

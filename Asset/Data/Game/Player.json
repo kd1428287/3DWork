@@ -302,40 +302,6 @@
 		{
 			"type": "HitReaction",
 			"params": {
-				"hit": {
-					"enableCameraShake": true,
-					"enableHitStop": true,
-					"enableEffect": true,
-					"enableDistortion": false,
-					"effectName": "BloodSplatter",
-					"SEName": "Asset/Sounds/Game/Hit.wav",
-					"useReflectDirection": false,
-					"cameraShakeIntensity": 1.0,
-					"hitStopDurationSeconds": 0.1
-				},
-				"block": {
-					"enableCameraShake": true,
-					"enableHitStop": true,
-					"enableEffect": true,
-					"enableDistortion": false,
-					"effectName": "BlockEffect",
-					"SEName": "Asset/Sounds/Game/Block.wav",
-					"useReflectDirection": true,
-					"cameraShakeIntensity": 0.8,
-					"hitStopDurationSeconds": 0.1
-				},
-				"parry": {
-					"enableCameraShake": false,
-					"enableHitStop": true,
-					"enableEffect": true,
-					"enableDistortion": true,
-					"effectName": "ParryEffect",
-					"SEName": "Asset/Sounds/Game/Parry.wav",
-					"sePitchRandom": 0.1,
-					"useReflectDirection": true,
-					"cameraShakeIntensity": 1.0,
-					"hitStopDurationSeconds": 0.05
-				},
 				"hitStopDelaySeconds": 0.0,
 				"largeStaggerDuration": 0.6
 			}
