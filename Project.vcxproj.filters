@@ -1608,5 +1608,8 @@
     <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_InkWash.hlsl">
       <Filter>Src\Framework\Shader\PostProcessShader</Filter>
     </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_MotionBlur.hlsl">
+      <Filter>Src\Framework\Shader\PostProcessShader</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

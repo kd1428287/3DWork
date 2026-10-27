@@ -155,6 +155,18 @@ bool KdPostProcessShader::Init()
 		}
 	}
 
+	{
+#include "KdPostProcessShader_PS_MotionBlur.shaderInc"
+
+		if (FAILED(KdDirect3D::Instance().WorkDev()->CreatePixelShader(
+			compiledBuffer, sizeof(compiledBuffer), nullptr, &m_PS_MotionBlur)))
+		{
+			assert(0 && "ピクセルシェーダー作成失敗(MotionBlur)");
+			Release();
+			return false;
+		}
+	}
+
 	m_cb0_BlurInfo.Create();
 
 	m_cb0_DoFInfo.Create();
@@ -172,6 +184,8 @@ bool KdPostProcessShader::Init()
 	m_cb0_TransitionInfo.Create();
 
 	m_cb0_InkWashInfo.Create();
+
+	m_cb0_MotionBlurInfo.Create();
 
 	const std::shared_ptr<KdTexture>& backBuffer = KdDirect3D::Instance().GetBackBuffer();
 
@@ -224,6 +238,9 @@ bool KdPostProcessShader::Init()
 	m_inkWashRTPack.CreateRenderTarget(backBuffer->GetWidth(), backBuffer->GetHeight());
 	m_cb0_InkWashInfo.Work().Aspect = static_cast<float>(backBuffer->GetWidth()) / backBuffer->GetHeight();
 
+	// モーションブラー適用後の画像
+	m_motionBlurRTPack.CreateRenderTarget(backBuffer->GetWidth(), backBuffer->GetHeight());
+
 	// 質感合成後の画像
 	m_surfaceRTPack.CreateRenderTarget(backBuffer->GetWidth(), backBuffer->GetHeight());
 
@@ -265,6 +282,7 @@ void KdPostProcessShader::Release()
 	KdSafeRelease(m_PS_TransitionWarp);
 	KdSafeRelease(m_PS_TransitionCover);
 	KdSafeRelease(m_PS_InkWash);
+	KdSafeRelease(m_PS_MotionBlur);
 
 
 	m_cb0_BlurInfo.Release();
@@ -276,6 +294,7 @@ void KdPostProcessShader::Release()
 	m_cb0_SurfaceInfo.Release();
 	m_cb0_TransitionInfo.Release();
 	m_cb0_InkWashInfo.Release();
+	m_cb0_MotionBlurInfo.Release();
 
 	m_surfaceTex.reset();
 }
@@ -701,7 +720,15 @@ void KdPostProcessShader::PostEffectProcess()
 	LightBloomProcess();
 	BlurProcess();
 	DepthOfFieldProcess();
-	ColorGradeProcess();
+
+	// モーションブラー(有効時のみ)。結果をカラーグレードの入力にする
+	std::shared_ptr<KdTexture> gradeSrc = m_depthOfFieldRTPack.m_RTTexture;
+	if (MotionBlurProcess(gradeSrc))
+	{
+		gradeSrc = m_motionBlurRTPack.m_RTTexture;
+	}
+
+	ColorGradeProcess(gradeSrc);
 
 	// 衝撃波が無い間は全画面コピーを省いてカラーグレード結果をそのまま使う
 	std::shared_ptr<KdTexture> finalTex = m_colorGradeRTPack.m_RTTexture;
@@ -804,7 +831,48 @@ void KdPostProcessShader::DepthOfFieldProcess()
 	DrawTexture(srcTexList, 5, m_depthOfFieldRTPack.m_RTTexture, &m_depthOfFieldRTPack.m_viewPort);
 }
 
-void KdPostProcessShader::ColorGradeProcess()
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 深度から前フレーム位置を逆算して、速度方向にぼかして m_motionBlurRTPack に描画(t0=画像 t1=シーン深度)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+bool KdPostProcessShader::MotionBlurProcess(const std::shared_ptr<KdTexture>& srcTex)
+{
+	const KdShaderManager::cbCamera& cam = KdShaderManager::Instance().GetCameraCB();
+	Math::Matrix viewProj = cam.mView * cam.mProj;
+
+	bool canDraw = m_motionBlurEnabled && m_hasPrevViewProj && m_cb0_MotionBlurInfo.Get().Strength > 0.0f;
+
+	if (canDraw)
+	{
+		ID3D11DeviceContext* DevCon = KdDirect3D::Instance().WorkDevContext();
+		if (!DevCon) { return false; }
+
+		m_cb0_MotionBlurInfo.Work().Reproject = viewProj.Invert() * m_prevViewProj;
+		m_cb0_MotionBlurInfo.Write();
+		DevCon->PSSetConstantBuffers(0, 1, m_cb0_MotionBlurInfo.GetAddress());
+
+		KdShaderManager& shaderMgr = KdShaderManager::Instance();
+		if (shaderMgr.SetVertexShader(m_VS))
+		{
+			DevCon->IASetInputLayout(m_inputLayout);
+		}
+		shaderMgr.SetPixelShader(m_PS_MotionBlur);
+
+		shaderMgr.ChangeSamplerState(KdSamplerState::Linear_Clamp);
+
+		std::shared_ptr<KdTexture> srcTexList[2] = { srcTex, m_postEffectRTPack.m_ZBuffer };
+		DrawTexture(srcTexList, 2, m_motionBlurRTPack.m_RTTexture, &m_motionBlurRTPack.m_viewPort);
+
+		shaderMgr.UndoSamplerState();
+	}
+
+	// 無効の間も履歴は更新する(再有効化時の巨大ブラー防止)
+	m_prevViewProj = viewProj;
+	m_hasPrevViewProj = true;
+
+	return canDraw;
+}
+
+void KdPostProcessShader::ColorGradeProcess(const std::shared_ptr<KdTexture>& srcTex)
 {
 	ID3D11DeviceContext* DevCon = KdDirect3D::Instance().WorkDevContext();
 	if (DevCon)
@@ -829,7 +897,7 @@ void KdPostProcessShader::ColorGradeProcess()
 	// ＋エフェクト層(t2)。グレードの対象外として、PS内でグレード後の色へ重ねる
 	std::shared_ptr<KdTexture> srcTexList[3] =
 	{
-		m_depthOfFieldRTPack.m_RTTexture,
+		srcTex,
 		m_colorGradeMaskRTPack.m_RTTexture,
 		m_effectRTPack.m_RTTexture
 	};

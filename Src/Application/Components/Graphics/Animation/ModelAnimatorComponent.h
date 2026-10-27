@@ -38,7 +38,16 @@ public:
 		SetRootMotionEnabled(clip.useRootMotion);
 		SetBlendDuration(clip.blendDuration);
 		//Play(clip.animationName, clip.loop, clip.duration, clip.startFrame, clip.endFrame, (clip.startFrame != 0 && clip.endFrame != 0));
-		Play(clip.animationName, clip.loop, clip.duration, clip.startFrame, clip.endFrame, clip.isForce);
+		const bool started = Play(clip.animationName, clip.loop, clip.duration, clip.startFrame, clip.endFrame, clip.isForce);
+
+		// segmentsがあれば区間再生モードへ。再生が始まらなかった(同一クリップ継続)場合は触らない
+		if (started && !clip.segments.empty()) {
+			segmentMode_ = true;
+			segmentClip_ = clip;
+			segmentElapsed_ = 0.0f;
+			// durationが未指定なら、範囲の等速再生時間を使う
+			if (segmentClip_.duration <= 0.0f) { segmentClip_.duration = animator_.GetDuration(); }
+		}
 	}
 
 	// アニメーション名を指定して再生開始
@@ -48,18 +57,22 @@ public:
 	//   関わらず、ちょうどこの秒数で再生し終わるよう再生速度を自動スケーリングする
 	// ・startFrame/endFrame	… フレーム番号をそのまま指定する。
 	//   endFrameを0以下にすると、クリップの末尾まで再生する
-	void Play(std::string_view animName, bool loop = true, float targetDurationSeconds = -1.0f, int startFrame = 0, int endFrame = 0, bool force = false)
+	// 戻り値は実際に再生を開始したか
+	bool Play(std::string_view animName, bool loop = true, float targetDurationSeconds = -1.0f, int startFrame = 0, int endFrame = 0, bool force = false)
 	{
-		if (!skeleton_ || animName.empty()) { return; }
+		if (!skeleton_ || animName.empty()) { return false; }
 
 		auto animData = skeleton_->WorkModel().GetAnimation(animName);
 		if (!animData) {
 			assert(0 && "ModelAnimatorComponent ファイルが存在しません。ファイルパスを確認してください");
-			return;
+			return false;
 		}
 
 		// 既に同じアニメーションを再生中なら再生しない
-		if (!force && spNowPlaying_ == animData) { return; }
+		if (!force && spNowPlaying_ == animData) { return false; }
+
+		// 通常再生へ戻す。区間再生はPlay(clip)側が再度有効にする
+		segmentMode_ = false;
 
 		// FootstepEventComponent等がクリップ切り替えを検知するために保持しておく
 		currentAnimName_ = animName;
@@ -93,6 +106,7 @@ public:
 		else {
 			targetSpeedOverride_ = -1.0f; // 通常のfps基準に戻す
 		}
+		return true;
 	}
 
 	// 再生速度をfps換算で指定して毎フレーム進行させる
@@ -103,13 +117,21 @@ public:
 
 		rootMotion_.PrepareFrame(skeleton_->WorkModel());
 
-		// targetSpeedOverride_が設定されていれば優先して速度を決める。
-		const float speed = (targetSpeedOverride_ > 0.0f) ? targetSpeedOverride_ : speedScale_;
-		const float timeBeforeAdvance = animator_.GetTime();
-		animator_.AdvanceTime(skeleton_->WorkModel().WorkNodes(), deltaTime * speed);
+		bool wrapped = false;
+		if (segmentMode_) {
+			// 区間再生: 経過秒から再生位置を求めて直接適用する(逆再生を巻き戻りと誤判定しない)
+			animator_.ApplyAtNormalizedTime(skeleton_->WorkModel().WorkNodes(), segmentClip_.EvaluatePosition(segmentElapsed_));
+			segmentElapsed_ += deltaTime;
+		}
+		else {
+			// targetSpeedOverride_が設定されていれば優先して速度を決める。
+			const float speed = (targetSpeedOverride_ > 0.0f) ? targetSpeedOverride_ : speedScale_;
+			const float timeBeforeAdvance = animator_.GetTime();
+			animator_.AdvanceTime(skeleton_->WorkModel().WorkNodes(), deltaTime * speed);
 
-		// 時間が戻った=ループで先頭(またはstartFrame)へ巻き戻ったフレーム
-		const bool wrapped = animator_.GetTime() < timeBeforeAdvance;
+			// 時間が戻った=ループで先頭(またはstartFrame)へ巻き戻ったフレーム
+			wrapped = animator_.GetTime() < timeBeforeAdvance;
+		}
 		rootMotion_.FinalizeFrame(wrapped);
 
 		// クロスフェード: 遷移直後のblendDuration_秒間、直前のポーズと
@@ -220,6 +242,11 @@ private:
 
 	// Play()にtargetDurationSecondsが渡された場合、m_fpsの代わりに使う
 	float								targetSpeedOverride_ = -1.0f;
+
+	// 区間再生(MotionClipData::segments)用。有効な間はAdvanceTimeの代わりに位置を直接指定する
+	bool								segmentMode_ = false;
+	MotionClipData						segmentClip_;
+	float								segmentElapsed_ = 0.0f;
 
 	std::vector<Math::Matrix>			blendFromLocalTransforms_; // 切り替わる直前の全ボーンのローカル行列
 	float								blendDuration_ = 0.15f;    // ブレンドにかける時間(秒)

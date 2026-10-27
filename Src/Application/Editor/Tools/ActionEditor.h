@@ -43,6 +43,7 @@ private:
 	void DrawTargets();
 	void DrawPoolList(const char* title, Pool pool);
 	void DrawInspector();
+	void DrawSegments(MotionClipData& clip, float markerSec);
 	void DrawTimeline();
 	void DrawGameTimeStrip(EnemyAttackDefinition& atk);
 	void DrawClipStrip(EnemyAttackDefinition& atk);

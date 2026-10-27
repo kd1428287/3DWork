@@ -18,6 +18,7 @@ namespace
 	const char* const kPhaseNames[3] = { "Windup", "Active", "Recovery" };
 	const ImU32 kPhaseColors[3] = { IM_COL32(70, 110, 200, 255), IM_COL32(200, 70, 70, 255), IM_COL32(80, 170, 100, 255) };
 	const char* const kTelegraphNames[3] = { "None", "Normal", "Danger" };
+	const char* const kEaseNames[4] = { "Linear", "EaseIn", "EaseOut", "EaseInOut" };
 
 	// 左:対象 / 中央:Inspector / 右:Preview / 下:Timeline
 	void SetupDockLayout(ImGuiID dockspaceId, const ImVec2& size)
@@ -374,6 +375,8 @@ void ActionEditor::DrawInspector()
 		for (int i = 0; i < 3; ++i)
 		{
 			MotionClipData& clip = PhaseClip(d.phaseData, i);
+			float curLocal = 0.0f;
+			const int curIdx = PhaseIndexAt(d.phaseData, m_time, curLocal);
 
 			ImGui::PushID(i);
 			const bool open = ImGui::CollapsingHeader(kPhaseNames[i], ImGuiTreeNodeFlags_DefaultOpen);
@@ -420,6 +423,7 @@ void ActionEditor::DrawInspector()
 				{
 					ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "アニメーションが見つかりません");
 				}
+				DrawSegments(clip, (curIdx == i) ? curLocal : -1.0f);
 			}
 			ImGui::PopID();
 		}
@@ -586,6 +590,154 @@ void ActionEditor::DrawTimeline()
 	ImGui::End();
 }
 
+// 1フェーズ分のsegments編集(区間の追加・削除・並べ替えと、再生位置のグラフ)。
+// markerSecが0以上なら、フェーズ内の現在時刻をグラフに表示する。
+void ActionEditor::DrawSegments(MotionClipData& clip, float markerSec)
+{
+	if (!ImGui::TreeNodeEx("segments", ImGuiTreeNodeFlags_DefaultOpen, "segments (%d)", (int)clip.segments.size())) { return; }
+
+	auto drag = [&](const char* id, float& v, float speed, float mn, float mx)
+		{
+			ImGui::SetNextItemWidth(64.0f);
+			if (ImGui::DragFloat(id, &v, speed, mn, mx, "%.3f")) { MarkEdited(); }
+			if (ImGui::IsItemActivated()) { PushUndo(); }
+		};
+
+	float totalWeight = 0.0f;
+	for (const MotionSegment& s : clip.segments) { totalWeight += std::max(s.weight, 0.0f); }
+
+	if (clip.segments.empty()) { ImGui::TextDisabled("空なら等速再生"); }
+	else { ImGui::TextDisabled("   from      to     weight    ease"); }
+
+	int removeIdx = -1;
+	int swapIdx = -1;	// swapIdxとswapIdx+1を入れ替える
+	for (int i = 0; i < (int)clip.segments.size(); ++i)
+	{
+		MotionSegment& s = clip.segments[i];
+		const float sec = (totalWeight > 0.0f) ? clip.duration * std::max(s.weight, 0.0f) / totalWeight : 0.0f;
+		const char* kind = (s.from == s.to) ? "hold" : (s.to < s.from) ? "reverse" : "forward";
+
+		ImGui::PushID(i);
+		ImGui::AlignTextToFramePadding();
+		ImGui::Text("%d", i);
+
+		ImGui::SameLine();
+		drag("##from", s.from, 0.005f, 0.0f, 1.0f);
+		ImGui::SameLine();
+		drag("##to", s.to, 0.005f, 0.0f, 1.0f);
+		ImGui::SameLine();
+		drag("##weight", s.weight, 0.05f, 0.0f, 100.0f);
+
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(90.0f);
+		int ease = (int)s.ease;
+		if (ImGui::Combo("##ease", &ease, kEaseNames, 4))
+		{
+			PushUndo();
+			s.ease = (SegmentEase)ease;
+			MarkEdited();
+		}
+
+		ImGui::SameLine();
+		if (ImGui::SmallButton("^") && i > 0) { swapIdx = i - 1; }
+		ImGui::SameLine();
+		if (ImGui::SmallButton("v") && i + 1 < (int)clip.segments.size()) { swapIdx = i; }
+		ImGui::SameLine();
+		if (ImGui::SmallButton("x")) { removeIdx = i; }
+
+		ImGui::SameLine();
+		ImGui::TextDisabled("%s %.2fs", kind, sec);
+		ImGui::PopID();
+	}
+
+	if (removeIdx >= 0)
+	{
+		PushUndo();
+		clip.segments.erase(clip.segments.begin() + removeIdx);
+		MarkEdited();
+	}
+	else if (swapIdx >= 0)
+	{
+		PushUndo();
+		std::swap(clip.segments[swapIdx], clip.segments[swapIdx + 1]);
+		MarkEdited();
+	}
+
+	// 追加は末尾の区間のtoから続ける(空なら0から)
+	const float last = clip.segments.empty() ? 0.0f : clip.segments.back().to;
+	auto add = [&](float from, float to)
+		{
+			PushUndo();
+			MotionSegment s;
+			s.from = from;
+			s.to = to;
+			clip.segments.push_back(s);
+			MarkEdited();
+		};
+	if (ImGui::SmallButton("+ Forward")) { add(last, 1.0f); }
+	ImGui::SameLine();
+	if (ImGui::SmallButton("+ Hold")) { add(last, last); }
+	ImGui::SameLine();
+	if (ImGui::SmallButton("+ Reverse")) { add(last, std::max(last - 0.2f, 0.0f)); }
+	ImGui::SameLine();
+	ImGui::BeginDisabled(clip.segments.empty());
+	if (ImGui::SmallButton("Clear"))
+	{
+		PushUndo();
+		clip.segments.clear();
+		MarkEdited();
+	}
+	ImGui::EndDisabled();
+
+	if (!clip.segments.empty())
+	{
+		const ImVec4 warnCol(1.0f, 0.8f, 0.2f, 1.0f);
+		if (totalWeight <= 0.0f) { ImGui::TextColored(warnCol, "weightの合計が0です"); }
+		else if (clip.segments.back().to != 1.0f) { ImGui::TextColored(warnCol, "最後のtoが1.0でないため、フェーズ末尾は途中のポーズになります"); }
+	}
+
+	// 再生位置のグラフ(縦:クリップ範囲内の位置 0〜1、横:フェーズ内の時間)
+	if (clip.duration > 0.0f)
+	{
+		ImDrawList* dl = ImGui::GetWindowDrawList();
+		const float w = std::max(ImGui::GetContentRegionAvail().x - 8.0f, 100.0f);
+		constexpr float h = 56.0f;
+		const ImVec2 o = ImGui::GetCursorScreenPos();
+		dl->AddRectFilled(o, ImVec2(o.x + w, o.y + h), IM_COL32(30, 30, 30, 255));
+
+		if (totalWeight > 0.0f)
+		{
+			float acc = 0.0f;
+			for (const MotionSegment& s : clip.segments)
+			{
+				acc += std::max(s.weight, 0.0f);
+				if (acc >= totalWeight) { break; }
+
+				const float x = o.x + w * (acc / totalWeight);
+				dl->AddLine(ImVec2(x, o.y), ImVec2(x, o.y + h), IM_COL32(255, 255, 255, 50));
+			}
+		}
+
+		constexpr int kN = 96;
+		ImVec2 pts[kN + 1];
+		for (int k = 0; k <= kN; ++k)
+		{
+			const float u = (float)k / (float)kN;
+			pts[k] = ImVec2(o.x + w * u, o.y + h - 4.0f - (h - 8.0f) * clip.EvaluatePosition(clip.duration * u));
+		}
+		dl->AddPolyline(pts, kN + 1, IM_COL32(255, 220, 60, 255), 0, 2.0f);
+
+		if (markerSec >= 0.0f)
+		{
+			const float x = o.x + w * std::clamp(markerSec / clip.duration, 0.0f, 1.0f);
+			dl->AddLine(ImVec2(x, o.y), ImVec2(x, o.y + h), IM_COL32(255, 255, 255, 255), 2.0f);
+		}
+
+		ImGui::Dummy(ImVec2(w, h));
+	}
+
+	ImGui::TreePop();
+}
 void ActionEditor::DrawGameTimeStrip(EnemyAttackDefinition& atk)
 {
 	AttackPhaseData& ph = atk.attackData.phaseData;
@@ -634,6 +786,34 @@ void ActionEditor::DrawGameTimeStrip(EnemyAttackDefinition& atk)
 		const ImVec2 p1(origin.x + (acc + dur) * pxPerSec, origin.y + kHeight);
 
 		dl->AddRectFilled(p0, p1, kPhaseColors[i]);
+		// 区間の境界と、停止(暗)・逆再生(橙)の区間を重ねて描く
+		if (!clip.segments.empty() && dur > 0.0f)
+		{
+			float totalW = 0.0f;
+			for (const MotionSegment& s : clip.segments) { totalW += std::max(s.weight, 0.0f); }
+
+			float accW = 0.0f;
+			for (size_t k = 0; k < clip.segments.size() && totalW > 0.0f; ++k)
+			{
+				const MotionSegment& s = clip.segments[k];
+				const float sx0 = p0.x + (p1.x - p0.x) * (accW / totalW);
+				accW += std::max(s.weight, 0.0f);
+				const float sx1 = p0.x + (p1.x - p0.x) * (accW / totalW);
+
+				const bool hold = (s.from == s.to);
+				const bool rev = (s.to < s.from);
+				if (hold) { dl->AddRectFilled(ImVec2(sx0, p0.y), ImVec2(sx1, p1.y), IM_COL32(0, 0, 0, 110)); }
+				if (rev) { dl->AddRectFilled(ImVec2(sx0, p0.y), ImVec2(sx1, p1.y), IM_COL32(255, 170, 0, 130)); }
+				if (k > 0) { dl->AddLine(ImVec2(sx0, p0.y), ImVec2(sx0, p1.y), IM_COL32(255, 255, 255, 140)); }
+
+				if (hold || rev)
+				{
+					dl->PushClipRect(ImVec2(sx0, p0.y), ImVec2(sx1, p1.y), true);
+					dl->AddText(ImVec2(sx0 + 2.0f, p1.y - 15.0f), IM_COL32(255, 255, 255, 220), hold ? "HOLD" : "REV");
+					dl->PopClipRect();
+				}
+			}
+		}
 		dl->AddRect(p0, p1, (i == m_selectedPhase) ? IM_COL32(255, 255, 255, 255) : IM_COL32(20, 20, 20, 255), 0.0f, 0, (i == m_selectedPhase) ? 2.0f : 1.0f);
 
 		char text[96];
@@ -775,7 +955,7 @@ void ActionEditor::DrawClipStrip(EnemyAttackDefinition& atk)
 	if (cur.animationName == target.animationName && cur.duration > 0.0f)
 	{
 		const float endF = (float)ClipEndFrame(cur, totalFrames);
-		const float frame = (float)cur.startFrame + std::clamp(local / cur.duration, 0.0f, 1.0f) * (endF - (float)cur.startFrame);
+		const float frame = (float)cur.startFrame + cur.EvaluatePosition(local) * (endF - (float)cur.startFrame);
 		const float x = origin.x + frame * pxPerFrame;
 		dl->AddLine(ImVec2(x, origin.y - 3.0f), ImVec2(x, origin.y + kHeight + 3.0f), IM_COL32(255, 255, 0, 255), 2.0f);
 	}
@@ -806,7 +986,7 @@ void ActionEditor::DrawPreviewWindow()
 			{
 				const int total = ClipTotalFrames(*anim);
 				const float endF = (float)ClipEndFrame(clip, total);
-				frame += (clip.duration > 0.0f) ? std::clamp(local / clip.duration, 0.0f, 1.0f) * (endF - frame) : 0.0f;
+				frame += clip.EvaluatePosition(local) * (endF - frame);
 			}
 
 			const float rootDist = std::sqrt(m_rootMotionAccum.x * m_rootMotionAccum.x + m_rootMotionAccum.z * m_rootMotionAccum.z);
@@ -881,12 +1061,17 @@ void ActionEditor::EvaluatePose()
 
 			// Playと同じ速度スケーリング(クリップの尺 ÷ duration)
 			const float speed = animator.GetDuration() / duration;
+			// 区間再生は実行時(ModelAnimatorComponent)と同じく、経過秒から再生位置を直接決める
+			const bool useSegments = !clip.segments.empty();
+			MotionClipData timing;
+			if (useSegments) { timing = clip; timing.duration = duration; }
 			const int steps = (int)(std::min(remaining, duration) / kSimStep + 0.0001f) + 1;
 
 			for (int s = 0; s < steps; ++s)
 			{
 				rootMotion.PrepareFrame(m_model);
-				animator.AdvanceTime(m_model.WorkNodes(), kSimStep * speed);
+				if (useSegments) { animator.ApplyAtNormalizedTime(m_model.WorkNodes(), timing.EvaluatePosition((float)s * kSimStep)); }
+				else { animator.AdvanceTime(m_model.WorkNodes(), kSimStep * speed); }
 				rootMotion.FinalizeFrame(false);
 				m_rootMotionAccum += rootMotion.ConsumeDelta();
 			}

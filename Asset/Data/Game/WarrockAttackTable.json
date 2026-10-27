@@ -75,12 +75,20 @@
           "windup": {
             "animationName": "Punch_Right",
             "loop": false,
-            "duration": 1.2200000286102295,
+            "duration": 0.800000011920929,
             "useRootMotion": true,
             "blendDuration": 0.10000000149011612,
             "startFrame": 0,
             "endFrame": 10,
-            "isForce": true
+            "isForce": true,
+            "segments": [
+              {
+                "from": 0.0,
+                "to": 1.0,
+                "weight": 1.0,
+                "ease": "EaseIn"
+              }
+            ]
           },
           "active": {
             "animationName": "Punch_Right",
@@ -90,7 +98,8 @@
             "blendDuration": 0.0,
             "startFrame": 10,
             "endFrame": 30,
-            "isForce": true
+            "isForce": true,
+            "segments": []
           },
           "recovery": {
             "animationName": "Punch_Right",
@@ -100,7 +109,8 @@
             "blendDuration": 0.0,
             "startFrame": 30,
             "endFrame": 67,
-            "isForce": true
+            "isForce": true,
+            "segments": []
           }
         },
         "cancelData": {
@@ -211,7 +221,15 @@
             "blendDuration": 0.10000000149011612,
             "startFrame": 0,
             "endFrame": 25,
-            "isForce": true
+            "isForce": true,
+            "segments": [
+              {
+                "from": 0.0,
+                "to": 1.0,
+                "weight": 1.0,
+                "ease": "EaseIn"
+              }
+            ]
           },
           "active": {
             "animationName": "Kick",
@@ -221,7 +239,8 @@
             "blendDuration": 0.0,
             "startFrame": 25,
             "endFrame": 40,
-            "isForce": true
+            "isForce": true,
+            "segments": []
           },
           "recovery": {
             "animationName": "Kick",
@@ -231,7 +250,8 @@
             "blendDuration": 0.0,
             "startFrame": 40,
             "endFrame": 112,
-            "isForce": true
+            "isForce": true,
+            "segments": []
           }
         },
         "cancelData": {
@@ -264,14 +284,14 @@
       }
     },
     {
-      "name": "Swipe",
+      "name": "Swipe_delay",
       "attackData": {
         "damageData": {
-          "damage": 14.0,
-          "postureDamage": 18.0,
+          "damage": 37.0,
+          "postureDamage": 36.0,
           "guardDamageRatio": 0.10000000149011612,
           "guardPostureDamageRatio": 0.10000000149011612,
-          "parryPostureDamage": 30.0,
+          "parryPostureDamage": 50.0,
           "isParryable": true,
           "isReboundable": true
         },
@@ -337,12 +357,38 @@
           "windup": {
             "animationName": "Punch_Left",
             "loop": false,
-            "duration": 1.659999966621399,
+            "duration": 2.0,
             "useRootMotion": false,
             "blendDuration": 0.10000000149011612,
             "startFrame": 0,
             "endFrame": 70,
-            "isForce": true
+            "isForce": true,
+            "segments": [
+              {
+                "from": 0.0,
+                "to": 0.800000011920929,
+                "weight": 1.0,
+                "ease": "EaseInOut"
+              },
+              {
+                "from": 0.800000011920929,
+                "to": 0.8500000238418579,
+                "weight": 0.4000000059604645,
+                "ease": "EaseOut"
+              },
+              {
+                "from": 0.8500000238418579,
+                "to": 0.699999988079071,
+                "weight": 0.4000000059604645,
+                "ease": "EaseOut"
+              },
+              {
+                "from": 0.699999988079071,
+                "to": 1.0,
+                "weight": 0.10000000149011612,
+                "ease": "EaseIn"
+              }
+            ]
           },
           "active": {
             "animationName": "Punch_Left",
@@ -352,7 +398,8 @@
             "blendDuration": 0.0,
             "startFrame": 70,
             "endFrame": 90,
-            "isForce": true
+            "isForce": true,
+            "segments": []
           },
           "recovery": {
             "animationName": "Punch_Left",
@@ -362,7 +409,8 @@
             "blendDuration": 0.0,
             "startFrame": 90,
             "endFrame": 160,
-            "isForce": true
+            "isForce": true,
+            "segments": []
           }
         },
         "cancelData": {
@@ -474,7 +522,8 @@
             "blendDuration": 0.10000000149011612,
             "startFrame": 0,
             "endFrame": 50,
-            "isForce": true
+            "isForce": true,
+            "segments": []
           },
           "active": {
             "animationName": "SpinningAttack_Low",
@@ -484,7 +533,15 @@
             "blendDuration": 0.0,
             "startFrame": 50,
             "endFrame": 80,
-            "isForce": true
+            "isForce": true,
+            "segments": [
+              {
+                "from": 0.0,
+                "to": 1.0,
+                "weight": 1.0,
+                "ease": "EaseInOut"
+              }
+            ]
           },
           "recovery": {
             "animationName": "SpinningAttack_Low",
@@ -494,7 +551,8 @@
             "blendDuration": 0.0,
             "startFrame": 80,
             "endFrame": 150,
-            "isForce": true
+            "isForce": true,
+            "segments": []
           }
         },
         "cancelData": {
@@ -524,6 +582,154 @@
           0.0
         ],
         "leadTime": 0.15000000596046448
+      }
+    },
+    {
+      "name": "Swipe",
+      "attackData": {
+        "damageData": {
+          "damage": 14.0,
+          "postureDamage": 18.0,
+          "guardDamageRatio": 0.10000000149011612,
+          "guardPostureDamageRatio": 0.10000000149011612,
+          "parryPostureDamage": 30.0,
+          "isParryable": true,
+          "isReboundable": true
+        },
+        "visualData": {
+          "hit": {
+            "enableCameraShake": true,
+            "enableHitStop": true,
+            "enableEffect": true,
+            "enableDistortion": false,
+            "effectName": "BloodSplatter",
+            "SEName": "Asset/Sounds/Game/Hit.wav",
+            "sePitchRandom": 0.0,
+            "useReflectDirection": false,
+            "normalBlendRatio": 0.5,
+            "cameraShakeIntensity": 1.0,
+            "hitStopDurationSeconds": 0.10000000149011612,
+            "recoilChain": "",
+            "recoilStrength": 1.0
+          },
+          "block": {
+            "enableCameraShake": true,
+            "enableHitStop": true,
+            "enableEffect": true,
+            "enableDistortion": false,
+            "effectName": "BlockEffect",
+            "SEName": "Asset/Sounds/Game/Block.wav",
+            "sePitchRandom": 0.0,
+            "useReflectDirection": true,
+            "normalBlendRatio": 0.5,
+            "cameraShakeIntensity": 0.800000011920929,
+            "hitStopDurationSeconds": 0.10000000149011612,
+            "recoilChain": "",
+            "recoilStrength": 1.0
+          },
+          "parry": {
+            "enableCameraShake": false,
+            "enableHitStop": true,
+            "enableEffect": true,
+            "enableDistortion": true,
+            "effectName": "ParryEffect",
+            "SEName": "Asset/Sounds/Game/Parry.wav",
+            "sePitchRandom": 0.10000000149011612,
+            "useReflectDirection": true,
+            "normalBlendRatio": 0.5,
+            "cameraShakeIntensity": 1.0,
+            "hitStopDurationSeconds": 0.05000000074505806,
+            "recoilChain": "LeftArm",
+            "recoilStrength": 1.0
+          },
+          "hitStopDelaySeconds": 0.0
+        },
+        "moveData": {
+          "stepDistance": 2.0,
+          "stepDuration": 0.0,
+          "engageDistance": 2.5,
+          "stepDirection": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "phaseData": {
+          "windup": {
+            "animationName": "Punch_Left",
+            "loop": false,
+            "duration": 1.600000023841858,
+            "useRootMotion": false,
+            "blendDuration": 0.10000000149011612,
+            "startFrame": 0,
+            "endFrame": 70,
+            "isForce": true,
+            "segments": [
+              {
+                "from": 0.0,
+                "to": 0.800000011920929,
+                "weight": 1.0,
+                "ease": "EaseInOut"
+              },
+              {
+                "from": 0.800000011920929,
+                "to": 1.0,
+                "weight": 0.10000000149011612,
+                "ease": "EaseIn"
+              }
+            ]
+          },
+          "active": {
+            "animationName": "Punch_Left",
+            "loop": false,
+            "duration": 0.1899999976158142,
+            "useRootMotion": false,
+            "blendDuration": 0.0,
+            "startFrame": 70,
+            "endFrame": 90,
+            "isForce": true,
+            "segments": []
+          },
+          "recovery": {
+            "animationName": "Punch_Left",
+            "loop": false,
+            "duration": 0.6499999761581421,
+            "useRootMotion": false,
+            "blendDuration": 0.0,
+            "startFrame": 90,
+            "endFrame": 160,
+            "isForce": true,
+            "segments": []
+          }
+        },
+        "cancelData": {
+          "recoveryMoveCancelStart": 0.20000000298023224,
+          "recoveryEvadeCancelStart": 0.20000000298023224,
+          "recoveryAttackCancelStart": 0.20000000298023224,
+          "comboWindowAfterRecovery": 0.20000000298023224
+        },
+        "weaponSlots": [
+          "Off",
+          "Body"
+        ]
+      },
+      "minRange": 0.0,
+      "maxRange": 4.5,
+      "weight": 1.0,
+      "facing": {
+        "windupTurnSpeed": 3.0,
+        "activeTurnSpeed": 0.0
+      },
+      "telegraph": {
+        "type": "Normal",
+        "effectName": "PreConverge",
+        "anchorSlot": "Off",
+        "offset": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "leadTime": 0.4000000059604645
       }
     }
   ],
@@ -602,12 +808,26 @@
           "windup": {
             "animationName": "JumpAttack",
             "loop": false,
-            "duration": 0.6399999856948853,
+            "duration": 1.600000023841858,
             "useRootMotion": true,
             "blendDuration": 0.10000000149011612,
             "startFrame": 0,
             "endFrame": 95,
-            "isForce": true
+            "isForce": true,
+            "segments": [
+              {
+                "from": 0.0,
+                "to": 0.699999988079071,
+                "weight": 1.5,
+                "ease": "EaseInOut"
+              },
+              {
+                "from": 0.699999988079071,
+                "to": 1.0,
+                "weight": 0.30000001192092896,
+                "ease": "EaseIn"
+              }
+            ]
           },
           "active": {
             "animationName": "JumpAttack",
@@ -617,7 +837,8 @@
             "blendDuration": 0.0,
             "startFrame": 95,
             "endFrame": 115,
-            "isForce": true
+            "isForce": true,
+            "segments": []
           },
           "recovery": {
             "animationName": "JumpAttack",
@@ -627,7 +848,8 @@
             "blendDuration": 0.0,
             "startFrame": 115,
             "endFrame": 223,
-            "isForce": true
+            "isForce": true,
+            "segments": []
           }
         },
         "cancelData": {

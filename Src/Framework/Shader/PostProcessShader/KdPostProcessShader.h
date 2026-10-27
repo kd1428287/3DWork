@@ -108,6 +108,16 @@ public:
 
 	void PostEffectProcess();
 
+	// モーションブラー(カメラ移動由来。深度から前フレーム位置を逆算してぼかす)
+	void SetMotionBlurEnabled(bool enabled) { m_motionBlurEnabled = enabled; }
+	// strength : シャッター係数(大きいほど長く伸びる)
+	void SetMotionBlurStrength(float strength) { m_cb0_MotionBlurInfo.Work().Strength = strength; }
+	void SetMotionBlurSampleNum(int num) { m_cb0_MotionBlurInfo.Work().SampleNum = (std::max)(4, (std::min)(num, 32)); }
+	// ブラー長の上限(画面UV比)。カメラカット時の暴れ防止
+	void SetMotionBlurMaxLength(float uv) { m_cb0_MotionBlurInfo.Work().MaxBlurUV = uv; }
+	// カメラが瞬間移動した時(シーン切替・カット)に呼ぶ
+	void ResetMotionBlurHistory() { m_hasPrevViewProj = false; }
+
 	// エディタプレビュー等、本編以外の任意サイズテクスチャに対してカラーグレードのみを適用する。
 	// 本編のColorGradeProcess()と同じVS/PS/定数バッファ(パラメータも共通)をそのまま使い回す。
 	//	・srcColor … グレーディング元のカラー(プレビュー用オフスクリーン等)
@@ -125,7 +135,9 @@ private:
 	void BlurProcess();
 	void LightBloomProcess();
 	void DepthOfFieldProcess();
-	void ColorGradeProcess();
+	// 描画したらtrue(結果は m_motionBlurRTPack)
+	bool MotionBlurProcess(const std::shared_ptr<KdTexture>& srcTex);
+	void ColorGradeProcess(const std::shared_ptr<KdTexture>& srcTex);
 	void DistortionProcess();
 	void TransitionWarpProcess(const std::shared_ptr<KdTexture>& srcTex);
 	void InkWashProcess(const std::shared_ptr<KdTexture>& srcTex);
@@ -155,6 +167,7 @@ private:
 	ID3D11PixelShader* m_PS_TransitionWarp = nullptr;
 	ID3D11PixelShader* m_PS_TransitionCover = nullptr;
 	ID3D11PixelShader* m_PS_InkWash = nullptr;
+	ID3D11PixelShader* m_PS_MotionBlur = nullptr;
 
 	static const int kBlurSamplingRadius = 8;
 	static const int kLightBloomSamplingRadius = 4;
@@ -288,6 +301,18 @@ private:
 	};
 	KdConstantBuffer<cbInkWashInfo> m_cb0_InkWashInfo;
 
+	// モーションブラー(HLSL側のcbuffer cbMotionBlurと並びを一致させること)
+	struct cbMotionBlurInfo
+	{
+		Math::Matrix Reproject;			// 現在クリップ→前フレームクリップ
+
+		float Strength = 0.5f;			// シャッター係数
+		int   SampleNum = 12;			// サンプル数
+		float MaxBlurUV = 0.05f;		// ブラー長の上限(画面UV比)
+		float _blank = 0.0f;
+	};
+	KdConstantBuffer<cbMotionBlurInfo> m_cb0_MotionBlurInfo;
+
 	// 発生中の衝撃波(経過時間から半径と強さを毎フレーム算出する)
 	struct ShockwaveInstance
 	{
@@ -315,6 +340,7 @@ public:
 	cbSurfaceInfo& WorkSurfaceCB() { return m_cb0_SurfaceInfo.Work(); }
 	const cbTransitionInfo& GetTransitionCB() const { return m_cb0_TransitionInfo.Get(); }
 	const cbInkWashInfo& GetInkWashCB() const { return m_cb0_InkWashInfo.Get(); }
+	const cbMotionBlurInfo& GetMotionBlurCB() const { return m_cb0_MotionBlurInfo.Get(); }
 	cbInkWashInfo& WorkInkWashCB() { return m_cb0_InkWashInfo.Work(); }
 
 private:
@@ -360,6 +386,12 @@ private:
 
 	// 水墨画化後の画像(リザルト演出中だけ使う)
 	KdRenderTargetPack	m_inkWashRTPack;
+
+	// モーションブラー適用後の画像と、前フレームのView×Proj
+	KdRenderTargetPack	m_motionBlurRTPack;
+	Math::Matrix m_prevViewProj;
+	bool m_hasPrevViewProj = false;
+	bool m_motionBlurEnabled = false;
 
 	// 質感合成後の最終画像と、合成する質感テクスチャ
 	KdRenderTargetPack m_surfaceRTPack;

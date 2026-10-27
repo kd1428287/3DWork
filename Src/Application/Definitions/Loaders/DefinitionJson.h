@@ -46,26 +46,37 @@ namespace nlohmann
 	};
 }
 
+// SegmentEaseはJSON上で文字列("Linear"等)にする。未知の文字列は先頭のLinearになる。
+NLOHMANN_JSON_SERIALIZE_ENUM(SegmentEase, {
+	{ SegmentEase::Linear, "Linear" },
+	{ SegmentEase::EaseIn, "EaseIn" },
+	{ SegmentEase::EaseOut, "EaseOut" },
+	{ SegmentEase::EaseInOut, "EaseInOut" },
+	})
+
+// MotionClipDataがsegmentsとして使うため、先に登録しておく
+COMPONENT_PARAMS_DEFINE_TYPE(MotionSegment, from, to, weight, ease)
+
 COMPONENT_PARAMS_DEFINE_TYPE(MotionClipData,
-	animationName, loop, duration, useRootMotion, blendDuration, startFrame, endFrame, isForce)
+	animationName, loop, duration, useRootMotion, blendDuration, startFrame, endFrame, isForce, segments)
 
-	COMPONENT_PARAMS_DEFINE_TYPE(AttackDamageData,
-		damage, postureDamage, guardDamageRatio, guardPostureDamageRatio, parryPostureDamage, isParryable, isReboundable)
+COMPONENT_PARAMS_DEFINE_TYPE(AttackDamageData,
+	damage, postureDamage, guardDamageRatio, guardPostureDamageRatio, parryPostureDamage, isParryable, isReboundable)
 
-	COMPONENT_PARAMS_DEFINE_TYPE(ReactionEventConfig,
-		enableCameraShake, enableHitStop, enableEffect, enableDistortion, effectName, SEName,
-		sePitchRandom, useReflectDirection, normalBlendRatio, cameraShakeIntensity, hitStopDurationSeconds,
-		recoilChain, recoilStrength)
+COMPONENT_PARAMS_DEFINE_TYPE(ReactionEventConfig,
+	enableCameraShake, enableHitStop, enableEffect, enableDistortion, effectName, SEName,
+	sePitchRandom, useReflectDirection, normalBlendRatio, cameraShakeIntensity, hitStopDurationSeconds,
+	recoilChain, recoilStrength)
 
-	COMPONENT_PARAMS_DEFINE_TYPE(AttackVisualData, hit, block, parry, hitStopDelaySeconds)
+COMPONENT_PARAMS_DEFINE_TYPE(AttackVisualData, hit, block, parry, hitStopDelaySeconds)
 
-	COMPONENT_PARAMS_DEFINE_TYPE(AttackPhaseData, windup, active, recovery)
+COMPONENT_PARAMS_DEFINE_TYPE(AttackPhaseData, windup, active, recovery)
 
-	COMPONENT_PARAMS_DEFINE_TYPE(AttackMoveData,
-		stepDistance, stepDuration, engageDistance, stepDirection)
+COMPONENT_PARAMS_DEFINE_TYPE(AttackMoveData,
+	stepDistance, stepDuration, engageDistance, stepDirection)
 
-	COMPONENT_PARAMS_DEFINE_TYPE(AttackCancelData,
-		recoveryMoveCancelStart, recoveryEvadeCancelStart, recoveryAttackCancelStart, comboWindowAfterRecovery)
+COMPONENT_PARAMS_DEFINE_TYPE(AttackCancelData,
+	recoveryMoveCancelStart, recoveryEvadeCancelStart, recoveryAttackCancelStart, comboWindowAfterRecovery)
 
-	COMPONENT_PARAMS_DEFINE_TYPE(AttackData,
-		damageData, visualData, moveData, phaseData, cancelData, weaponSlots)
+COMPONENT_PARAMS_DEFINE_TYPE(AttackData,
+	damageData, visualData, moveData, phaseData, cancelData, weaponSlots)

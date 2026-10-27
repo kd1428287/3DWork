@@ -155,23 +155,28 @@ void KdAnimationData::Node::Interpolate(Math::Matrix& rDst, float time)
 	}
 }
 
+void KdAnimator::ApplyPose(std::vector<KdModelWork::Node>& rNodes)
+{
+	// 全てのアニメーションノード（モデルの行列を補間する情報）の行列補間を実行する
+	for (auto& rAnimNode : m_spAnimation->m_nodes)
+	{
+		rAnimNode.Interpolate(rNodes[rAnimNode.m_nodeOffset].m_localTransform, m_time);
+	}
+}
+
+void KdAnimator::ApplyAtNormalizedTime(std::vector<KdModelWork::Node>& rNodes, float pos)
+{
+	if (!m_spAnimation) { return; }
+
+	m_time = m_startTime + (m_endTime - m_startTime) * std::clamp(pos, 0.0f, 1.0f);
+	ApplyPose(rNodes);
+}
+
 void KdAnimator::AdvanceTime(std::vector<KdModelWork::Node>& rNodes, float speed)
 {
 	if (!m_spAnimation) { return; }
 
-	// 全てのアニメーションノード（モデルの行列を補間する情報）の行列補間を実行する
-	for (auto& rAnimNode : m_spAnimation->m_nodes)
-	{
-		// 対応するモデルノードのインデックス
-		UINT idx = rAnimNode.m_nodeOffset;
-
-		auto prev = rNodes[idx].m_localTransform;
-
-		// アニメーションデータによる行列補間
-		rAnimNode.Interpolate(rNodes[idx].m_localTransform, m_time);
-
-		prev = rNodes[idx].m_localTransform;
-	}
+	ApplyPose(rNodes);
 
 	// アニメーションのフレームを進める
 	m_time += m_sampleFPS * speed;

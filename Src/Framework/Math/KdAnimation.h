@@ -77,6 +77,9 @@ public:
 	// アニメーションの更新
 	void AdvanceTime(std::vector<KdModelWork::Node>& rNodes, float speed = 1.0f);
 
+	// 再生範囲内の位置(0〜1)を直接指定してポーズを適用する。時間は進めない
+	void ApplyAtNormalizedTime(std::vector<KdModelWork::Node>& rNodes, float pos);
+
 	void SetFPS(int fps) { m_fps = fps; }
 
 	float GetDuration() const {
@@ -91,6 +94,9 @@ public:
 	float GetNormalizedTime() const { return (m_time - m_startTime) / (m_endTime - m_startTime); }
 
 private:
+
+	// 現在のm_timeのポーズを全アニメノードへ適用する
+	void ApplyPose(std::vector<KdModelWork::Node>& rNodes);
 
 	std::shared_ptr<KdAnimationData>	m_spAnimation = nullptr;	// 再生するアニメーションデータ
 

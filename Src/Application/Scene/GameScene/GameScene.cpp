@@ -19,13 +19,6 @@
 // definitions
 #include "Application/Definitions/Loaders/MapLoader.h"
 
-// component
-#include "Application/Components/GamePlay/Camera/CameraTargetComponent.h"
-#include "Application/Components/Core/TransformComponent.h"
-#include "Application/Components/Graphics/Animation/SkeletonComponent.h"
-#include "Application/Components/Graphics/Animation/ModelAnimatorComponent.h"
-#include "Application/Components/Graphics/Render/ModelRenderComponent.h"
-
 // result
 #include "Application/Systems/GamePlay/ResultController.h"
 #include "Application/Systems/GamePlay/ResultView.h"
@@ -244,6 +237,10 @@ void GameScene::SetupEnvironment()
 	post.SetSaturation(0.85f);
 	post.SetTemperature(-0.3f);
 	post.SetTint(-0.15f);
+
+	post.SetMotionBlurEnabled(true);
+	post.SetMotionBlurStrength(0.7f);	
+	post.SetMotionBlurMaxLength(0.08f);
 
 	// 画面全体に重ねる質感テクスチャ(約0.15秒ごとに位置を切り替える)
 	post.SetSurfaceTexture(KdAssets::Instance().m_textures.GetData("Asset/Textures/Game/p0028_l.png"));
