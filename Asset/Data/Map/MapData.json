@@ -381,7 +381,7 @@
       "name": "PlayerStart",
       "pos": [
         0.0,
-        3.0,
+        3.547900676727295,
         12.0
       ],
       "rotation": [
@@ -410,7 +410,7 @@
       "name": "Enemy_Warrock",
       "pos": [
         0.0,
-        2.3969080448150635,
+        2.842193841934204,
         -11.575162887573242
       ],
       "rotation": [
@@ -456,26 +456,6 @@
         {
           "params": {},
           "type": "PlayerHudGauge"
-        },
-        {
-          "params": {
-            "healthBarPos": [
-              -600.0,
-              300.0
-            ],
-            "healthBarSize": [
-              300.0,
-              14.0
-            ],
-            "postureBarPos": [
-              -250.0,
-              300.0
-            ],
-            "postureBarSize": [
-              500.0,
-              10.0
-            ]
-          }
         }
       ],
       "id": 17,

@@ -1,8 +1,7 @@
 ﻿#pragma once
 #include "SkeletonComponent.h"
 #include "../../Tags/IAnimationPostProcess.h"
-#include "EventBus.h"
-#include "CombatEvents.h"
+#include "Application/Core/EventBus/Events/CombatEvents.h"
 
 // 名前付きボーン鎖(RightArm等)の設定。バネと姿勢固定の値もここで渡す(Prefab/JSON)。
 struct BoneOffsetChainConfig

@@ -225,6 +225,23 @@ POINT Application::GetVirtualMousePos() const
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 起動モード選択
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+Application::AppMode Application::SelectStartupMode()
+{
+#ifdef EDITOR_ENABLED
+	// 日本語はワイド文字列で渡す(MessageBoxAはソース文字コード設定次第で文字化けする)
+	int result = MessageBoxW(m_window.GetWndHandle(),
+		L"エディタのみ起動しますか？\n\n[はい] エディタのみ\n[いいえ] ゲームをプレイ",
+		L"起動モード選択", MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2);
+
+	return (result == IDYES) ? AppMode::EditorOnly : AppMode::Play;
+#else
+	return AppMode::Play;
+#endif
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // アプリケーション初期設定
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 bool Application::Init(int w, int h)
@@ -384,6 +401,16 @@ void Application::Execute()
 	}
 
 	//===================================================================
+	// 起動モード決定(EditorOnlyではエディタを常時表示にする)
+	//===================================================================
+	m_appMode = SelectStartupMode();
+
+	if (m_appMode == AppMode::EditorOnly && !EditorHost::Instance().IsEnabled())
+	{
+		EditorHost::Instance().ToggleEnabled();
+	}
+
+	//===================================================================
 	// ゲームループ
 	//===================================================================
 
@@ -433,7 +460,8 @@ void Application::Execute()
 		}
 
 		// エディタの表示更新ON/OFF(F1キー。押した瞬間のみトグルするためエッジ検出する)
-		// KD_EDITOR_ENABLED未定義ビルドではEditorHost::ToggleEnabled()は何もしない
+		// EditorOnlyでは常時表示のためトグルしない
+		if (m_appMode == AppMode::Play)
 		{
 			bool editorToggleKeyDown = (GetAsyncKeyState(VK_F1) & 0x8000) != 0;
 
@@ -472,7 +500,11 @@ void Application::Execute()
 
 		KdBeginUpdate();
 		{
-			Update();
+			// EditorOnlyではゲームの更新を行わない
+			if (m_appMode == AppMode::Play)
+			{
+				Update();
+			}
 		}
 		KdPostUpdate();
 
@@ -484,13 +516,17 @@ void Application::Execute()
 
 		KdBeginDraw();
 		{
-			PreDraw();
+			// EditorOnlyではゲームの描画を行わない
+			if (m_appMode == AppMode::Play)
+			{
+				PreDraw();
 
-			Draw();
+				Draw();
 
-			PostDraw();
+				PostDraw();
 
-			DrawSprite();
+				DrawSprite();
+			}
 
 			// エディタのプレビュー用ビューポートへの描画(エフェクト/マップ)
 			// ※通常描画パイプライン(Draw〜PostDraw〜DrawSprite)が完全に終わった後に実施する。

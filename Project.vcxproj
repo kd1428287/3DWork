@@ -301,7 +301,6 @@
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Enemy\EnemyActions.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Enemy\EnemyAIController.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Enemy\LockOnTargetComponent.h" />
-    <ClInclude Include="Src\Application\Components\GamePlay\Character\Enemy\Warrock\WarrockActions.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Enemy\Warrock\WarrockBehavior.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerAttackSelector.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerCombatMovementComponent.h" />
@@ -548,7 +547,6 @@
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Common\HitReactionComponent.cpp" />
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Enemy\EnemyActions.cpp" />
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Enemy\EnemyAIController.cpp" />
-    <ClCompile Include="Src\Application\Components\GamePlay\Character\Enemy\Warrock\WarrockActions.cpp" />
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Enemy\Warrock\WarrockBehavior.cpp" />
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerAttackSelector.cpp" />
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerCombatMovementComponent.cpp" />

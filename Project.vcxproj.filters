@@ -513,9 +513,6 @@
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\CharacterEvents.h">
       <Filter>Src\Application\Components\GamePlay\Character\Common</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\GamePlay\Character\Enemy\Warrock\WarrockActions.h">
-      <Filter>Src\Application\Components\GamePlay\Character\Enemy\Warrock</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Enemy\Warrock\WarrockBehavior.h">
       <Filter>Src\Application\Components\GamePlay\Character\Enemy\Warrock</Filter>
     </ClInclude>
@@ -1261,9 +1258,6 @@
     </ClCompile>
     <ClCompile Include="Src\Framework\Shader\SlashTrailShader\SlashTrailShader.cpp">
       <Filter>Src\Framework\Shader\SlashTrailShader</Filter>
-    </ClCompile>
-    <ClCompile Include="Src\Application\Components\GamePlay\Character\Enemy\Warrock\WarrockActions.cpp">
-      <Filter>Src\Application\Components\GamePlay\Character\Enemy\Warrock</Filter>
     </ClCompile>
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Enemy\Warrock\WarrockBehavior.cpp">
       <Filter>Src\Application\Components\GamePlay\Character\Enemy\Warrock</Filter>
