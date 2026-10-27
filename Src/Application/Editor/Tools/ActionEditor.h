@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "nlohmann/json.hpp"
 #include "Application/Definitions/Loaders/EnemyAttackTableLoader.h"
@@ -58,6 +58,9 @@ private:
 	EnemyAttackDefinition* CurrentAttack();
 	const SlotInfo* FindSlot(const std::string& slot) const;
 	std::string MakeUniqueName(const std::string& base) const;
+	std::string MakeUniqueId(const std::string& base) const;
+	int CountAttackId(const std::string& id) const;
+	std::vector<std::string> CollectAttackIds() const;
 	void SelectAttack(Pool pool, int index);
 	void ClampSelection();
 

@@ -72,6 +72,8 @@ public:
 
 	void Awake() override
 	{
+		assert(data_.ValidateAttacks() && "EnemyAIData: attack idの重複、またはcomboLinksの参照先不在");
+
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
 		movementComponent_ = GetOwner()->GetComponent<MovementComponent>();
 		modelAnimatorComponent_ = GetOwner()->GetComponent<ModelAnimatorComponent>();
@@ -235,12 +237,18 @@ public:
 	const EnemyAttackDefinition* ChooseAttack() const;
 	const EnemyAttackDefinition* ChooseGapCloserAttack() const;
 
+	// currentのcomboLinksから、次に繋ぐ技を間合い/確率で解決する(無ければnullptr)。
+	const EnemyAttackDefinition* ResolveComboNext(const EnemyAttackDefinition& current) const;
+
 	// EnemyAIData::attackIntervalDuration中かどうか。実体は
 	// attackCooldownTimer_(内部実装詳細のタイマー)だが、BTノードから
 	// 見える値としてはBlackboard(EnemyBlackboardKeys::IsAttackOnCooldown)
 	// を唯一の実体とする(Update()が毎フレーム書き込む)。
 	bool IsAttackOnCooldown() const { return blackboard_.GetBoolOr(EnemyBlackboardKeys::IsAttackOnCooldown, false); }
-	void NotifyAttackCompleted() { attackCooldownTimer_ = data_.attackIntervalDuration; }
+	// intervalAfterが負ならEnemyAIData::attackIntervalDurationを使う。
+	void NotifyAttackCompleted(float intervalAfter = -1.0f) {
+		attackCooldownTimer_ = (intervalAfter >= 0.0f) ? intervalAfter : data_.attackIntervalDuration;
+	}
 
 	Math::Vector3 GetCurrentPatrolPoint() const {
 		if (data_.patrolPoints.empty()) return GetPosition();

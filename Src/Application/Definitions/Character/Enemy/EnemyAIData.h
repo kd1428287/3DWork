@@ -1,4 +1,7 @@
-﻿#pragma once
+#pragma once
+#include <algorithm>
+#include <cfloat>
+#include <unordered_set>
 #include "../Common/CombatData.h"
 #include "../Common/CharacterDefinitionCommon.h" // MotionClipData
 
@@ -55,6 +58,16 @@ struct EnemyAttackTelegraphData
 	float leadTime = 0.4f;                    // 判定発生の何秒前に出すか
 };
 
+// コンボの繋ぎ先。入力が無いので、間合いと確率で解決する。
+struct EnemyComboLink
+{
+	std::string nextAttackId;
+	float chance = 1.0f;			// 繋がる確率(0〜1)
+	float minRange = 0.0f;			// 繋ぐ時点のターゲット距離の条件
+	float maxRange = FLT_MAX;
+	int priority = 0;				// 小さいほど優先
+};
+
 // 攻撃1種類分のデータ。ダメージ/体幹ダメージ、windup/active/recoveryの
 // 3フェーズ構成、モーション制御、キャンセル設定等は汎用のAttackData
 // (CombatData.h、Player側のAttackDataと共通)にまとめてあり、ここには
@@ -62,7 +75,12 @@ struct EnemyAttackTelegraphData
 // 使わない値だけを残す。
 struct EnemyAttackDefinition
 {
+	std::string id;					// コンボの参照先。attacks/gapCloserAttacks横断で一意
 	std::string name = "Attack";
+
+	bool isEntry = true;			// falseならコンボ専用(単発の抽選候補にしない)
+	std::vector<EnemyComboLink> comboLinks;
+	float intervalAfter = -1.0f;	// 攻撃後インターバル。負ならEnemyAIData::attackIntervalDuration
 
 	AttackData attackData;
 
@@ -78,6 +96,36 @@ struct EnemyAttackDefinition
 	// 予備動作エフェクト。
 	EnemyAttackTelegraphData telegraph;
 };
+
+// 2つの技プール(attacks/gapCloserAttacks)を横断してidで技を探す。無ければnullptr。
+inline const EnemyAttackDefinition* FindAttackInPools(const std::vector<EnemyAttackDefinition>& a,
+	const std::vector<EnemyAttackDefinition>& b, const std::string& id)
+{
+	if (id.empty()) return nullptr;
+	for (const auto* pool : { &a, &b }) {
+		for (const auto& atk : *pool) if (atk.id == id) return &atk;
+	}
+	return nullptr;
+}
+
+// 2つの技プールのidの重複と、comboLinksの参照先不在を検出する。
+inline bool ValidateAttackPools(const std::vector<EnemyAttackDefinition>& a, const std::vector<EnemyAttackDefinition>& b)
+{
+	std::unordered_set<std::string> ids;
+	for (const auto* pool : { &a, &b }) {
+		for (const auto& atk : *pool) {
+			if (!atk.id.empty() && !ids.insert(atk.id).second) return false;
+		}
+	}
+	for (const auto* pool : { &a, &b }) {
+		for (const auto& atk : *pool) {
+			for (const auto& link : atk.comboLinks) {
+				if (FindAttackInPools(a, b, link.nextAttackId) == nullptr) return false;
+			}
+		}
+	}
+	return true;
+}
 
 // 常時ループする移動系アニメーションの名前。全敵種が必ず持つ役割
 // なので固定フィールドとして持つ(oneShotAnimationsのような「敵種に
@@ -95,6 +143,15 @@ struct EnemyMovementAnimationData
 
 struct EnemyAIData
 {
+	// attacks/gapCloserAttacksを横断してidで技を探す。無ければnullptr。
+	const EnemyAttackDefinition* FindAttack(const std::string& id) const
+	{
+		return FindAttackInPools(attacks, gapCloserAttacks, id);
+	}
+
+	// idの重複と、comboLinksの参照先不在を検出する。
+	bool ValidateAttacks() const { return ValidateAttackPools(attacks, gapCloserAttacks); }
+
 	// 巡回するウェイポイント(ワールド座標、この順番で巡回する)。
 	// 空の場合、その場に立って待機し続けるだけの敵になる
 	// (EnemyActionIdle::Tick()参照。ボスのように「持ち場を離れず

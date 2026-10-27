@@ -14,6 +14,10 @@ bool EnemyAttackTableLoader::LoadFromFile(const std::string& path, EnemyAttackTa
 
 	try {
 		out = root.get<EnemyAttackTable>();
+		// エディタで直せるよう、整合性エラーは警告だけにして読み込みは成功させる
+		if (!out.Validate()) {
+			OutputDebugStringA(("EnemyAttackTableLoader: " + path + ": attack idの重複、またはcomboLinksの参照先不在\n").c_str());
+		}
 		return true;
 	}
 	catch (const std::exception& e) {

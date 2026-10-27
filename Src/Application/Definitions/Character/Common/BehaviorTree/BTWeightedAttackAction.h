@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include <algorithm>
 #include <random>
 #include "IBTNode.h"
@@ -103,21 +103,9 @@ public:
 		lastContext_ = context; // Reset()からの後始末用にキャッシュ(クラスコメント参照)
 
 		if (phase_ == Phase::NotStarted) {
-			current_ = chooseAttack_(context);
-			if (current_ == nullptr) return BTNodeStatus::Failure;
-
-			phase_ = Phase::Windup;
-			elapsed_ = 0.0f;
-			telegraphFired_ = false;
-			windupDuration_ = current_->attackData.phaseData.windup.duration;
-
-			context->StopMovement();
-			// 追従しない技(windupTurnSpeed<=0)だけ、ここで一度だけ瞬時に正対する。
-			// 追従する技は下のUpdateFacing()が滑らかに向き直る。
-			if (current_->facing.windupTurnSpeed <= 0.0f) {
-				context->FaceHorizontalTarget(context->GetTargetPositionOrSelf());
-			}
-			context->PlayAnimation(current_->attackData.phaseData.windup);
+			const EnemyAttackDefinition* picked = chooseAttack_(context);
+			if (picked == nullptr) return BTNodeStatus::Failure;
+			StartAttack(context, picked);
 		}
 
 		elapsed_ += deltaTime;
@@ -160,10 +148,11 @@ public:
 			break;
 
 		case Phase::Recovery:
+			if (TryChainCombo(context)) break; // 次の段のWindupへ
 			if (elapsed_ >= phaseData.recovery.duration) {
 				// 攻撃1回分をやり切った時だけ、次の攻撃までのインターバルを
 				// 開始させる(クラス冒頭コメント参照)。
-				context->NotifyAttackCompleted();
+				context->NotifyAttackCompleted(current_->intervalAfter); // コンボ最終段の技の値を使う
 				Reset();
 				return BTNodeStatus::Success;
 			}
@@ -229,11 +218,46 @@ private:
 			context->StopFacingTarget();
 		}
 	}
+	// 技の開始(最初の技・コンボの次の段で共用)。Windupの初期化を行う。
+	void StartAttack(T* context, const EnemyAttackDefinition* def)
+	{
+		current_ = def;
+		phase_ = Phase::Windup;
+		elapsed_ = 0.0f;
+		telegraphFired_ = false;
+		comboChecked_ = false;
+		windupDuration_ = def->attackData.phaseData.windup.duration;
+
+		context->StopMovement();
+		// 追従しない技(windupTurnSpeed<=0)だけ、ここで一度だけ瞬時に正対する。
+		if (def->facing.windupTurnSpeed <= 0.0f) {
+			context->FaceHorizontalTarget(context->GetTargetPositionOrSelf());
+		}
+		context->PlayAnimation(def->attackData.phaseData.windup);
+	}
+
+	// Recoveryがキャンセル開始に達したら1回だけリンクを判定し、繋がれば次の段を始める。
+	bool TryChainCombo(T* context)
+	{
+		const AttackData& data = current_->attackData;
+		if (comboChecked_ || current_->comboLinks.empty()) return false;
+		if (elapsed_ < std::min(data.cancelData.recoveryAttackCancelStart, data.phaseData.recovery.duration)) return false;
+
+		comboChecked_ = true;
+		const EnemyAttackDefinition* next = context->ResolveComboNext(*current_);
+		if (next == nullptr) return false;
+
+		context->SetVulnerable(false); // 中間段の隙は閉じる
+		StartAttack(context, next);
+		return true;
+	}
+
 	enum class Phase { NotStarted, Windup, Active, Recovery };
 	Phase phase_ = Phase::NotStarted;
 	float elapsed_ = 0.0f;
 	float windupDuration_ = 0.0f; // 今回の攻撃で抽選したWindupの長さ
 	bool telegraphFired_ = false; // 今回の攻撃で予備動作を出したか
+	bool comboChecked_ = false;   // 今回の段でコンボのリンク判定を済ませたか
 	const EnemyAttackDefinition* current_ = nullptr;
 
 	// Reset()がcontextを受け取れない制約への回避策(クラス冒頭コメント参照)。

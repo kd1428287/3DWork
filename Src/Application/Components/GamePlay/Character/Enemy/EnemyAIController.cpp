@@ -1,4 +1,5 @@
-﻿#include "EnemyAIController.h"
+#include <algorithm>
+#include "EnemyAIController.h"
 #include "../Common/CharacterEvents.h"
 #include "Application/Core/EventBus/Events/AudioEvents.h"
 
@@ -73,7 +74,7 @@ namespace
 		const EnemyAttackDefinition* exclude)
 	{
 		auto inRange = [dist](const EnemyAttackDefinition& atk) {
-			return dist >= atk.minRange && dist <= atk.maxRange;
+			return atk.isEntry && dist >= atk.minRange && dist <= atk.maxRange;
 			};
 
 		if (const EnemyAttackDefinition* picked = WeightedPick(pool,
@@ -96,6 +97,25 @@ const EnemyAttackDefinition* EnemyAIController::ChooseGapCloserAttack() const
 	if (!HasTarget()) return nullptr;
 	lastAttack_ = ChooseFrom(data_.gapCloserAttacks, DistanceToTarget(), lastAttack_);
 	return lastAttack_;
+}
+
+const EnemyAttackDefinition* EnemyAIController::ResolveComboNext(const EnemyAttackDefinition& current) const
+{
+	if (!HasTarget()) return nullptr;
+	const float dist = DistanceToTarget();
+
+	std::vector<const EnemyComboLink*> links;
+	for (const auto& link : current.comboLinks) links.push_back(&link);
+	std::stable_sort(links.begin(), links.end(),
+		[](const EnemyComboLink* a, const EnemyComboLink* b) { return a->priority < b->priority; });
+
+	for (const EnemyComboLink* link : links) {
+		if (dist < link->minRange || dist > link->maxRange) continue;
+		if (link->chance < 1.0f &&
+			static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX) > link->chance) continue;
+		if (const EnemyAttackDefinition* next = data_.FindAttack(link->nextAttackId)) return next;
+	}
+	return nullptr;
 }
 
 void EnemyAIController::FaceHorizontalTarget(const Math::Vector3& targetPosition)

@@ -1,4 +1,4 @@
-﻿#include "Application/main.h"
+#include "Application/main.h"
 
 #include "ActionEditor.h"
 #include "Application/Definitions/Character/Enemy/EnemyDefinitionJson.h"
@@ -236,8 +236,11 @@ void ActionEditor::DrawTargets()
 	ImGui::InputText("Prefab", m_prefabPathBuf, sizeof(m_prefabPathBuf));
 	if (ImGui::Button("Load")) { LoadPrefab(m_prefabPathBuf); }
 
+	// 整合性エラーのまま保存するとゲーム側のassertで落ちるため、直るまでSaveを止める
+	const bool tableValid = !m_loaded || m_table.Validate();
+
 	ImGui::SameLine();
-	ImGui::BeginDisabled(!m_loaded || !m_dirty);
+	ImGui::BeginDisabled(!m_loaded || !m_dirty || !tableValid);
 	if (ImGui::Button("Save")) { Save(); }
 	ImGui::EndDisabled();
 
@@ -259,6 +262,7 @@ void ActionEditor::DrawTargets()
 	}
 
 	ImGui::TextDisabled("%s%s", m_tablePath.c_str(), m_dirty ? " *" : "");
+	if (!tableValid) { ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "idの重複、またはcomboLinksの参照先なし(Save不可)"); }
 	ImGui::Separator();
 
 	DrawPoolList("Attacks", Pool::Attacks);
@@ -277,7 +281,8 @@ void ActionEditor::DrawPoolList(const char* title, Pool pool)
 	for (int i = 0; i < (int)vec.size(); ++i)
 	{
 		ImGui::PushID(i);
-		if (ImGui::Selectable(vec[i].name.c_str(), m_pool == pool && m_index == i)) { SelectAttack(pool, i); }
+		const std::string label = vec[i].isEntry ? vec[i].name : vec[i].name + "  [combo]";
+		if (ImGui::Selectable(label.c_str(), m_pool == pool && m_index == i)) { SelectAttack(pool, i); }
 		ImGui::PopID();
 	}
 
@@ -288,6 +293,7 @@ void ActionEditor::DrawPoolList(const char* title, Pool pool)
 	{
 		EnemyAttackDefinition def = hasSelection ? *CurrentAttack() : EnemyAttackDefinition();
 		def.name = MakeUniqueName(def.name + "_Copy");
+		if (!def.id.empty()) { def.id = MakeUniqueId(def.id + "_Copy"); }
 
 		PushUndo();
 		vec.push_back(def);
@@ -360,6 +366,7 @@ void ActionEditor::DrawInspector()
 		};
 
 	inputText("name", atk->name);
+	inputText("id (コンボの参照先)", atk->id);
 
 	if (ImGui::CollapsingHeader("Selection", ImGuiTreeNodeFlags_DefaultOpen))
 	{
@@ -368,6 +375,86 @@ void ActionEditor::DrawInspector()
 		dragFloat("weight", atk->weight, 0.05f, 0.0f, 100.0f);
 		dragFloat("windupTurnSpeed", atk->facing.windupTurnSpeed, 0.1f, 0.0f, 50.0f);
 		dragFloat("activeTurnSpeed", atk->facing.activeTurnSpeed, 0.1f, 0.0f, 50.0f);
+	}
+
+	if (ImGui::CollapsingHeader("Combo / Interval", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		const ImVec4 warnCol(1.0f, 0.8f, 0.2f, 1.0f);
+
+		checkbox("isEntry (単発の抽選候補)", atk->isEntry);
+		dragFloat("intervalAfter (-1=既定値)", atk->intervalAfter, 0.05f, -1.0f, 20.0f);
+		dragFloat("linkStart (Recovery内の秒)", d.cancelData.recoveryAttackCancelStart, 0.01f, 0.0f, 5.0f);
+
+		if (!atk->id.empty() && CountAttackId(atk->id) > 1)
+		{
+			ImGui::TextColored(warnCol, "id '%s' が重複しています", atk->id.c_str());
+		}
+
+		// この技へ繋がっている技(参照元)
+		std::string referrers;
+		for (const Pool p : { Pool::Attacks, Pool::GapClosers })
+		{
+			for (const EnemyAttackDefinition& a : PoolVec(p))
+			{
+				for (const EnemyComboLink& l : a.comboLinks)
+				{
+					if (!atk->id.empty() && l.nextAttackId == atk->id) { referrers += a.name + " "; break; }
+				}
+			}
+		}
+		if (!referrers.empty()) { ImGui::TextDisabled("参照元: %s", referrers.c_str()); }
+		else if (!atk->isEntry) { ImGui::TextColored(warnCol, "どこからも繋がらず、単発でも選ばれません"); }
+
+		const std::vector<std::string> ids = CollectAttackIds();
+		int removeIdx = -1;
+		for (int i = 0; i < (int)atk->comboLinks.size(); ++i)
+		{
+			EnemyComboLink& link = atk->comboLinks[i];
+			ImGui::PushID(i);
+			ImGui::Separator();
+
+			if (ImGui::BeginCombo("next", link.nextAttackId.empty() ? "(未選択)" : link.nextAttackId.c_str()))
+			{
+				for (const std::string& n : ids)
+				{
+					if (ImGui::Selectable(n.c_str(), n == link.nextAttackId))
+					{
+						PushUndo();
+						link.nextAttackId = n;
+						MarkEdited();
+					}
+				}
+				ImGui::EndCombo();
+			}
+			if (link.nextAttackId.empty()) { ImGui::TextColored(warnCol, "繋ぎ先が未選択です"); }
+			else if (std::find(ids.begin(), ids.end(), link.nextAttackId) == ids.end())
+			{
+				ImGui::TextColored(warnCol, "繋ぎ先 '%s' がありません", link.nextAttackId.c_str());
+			}
+
+			dragFloat("chance", link.chance, 0.01f, 0.0f, 1.0f);
+			dragFloat("minRange", link.minRange, 0.05f, 0.0f, 1000.0f);
+			// 既定のFLT_MAXは「無制限」と表示する
+			if (ImGui::DragFloat("maxRange", &link.maxRange, 0.05f, 0.0f, 1000.0f, link.maxRange >= 1000.0f ? "無制限" : "%.3f")) { MarkEdited(); }
+			if (ImGui::IsItemActivated()) { PushUndo(); }
+			inputInt("priority (小さいほど優先)", link.priority);
+
+			if (ImGui::SmallButton("Remove link")) { removeIdx = i; }
+			ImGui::PopID();
+		}
+
+		if (removeIdx >= 0)
+		{
+			PushUndo();
+			atk->comboLinks.erase(atk->comboLinks.begin() + removeIdx);
+			MarkEdited();
+		}
+		if (ImGui::SmallButton("+ Link"))
+		{
+			PushUndo();
+			atk->comboLinks.push_back(EnemyComboLink());
+			MarkEdited();
+		}
 	}
 
 	if (ImGui::CollapsingHeader("Phases", ImGuiTreeNodeFlags_DefaultOpen))
@@ -832,6 +919,16 @@ void ActionEditor::DrawGameTimeStrip(EnemyAttackDefinition& atk)
 		const float x = origin.x + tt * pxPerSec;
 		dl->AddLine(ImVec2(x, origin.y - 6.0f), ImVec2(x, origin.y + kHeight), IM_COL32(255, 220, 60, 255), 2.0f);
 		dl->AddText(ImVec2(x + 3.0f, origin.y - 18.0f), IM_COL32(255, 220, 60, 255), "Telegraph");
+	}
+
+	// コンボ判定のタイミング(Recovery内のlinkStart)
+	if (!atk.comboLinks.empty())
+	{
+		const float ct = std::max(ph.windup.duration, 0.0f) + std::max(ph.active.duration, 0.0f)
+			+ std::min(atk.attackData.cancelData.recoveryAttackCancelStart, std::max(ph.recovery.duration, 0.0f));
+		const float x = origin.x + ct * pxPerSec;
+		dl->AddLine(ImVec2(x, origin.y - 6.0f), ImVec2(x, origin.y + kHeight), IM_COL32(120, 200, 255, 255), 2.0f);
+		dl->AddText(ImVec2(x + 3.0f, origin.y - 18.0f), IM_COL32(120, 200, 255, 255), "Combo");
 	}
 
 	// 再生位置
@@ -1361,6 +1458,38 @@ std::string ActionEditor::MakeUniqueName(const std::string& base) const
 		const std::string n = base + std::to_string(i);
 		if (!exists(n)) { return n; }
 	}
+}
+
+std::string ActionEditor::MakeUniqueId(const std::string& base) const
+{
+	if (CountAttackId(base) == 0) { return base; }
+	for (int i = 2;; ++i)
+	{
+		const std::string n = base + std::to_string(i);
+		if (CountAttackId(n) == 0) { return n; }
+	}
+}
+
+int ActionEditor::CountAttackId(const std::string& id) const
+{
+	int count = 0;
+	for (const EnemyAttackDefinition& a : m_table.attacks) { if (a.id == id) { ++count; } }
+	for (const EnemyAttackDefinition& a : m_table.gapCloserAttacks) { if (a.id == id) { ++count; } }
+	return count;
+}
+
+// 両プールの非空idを、重複なしで集める(comboLinksの繋ぎ先候補)
+std::vector<std::string> ActionEditor::CollectAttackIds() const
+{
+	std::vector<std::string> ids;
+	for (const auto* vec : { &m_table.attacks, &m_table.gapCloserAttacks })
+	{
+		for (const EnemyAttackDefinition& a : *vec)
+		{
+			if (!a.id.empty() && std::find(ids.begin(), ids.end(), a.id) == ids.end()) { ids.push_back(a.id); }
+		}
+	}
+	return ids;
 }
 
 void ActionEditor::SelectAttack(Pool pool, int index)
