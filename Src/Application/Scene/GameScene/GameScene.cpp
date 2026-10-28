@@ -225,7 +225,7 @@ void GameScene::SetupEnvironment()
 	// ライト・フォグ
 	ambient.SetDirLight(Math::Vector3(-0.5f, -1.0f, -0.5f), Math::Vector3(1.0f, 1.0f, 1.0f));
 	ambient.SetDirLightShadowArea(Math::Vector2(100.f, 100.f), 100);
-	ambient.AddPointLight(Math::Vector3(1.0f, 1.0f, 1.0f), 10.0f, Math::Vector3(0, 5, 0), true);
+	ambient.AddPointLight(Math::Vector3(0.2f,0.2f,0.2f), 10.0f, Math::Vector3(0, 5, 0), true);
 	ambient.SetFogEnable(false, true);
 	ambient.SetheightFog({ 0.9f, 0.9f, 0.9f }, 80.f, -10.f, 100.f);
 	ambient.SetAmbientLight(Math::Vector4(1.0f, 1.0f, 1.0f, 0.15f));

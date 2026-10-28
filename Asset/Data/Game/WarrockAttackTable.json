@@ -1159,7 +1159,7 @@
             ]
           },
           "active": {
-            "animationName": "SpinningAttack_High",
+            "animationName": "SpinningAttack_Low",
             "loop": false,
             "duration": 0.44999998807907104,
             "useRootMotion": true,

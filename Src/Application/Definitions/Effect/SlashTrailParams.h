@@ -83,7 +83,7 @@ struct SlashTrailParams
 	// マテリアル関連
 	// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 	// Asset/Textures/Game/Effect/からの相対パス(パーティクルのTexturePathと同じ規約)
-	std::string				TexturePath = "Trail4.png";
+	std::string				TexturePath = "Trail2.png";
 	ParticleBlendMode		BlendMode = ParticleBlendMode::Alpha;
 	ParticleDrawPass		DrawPassFlags = ParticleDrawPass::Default;
 };
