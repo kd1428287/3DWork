@@ -1,11 +1,11 @@
-#pragma once
+﻿#pragma once
 
-#include <algorithm>
-#include <array>
-#include <cmath>
+//#include <algorithm>
+//#include <array>
+//#include <cmath>
 #include <numeric>
-#include <random>
-#include <utility>
+//#include <random>
+//#include <utility>
 
 // 古典的Perlinノイズ(出力はおおよそ-1〜1)
 // 通常は Shared() を使う。再現性が必要な用途だけ、シードを指定して個別に生成する。

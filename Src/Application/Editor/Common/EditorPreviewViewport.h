@@ -41,7 +41,8 @@ public:
 		// true: 本編のライト・影範囲ではなく、プレビュー専用の既定ライト(環境光・平行光は本編の初期値)で描く。
 		// 本編の影範囲はカメラ位置が中心のため、原点付近のプレビュー対象が範囲外になるのを避ける
 		bool	OverrideLight = true;
-		DirectX::SimpleMath::Vector3	LightDir = { 0.4f, -1.0f, 0.5f };
+		
+		Math::Vector3 LightDir = { 0.4f, -1.0f, 0.5f };
 		float	ShadowAreaSize = 40.0f;	// 注視点を中心に、影を落とす範囲の一辺(ワールド単位)
 	};
 

@@ -1,4 +1,4 @@
-#include "KdPostProcessShader.h"
+﻿#include "KdPostProcessShader.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // シェーダー本体の生成、定数バッファの生成
@@ -241,6 +241,9 @@ bool KdPostProcessShader::Init()
 	// モーションブラー適用後の画像
 	m_motionBlurRTPack.CreateRenderTarget(backBuffer->GetWidth(), backBuffer->GetHeight());
 
+	// 速度バッファ(w=書き込み済みの印を持たせるためRGBA16F)
+	m_velocityRTPack.CreateRenderTarget(backBuffer->GetWidth(), backBuffer->GetHeight(), false, DXGI_FORMAT_R16G16B16A16_FLOAT);
+
 	// 質感合成後の画像
 	m_surfaceRTPack.CreateRenderTarget(backBuffer->GetWidth(), backBuffer->GetHeight());
 
@@ -310,6 +313,9 @@ void KdPostProcessShader::Draw()
 	// カラーグレード除外マスクの描画クリア(0=グレーディング適用がデフォルト)
 	m_colorGradeMaskRTPack.ClearTexture(kBlackColor);
 
+	// 速度バッファの描画クリア(w=0は速度なし)
+	m_velocityRTPack.ClearTexture(Math::Color(0, 0, 0, 0));
+
 	// 光源描画テクスチャの描画クリア
 	m_brightEffectRTPack.ClearTexture(kBlackColor);
 
@@ -320,7 +326,8 @@ void KdPostProcessShader::Draw()
 	// ※通常のLit/UnLit用PSはSV_Target1を出力しないため、マスク側は
 	//   ClearTexture()した0のまま残る。マスクを能動的に立てたい描画
 	//   (パーティクル等)側だけがSV_Target1へ書き込む
-	if (!m_postEffectRTChanger.ChangeRenderTargets(m_postEffectRTPack, m_colorGradeMaskRTPack))
+	// 速度バッファはSV_Target2。スキンメッシュのLit描画だけが書き込む
+	if (!m_postEffectRTChanger.ChangeRenderTargets(m_postEffectRTPack, m_colorGradeMaskRTPack, m_velocityRTPack))
 	{
 		// 失敗したらUndo
 		m_postEffectRTChanger.UndoRenderTarget();
@@ -728,6 +735,9 @@ void KdPostProcessShader::PostEffectProcess()
 		gradeSrc = m_motionBlurRTPack.m_RTTexture;
 	}
 
+	// 速度バッファ用の履歴を1フレーム進める
+	KdShaderManager::Instance().m_StandardShader.NextFrame();
+
 	ColorGradeProcess(gradeSrc);
 
 	// 衝撃波が無い間は全画面コピーを省いてカラーグレード結果をそのまま使う
@@ -839,7 +849,8 @@ bool KdPostProcessShader::MotionBlurProcess(const std::shared_ptr<KdTexture>& sr
 	const KdShaderManager::cbCamera& cam = KdShaderManager::Instance().GetCameraCB();
 	Math::Matrix viewProj = cam.mView * cam.mProj;
 
-	bool canDraw = m_motionBlurEnabled && m_hasPrevViewProj && m_cb0_MotionBlurInfo.Get().Strength > 0.0f;
+	const cbMotionBlurInfo& info = m_cb0_MotionBlurInfo.Get();
+	bool canDraw = m_motionBlurEnabled && m_hasPrevViewProj && (info.Strength > 0.0f || info.ObjStrength > 0.0f);
 
 	if (canDraw)
 	{
@@ -859,8 +870,9 @@ bool KdPostProcessShader::MotionBlurProcess(const std::shared_ptr<KdTexture>& sr
 
 		shaderMgr.ChangeSamplerState(KdSamplerState::Linear_Clamp);
 
-		std::shared_ptr<KdTexture> srcTexList[2] = { srcTex, m_postEffectRTPack.m_ZBuffer };
-		DrawTexture(srcTexList, 2, m_motionBlurRTPack.m_RTTexture, &m_motionBlurRTPack.m_viewPort);
+		// t0=画像 t1=シーン深度 t2=速度バッファ
+		std::shared_ptr<KdTexture> srcTexList[3] = { srcTex, m_postEffectRTPack.m_ZBuffer, m_velocityRTPack.m_RTTexture };
+		DrawTexture(srcTexList, 3, m_motionBlurRTPack.m_RTTexture, &m_motionBlurRTPack.m_viewPort);
 
 		shaderMgr.UndoSamplerState();
 	}
@@ -870,6 +882,13 @@ bool KdPostProcessShader::MotionBlurProcess(const std::shared_ptr<KdTexture>& sr
 	m_hasPrevViewProj = true;
 
 	return canDraw;
+}
+
+// カメラカット・シーン切替時に呼ぶ(カメラブラーと速度バッファ双方の履歴を捨てる)
+void KdPostProcessShader::ResetMotionBlurHistory()
+{
+	m_hasPrevViewProj = false;
+	KdShaderManager::Instance().m_StandardShader.ResetMotionHistory();
 }
 
 void KdPostProcessShader::ColorGradeProcess(const std::shared_ptr<KdTexture>& srcTex)

@@ -47,6 +47,11 @@ public:
 	void ToggleBorderless();
 	bool IsBorderless() const { return m_borderless; }
 
+	// 自プロセスのいずれかのウィンドウ(ImGui Viewport含む)が前面か
+	bool IsAppForeground() const;
+	// メインのゲームウィンドウ自体が前面か
+	bool IsMainWindowForeground() const { return GetForegroundWindow() == GetWindowHandle(); }
+
 	// クライアント座標/現在のマウス位置を、設計解像度(1280x720)の座標へ変換する
 	POINT ClientToVirtual(POINT clientPos) const;
 	POINT GetVirtualMousePos() const;
@@ -76,6 +81,8 @@ private:
 
 	// エディタ表示ON/OFF(F1キー)のエッジ検出用。押した瞬間だけトグルするための前フレーム値
 	bool m_prevEditorToggleKeyDown = false;
+
+	bool m_escapeKeyDown = false;
 
 	// ボーダレス切り替え(F11キー)のエッジ検出用前フレーム値
 	bool m_prevBorderlessKeyDown = false;

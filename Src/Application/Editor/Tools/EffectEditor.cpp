@@ -404,6 +404,59 @@ void EffectEditor::DrawInspector()
 	}
 
 	ImGui::Separator();
+	ImGui::Text("Noise");
+
+	{
+		ParticleNoiseParams& noise = params.Noise;
+
+		bool useMask = (noise.flags & ParticleNoiseFlag_Mask) != 0;
+		bool useDissolve = (noise.flags & ParticleNoiseFlag_Dissolve) != 0;
+
+		bool changed = false;
+		changed |= ImGui::Checkbox("Mask", &useMask);
+		ImGui::SameLine();
+		changed |= ImGui::Checkbox("Dissolve", &useDissolve);
+
+		if (changed)
+		{
+			noise.flags = (useMask ? static_cast<UINT>(ParticleNoiseFlag_Mask) : 0u)
+				| (useDissolve ? static_cast<UINT>(ParticleNoiseFlag_Dissolve) : 0u);
+		}
+
+		if (noise.flags != 0)
+		{
+			ImGui::Text("Noise Texture : %s", params.NoiseTexturePath.empty() ? "(None)" : params.NoiseTexturePath.c_str());
+			ImGui::SameLine();
+			if (ImGui::SmallButton("Clear##NoiseTex")) { params.NoiseTexturePath.clear(); }
+
+			ImGui::TextDisabled("Effect Assetsの「Target」をNoiseにして選択(タイリング可能な画像のRチャンネルを使用)");
+			if (params.NoiseTexturePath.empty())
+			{
+				ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.2f, 1.0f), "ノイズテクスチャ未設定のため、ノイズは適用されません");
+			}
+
+			ImGui::DragFloat("Noise Scale", &noise.noiseScale, 0.05f, 0.01f, 32.0f);
+			ImGui::DragFloat2("Noise Scroll", &noise.scroll.x, 0.01f, -10.0f, 10.0f);
+			ImGui::TextDisabled("Scroll：寿命の間にノイズUVが動く量");
+
+			if (useMask)
+			{
+				ImGui::SliderFloat("Mask Power", &noise.maskPower, 0.1f, 8.0f);
+			}
+
+			if (useDissolve)
+			{
+				ImGui::SliderFloat("Dissolve Start", &noise.dissolveStart, 0.0f, 0.99f);
+				ImGui::SliderFloat("Dissolve Softness", &noise.dissolveSoftness, 0.001f, 0.3f);
+				ImGui::SliderFloat("Edge Width", &noise.edgeWidth, 0.001f, 0.5f);
+				ImGui::ColorEdit3("Edge Color", &noise.edgeColor.x);
+				ImGui::DragFloat("Edge Intensity", &noise.edgeColor.w, 0.05f, 0.0f, 20.0f);
+				ImGui::TextDisabled("Dissolve有効時は、寿命による線形フェードの代わりにノイズ順に消える");
+			}
+		}
+	}
+
+	ImGui::Separator();
 
 	int deleteIndex = -1;
 
@@ -660,15 +713,24 @@ void EffectEditor::DrawTexturePicker()
 
 	EffectObject& obj = m_objects[m_selected];
 
-	ImGui::Text("Current : %s", obj.params.TexturePath.empty() ? "(None)" : obj.params.TexturePath.c_str());
+	// 選択結果の割り当て先(パーティクル用テクスチャ / ノイズ用テクスチャ)
+	ImGui::Text("Target");
+	ImGui::SameLine();
+	if (ImGui::RadioButton("Particle", !m_pickNoiseTexture)) { m_pickNoiseTexture = false; }
+	ImGui::SameLine();
+	if (ImGui::RadioButton("Noise", m_pickNoiseTexture)) { m_pickNoiseTexture = true; }
+
+	std::string& targetPath = m_pickNoiseTexture ? obj.params.NoiseTexturePath : obj.params.TexturePath;
+
+	ImGui::Text("Current : %s", targetPath.empty() ? "(None)" : targetPath.c_str());
 	ImGui::Separator();
 
 	for (auto& path : m_textureFileList)
 	{
-		bool isSelected = (obj.params.TexturePath == path);
+		bool isSelected = (targetPath == path);
 		if (ImGui::Selectable(path.c_str(), isSelected))
 		{
-			obj.params.TexturePath = path;
+			targetPath = path;
 
 			// Auto Preview有効時は選択した瞬間にその場で再生し、見た目をすぐ確認できるようにする
 			// (previewInstance側のテクスチャ再解決はPlayPreview()内のReconfigure()が行う)

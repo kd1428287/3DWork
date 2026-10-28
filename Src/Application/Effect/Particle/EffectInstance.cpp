@@ -40,7 +40,8 @@ bool EffectInstance::Init(const GPUParticleParams& params, ITextureProvider* tex
 bool EffectInstance::Reconfigure(const GPUParticleParams& params, ITextureProvider* textureProvider)
 {
 	const bool capacityChanged = (params.MaxParticleNum != capacity_);
-	const bool textureChanged = (params.TexturePath != params_.TexturePath);
+	const bool textureChanged = (params.TexturePath != params_.TexturePath)
+		|| (params.NoiseTexturePath != params_.NoiseTexturePath);
 
 	params_ = params;
 
@@ -288,7 +289,7 @@ void EffectInstance::Draw() const
 {
 	if (!particle_ || !IsActive()) { return; }
 
-	particle_->Draw(texture_, params_.BlendMode);
+	particle_->Draw(texture_, params_.BlendMode, params_.Noise, noiseTexture_);
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -310,7 +311,7 @@ void EffectInstance::DrawLiquid() const
 {
 	if (!particle_ || !IsLiquid() || !IsActive()) { return; }
 
-	particle_->Draw(texture_, params_.BlendMode);
+	particle_->Draw(texture_, params_.BlendMode, params_.Noise, noiseTexture_);
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -319,8 +320,15 @@ void EffectInstance::DrawLiquid() const
 void EffectInstance::ResolveTexture(ITextureProvider* textureProvider)
 {
 	texture_.reset();
+	noiseTexture_.reset();
 
 	if (!textureProvider) { return; }
+
+	if (!params_.NoiseTexturePath.empty())
+	{
+		noiseTexture_ = textureProvider->GetTexture(params_.NoiseTexturePath);
+	}
+
 	if (params_.TexturePath.empty()) { return; }
 
 	texture_ = textureProvider->GetTexture(params_.TexturePath);

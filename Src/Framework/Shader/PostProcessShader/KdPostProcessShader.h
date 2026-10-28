@@ -110,13 +110,15 @@ public:
 
 	// モーションブラー(カメラ移動由来。深度から前フレーム位置を逆算してぼかす)
 	void SetMotionBlurEnabled(bool enabled) { m_motionBlurEnabled = enabled; }
-	// strength : シャッター係数(大きいほど長く伸びる)
+	// カメラ移動由来のブラーの強さ(シャッター係数)。0でカメラブラーなし
 	void SetMotionBlurStrength(float strength) { m_cb0_MotionBlurInfo.Work().Strength = strength; }
+	// キャラクター(スキンメッシュ)自身の動きによるブラーの強さ。0でなし
+	void SetMotionBlurObjectStrength(float strength) { m_cb0_MotionBlurInfo.Work().ObjStrength = strength; }
 	void SetMotionBlurSampleNum(int num) { m_cb0_MotionBlurInfo.Work().SampleNum = (std::max)(4, (std::min)(num, 32)); }
 	// ブラー長の上限(画面UV比)。カメラカット時の暴れ防止
 	void SetMotionBlurMaxLength(float uv) { m_cb0_MotionBlurInfo.Work().MaxBlurUV = uv; }
 	// カメラが瞬間移動した時(シーン切替・カット)に呼ぶ
-	void ResetMotionBlurHistory() { m_hasPrevViewProj = false; }
+	void ResetMotionBlurHistory();
 
 	// エディタプレビュー等、本編以外の任意サイズテクスチャに対してカラーグレードのみを適用する。
 	// 本編のColorGradeProcess()と同じVS/PS/定数バッファ(パラメータも共通)をそのまま使い回す。
@@ -309,7 +311,7 @@ private:
 		float Strength = 0.5f;			// シャッター係数
 		int   SampleNum = 12;			// サンプル数
 		float MaxBlurUV = 0.05f;		// ブラー長の上限(画面UV比)
-		float _blank = 0.0f;
+		float ObjStrength = 1.0f;		// 速度バッファ(キャラクター)由来のブラーの強さ
 	};
 	KdConstantBuffer<cbMotionBlurInfo> m_cb0_MotionBlurInfo;
 
@@ -389,6 +391,7 @@ private:
 
 	// モーションブラー適用後の画像と、前フレームのView×Proj
 	KdRenderTargetPack	m_motionBlurRTPack;
+	KdRenderTargetPack	m_velocityRTPack;	// 速度バッファ(xy=UV速度 w=書き込み済みの印)
 	Math::Matrix m_prevViewProj;
 	bool m_hasPrevViewProj = false;
 	bool m_motionBlurEnabled = false;

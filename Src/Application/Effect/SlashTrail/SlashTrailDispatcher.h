@@ -1,41 +1,34 @@
 ﻿#pragma once
 
+#include <mutex>
+#include <variant>
+
 #include "Application/Core/EventBus/Events/SlashTrailEvents.h"
 #include "SlashTrailInstance.h"
+#include "../Common/KdAssetsTextureProvider.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // トレイル(斬撃の軌跡)生成ディスパッチャー
 // ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
-// シーン単位のEventBusを購読し、SlashTrailBegin/PositionUpdate/Endの3イベントを受け取って
-// SlashTrailInstanceの記録開始/位置更新/記録終了を行う。EffectDispatcherと対になる、
-// 面エフェクト(動的頂点)側のディスパッチャー。
+// シーン単位のEventBusを購読し、SlashTrailBegin/PositionUpdate/Endを受けて
+// SlashTrailInstanceの記録開始/位置更新/記録終了を行う(EffectDispatcherと対になる面エフェクト側)。
 //
-// 【EffectDispatcherとの構造上の違い】
-//	・GPUパーティクルのsimpleEffects_は「名前ごとに使い回す1体のテンプレート」に
-//	  Emit()するだけだったが、トレイルは記録開始のたびに"新しいインスタンス"が要る
-//	  (同時に複数本の剣が同時に軌跡を引きうる為)。よってactiveTrails_は
-//	  InstanceKeyごとに新規生成される、EffectDispatcher::activeInstances_と同じ形になる
-//	・GPUパーティクルはDetach即破棄(EffectDispatcher::OnEffectDetach)で問題なかったが、
-//	  トレイルはEndRecording()後もフェードアウトが終わるまで描画し続ける必要がある為、
-//	  Update()の中でSlashTrailInstance::IsFinished()を確認してから初めて破棄する
-//	  「刈り取り」処理が要る(ここがEffectDispatcherに無かった処理)
+// 【イベント処理のタイミング】
+//	OnXxx(購読コールバック)はpendingEvents_(mutex保護)に積むだけで、
+//	activeTrails_/fadingTrails_の変更は全てUpdate()冒頭のProcessPendingEvents()で行う。
+//	Publish()は任意のスレッドから呼べるが、Update()/Draw()は同一スレッドから呼ぶこと。
 //
-// 【trailDefinitions_について】
-//	現時点ではJSON読み込みは未実装で、RegisterDefinition()でコードから直接登録する想定。
-//	EffectDataLoaderのようなJSON化は、面エフェクト用のエディタに着手するタイミングで
-//	同じパターン(name→JSON変換)を踏襲して追加すること
+// 【記録中とフェードアウト中】
+//	activeTrails_：InstanceKeyごとの記録中のトレイル。
+//	fadingTrails_：記録終了後、消え切る(IsFinished)まで描画するトレイル。
+//	Endで記録中→フェードアウト中へ移し、消え切ったらUpdate()が破棄する。
 //
 // 【使い方】
-//   SlashTrailDispatcher dispatcher;
 //   dispatcher.Init(sceneLocalEventBus);
 //   dispatcher.RegisterDefinition("PlayerSwordTrail", params);
-//     :
-//   // 毎フレーム
-//   dispatcher.Update(deltaTime);
-//   dispatcher.Draw(KdParticleDrawPass::Lit);      // DrawLit内から
-//   dispatcher.Draw(KdParticleDrawPass::Bloom);    // DrawBloom内から
-//     :
-//   // 武器側コンポーネントが発行する想定(SlashTrailDispatcherの存在は知らない)
+//   dispatcher.Update(deltaTime);                  // 毎フレーム
+//   dispatcher.Draw(ParticleDrawPass::Default);    // DrawLit内から
+//   dispatcher.Draw(ParticleDrawPass::Bright);     // DrawBright内から
 //   PublishSlashTrailBegin(bus, "Sword_Player", "PlayerSwordTrail");
 //   PublishSlashTrailPositionUpdate(bus, "Sword_Player", tipPos, basePos);
 //   PublishSlashTrailEnd(bus, "Sword_Player");
@@ -47,8 +40,7 @@ public:
 	SlashTrailDispatcher() {}
 	~SlashTrailDispatcher() { Release(); }
 
-	// コピー禁止(SlashTrailInstanceがコピー禁止の為、値として持つunordered_mapを介して
-	// コピーされる状況自体を作らない。EffectDispatcherと同じ理由)
+	// コピー禁止(SlashTrailInstanceがコピー禁止の為)
 	SlashTrailDispatcher(const SlashTrailDispatcher&) = delete;
 	SlashTrailDispatcher& operator=(const SlashTrailDispatcher&) = delete;
 
@@ -57,35 +49,64 @@ public:
 
 	void Release();
 
-	// name(トレイル定義名)でSlashTrailParamsを登録する。同名で再登録すると上書きされる。
-	//	以後のSlashTrailBeginEvent(TrailName一致分)はこの定義を参照するようになる
+	// トレイル定義を登録する(同名なら上書き)。Update()と同じスレッドから呼ぶこと
 	void RegisterDefinition(const std::string& name, const SlashTrailParams& params);
 
-	// 全アクティブトレイルの更新。
-	//	各インスタンスのUpdate(deltaTime)を呼んだ後、IsFinished()==trueになったものは
-	//	ここで破棄する(EndRecording直後ではなく、フェードアウトし切ってから破棄する点に注意)
+	// pending処理→全トレイルの更新→消え切ったものの破棄
 	void Update(float deltaTime);
 
-	// DrawPassFlagsにpassが含まれるアクティブトレイルだけを描画する
-	//	(EffectDispatcher::Draw(pass)と同じ規約。DrawLit/DrawBloomの両方から呼ぶ想定)
+	// DrawPassFlagsにpassが含まれるトレイルだけを描画する
 	void Draw(ParticleDrawPass pass);
 
 private:
+
+	// 発生リクエスト(イベントハンドラはこれを積むだけ)
+	struct PendingBegin
+	{
+		std::string	InstanceKey;
+		std::string	TrailName;
+	};
+	struct PendingPositionUpdate
+	{
+		std::string						InstanceKey;
+		DirectX::SimpleMath::Vector3	Tip;
+		DirectX::SimpleMath::Vector3	Base;
+	};
+	struct PendingEnd
+	{
+		std::string	InstanceKey;
+	};
+	using PendingEvent = std::variant<PendingBegin, PendingPositionUpdate, PendingEnd>;
 
 	void OnSlashTrailBegin(const Events::SlashTrailBegin& e);
 	void OnSlashTrailPositionUpdate(const Events::SlashTrailPositionUpdate& e);
 	void OnSlashTrailEnd(const Events::SlashTrailEnd& e);
 
-	// name → 定義(テンプレート)。SlashTrailBeginEventで新規SlashTrailInstanceを作る時に参照する
+	// pendingEvents_を取り出して、積まれた順に1件ずつ処理する
+	void ProcessPendingEvents();
+
+	void Apply(const PendingBegin& p);
+	void Apply(const PendingPositionUpdate& p);
+	void Apply(const PendingEnd& p);
+
+	// keyの記録中トレイルを終了させ、フェードアウト側へ移す(無ければ何もしない)
+	void FinishRecording(const std::string& key);
+
+	// name → 定義(テンプレート)
 	std::unordered_map<std::string, SlashTrailParams> trailDefinitions_;
 
-	// InstanceKey → アクティブなトレイル本体。
-	//	EndRecording後もIsFinished()になるまでここに残り続ける(Update()が刈り取るまで)
 	std::unordered_map<std::string, SlashTrailInstance> activeTrails_;
 	std::vector<SlashTrailInstance> fadingTrails_;
+
+	// パラメータのTexturePathからテクスチャを解決する(EffectDispatcherと同じ)
+	KdAssetsTextureProvider textureProvider_;
 
 	// 購読の自動解除用(Release時にまとめて解除される)
 	std::vector<ScopedSubscriber> subscriptions_;
 
 	EventBus* bus_ = nullptr;
+
+	// イベントハンドラ(任意スレッド)とUpdate()(所有スレッド)の間の受け渡し用
+	std::mutex					pendingMutex_;
+	std::vector<PendingEvent>	pendingEvents_;
 };

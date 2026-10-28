@@ -34,6 +34,11 @@ void KdStandardShader::BeginLit()
 	// ボーン情報をセット(スキンメッシュ対応)
 	KdShaderManager::Instance().SetVSConstantBuffer(3, m_cb3_Bone.GetAddress());
 
+	// 速度バッファ用の前フレーム情報(スキンメッシュ描画時のみ中身が有効になる)
+	KdShaderManager::Instance().SetVSConstantBuffer(kMotionCBSlot, m_cb5_Motion.GetAddress());
+	KdShaderManager::Instance().SetVSConstantBuffer(kPrevBoneCBSlot, m_cb6_PrevBone.GetAddress());
+	m_motionActive = true;
+
 	// シャドウマップのテクスチャをセット
 	KdDirect3D::Instance().WorkDevContext()->PSSetShaderResources(10, 1, m_depthMapFromLightRTPack.m_RTTexture->WorkSRViewAddress());
 
@@ -51,6 +56,8 @@ void KdStandardShader::BeginLit()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void KdStandardShader::EndLit()
 {
+	m_motionActive = false;
+
 	ID3D11ShaderResourceView* pNullSRV = nullptr;
 	KdDirect3D::Instance().WorkDevContext()->PSSetShaderResources(10, 1, &pNullSRV);
 }
@@ -254,6 +261,19 @@ void KdStandardShader::DrawModel(KdModelWork& rModel, const Math::Matrix& mWorld
 		m_cb3_Bone.Write();
 	}
 
+	// 速度バッファ用に前フレームの情報を転送(Litパスのスキンメッシュのみ)
+	const bool writeMotion = m_motionActive && data->IsSkinMesh();
+	if (writeMotion)
+	{
+		int boneCount = 0;
+		for (auto&& nodeIdx : data->GetBoneNodeIndices())
+		{
+			boneCount = (std::max)(boneCount, dataNodes[nodeIdx].m_boneIndex + 1);
+		}
+		boneCount = (std::min)(boneCount, maxBoneBufferSize);
+
+		WriteMotion(&rModel, mWorld, boneCount);
+	}
 
 	// 全描画用メッシュノードを描画
 	for (auto& nodeIdx : data->GetDrawMeshNodeIndices())
@@ -276,6 +296,12 @@ void KdStandardShader::DrawModel(KdModelWork& rModel, const Math::Matrix& mWorld
 		// 描画
 		DrawMesh(dataNode.m_spMesh.get(), meshWorldMat,
 			data->GetMaterials(), colRate, emissive);
+	}
+
+	// 速度の出力を止める(以降の静的メッシュは速度なし)
+	if (writeMotion)
+	{
+		ClearMotionEnable();
 	}
 
 	// 定数に変更があった場合は自動的に初期状態に戻す
@@ -575,6 +601,9 @@ bool KdStandardShader::Init()
 	m_cb2_Material.Create();
 	m_cb3_Bone.Create();
 	m_cb4_SkyDome.Create();
+	m_cb5_Motion.Create();
+	m_cb6_PrevBone.Create();
+	m_cb5_Motion.Write();	// Enable=0の初期状態
 
 	std::shared_ptr<KdTexture> ds = std::make_shared<KdTexture>();
 	ds->CreateDepthStencil(1024, 1024);
@@ -614,6 +643,10 @@ void KdStandardShader::Release()
 	m_cb2_Material.Release();
 	// スキンメッシュ対応
 	m_cb3_Bone.Release();
+
+	m_cb5_Motion.Release();
+	m_cb6_PrevBone.Release();
+	m_motionHistory.clear();
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -683,4 +716,80 @@ void KdStandardShader::ResetCBObject()
 	m_cb4_SkyDome.Write();
 
 	m_dirtyCBObj = false;
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 速度バッファ用：前フレームの情報
+// ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
+// モデルワークごとに前フレームのワールド・ボーン行列を保持し、前フレーム位置の計算に使う
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+
+// 1フレームに1回、3D描画の後に呼ぶ
+void KdStandardShader::NextFrame()
+{
+	// 今フレームのView×Projが、次フレームから見た「前フレーム」になる
+	const auto& cam = KdShaderManager::Instance().GetCameraCB();
+	m_prevViewProj = cam.mView * cam.mProj;
+	m_hasPrevViewProj = true;
+
+	++m_frameIndex;
+
+	// 数フレーム描画されていないモデルの履歴は捨てる
+	for (auto it = m_motionHistory.begin(); it != m_motionHistory.end();)
+	{
+		if (it->second.Frame + 2 < m_frameIndex) { it = m_motionHistory.erase(it); }
+		else { ++it; }
+	}
+}
+
+void KdStandardShader::ResetMotionHistory()
+{
+	m_motionHistory.clear();
+	m_hasPrevViewProj = false;
+}
+
+void KdStandardShader::WriteMotion(const KdModelWork* key, const Math::Matrix& mWorld, int boneCount)
+{
+	const Math::Matrix* bones = m_cb3_Bone.Get().mBones;
+
+	MotionHistory& h = m_motionHistory[key];
+
+	// 今フレーム最初の描画：現在値を前フレーム値へ繰り上げる(連続していなければ速度0扱い)
+	if (h.Frame != m_frameIndex)
+	{
+		const bool continuous = (h.Frame + 1 == m_frameIndex) && ((int)h.CurBones.size() == boneCount);
+		if (continuous)
+		{
+			h.PrevWorld = h.CurWorld;
+			h.PrevBones.swap(h.CurBones);
+		}
+		else
+		{
+			h.PrevWorld = mWorld;
+			h.PrevBones.assign(bones, bones + boneCount);
+		}
+		h.Frame = m_frameIndex;
+	}
+
+	h.CurWorld = mWorld;
+	h.CurBones.assign(bones, bones + boneCount);
+
+	// GPUへ転送
+	const auto& cam = KdShaderManager::Instance().GetCameraCB();
+
+	auto& mot = m_cb5_Motion.Work();
+	mot.PrevViewProj = m_hasPrevViewProj ? m_prevViewProj : (cam.mView * cam.mProj);
+	mot.PrevWorld = h.PrevWorld;
+	mot.Enable = 1;
+	m_cb5_Motion.Write();
+
+	auto& prevBone = m_cb6_PrevBone.Work();
+	std::copy(h.PrevBones.begin(), h.PrevBones.end(), prevBone.mPrevBones);
+	m_cb6_PrevBone.Write();
+}
+
+void KdStandardShader::ClearMotionEnable()
+{
+	m_cb5_Motion.Work().Enable = 0;
+	m_cb5_Motion.Write();
 }

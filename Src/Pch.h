@@ -49,6 +49,7 @@
 #include <future>
 #include <fileSystem>
 #include <xinput.h>
+#include <numeric>
 
 //===============================================
 //
@@ -130,7 +131,6 @@
 #include "Application/Entity/Handle.h"
 #include "Application/Entity/SceneContext.h"
 #include "Application/Entity/GameObject.h"
-#include "Application/Entity/TagInterfaces.h"   
 #include "Application/Entity/ObjectManager.h"   
 
 #include "Application/Definitions/Physics/ColliderCategory.h"

@@ -1,10 +1,26 @@
 #include "inc_KdStandardShader.hlsli"
 #include "../inc_KdCommon.hlsli"
+#include "inc_KdMotionVector.hlsli"
+
+// 速度バッファ用の前フレーム情報(C++側のcbMotion。スキンメッシュのLit描画時のみEnable=1)
+cbuffer cbMotion : register(b5)
+{
+	row_major float4x4 g_mPrevViewProj;
+	row_major float4x4 g_mPrevWorld;
+	int g_MotionEnable;
+	float3 _motionPad;
+};
+
+// 前フレームのボーン行列(C++側のcbPrevBone)
+cbuffer cbPrevBone : register(b6)
+{
+	row_major float4x4 g_mPrevBones[300];
+};
 
 //================================
 // 頂点シェーダ
 //================================
-VSOutput main(
+VSOutputLit main(
 	float4 pos : POSITION,			// 頂点座標
 	float2 uv : TEXCOORD0,			// テクスチャUV座標
 	float4 color : COLOR,			// 頂点カラー
@@ -14,6 +30,9 @@ VSOutput main(
 	float4 skinWeight : SKINWEIGHT	// ボーンの影響度(そのボーンにどれだけ影響しているか？のデータ(最大４つぶん))
 )
 {
+	// 前フレーム位置の計算用に、スキニング前の頂点を保存
+	float4 localPos = pos;
+
 	// スキニング---------------->
 	if (g_IsSkinMeshObj)
 	{
@@ -60,5 +79,28 @@ VSOutput main(
 	Out.UV = uv * g_UVTiling + g_UVOffset;
 	
     // 出力
-	return Out;
+	// 速度用のクリップ座標(前フレーム側はEnable時のみ計算。無効時はw=0で「速度なし」の印)
+	VSOutputLit Res;
+	Res.Base = Out;
+	Res.CurClip = Out.Pos;
+	Res.PrevClip = float4(0, 0, 0, 0);
+
+	if (g_MotionEnable)
+	{
+		float4 prevPos = localPos;
+		if (g_IsSkinMeshObj)
+		{
+			row_major float4x4 mPrevBones = 0;
+			[unroll]
+			for (int j = 0; j < 4; j++)
+			{
+				mPrevBones += g_mPrevBones[skinIndex[j]] * skinWeight[j];
+			}
+			prevPos = mul(localPos, mPrevBones);
+		}
+		prevPos = mul(prevPos, g_mPrevWorld);
+		Res.PrevClip = mul(prevPos, g_mPrevViewProj);
+	}
+
+	return Res;
 }

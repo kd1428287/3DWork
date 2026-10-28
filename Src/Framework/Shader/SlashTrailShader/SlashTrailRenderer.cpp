@@ -2,32 +2,27 @@
 
 #include "SlashTrailRenderer.h"
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 初期化：頂点バッファ・シェーダーの生成
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-bool SlashTrailRenderer::Init(UINT maxVertexCount)
+// 初期化：頂点バッファの生成
+bool SlashTrailRenderer::Init(UINT maxVertexCountPerLayer)
 {
 	Release();
 
-	m_maxVertexCount = maxVertexCount;
+	m_maxVertexCount = maxVertexCountPerLayer;
 
-	if (!CreateVertexBuffer(maxVertexCount)) { return false; }
-	if (!CreateShaders()) { return false; }
+	if (!CreateVertexBuffer(maxVertexCountPerLayer)) { return false; }
 
 	m_initialized = true;
 
 	return true;
 }
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 動的頂点バッファの生成(D3D11_USAGE_DYNAMIC。毎フレームMap/Unmapで書き換える)
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-bool SlashTrailRenderer::CreateVertexBuffer(UINT maxVertexCount)
+// 動的頂点バッファの生成(D3D11_USAGE_DYNAMIC。墨・芯の2レイヤーぶんを確保する)
+bool SlashTrailRenderer::CreateVertexBuffer(UINT maxVertexCountPerLayer)
 {
 	ID3D11Device* Dev = KdDirect3D::Instance().WorkDev();
 
 	D3D11_BUFFER_DESC desc = {};
-	desc.ByteWidth = sizeof(Vertex) * maxVertexCount;
+	desc.ByteWidth = sizeof(Vertex) * maxVertexCountPerLayer * 2;
 	desc.Usage = D3D11_USAGE_DYNAMIC;
 	desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
@@ -41,169 +36,74 @@ bool SlashTrailRenderer::CreateVertexBuffer(UINT maxVertexCount)
 	return true;
 }
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// シェーダーの生成
-//	・頂点シェーダーは新規(SlashTrail_VS.hlsl)：CPU側で計算済みの頂点をView×Projで
-//	  変換するだけの単純なもの
-//	・ピクセルシェーダーはAdd用(KdGPUParticle_PS.hlsl)/Alpha用
-//	  (KdGPUParticle_PS_Masked.hlsl)の2種類をそのまま流用する。Alpha用は
-//	  カラーグレード除外マスク(SV_Target1)を追加で出力する点だけがAdd用と異なる
-//	・Add(芯)用は、DoFブラー除外マスクを書き込む為にSlashTrail_PS_AddMasked.hlsl
-//	  (トレイル専用の新規ファイル)を追加で生成する
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-bool SlashTrailRenderer::CreateShaders()
-{
-	ID3D11Device* Dev = KdDirect3D::Instance().WorkDev();
-
-	// 頂点シェーダー(新規)
-	{
-#include "SlashTrail_VS.shaderInc"
-
-		if (FAILED(Dev->CreateVertexShader(compiledBuffer, sizeof(compiledBuffer), nullptr, &m_VS)))
-		{
-			assert(0 && "SlashTrailRenderer：頂点シェーダー作成失敗");
-			return false;
-		}
-
-		// 1頂点の詳細な情報(Vertex構造体と一致させる事)
-		std::vector<D3D11_INPUT_ELEMENT_DESC> layout =
-		{
-			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 0,  D3D11_INPUT_PER_VERTEX_DATA, 0 },
-			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,       0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-			{ "COLOR",    0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 20, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		};
-
-		if (FAILED(Dev->CreateInputLayout(
-			&layout[0], (UINT)layout.size(),
-			compiledBuffer, sizeof(compiledBuffer),
-			&m_inputLayout)))
-		{
-			assert(0 && "SlashTrailRenderer：CreateInputLayout失敗");
-			return false;
-		}
-	}
-
-	// ピクセルシェーダー(Add用)：KdGPUParticle_PS.hlslをそのまま流用(現在未使用。将来の非マスクAdd用に残置)
-	{
-#include "../GPUParticle/GPUParticle_PS.shaderInc"
-
-		if (FAILED(Dev->CreatePixelShader(compiledBuffer, sizeof(compiledBuffer), nullptr, &m_PS)))
-		{
-			assert(0 && "SlashTrailRenderer：ピクセルシェーダー作成失敗(KdGPUParticle_PS流用)");
-			return false;
-		}
-	}
-
-	// ピクセルシェーダー(Alpha用)：KdGPUParticle_PS_Masked.hlslをそのまま流用
-	{
-#include "../GPUParticle/GPUParticle_PS_Masked.shaderInc"
-
-		if (FAILED(Dev->CreatePixelShader(compiledBuffer, sizeof(compiledBuffer), nullptr, &m_PS_Masked)))
-		{
-			assert(0 && "SlashTrailRenderer：ピクセルシェーダー作成失敗(KdGPUParticle_PS_Masked流用)");
-			return false;
-		}
-	}
-
-	// ピクセルシェーダー(Add[芯]用)：SlashTrail_PS_AddMasked.hlsl(新規、DoFブラー除外マスク書き込み対応)
-	{
-#include "SlashTrail_PS_AddMasked.shaderInc"
-
-		if (FAILED(Dev->CreatePixelShader(compiledBuffer, sizeof(compiledBuffer), nullptr, &m_PS_AddMasked)))
-		{
-			assert(0 && "SlashTrailRenderer：ピクセルシェーダー作成失敗(SlashTrail_PS_AddMasked)");
-			return false;
-		}
-	}
-
-	return true;
-}
-
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 解放
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void SlashTrailRenderer::Release()
 {
-	KdSafeRelease(m_VS);
-	KdSafeRelease(m_PS);
-	KdSafeRelease(m_PS_Masked);
-	KdSafeRelease(m_PS_AddMasked);
-	KdSafeRelease(m_inputLayout);
 	KdSafeRelease(m_vertexBuffer);
 
 	m_initialized = false;
 	m_maxVertexCount = 0;
+	m_inkCount = 0;
+	m_coreCount = 0;
 }
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 描画：verticesを動的頂点バッファへ書き込み、三角形ストリップとして描画する
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void SlashTrailRenderer::Draw(const std::vector<Vertex>& vertices, ParticleBlendMode blendMode)
+// 頂点の書き込み：墨を先頭、芯をm_maxVertexCount個目から置く
+void SlashTrailRenderer::Upload(const std::vector<Vertex>& inkVertices, const std::vector<Vertex>& coreVertices)
 {
+	m_inkCount = 0;
+	m_coreCount = 0;
+
 	if (!m_initialized) { return; }
 
-	// 三角形ストリップを組むには最低2サンプル(4頂点)必要
-	if (vertices.size() < 4) { return; }
-
-	// 確保済みバッファ容量を超える分は安全のため切り捨てる
-	// (呼び出し元でMaxSamplesを守っていれば通常発生しない想定の安全弁)
-	const UINT vertexCount = (vertices.size() < (size_t)m_maxVertexCount)
-		? (UINT)vertices.size() : m_maxVertexCount;
+	const UINT inkCount = (UINT)std::min<size_t>(inkVertices.size(), m_maxVertexCount);
+	const UINT coreCount = (UINT)std::min<size_t>(coreVertices.size(), m_maxVertexCount);
+	if (inkCount == 0 && coreCount == 0) { return; }
 
 	ID3D11DeviceContext* DevCon = KdDirect3D::Instance().WorkDevContext();
 
-	//------------------------------------------
-	// 動的頂点バッファへ書き込み
-	//------------------------------------------
 	D3D11_MAPPED_SUBRESOURCE mapped = {};
-	if (FAILED(DevCon->Map(m_vertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
-	{
-		return;
-	}
-	memcpy(mapped.pData, vertices.data(), sizeof(Vertex) * vertexCount);
+	if (FAILED(DevCon->Map(m_vertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped))) { return; }
+
+	Vertex* dst = static_cast<Vertex*>(mapped.pData);
+	if (inkCount > 0) { memcpy(dst, inkVertices.data(), sizeof(Vertex) * inkCount); }
+	if (coreCount > 0) { memcpy(dst + m_maxVertexCount, coreVertices.data(), sizeof(Vertex) * coreCount); }
+
 	DevCon->Unmap(m_vertexBuffer, 0);
 
-	//------------------------------------------
-	// 描画
-	//------------------------------------------
+	m_inkCount = inkCount;
+	m_coreCount = coreCount;
+}
+
+// 描画：Upload済みの頂点を三角形ストリップとして描画する
+void SlashTrailRenderer::Draw(Layer layer, ParticleBlendMode blendMode, const std::shared_ptr<KdTexture>& texture)
+{
+	if (!m_initialized) { return; }
+
+	const UINT vertexCount = (layer == Layer::Ink) ? m_inkCount : m_coreCount;
+	const UINT startVertex = (layer == Layer::Ink) ? 0 : m_maxVertexCount;
+
+	// 三角形ストリップを組むには最低2点(4頂点)必要
+	if (vertexCount < 4) { return; }
+
 	KdShaderManager& shaderMgr = KdShaderManager::Instance();
+	if (!shaderMgr.m_slashTrailShader.IsInitialized()) { return; }
 
-	shaderMgr.SetVertexShader(m_VS);
-	DevCon->IASetInputLayout(m_inputLayout);
+	ID3D11DeviceContext* DevCon = KdDirect3D::Instance().WorkDevContext();
 
-	// Alpha/Addいずれの場合も、DoFブラー除外マスク(カラーグレード除外マスクと共用)を
-	// 書き込むPSへ切り替える(遠景の深度に引きずられて背景ブラーがかかるのを防ぐ為)
-	shaderMgr.SetPixelShader(blendMode == ParticleBlendMode::Alpha ? m_PS_Masked : m_PS_AddMasked);
+	shaderMgr.m_slashTrailShader.Begin(blendMode);
 
-	// TODO: SlashTrailParams::TexturePathからの解決が未実装の為、暫定で白テクスチャを割り当てる
-	//	(ITextureProviderと同じ仕組みをSlashTrailInstance/Dispatcher側に用意すれば差し替えられる)
-	ID3D11ShaderResourceView* whiteSRV = KdDirect3D::Instance().GetWhiteTex()->WorkSRView();
+	// テクスチャ未指定なら白テクスチャ(頂点カラーのみで描画)
+	ID3D11ShaderResourceView* srv = texture ? texture->WorkSRView() : KdDirect3D::Instance().GetWhiteTex()->WorkSRView();
+	DevCon->PSSetShaderResources(1, 1, &srv);
 
-	whiteSRV = KdAssets::Instance().m_textures.GetData("Asset/Textures/Game/Effect/Trail5.png")->WorkSRView();
-
-	DevCon->PSSetShaderResources(1, 1, &whiteSRV);
-
-	// KdGPUParticle_PS.hlsl(および流用元)が要求するサンプラースロット(s0)に合わせる
+	// PSが要求するサンプラースロット(s0)に合わせる
 	shaderMgr.ChangeSamplerState(KdSamplerState::Linear_Clamp, 0);
 	shaderMgr.ChangeRasterizerState(KdRasterizerState::CullNone);
 
-	// ブレンドモードの切り替え・Z書き込み無効(KdGPUParticle::Drawと同じ要領)
-	// ※Alpha側はマスク(SV_Target1)への書き込みを許可する KdBlendState::AlphaMasked を使う事。
-	//   通常の KdBlendState::Alpha ではMRTスロット1への書き込みが無効化されており、
-	//   PS側がマスクを出力しても反映されない
-	const KdBlendState blendState = [&]() {
-		switch (blendMode)
-		{
-		case ParticleBlendMode::Add:
-			return KdBlendState::Add;
-		case ParticleBlendMode::Alpha:
-			return KdBlendState::AlphaMasked;
-		case ParticleBlendMode::Multiply:
-			return KdBlendState::Multiply;
-		default:
-			break;
-		}
-		}();
+	// ※Alphaはマスク(SV_Target1)への書き込みを許可するAlphaMaskedを使う事
+	KdBlendState blendState = KdBlendState::AlphaMasked;
+	if (blendMode == ParticleBlendMode::Add) { blendState = KdBlendState::Add; }
+	else if (blendMode == ParticleBlendMode::Multiply) { blendState = KdBlendState::Multiply; }
+
 	shaderMgr.ChangeBlendState(blendState);
 	shaderMgr.ChangeDepthStencilState(KdDepthStencilState::ZWriteDisable);
 
@@ -212,7 +112,7 @@ void SlashTrailRenderer::Draw(const std::vector<Vertex>& vertices, ParticleBlend
 	DevCon->IASetVertexBuffers(0, 1, &m_vertexBuffer, &stride, &offset);
 	DevCon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
-	DevCon->Draw(vertexCount, 0);
+	DevCon->Draw(vertexCount, startVertex);
 
 	shaderMgr.UndoDepthStencilState();
 	shaderMgr.UndoBlendState();
@@ -222,4 +122,6 @@ void SlashTrailRenderer::Draw(const std::vector<Vertex>& vertices, ParticleBlend
 	// SRVのバインド解除
 	ID3D11ShaderResourceView* nullSRV = nullptr;
 	DevCon->PSSetShaderResources(1, 1, &nullSRV);
+
+	shaderMgr.m_slashTrailShader.End();
 }

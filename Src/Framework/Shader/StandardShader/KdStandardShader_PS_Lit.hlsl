@@ -1,5 +1,6 @@
 #include "inc_KdStandardShader.hlsli"
 #include "../inc_KdCommon.hlsli"
+#include "inc_KdMotionVector.hlsli"
 
 // モデル描画用テクスチャ
 Texture2D g_baseTex : register(t0);			// ベースカラーテクスチャ
@@ -32,8 +33,18 @@ static const float3 kInkColor = float3(0.04, 0.04, 0.05);	// 濃墨(輪郭線に
 //================================
 // ピクセルシェーダ
 //================================
-float4 main(VSOutput In) : SV_Target0
+float4 main(VSOutputLit InLit, out float4 outVelocity : SV_Target2) : SV_Target0
 {
+	VSOutput In = InLit.Base;
+
+	// 速度バッファ：xy=画面UV上の移動量(Yは下向きが正) w=速度を書いた印(静的メッシュは0)
+	outVelocity = float4(0, 0, 0, 0);
+	if (InLit.PrevClip.w > 0.0001 && InLit.CurClip.w > 0.0001)
+	{
+		float2 v = InLit.CurClip.xy / InLit.CurClip.w - InLit.PrevClip.xy / InLit.PrevClip.w;
+		outVelocity = float4(v * float2(0.5, -0.5), 0, 1);
+	}
+
 	// ディゾルブによる描画スキップ
 	float discardValue = g_dissolveTex.Sample(g_ss, In.UV).r;
 	if (discardValue < g_dissolveValue)

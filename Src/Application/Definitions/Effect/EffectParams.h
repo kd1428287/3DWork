@@ -171,6 +171,10 @@ struct GPUParticleParams
 
 	std::string	TexturePath;	// Asset/Textureからの相対パス
 
+	// ノイズ(マスク/ディゾルブ)。Noise.flagsが0、またはNoiseTexturePathが空なら無効
+	ParticleNoiseParams	Noise;
+	std::string	NoiseTexturePath;	// Asset/Textureからの相対パス(タイリング可能なもの。Rチャンネルを使用)
+
 	ParticleBlendMode BlendMode = ParticleBlendMode::Add;	// KdGPUParticle::Draw()へそのまま渡され、実際に切り替わる
 
 	// どの描画パス(DrawLit/DrawBloom)から描画されるか(ビットフラグ、複数同時可)。

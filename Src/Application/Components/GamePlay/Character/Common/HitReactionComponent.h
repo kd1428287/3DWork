@@ -1,16 +1,18 @@
-#pragma once
-#include <optional>
-#include <string>
-
-#include "AttackSourceComponent.h"
+﻿#pragma once
 #include "PostureComponent.h"
 #include "HealthComponent.h"
 #include "ShapeSurfaceQuery.h"
-#include "../../../Tags/IHitReactionQuery.h"
-#include "Application/Core/EventBus/Events/CollisionEvents.h"
-#include "Application/Definitions/Prefab/BitFlags.h"
+//#include "../../../Tags/IHitReactionQuery.h"
+#include "Application/Definitions/Character/Common/CombatData.h"
+#include "Application/Core/EventBus/Events/CombatEvents.h"
 
-class WeaponComponent;
+#include "Framework/Utility/KdUtility.h"
+
+#include "WeaponComponent.h"
+
+
+//class WeaponComponent;
+class IHitReactionQuery;
 
 // 被弾の判定(ヒット/ブロック/パリィ)とダメージ適用を行う。
 // 演出データ(SE/エフェクト等)は攻撃側のAttackVisualData(ctx.visualData)から受け取る。

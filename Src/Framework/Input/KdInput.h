@@ -21,6 +21,8 @@ public:
 
 	void Update();
 
+	void SetRequireFocus(bool enable) { m_requireFocus = enable; }
+
 	// 全ての有効な入力装置からのボタン入力状態を取得
 	short GetButtonState(std::string_view name) const;
 
@@ -55,6 +57,7 @@ private:
 	~KdInputManager() { Release(); }
 
 	std::unordered_map<std::string, std::unique_ptr<KdInputCollector>> m_pInputDevices;
+	bool m_requireFocus = true;
 };
 
 
@@ -81,7 +84,7 @@ public:
 	KdInputCollector() {}
 	~KdInputCollector() {}
 
-	void Update();
+	void Update(bool focused = true);
 
 	// 何かしらの入力を検知したか
 	bool IsSomethingInput();
@@ -201,6 +204,7 @@ public:
 	virtual void PreUpdate() {}
 
 	virtual void Update() = 0;
+	virtual void OnFocusLost() {}
 
 	// 強制的に入力無しの状態にする
 	void NoInput() { m_axis = Math::Vector2::Zero; }
@@ -275,6 +279,8 @@ public:
 	void PreUpdate() override;
 
 	void Update() override;
+
+	void OnFocusLost() override { m_beginFrame = true; }
 
 	// 画面端でカーソルが止まって振り向けなくなる問題への対応。
 	// 有効にすると、毎フレームUpdate()の最後にカーソルをウィンドウの

@@ -1,45 +1,24 @@
 ﻿#pragma once
 
 #include "Application/Definitions/Effect/SlashTrailParams.h"
+#include "../Common/ITextureProvider.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// トレイル(斬撃の軌跡)1本ぶんの実行時状態と、記録/更新ロジックを一元管理するクラス
+// トレイル(斬撃の軌跡)1本ぶんの記録と頂点生成
 // ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
-// EffectInstanceがGPUパーティクル1個分の実体だったのに対し、こちらはCPU側で
-// 動的頂点バッファ相当のデータ(頂点配列)を毎フレーム組み立てる実体。
-//
-// 【tipOffsetの平滑化について】
-//	距離ベースUV(UseDistanceBasedUV)では、直近に記録されたサンプルから現在の
-//	実際の剣先までの延長距離(tipOffset)を全サンプルのUV計算に一律加算している。
-//	記録中はこの延長距離が毎フレーム連続的に伸びるが、振りが速いフレームほど
-//	1フレームあたりの伸び量(=UVの進行量)が大きくなり、非等幅なテクスチャの
-//	模様が急激に切り替わって見える(速度が速いほど悪化する太さの脈動)。
-//	Update()内でこの延長距離にEMA(TipOffsetSmoothingAlpha)を掛けて滑らかにし、
-//	その平滑化済みの値(smoothedTipOffset_)をRebuildVertices()が使う
+// 一筆として記録し、記録終了後は後ろから縮ませず、全体を一括で消す。
+// UVは「始点からの距離 ÷ StrokeLength」(0～1にclamp)で、記録済みサンプルのUVは後から変わらない。
 //
 // 【状態遷移】
-//   Idle(samples_が空・isRecording_==false)
-//     ↓ BeginRecording()
-//   Recording(isRecording_==true。UpdateTipBase()のたびにサンプルが増えうる)
-//     ↓ EndRecording()
-//   FadingOut(isRecording_==false・samples_はまだ残っている)
-//     ↓ 全サンプルがFadeLengthを超えて間引かれる
-//   Idle(IsFinished()==trueになる。ここで呼び出し側が破棄してよい)
+//   Idle → BeginRecording() → Recording → EndRecording() → Dissolving → IsFinished() → Idle扱い
 //
-// 【使い方(想定)】
-//   SlashTrailInstance trail;
-//   trail.Init(params);
-//     :
-//   trail.BeginRecording();                       // 攻撃開始
-//   // 毎フレーム
-//   trail.UpdateTipBase(tipBonePos, baseBonePos);  // 剣の現在位置を渡す
-//   trail.Update(deltaTime);                       // Age更新・間引き・頂点再構築
+// 【使い方】
+//   trail.Init(params, textureProvider);
+//   trail.BeginRecording();
+//   trail.UpdateTipBase(tip, base);   // 毎フレーム
+//   trail.Update(deltaTime);
 //   trail.Draw(pass);
-//     :
-//   trail.EndRecording();                          // 攻撃終了(即座には消えず、フェードアウトする)
-//     :
-//   // 呼び出し側(ディスパッチャー相当)が毎フレーム確認する
-//   if (trail.IsFinished()) { /* ここで破棄してよい */ }
+//   trail.EndRecording();             // 以後はDissolveTimeかけて全体が消える
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 class SlashTrailInstance
 {
@@ -54,27 +33,25 @@ public:
 	SlashTrailInstance(SlashTrailInstance&&) = default;
 	SlashTrailInstance& operator=(SlashTrailInstance&&) = default;
 
-	bool Init(const SlashTrailParams& params);
+	bool Init(const SlashTrailParams& params, ITextureProvider* textureProvider);
 
 	void BeginRecording();
 
-	// 記録中、毎フレーム剣のTip/Base座標を渡す。
-	//	距離ベースUVの基準点(currentTip_)は、新規サンプルを追加するかどうかに関わらず
-	//	このtipで毎フレーム更新される。新規サンプル記録時は、生の移動速度にEMAを
-	//	掛けた平滑化済みの値をSlashTrailSample::Speedとして保存する
+	// 記録中、毎フレーム剣のTip/Base座標を渡す
 	void UpdateTipBase(const DirectX::SimpleMath::Vector3& tip, const DirectX::SimpleMath::Vector3& base);
 
+	// 最後の剣先を確定してDissolvingへ移る
 	void EndRecording();
 
-	// 毎フレーム呼ぶ:sinceLastSampleTime_加算→Age更新→期限切れサンプルの間引き→
-	//	tipOffsetのEMA平滑化(smoothedTipOffset_の更新)→頂点配列の再構築、の順で行う
+	// 毎フレーム呼ぶ：消去タイマー更新→頂点再構築
 	void Update(float deltaTime);
 
 	void Draw(ParticleDrawPass pass) const;
 
-	bool IsRecording() const { return isRecording_; }
+	bool IsRecording() const { return state_ == State::Recording; }
 
-	bool IsFinished() const { return !isRecording_ && samples_.empty(); }
+	// 消え切った(または一度も描画できる軌跡が無かった)ら呼び出し側が破棄してよい
+	bool IsFinished() const;
 
 	const SlashTrailParams& GetParams() const { return params_; }
 
@@ -84,36 +61,42 @@ public:
 
 private:
 
-	void TrimExpiredSamples();
+	enum class State { Idle, Recording, Dissolving };
 
-	void TrimOverflowSamples();
+	void ResetState();
+
+	void ResolveTexture(ITextureProvider* textureProvider);
+
+	void AddSample(const DirectX::SimpleMath::Vector3& tip, const DirectX::SimpleMath::Vector3& base);
 
 	void RebuildVertices();
 
 	SlashTrailParams	params_;
 
-	std::deque<SlashTrailSample>	samples_;	// 先頭=最古、末尾=最新
+	State	state_ = State::Idle;
 
-	bool	isRecording_ = false;
-
-	bool							hasLastRecordedTip_ = false;
-	DirectX::SimpleMath::Vector3	lastRecordedTip_ = { 0.0f, 0.0f, 0.0f };
-
-	float	sinceLastSampleTime_ = 0.0f;
+	std::vector<SlashTrailSample>	samples_;	// 先頭=始点、末尾=最新
 
 	bool							hasCurrentTip_ = false;
 	DirectX::SimpleMath::Vector3	currentTip_ = { 0.0f, 0.0f, 0.0f };
+	DirectX::SimpleMath::Vector3	currentBase_ = { 0.0f, 0.0f, 0.0f };
+
+	float	sinceLastSampleTime_ = 0.0f;
 
 	bool	hasSmoothedSpeed_ = false;
 	float	smoothedSpeed_ = 0.0f;
 
-	// 距離ベースUVのtipOffset平滑化用の状態。Update()のたびに更新される
-	bool	hasSmoothedTipOffset_ = false;
-	float	smoothedTipOffset_ = 0.0f;
+	float	dissolveElapsed_ = 0.0f;
+	float	recordingElapsed_ = 0.0f;
+
+	// RebuildVertices()用の作業バッファ(毎フレームの確保を避ける)
+	std::vector<SlashTrailSample>	path_;
+	std::vector<SlashTrailSample>	resampled_;
 
 	std::vector<SlashTrailVertex>	vertices_;
 
 	std::vector<SlashTrailVertex>	coreVertices_;
 
 	std::shared_ptr<SlashTrailRenderer>	renderer_;
+	std::shared_ptr<KdTexture>				texture_;
 };

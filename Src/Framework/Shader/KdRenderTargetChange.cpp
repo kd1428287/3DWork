@@ -173,6 +173,22 @@ bool KdRenderTargetChanger::ChangeRenderTargets(KdRenderTargetPack& colorRTPack,
 	return ChangeRenderTargets(rtvs, 2, pDSV, &colorRTPack.m_viewPort);
 }
 
+bool KdRenderTargetChanger::ChangeRenderTargets(KdRenderTargetPack& colorRTPack, KdRenderTargetPack& maskRTPack, KdRenderTargetPack& velocityRTPack)
+{
+	if (!colorRTPack.m_RTTexture || !maskRTPack.m_RTTexture || !velocityRTPack.m_RTTexture) { return false; }
+
+	ID3D11RenderTargetView* rtvs[3] =
+	{
+		colorRTPack.m_RTTexture->WorkRTView(),
+		maskRTPack.m_RTTexture->WorkRTView(),
+		velocityRTPack.m_RTTexture->WorkRTView()
+	};
+
+	ID3D11DepthStencilView* pDSV = colorRTPack.m_ZBuffer ? colorRTPack.m_ZBuffer->WorkDSView() : nullptr;
+
+	return ChangeRenderTargets(rtvs, 3, pDSV, &colorRTPack.m_viewPort);
+}
+
 void KdRenderTargetChanger::UndoRenderTarget()
 {
 	// 復帰すべきレンダーターゲットが存在しない

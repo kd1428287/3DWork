@@ -24,9 +24,9 @@ struct KdRenderTargetPack
 struct KdRenderTargetChanger
 {
 	// 同時にバインドするRTVの最大数
-	// (現状の用途：カラー本体+カラーグレード除外マスクの2枚まで。
+	// (現状の用途：カラー本体+カラーグレード除外マスク+速度バッファの3枚まで。
 	//  それ以上のMRTが必要になったらここを増やすだけでよい)
-	static const UINT kMaxSimultaneousRTV = 2;
+	static const UINT kMaxSimultaneousRTV = 3;
 
 	~KdRenderTargetChanger() { Release(); }
 
@@ -56,6 +56,10 @@ struct KdRenderTargetChanger
 	// カラー用・マスク用の2枚のKdRenderTargetPackを同時にバインドする便利オーバーロード。
 	// 深度バッファ・ビューポートはcolorRTPack側のものを使用する。
 	bool ChangeRenderTargets(KdRenderTargetPack& colorRTPack, KdRenderTargetPack& maskRTPack);
+
+	// カラー・マスク・速度バッファの3枚を同時にバインドする(モーションブラー用)。
+	// 深度バッファ・ビューポートはcolorRTPack側のものを使用する。
+	bool ChangeRenderTargets(KdRenderTargetPack& colorRTPack, KdRenderTargetPack& maskRTPack, KdRenderTargetPack& velocityRTPack);
 
 	void UndoRenderTarget();
 

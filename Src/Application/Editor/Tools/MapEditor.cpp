@@ -289,7 +289,8 @@ void MapEditor::DrawInspector()
 	// 値がガタつくことがある為)
 	if (m_inspectorEulerForId != obj.data.id)
 	{
-		DirectX::SimpleMath::Vector3 eulerRad = obj.data.rotation.ToEuler();
+		
+		Math::Vector3 eulerRad = obj.data.rotation.ToEuler();
 		m_inspectorEulerDeg = {
 			DirectX::XMConvertToDegrees(eulerRad.x),
 			DirectX::XMConvertToDegrees(eulerRad.y),

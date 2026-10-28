@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include <unordered_map>
 //============================================================
 //
 // 基本シェーダー
@@ -67,6 +68,25 @@ public:
 		float EdgeFadeTopY = 0.0f;
 		float _blank[2] = { 0.0f, 0.0f };
 	};
+
+	// 定数バッファ(速度バッファ用：前フレームの情報。スキンメッシュのLit描画時のみEnable=1)
+	struct cbMotion
+	{
+		Math::Matrix	PrevViewProj;
+		Math::Matrix	PrevWorld;
+		int				Enable = 0;
+		int				_blank[3] = { 0, 0, 0 };
+	};
+
+	// 定数バッファ(前フレームのボーン行列)
+	struct cbPrevBone
+	{
+		Math::Matrix mPrevBones[300];
+	};
+
+	// HLSL側のregister(bN)と一致させること(他のcbufferと重ならない番号にする)
+	static const int kMotionCBSlot = 5;
+	static const int kPrevBoneCBSlot = 6;
 
 
 
@@ -236,6 +256,12 @@ public:
 
 	std::shared_ptr<KdTexture>& GetDepthTex() { return m_depthMapFromLightRTPack.m_RTTexture; }
 
+	// 速度バッファ用：1フレームに1回、3D描画の後に呼ぶ(履歴の世代とカメラ行列を進める)
+	void NextFrame();
+
+	// カメラカット・シーン切替時に呼ぶ(前フレームの履歴を捨てる)
+	void ResetMotionHistory();
+
 private:
 
 	// マテリアルのセット
@@ -290,9 +316,33 @@ private:
 	KdConstantBuffer<cbMaterial>	m_cb2_Material;			// マテリアル毎に更新
 	KdConstantBuffer<cbBone>		m_cb3_Bone;				// ボーン事に更新(スキンメッシュ対応「)
 	KdConstantBuffer<cbSkyDome>		m_cb4_SkyDome;			// スカイドーム用
+	KdConstantBuffer<cbMotion>		m_cb5_Motion;			// 速度バッファ用(前フレームのVP・ワールド)
+	KdConstantBuffer<cbPrevBone>	m_cb6_PrevBone;			// 速度バッファ用(前フレームのボーン)
 
 	KdRenderTargetPack	m_depthMapFromLightRTPack;
 	KdRenderTargetChanger m_depthMapFromLightRTChanger;
+
+	// 速度バッファ用の履歴(モデルワーク単位)
+	struct MotionHistory
+	{
+		Math::Matrix CurWorld;
+		Math::Matrix PrevWorld;
+		std::vector<Math::Matrix> CurBones;
+		std::vector<Math::Matrix> PrevBones;
+		int64_t Frame = -1;		// 最後に描画されたフレーム
+	};
+	std::unordered_map<const KdModelWork*, MotionHistory> m_motionHistory;
+
+	Math::Matrix	m_prevViewProj;
+	bool			m_hasPrevViewProj = false;
+	int64_t			m_frameIndex = 0;
+	bool			m_motionActive = false;		// Litパス中のみtrue
+
+	// 前フレーム情報を履歴から取り出してGPUへ転送する
+	void WriteMotion(const KdModelWork* key, const Math::Matrix& mWorld, int boneCount);
+
+	// 速度の出力を止める(以降の静的メッシュは速度なし扱い)
+	void ClearMotionEnable();
 
 	bool		m_dirtyCBObj = false;						// 定数バッファのオブジェクトに変更があったかどうか
 };

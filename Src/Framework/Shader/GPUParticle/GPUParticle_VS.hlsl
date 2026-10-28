@@ -35,6 +35,15 @@ static const float kStretchMinLenMul = 1.0f;
 static const float kStretchMaxLenMul = 6.0f;
 static const float kStretchMinSpeed = 0.001f;
 
+// 粒子ごとのノイズUVオフセット(インスタンスIDから疑似乱数を作る)
+float2 HashSeed(uint id)
+{
+	uint h = id * 747796405u + 2891336453u;
+	h = ((h >> ((h >> 28u) + 4u)) ^ h) * 277803737u;
+	h = (h >> 22u) ^ h;
+	return float2(h & 0xFFFFu, (h >> 16u) & 0xFFFFu) / 65535.0;
+}
+
 //================================
 // 頂点シェーダ：頂点バッファを使わず、
 // SV_VertexID(0～3)とSV_InstanceID(パーティクル番号)だけで
@@ -114,6 +123,7 @@ VSOutput main(uint vertID : SV_VertexID, uint instID : SV_InstanceID)
 	Out.Pos = mul(Out.Pos, g_mProj);
 
 	Out.UV = kQuadUV[vertID];
+	Out.Seed = HashSeed(instID);
 	
 	// 発生直後(LifeRate=1)はColorStart、消滅直前(LifeRate=0)はColorへ補間
 	Out.Color = lerp(p.ColorStart, p.Color, 1 - Out.LifeRate);

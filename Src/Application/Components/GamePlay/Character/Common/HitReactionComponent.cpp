@@ -1,10 +1,12 @@
-#include "HitReactionComponent.h"
+﻿#include "HitReactionComponent.h"
 #include "../Common/CharacterEvents.h"
 #include "WeaponComponent.h"
 #include <algorithm>
 #include <random>
 #include "ShapeSurfaceQuery.h"
 #include "Application/Core/EventBus/Events/AudioEvents.h"
+#include "../../../Tags/IHitReactionQuery.h"
+
 
 namespace
 {

@@ -162,6 +162,18 @@ static bool TryReadVector4(const nlohmann::json& j, const char* key, DirectX::Si
 	return true;
 }
 
+static bool TryReadVector2(const nlohmann::json& j, const char* key, DirectX::SimpleMath::Vector2& out)
+{
+	if (!j.contains(key)) { return false; }
+
+	const nlohmann::json& v = j.at(key);
+	if (!v.is_array() || v.size() != 2) { return false; }
+	for (const auto& e : v) { if (!e.is_number()) { return false; } }
+
+	out = { v[0].get<float>(), v[1].get<float>() };
+	return true;
+}
+
 // 想定外の壊れ方(型不一致でのvalue()例外等)を報告する場所を1箇所に集約しておく。
 // TODO: プロジェクト側にロガーがあれば、ここをそちらの呼び出しに差し替える
 static void ReportLoadWarning(const std::string& context, const std::exception& e)
@@ -304,6 +316,63 @@ static GPUParticleLayer LayerFromJson(const nlohmann::json& j, const GPUParticle
 	return l;
 }
 
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// ParticleNoiseParams ⇔ JSON
+//	flagsは"Mask"/"Dissolve"のうち立っているものだけを文字列配列で保存する(drawPassと同じ形式)。
+//	"noise"キーが無い旧形式のJSONはノイズ無効(flags=0)として読まれる(後方互換)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+static nlohmann::json NoiseToJson(const ParticleNoiseParams& n)
+{
+	nlohmann::json flags = nlohmann::json::array();
+	if (n.flags & ParticleNoiseFlag_Mask) { flags.push_back("Mask"); }
+	if (n.flags & ParticleNoiseFlag_Dissolve) { flags.push_back("Dissolve"); }
+
+	return nlohmann::json{
+		{ "flags",            flags },
+		{ "noiseScale",       n.noiseScale },
+		{ "scroll",           { n.scroll.x, n.scroll.y } },
+		{ "maskPower",        n.maskPower },
+		{ "dissolveStart",    n.dissolveStart },
+		{ "dissolveSoftness", n.dissolveSoftness },
+		{ "edgeWidth",        n.edgeWidth },
+		{ "edgeColor",        { n.edgeColor.x, n.edgeColor.y, n.edgeColor.z, n.edgeColor.w } },
+	};
+}
+
+static ParticleNoiseParams NoiseFromJson(const nlohmann::json& j)
+{
+	ParticleNoiseParams n;
+
+	if (j.contains("flags") && j.at("flags").is_array())
+	{
+		for (const auto& entry : j.at("flags"))
+		{
+			if (!entry.is_string()) { continue; }
+
+			const std::string s = entry.get<std::string>();
+			if (s == "Mask") { n.flags |= ParticleNoiseFlag_Mask; }
+			else if (s == "Dissolve") { n.flags |= ParticleNoiseFlag_Dissolve; }
+		}
+	}
+
+	n.noiseScale = j.value("noiseScale", n.noiseScale);
+	TryReadVector2(j, "scroll", n.scroll);
+	n.maskPower = j.value("maskPower", n.maskPower);
+	n.dissolveStart = j.value("dissolveStart", n.dissolveStart);
+	n.dissolveSoftness = j.value("dissolveSoftness", n.dissolveSoftness);
+	n.edgeWidth = j.value("edgeWidth", n.edgeWidth);
+	TryReadVector4(j, "edgeColor", n.edgeColor);
+
+	// 0除算・範囲外を避けるための下限/上限(HLSL側にもmax保険あり)
+	n.noiseScale = std::max(n.noiseScale, 0.01f);
+	n.maskPower = std::max(n.maskPower, 0.01f);
+	n.dissolveStart = std::clamp(n.dissolveStart, 0.0f, 0.99f);
+	n.dissolveSoftness = std::max(n.dissolveSoftness, 0.001f);
+	n.edgeWidth = std::max(n.edgeWidth, 0.001f);
+
+	return n;
+}
+
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // GPUParticleParams ⇔ JSON
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -324,6 +393,8 @@ static nlohmann::json ParamsToJson(const GPUParticleParams& p)
 		{ "texture",        p.TexturePath },
 		{ "blendMode",      BlendModeToString(p.BlendMode) },
 		{ "drawPass",       DrawPassFlagsToJson(p.DrawPassFlags) },
+		{ "noiseTexture",    p.NoiseTexturePath },
+		{ "noise",           NoiseToJson(p.Noise) },
 	};
 }
 
@@ -372,6 +443,13 @@ static GPUParticleParams ParamsFromJson(const nlohmann::json& j)
 	p.BlendMode = BlendModeFromString(j.value("blendMode", std::string("Add")));
 	// 旧形式のJSON(drawPass未記載)はLitのみ扱いになる(後方互換)
 	p.DrawPassFlags = DrawPassFlagsFromJson(j, ParticleDrawPass::Default);
+
+	// 旧形式のJSON(noise/noiseTexture未記載)はノイズ無効扱いになる(後方互換)
+	p.NoiseTexturePath = j.value("noiseTexture", std::string());
+	if (j.contains("noise") && j.at("noise").is_object())
+	{
+		p.Noise = NoiseFromJson(j.at("noise"));
+	}
 
 	return p;
 }

@@ -1,4 +1,4 @@
-#include "UITransformComponent.h"
+﻿#include "UITransformComponent.h"
 #include "Application/main.h"
 
 namespace
@@ -85,7 +85,5 @@ bool UITransformComponent::ResolveRect(Math::Vector2& outMin, Math::Vector2& out
 Math::Matrix UITransformComponent::GetRotationMatrix(const Math::Vector2& pivotPos) const
 {
 	// 基準点を原点へ移し、回転してから戻す
-	return Math::Matrix::CreateTranslation(-pivotPos.x, -pivotPos.y, 0.0f)
-		* Math::Matrix::CreateRotationZ(DirectX::XMConvertToRadians(rotation_))
-		* Math::Matrix::CreateTranslation(pivotPos.x, pivotPos.y, 0.0f);
+	return Math::Matrix::CreateTranslation(-pivotPos.x, -pivotPos.y, 0.0f) * Math::Matrix::CreateRotationZ(DirectX::XMConvertToRadians(rotation_)) * Math::Matrix::CreateTranslation(pivotPos.x, pivotPos.y, 0.0f);
 }

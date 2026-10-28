@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "EnemyAIData.h"
 #include "../../Loaders/DefinitionJson.h" // Math::Vector3 / MotionClipData / AttackData のJSON変換
@@ -24,16 +24,18 @@ NLOHMANN_JSON_SERIALIZE_ENUM(TelegraphType, {
 COMPONENT_PARAMS_DEFINE_TYPE(EnemyAttackFacingData,
 	windupTurnSpeed, activeTurnSpeed)
 
-	COMPONENT_PARAMS_DEFINE_TYPE(EnemyAttackTelegraphData,
-		type, effectName, anchorSlot, offset, leadTime)
+COMPONENT_PARAMS_DEFINE_TYPE(EnemyAttackTelegraphData,
+	type, effectName, anchorSlot, offset, leadTime)
 
-	COMPONENT_PARAMS_DEFINE_TYPE(EnemyAttackDefinition,
-		name, attackData, minRange, maxRange, weight, facing, telegraph)
+COMPONENT_PARAMS_DEFINE_TYPE(EnemyComboLink, nextAttackId, chance, minRange, maxRange, priority)
 
-	COMPONENT_PARAMS_DEFINE_TYPE(EnemyMovementAnimationData,
-		idle, walk, run)
+COMPONENT_PARAMS_DEFINE_TYPE(EnemyAttackDefinition,
+	id, name,isEntry, comboLinks,intervalAfter, attackData, minRange, maxRange, weight, facing, telegraph)
 
-	COMPONENT_PARAMS_DEFINE_TYPE(EnemyAIData,
-		patrolPoints, patrolSpeed, chaseSpeed, idleDuration, detectionRange, loseTargetRange,
-		maintainDistance, attackIntervalDuration, attacks, gapCloserAttacks,
-		movementAnimations, oneShotAnimations, postDeathLingerSeconds, rootMotionBoneName)
+COMPONENT_PARAMS_DEFINE_TYPE(EnemyMovementAnimationData,
+	idle, walk, run)
+
+COMPONENT_PARAMS_DEFINE_TYPE(EnemyAIData,
+	patrolPoints, patrolSpeed, chaseSpeed, idleDuration, detectionRange, loseTargetRange,
+	maintainDistance, attackIntervalDuration, attacks, gapCloserAttacks,
+	movementAnimations, oneShotAnimations, postDeathLingerSeconds, rootMotionBoneName)

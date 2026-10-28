@@ -353,7 +353,8 @@ void EffectDispatcher::ProcessPendingEvents()
 					float maxLife = 0.0f;
 					for (EffectInstance& instance : active.instances)
 					{
-						maxLife = std::max(maxLife, instance.EmitOnce(active.position, DirectX::SimpleMath::Vector3::Zero, e.ConvergeDuration, e.SpawnSpread));
+						maxLife = std::max(maxLife, instance.EmitOnce(active.position, 
+							Math::Vector3::Zero, e.ConvergeDuration, e.SpawnSpread));
 					}
 					active.lifeRemaining = maxLife + kLifeMargin;
 

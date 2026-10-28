@@ -15,6 +15,7 @@ bool GPUParticleShader::Init()
 	m_cb0_Init.Create();
 	m_cb0_Emit.Create();
 	m_cb0_Update.Create();
+	m_cb_Noise.Create();
 
 	m_initialized = true;
 
@@ -112,6 +113,7 @@ void GPUParticleShader::Release()
 	m_cb0_Init.Release();
 	m_cb0_Emit.Release();
 	m_cb0_Update.Release();
+	m_cb_Noise.Release();
 
 	m_initialized = false;
 }
@@ -235,7 +237,8 @@ void GPUParticleShader::Update(ID3D11UnorderedAccessView* particleUAV, UINT maxP
 // 描画：ビルボードとしてインスタンシング描画
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void GPUParticleShader::Draw(ID3D11ShaderResourceView* particleSRV, UINT maxParticleNum,
-	const std::shared_ptr<KdTexture>& texture, ParticleBlendMode blendMode)
+	const std::shared_ptr<KdTexture>& texture, ParticleBlendMode blendMode,
+	const ParticleNoiseParams& noise, const std::shared_ptr<KdTexture>& noiseTexture)
 {
 	if (!m_initialized) { return; }
 
@@ -266,6 +269,25 @@ void GPUParticleShader::Draw(ID3D11ShaderResourceView* particleSRV, UINT maxPart
 	// 通常テクスチャ用サンプラーをセット
 	shaderMgr.ChangeSamplerState(KdSamplerState::Linear_Clamp, 0);
 
+	// ノイズ設定(無効時もCBを毎回書き、前回の値を残さない)
+	const bool useNoise = noise.flags != 0 && noiseTexture;
+	cbNoise& nz = m_cb_Noise.Work();
+	nz.NoiseFlags = useNoise ? noise.flags : 0;
+	nz.NoiseScale = noise.noiseScale;
+	nz.NoiseScroll = noise.scroll;
+	nz.MaskPower = noise.maskPower;
+	nz.DissolveStart = noise.dissolveStart;
+	nz.DissolveSoftness = noise.dissolveSoftness;
+	nz.EdgeWidth = noise.edgeWidth;
+	nz.EdgeColor = noise.edgeColor;
+	m_cb_Noise.Write();
+	DevCon->PSSetConstantBuffers(kNoiseCBSlot, 1, m_cb_Noise.GetAddress());
+
+	if (useNoise) { DevCon->PSSetShaderResources(2, 1, noiseTexture->WorkSRViewAddress()); }
+
+	// ノイズはタイリングするのでWrap系サンプラーをスロット1へ
+	shaderMgr.ChangeSamplerState(KdSamplerState::Anisotropic_Wrap, 1);
+
 	// ブレンドモードの切り替え・Z書き込み無効(重なった時に不透明に潰れないように)
 	KdBlendState blendState = isAlpha ? KdBlendState::AlphaMasked : KdBlendState::Add;
 	if (effectLayer) { blendState = isAlpha ? KdBlendState::Alpha : KdBlendState::EffectAdd; }
@@ -281,9 +303,11 @@ void GPUParticleShader::Draw(ID3D11ShaderResourceView* particleSRV, UINT maxPart
 	shaderMgr.UndoDepthStencilState();
 	shaderMgr.UndoBlendState();
 	shaderMgr.UndoSamplerState();
+	shaderMgr.UndoSamplerState();	// ノイズ用(スロット1)分
 
 	// SRVのバインド解除
 	ID3D11ShaderResourceView* nullSRV = nullptr;
 	DevCon->VSSetShaderResources(0, 1, &nullSRV);
 	DevCon->PSSetShaderResources(1, 1, &nullSRV);
+	DevCon->PSSetShaderResources(2, 1, &nullSRV);
 }

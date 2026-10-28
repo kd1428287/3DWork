@@ -235,6 +235,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DisableSpecificWarnings>4819;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
@@ -672,16 +673,19 @@
     <ClCompile Include="src\Framework\Window\KdWindow.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include=".github\copilot-instructions.md" />
     <None Include="Asset\Data\Game\EnemyData.json" />
     <None Include="Asset\Data\Game\EnemySchema.json" />
     <None Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_bezier_math.inl" />
     <None Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_extra_math.inl" />
     <None Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_node_editor_internal.inl" />
+    <None Include="Src\Framework\Shader\GPUParticle\inc_GPUParticleNoise.hlsli" />
     <None Include="Src\Framework\Shader\GPUParticle\inc_GPUParticleShader.hlsli" />
     <None Include="Src\Framework\Shader\inc_KdCommon.hlsli" />
     <None Include="Src\Framework\Shader\PerlinNoise.hlsli" />
     <None Include="Src\Framework\Shader\PostProcessShader\inc_KdPostProcessShader.hlsli" />
     <None Include="Src\Framework\Shader\SpriteShader\inc_KdSpriteShader.hlsli" />
+    <None Include="Src\Framework\Shader\StandardShader\inc_KdMotionVector.hlsli" />
     <None Include="Src\Framework\Shader\StandardShader\inc_KdSkyDomeShader.hlsli" />
     <None Include="Src\Framework\Shader\StandardShader\inc_KdStandardShader.hlsli" />
   </ItemGroup>

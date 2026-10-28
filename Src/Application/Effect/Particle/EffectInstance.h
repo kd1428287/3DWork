@@ -116,6 +116,7 @@ private:
 	GPUParticleParams				params_;
 	std::shared_ptr<ParticleBuffer>	particle_;
 	std::shared_ptr<KdTexture>		texture_;
+	std::shared_ptr<KdTexture>		noiseTexture_;
 
 	UINT	capacity_ = 0;
 

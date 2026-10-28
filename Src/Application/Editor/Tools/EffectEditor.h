@@ -173,6 +173,7 @@ private:
 	std::vector<std::string>	m_textureFileList;
 	bool						m_textureListLoaded = false;
 	bool						m_autoPreviewOnSelect = true;	// Assetsで選択した瞬間にプレビュー再生するか
+	bool						m_pickNoiseTexture = false;	// Assetsでの選択結果の割り当て先(false=パーティクル用 / true=ノイズ用)
 
 	// ホットリロード関連
 	bool		m_autoReload = true;

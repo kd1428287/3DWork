@@ -37,7 +37,8 @@ public:
 
 	// 描画(ビルボードとしてインスタンシング描画)
 	void Draw(ID3D11ShaderResourceView* particleSRV, UINT maxParticleNum,
-		const std::shared_ptr<KdTexture>& texture, ParticleBlendMode blendMode);
+		const std::shared_ptr<KdTexture>& texture, ParticleBlendMode blendMode,
+		const ParticleNoiseParams& noise, const std::shared_ptr<KdTexture>& noiseTexture);
 
 private:
 
@@ -125,4 +126,23 @@ private:
 		float			_pad2 = 0.0f;
 	};
 	KdConstantBuffer<cbUpdate> m_cb0_Update;
+
+	// ノイズ設定(PS用)。Draw()の都度上書きする使い捨てデータ
+	// ※HLSL側cbParticleNoise(inc_GPUParticleNoise.hlsli)と一致させる事
+	struct cbNoise
+	{
+		UINT	NoiseFlags = 0;
+		float	NoiseScale = 1.0f;
+		Math::Vector2	NoiseScroll = { 0, 0 };	// ここまでで16byte
+
+		float	MaskPower = 1.0f;
+		float	DissolveStart = 0.5f;
+		float	DissolveSoftness = 0.05f;
+		float	EdgeWidth = 0.1f;		// 16byte
+
+		Math::Vector4	EdgeColor = { 1, 0.5f, 0.1f, 1 };	// 16byte
+	};
+	KdConstantBuffer<cbNoise> m_cb_Noise;
+
+	static constexpr UINT kNoiseCBSlot = 4;	// ※他のCBと衝突しない番号に要調整(HLSL側と一致させる)
 };

@@ -45,6 +45,29 @@ enum class ParticleBlendMode
 	LiquidInk,	// 墨の液体表現用：密度として描画し、ポストプロセス側でブラー+しきい値合成する(EffectDispatcher::DrawLiquid()で描画)
 };
 
+// ノイズ(マスク/ディゾルブ)の機能フラグ
+enum ParticleNoiseFlag : UINT
+{
+	ParticleNoiseFlag_Mask     = 1 << 0,	// ノイズでアルファ形状を崩す
+	ParticleNoiseFlag_Dissolve = 1 << 1,	// 寿命に応じてノイズ順に消す
+};
+
+// ノイズ設定(エミッタ単位。1回のDraw()で全粒子に共通して適用される)
+//	※GPUParticleShader::cbNoise(HLSL側cbParticleNoise)へ転送される
+struct ParticleNoiseParams
+{
+	UINT	flags = 0;			// 0ならノイズ無効
+	float	noiseScale = 1.0f;		// ノイズUVのタイリング倍率
+	Math::Vector2	scroll = { 0, 0 };	// 寿命の間に動くUV量
+
+	float	maskPower = 1.0f;		// マスクのコントラスト
+
+	float	dissolveStart = 0.5f;		// ディゾルブ開始の寿命比(0〜1)
+	float	dissolveSoftness = 0.05f;	// 境界のなめらかさ
+	float	edgeWidth = 0.1f;		// エッジ発光帯の幅
+	Math::Vector4	edgeColor = { 1.0f, 0.5f, 0.1f, 1.0f };	// a=発光強度
+};
+
 class ParticleBuffer
 {
 public:
@@ -141,7 +164,9 @@ public:
 
 	// 描画(ビルボードとして描画)
 	// ※事前にKdShaderManager::WriteCBCamera等でカメラ情報の転送が済んでいる事
-	void Draw(const std::shared_ptr<KdTexture>& texture, ParticleBlendMode blendMode = ParticleBlendMode::Add);
+	// noise.flagsが0、またはnoiseTextureが無い場合はノイズなしで描画する
+	void Draw(const std::shared_ptr<KdTexture>& texture, ParticleBlendMode blendMode = ParticleBlendMode::Add,
+		const ParticleNoiseParams& noise = ParticleNoiseParams{}, const std::shared_ptr<KdTexture>& noiseTexture = nullptr);
 
 	UINT GetMaxParticleNum() const { return maxParticleNum_; }
 

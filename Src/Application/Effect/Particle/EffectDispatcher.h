@@ -104,28 +104,29 @@ private:
 	struct PendingSpawn
 	{
 		std::string						Id;
-		DirectX::SimpleMath::Vector3	Position;
-		DirectX::SimpleMath::Vector3	BaseDir = { 0, 0, 0 };
+		
+		Math::Vector3	Position;
+		Math::Vector3	BaseDir = { 0, 0, 0 };
 	};
 	struct PendingAttach
 	{
 		std::string						InstanceKey;
 		std::string						EffectName;
-		DirectX::SimpleMath::Vector3	Position;
+		Math::Vector3	Position;
 		float							MaxDuration = 0.0f;
 	};
 	struct PendingFollowSpawn
 	{
 		std::string						InstanceKey;
 		std::string						EffectName;
-		DirectX::SimpleMath::Vector3	Position;
+		Math::Vector3	Position;
 		float							ConvergeDuration = 0.0f;
 		float							SpawnSpread = 0.0f;
 	};
 	struct PendingPositionUpdate
 	{
 		std::string						InstanceKey;
-		DirectX::SimpleMath::Vector3	Position;
+		Math::Vector3	Position;
 	};
 	struct PendingDetach
 	{
@@ -158,7 +159,7 @@ private:
 	struct ActiveInstance
 	{
 		std::vector<EffectInstance>		instances;	// 単体なら1個、グループならメンバー数ぶん
-		DirectX::SimpleMath::Vector3	position = { 0, 0, 0 };
+		Math::Vector3	position = { 0, 0, 0 };
 
 		std::vector<std::string>		effectNames;	// instancesと同じ並び(使い回しプールの引き当て用)
 

@@ -14,9 +14,12 @@
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void KdInputManager::Update()
 {
+	// フォーカス外は入力を全てリセットし、復帰時に状態を持ち越さない
+	const bool focused = !m_requireFocus || Application::Instance().IsAppForeground();
+
 	for (auto& device : m_pInputDevices)
 	{
-		device.second->Update();
+		device.second->Update(focused);
 	}
 }
 
@@ -206,7 +209,7 @@ void KdInputManager::Release()
 // 同じく軸情報の状況更新を行う
 // 無効（入力を受け付けない）に設定している場合は全て入力無しにする
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void KdInputCollector::Update()
+void KdInputCollector::Update(bool focused)
 {
 	// 更新前の準備　PreUpdate
 	{
@@ -222,7 +225,7 @@ void KdInputCollector::Update()
 	}
 
 	// 有効 or 監視：ボタンの状態を更新
-	if (GetActiveState() != ActiveState::Disable)
+	if (focused && GetActiveState() != ActiveState::Disable)
 	{
 		for (auto& button : m_spButtons)
 		{
@@ -232,6 +235,7 @@ void KdInputCollector::Update()
 		for (auto& axis : m_spAxes)
 		{
 			axis.second->Update();
+			axis.second->OnFocusLost();
 		}
 	}
 	// 無効：全て入力されていない状態に更新
@@ -652,7 +656,7 @@ void KdInputAxisForWindowsMouse::Update()
 	// 中央位置に上書きするため、次フレームの差分計算はそこを基準に行われる。
 	// (needUpdatePrevPosがfalseの時=固定ボタン押下中は、そもそも軸の中心を
 	//  更新しない設計と矛盾するため、その間はセンタリングをスキップする)
-	if (m_confineEnabled && needUpdatePrevPos)
+	if (m_confineEnabled && needUpdatePrevPos && Application::Instance().IsMainWindowForeground()) 
 	{
 		RecenterCursor();
 	}

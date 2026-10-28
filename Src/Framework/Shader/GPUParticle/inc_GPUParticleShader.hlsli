@@ -35,6 +35,7 @@ struct VSOutput
 	float2 UV : TEXCOORD0;
 	float4 Color : TEXCOORD1;
 	float LifeRate : TEXCOORD2; // 0(死亡直前)～1(発生直後)
+	float2 Seed : TEXCOORD3; // ← 追加
 };
 
 //--------------------------------------------------

@@ -209,6 +209,16 @@ void Application::ToggleBorderless()
 	m_borderless = !m_borderless;
 }
 
+bool Application::IsAppForeground() const
+{
+	HWND fg = GetForegroundWindow();
+	if (!fg) { return false; }
+
+	DWORD pid = 0;
+	GetWindowThreadProcessId(fg, &pid);
+	return pid == GetCurrentProcessId();
+}
+
 // クライアント座標を設計解像度の座標へ変換する(黒帯と拡大率を補正)
 POINT Application::ClientToVirtual(POINT clientPos) const
 {
@@ -450,13 +460,15 @@ void Application::Execute()
 			break;
 		}
 
-		if (GetAsyncKeyState(VK_ESCAPE))
 		{
-			//			if (MessageBoxA(m_window.GetWndHandle(), "本当にゲームを終了しますか？",
-			//				"終了確認", MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2) == IDYES)
+			bool escapeKeyDown = (GetAsyncKeyState(VK_ESCAPE) & 0x8000) != 0;
+
+			if (escapeKeyDown && !m_escapeKeyDown && IsAppForeground())
 			{
 				End();
 			}
+
+			m_escapeKeyDown = escapeKeyDown;
 		}
 
 		// エディタの表示更新ON/OFF(F1キー。押した瞬間のみトグルするためエッジ検出する)
@@ -465,7 +477,7 @@ void Application::Execute()
 		{
 			bool editorToggleKeyDown = (GetAsyncKeyState(VK_F1) & 0x8000) != 0;
 
-			if (editorToggleKeyDown && !m_prevEditorToggleKeyDown)
+			if (editorToggleKeyDown && !m_prevEditorToggleKeyDown && IsAppForeground())
 			{
 				EditorHost::Instance().ToggleEnabled();
 			}

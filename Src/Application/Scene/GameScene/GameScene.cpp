@@ -223,13 +223,14 @@ void GameScene::SetupEnvironment()
 	auto& ambient = KdShaderManager::Instance().WorkAmbientController();
 
 	// ライト・フォグ
+	ambient.SetDirLight(Math::Vector3(-0.5f, -1.0f, -0.5f), Math::Vector3(1.0f, 1.0f, 1.0f));
 	ambient.SetDirLightShadowArea(Math::Vector2(100.f, 100.f), 100);
-	ambient.AddPointLight(Math::Vector3(1.0f, 1.0f, 1.0f), 10.0f, Math::Vector3(0, 0, 0), false);
+	ambient.AddPointLight(Math::Vector3(1.0f, 1.0f, 1.0f), 10.0f, Math::Vector3(0, 5, 0), true);
 	ambient.SetFogEnable(false, true);
 	ambient.SetheightFog({ 0.9f, 0.9f, 0.9f }, 80.f, -10.f, 100.f);
-	ambient.SetAmbientLight(Math::Vector4(1.0f, 1.0f, 1.0f, 0.25f));
+	ambient.SetAmbientLight(Math::Vector4(1.0f, 1.0f, 1.0f, 0.15f));
 
-	// ポストプロセス(寒色寄り・低彩度・高コントラストで、鉄や血の冷たさと古びた和風の空気感を出す)
+	// ポストプロセス
 	post.SetFarClippingDistance(50.f);
 	post.SetFocusRange(0, 50.0f);
 	post.SetExposure(1.05f);
@@ -239,8 +240,9 @@ void GameScene::SetupEnvironment()
 	post.SetTint(-0.15f);
 
 	post.SetMotionBlurEnabled(true);
-	post.SetMotionBlurStrength(0.7f);	
+	post.SetMotionBlurStrength(0.f);	
 	post.SetMotionBlurMaxLength(0.08f);
+	post.SetMotionBlurObjectStrength(1.0f);
 
 	// 画面全体に重ねる質感テクスチャ(約0.15秒ごとに位置を切り替える)
 	post.SetSurfaceTexture(KdAssets::Instance().m_textures.GetData("Asset/Textures/Game/p0028_l.png"));

@@ -1522,6 +1522,13 @@
     <None Include="Src\Framework\Shader\PerlinNoise.hlsli">
       <Filter>Src\Framework\Shader</Filter>
     </None>
+    <None Include="Src\Framework\Shader\StandardShader\inc_KdMotionVector.hlsli">
+      <Filter>Src\Framework\Shader\StandardShader</Filter>
+    </None>
+    <None Include="Src\Framework\Shader\GPUParticle\inc_GPUParticleNoise.hlsli">
+      <Filter>Src\Framework\Shader\GPUParticle</Filter>
+    </None>
+    <None Include=".github\copilot-instructions.md" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Src\Framework\Shader\SpriteShader\KdSpriteShader_PS.hlsl">

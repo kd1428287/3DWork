@@ -1,20 +1,16 @@
 ﻿#include "Framework/KdFramework.h"
 
 #include "SlashTrailShader.h"
-#include "SlashTrailRenderer.h"	// SlashTrailRenderer::Vertex のレイアウト定義を流用する為(offsetの根拠)
+#include "SlashTrailRenderer.h"	// SlashTrailRenderer::Vertex のレイアウト定義(offsetの根拠)
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 初期化：VS/PS/InputLayoutの生成
-//	※中身は旧SlashTrailRenderer::CreateShaders()からそのまま移設したもので、
-//	  シェーダーバイナリ・レイアウト定義自体は一切変更していない
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// VS/PS/InputLayoutの生成
 bool SlashTrailShader::Init()
 {
 	Release();
 
 	ID3D11Device* Dev = KdDirect3D::Instance().WorkDev();
 
-	// 頂点シェーダー(新規：SlashTrail_VS.hlsl)
+	// 頂点シェーダー + InputLayout
 	{
 #include "SlashTrail_VS.shaderInc"
 
@@ -24,7 +20,7 @@ bool SlashTrailShader::Init()
 			return false;
 		}
 
-		// 1頂点の詳細な情報(SlashTrailRenderer::Vertex構造体と一致させる事)
+		// SlashTrailRenderer::Vertex構造体と一致させる事
 		std::vector<D3D11_INPUT_ELEMENT_DESC> layout =
 		{
 			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 0,  D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -42,13 +38,24 @@ bool SlashTrailShader::Init()
 		}
 	}
 
-	// ピクセルシェーダー：KdGPUParticle_PS.hlslをそのまま流用
+	// ピクセルシェーダー(Alpha用)：GPUParticle_PS_Masked.hlslを流用
 	{
-#include "../GPUParticle/GPUParticle_PS.shaderInc"
+#include "../GPUParticle/GPUParticle_PS_Masked.shaderInc"
 
-		if (FAILED(Dev->CreatePixelShader(compiledBuffer, sizeof(compiledBuffer), nullptr, &m_PS)))
+		if (FAILED(Dev->CreatePixelShader(compiledBuffer, sizeof(compiledBuffer), nullptr, &m_PS_Masked)))
 		{
-			assert(0 && "SlashTrailShader：ピクセルシェーダー作成失敗(KdGPUParticle_PS流用)");
+			assert(0 && "SlashTrailShader：ピクセルシェーダー作成失敗(GPUParticle_PS_Masked流用)");
+			return false;
+		}
+	}
+
+	// ピクセルシェーダー(Alpha以外用)：SlashTrail_PS_AddMasked.hlsl
+	{
+#include "SlashTrail_PS_AddMasked.shaderInc"
+
+		if (FAILED(Dev->CreatePixelShader(compiledBuffer, sizeof(compiledBuffer), nullptr, &m_PS_AddMasked)))
+		{
+			assert(0 && "SlashTrailShader：ピクセルシェーダー作成失敗(SlashTrail_PS_AddMasked)");
 			return false;
 		}
 	}
@@ -58,37 +65,29 @@ bool SlashTrailShader::Init()
 	return true;
 }
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 解放
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void SlashTrailShader::Release()
 {
 	KdSafeRelease(m_VS);
-	KdSafeRelease(m_PS);
+	KdSafeRelease(m_PS_Masked);
+	KdSafeRelease(m_PS_AddMasked);
 	KdSafeRelease(m_inputLayout);
 
 	m_initialized = false;
 }
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // VS/PS/InputLayoutのバインド
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void SlashTrailShader::Begin()
+void SlashTrailShader::Begin(ParticleBlendMode blendMode)
 {
 	if (!m_initialized) { return; }
 
 	KdShaderManager& shaderMgr = KdShaderManager::Instance();
 
 	shaderMgr.SetVertexShader(m_VS);
-	//shaderMgr.SetPixelShader(m_PS);
+	shaderMgr.SetPixelShader(blendMode == ParticleBlendMode::Alpha ? m_PS_Masked : m_PS_AddMasked);
 
-	ID3D11DeviceContext* DevCon = KdDirect3D::Instance().WorkDevContext();
-	DevCon->IASetInputLayout(m_inputLayout);
+	KdDirect3D::Instance().WorkDevContext()->IASetInputLayout(m_inputLayout);
 }
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 対称性のための空実装(Begin()側でRS/DSS等の個別ステートを直接触っていない為)
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void SlashTrailShader::End()
 {
 }

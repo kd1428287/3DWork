@@ -1,9 +1,9 @@
 ﻿#pragma once
 
-#include <d3d11.h>
-#include <wrl/client.h>
-#include <array>
-#include <cstdint>
+//#include <d3d11.h>
+//#include <wrl/client.h>
+//#include <array>
+//#include <cstdint>
 
 #include "Application/Core/Math/PerlinNoise.h"
 

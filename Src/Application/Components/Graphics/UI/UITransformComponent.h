@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 // 2D UI用の座標コンポーネント
 // 座標系は描画と同じ中心原点・Y上向き(ピクセル)。Screenは画面アンカー基準、Worldは投影した点が基準

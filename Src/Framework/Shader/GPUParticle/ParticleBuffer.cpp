@@ -133,9 +133,10 @@ void ParticleBuffer::Update(float deltaTime, const Math::Vector3& gravity, const
 	KdShaderManager::Instance().m_particleShader.Update(particleUAV_, drawCount_, deltaTime, gravity, followDelta);
 }
 
-void ParticleBuffer::Draw(const std::shared_ptr<KdTexture>& texture, ParticleBlendMode blendMode)
+void ParticleBuffer::Draw(const std::shared_ptr<KdTexture>& texture, ParticleBlendMode blendMode,
+	const ParticleNoiseParams& noise, const std::shared_ptr<KdTexture>& noiseTexture)
 {
 	if (!initialized_ || drawCount_ == 0) { return; }
 
-	KdShaderManager::Instance().m_particleShader.Draw(particleSRV_, drawCount_, texture, blendMode);
+	KdShaderManager::Instance().m_particleShader.Draw(particleSRV_, drawCount_, texture, blendMode, noise, noiseTexture);
 }

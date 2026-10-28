@@ -22,17 +22,18 @@ struct EffectDefinition
 	std::string			Name;
 	GPUParticleParams	Params;
 
-	DirectX::SimpleMath::Vector3	Pos = { 0,0,0 };
-	DirectX::SimpleMath::Vector3	Rotate = { 0,0,0 };
-	DirectX::SimpleMath::Vector3	Scale = { 1,1,1 };
+	
+	Math::Vector3	Pos = { 0,0,0 };
+	Math::Vector3	Rotate = { 0,0,0 };
+	Math::Vector3	Scale = { 1,1,1 };
 };
 
 // 墨(BlendMode=LiquidInk)の質感パラメータ。全エフェクト共通の1セットで、JSONでは"liquidInk"キーに保存する。
 // 既定値はKdPostProcessShader::cbLiquidInfoと同じ値に揃えてある
 struct LiquidInkSettings
 {
-	DirectX::SimpleMath::Vector3	InkColor = { 0.10f, 0.10f, 0.11f };
-	DirectX::SimpleMath::Vector3	EdgeColor = { 0.01f, 0.01f, 0.01f };
+	Math::Vector3	InkColor = { 0.10f, 0.10f, 0.11f };
+	Math::Vector3	EdgeColor = { 0.01f, 0.01f, 0.01f };
 	float	Threshold = 0.35f;
 	float	Softness = 0.05f;
 	float	EdgeWidth = 0.15f;
