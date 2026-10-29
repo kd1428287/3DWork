@@ -1,6 +1,12 @@
-// PlayerState.cpp (StateAttackのCanStartXxx群のみ抜粋変更・他は元のまま)
-#include "PlayerStatusController.h"
+﻿// PlayerState.cpp (StateAttackのCanStartXxx群のみ抜粋変更・他は元のまま)
+#include "PlayerState.h"
+#include "PlayerStateContext.h"
 #include "PlayerAttackSelector.h"
+#include "PlayerInputComponent.h"
+#include "PlayerLockOnComponent.h"
+#include "PlayerMovementAnimationComponent.h"
+#include "PlayerFacingComponent.h"
+#include "PlayerCombatMovementComponent.h"
 #include "../Common/WeaponSetComponent.h"
 #include "../../../Physics/Movement/TweenMoveComponent.h"
 #include "Application/Core/EventBus/Events/SceneEvents.h" // パスは配置に合わせて調整
@@ -10,117 +16,121 @@
 // =================================================================
 
 // --- None State ---
-void StateNone::Enter(PlayerStatusController* controller) {
-	controller->RefreshMovementAnimation();
+void StateNone::Enter(PlayerStateContext* ctx) {
+	// 戦闘行動からNoneへ復帰した直後、現在の入力に合わせてIdle/Walk/Runを同期し直す。
+	if (ctx->input == nullptr) return;
+	ctx->movementState = ctx->input->GetDesiredMovementState();
+	ctx->combatMovement->ApplyMovementState(ctx->movementState);
+	if (ctx->movementAnimation != nullptr) {
+		ctx->movementAnimation->Refresh(ctx->movementState, ctx->input->GetMoveDirection(), ctx->IsLockedOn());
+	}
 }
 
 // --- Attack State ---
-void StateAttack::Enter(PlayerStatusController* controller) {
+void StateAttack::Enter(PlayerStateContext* ctx) {
 	phase_ = CombatState::AttackWindup;
 	elapsed_ = 0.0f;
 
-	weaponSet_ = controller->GetOwner()->GetComponent<WeaponSetComponent>();
-	attackSelector_ = controller->GetOwner()->GetComponent<PlayerAttackSelector>();
 
 	// ロック中ならロック対象へ、未ロックなら画面中心に最も近い敵へ正対する。
-	controller->FaceAttackTarget();
-	//controller->SetMovementEnabled(false);
+	ctx->facing->FaceAttackTarget();
+	//ctx->combatMovement->SetMovementEnabled(false);
 
-	const AttackData& data = attackSelector_->GetCurrentAttackData();
+	const AttackData& data = ctx->attackSelector->GetCurrentAttackData();
 	auto damageData = data.damageData;
-	damageData.damage *= controller->GetAttackDamageScale(); // チャージ倍率(通常攻撃は1.0)
-	weaponSet_->SetAttackDamageData(data.weaponSlots, damageData);
+	damageData.damage *= damageScale_; // チャージ倍率(通常攻撃は1.0)
+	ctx->weaponSet->SetAttackDamageData(data.weaponSlots, damageData);
 	// 演出データ(SE/エフェクト等)も対象スロットの武器へ渡す。
 	for (const std::string& slot : data.weaponSlots) {
-		if (WeaponComponent* weapon = weaponSet_->GetWeapon(slot)) weapon->SetAttackVisualData(data.visualData);
+		if (WeaponComponent* weapon = ctx->weaponSet->GetWeapon(slot)) weapon->SetAttackVisualData(data.visualData);
 	}
 
-	controller->PlayAnimation(data.phaseData.windup);
+	ctx->PlayAnimation(data.phaseData.windup);
 }
 
-void StateAttack::Update(PlayerStatusController* controller, float deltaTime) {
+void StateAttack::Update(PlayerStateContext* ctx, float deltaTime) {
 	elapsed_ += deltaTime;
-	const AttackData& data = attackSelector_->GetCurrentAttackData();
+	const AttackData& data = ctx->attackSelector->GetCurrentAttackData();
 
 	if (phase_ == CombatState::AttackWindup && elapsed_ >= data.phaseData.windup.duration) {
 		phase_ = CombatState::AttackActive;
 		elapsed_ = 0.0f;
 
 		if (data.phaseData.active.useRootMotion) {
-			controller->RequestRootMotionWarpTowardsTarget(data.moveData.stepDistance, data.moveData.engageDistance,
+			ctx->RequestRootMotionWarpTowardsTarget(data.moveData.stepDistance, data.moveData.engageDistance,
 				kMinRootMotionWarpScale, kMaxRootMotionWarpScale);
 		}
 		else {
-			controller->RequestStepMoveTowardsTarget(data.moveData.stepDirection, data.moveData.stepDistance,
+			ctx->RequestStepMoveTowardsTarget(data.moveData.stepDirection, data.moveData.stepDistance,
 				data.moveData.engageDistance, data.moveData.stepDuration);
 		}
-		weaponSet_->SetHitBoxEnabled(data.weaponSlots, true); // 攻撃判定が実際に発生する一瞬だけ有効化
-		weaponSet_->SetTrailEmitting(data.weaponSlots, true); // 武器の軌跡エフェクトもHitBoxと同じ窓で記録開始
+		ctx->weaponSet->SetHitBoxEnabled(data.weaponSlots, true); // 攻撃判定が実際に発生する一瞬だけ有効化
+		ctx->weaponSet->SetTrailEmitting(data.weaponSlots, true); // 武器の軌跡エフェクトもHitBoxと同じ窓で記録開始
 
-		controller->PlayAnimation(data.phaseData.active);
-		controller->PlaySE(controller->GetSoundData().attackSwing); // 振りの音は判定発生に合わせる
+		ctx->PlayAnimation(data.phaseData.active);
+		ctx->PlaySE(data_.swingSE); // 振りの音は判定発生に合わせる
 	}
 	else if (phase_ == CombatState::AttackActive && elapsed_ >= data.phaseData.active.duration) {
 		phase_ = CombatState::AttackRecovery;
 		elapsed_ = 0.0f;
-		controller->ClearRootMotionWarp(); // 踏み込み区間の終了(Tween側はCancelStepMoveが別途処理)
-		weaponSet_->SetHitBoxEnabled(data.weaponSlots, false); // 判定の発生窓を閉じる
-		weaponSet_->SetTrailEmitting(data.weaponSlots, false); // 軌跡エフェクトの記録も停止(既に生成済みの頂点はStopEmit後も自然に流れて消える)
+		ctx->combatMovement->ClearRootMotionWarp(); // 踏み込み区間の終了(Tween側はCancelStepMoveが別途処理)
+		ctx->weaponSet->SetHitBoxEnabled(data.weaponSlots, false); // 判定の発生窓を閉じる
+		ctx->weaponSet->SetTrailEmitting(data.weaponSlots, false); // 軌跡エフェクトの記録も停止(既に生成済みの頂点はStopEmit後も自然に流れて消える)
 
-		controller->PlayAnimation(data.phaseData.recovery);
+		ctx->PlayAnimation(data.phaseData.recovery);
 	}
 	else if (phase_ == CombatState::AttackRecovery && elapsed_ >= data.phaseData.recovery.duration) {
 		// 自律的に終了し、ControllerにNoneへの復帰を要請する
-		controller->ChangeStateToNone();
+		ctx->requester->ChangeStateToNone();
 	}
 }
 
-void StateAttack::Exit(PlayerStatusController* controller) {
+void StateAttack::Exit(PlayerStateContext* ctx) {
 	// 強制中断された場合のガード
-	controller->CancelStepMove();
-	controller->ClearRootMotionWarp();
-	controller->SetMovementEnabled(true);
+	ctx->combatMovement->CancelStepMove();
+	ctx->combatMovement->ClearRootMotionWarp();
+	ctx->combatMovement->SetMovementEnabled(true);
 
-	const AttackData& data = attackSelector_->GetCurrentAttackData();
-	weaponSet_->SetHitBoxEnabled(data.weaponSlots, false);
-	weaponSet_->SetTrailEmitting(data.weaponSlots, false);
+	const AttackData& data = ctx->attackSelector->GetCurrentAttackData();
+	ctx->weaponSet->SetHitBoxEnabled(data.weaponSlots, false);
+	ctx->weaponSet->SetTrailEmitting(data.weaponSlots, false);
 }
 
-bool StateAttack::CanStartEvade(const PlayerStatusController* controller) const {
+bool StateAttack::CanStartEvade(const PlayerStateContext* ctx) const {
 	if (phase_ == CombatState::AttackRecovery) {
-		return elapsed_ >= attackSelector_->GetCurrentAttackData().cancelData.recoveryEvadeCancelStart;
+		return elapsed_ >= ctx->attackSelector->GetCurrentAttackData().cancelData.recoveryEvadeCancelStart;
 	}
 	return false;
 }
 
-bool StateAttack::CanStartAttack(const PlayerStatusController* controller) const {
+bool StateAttack::CanStartAttack(const PlayerStateContext* ctx) const {
 	// Recovery中の一定タイミングを過ぎたら、次の攻撃(コンボ)へのキャンセルを許可する
 	if (phase_ == CombatState::AttackRecovery) {
-		return elapsed_ >= attackSelector_->GetCurrentAttackData().cancelData.recoveryAttackCancelStart;
+		return elapsed_ >= ctx->attackSelector->GetCurrentAttackData().cancelData.recoveryAttackCancelStart;
 	}
 	return false;
 }
 
-bool StateAttack::CanStartGuard(const PlayerStatusController* controller) const {
+bool StateAttack::CanStartGuard(const PlayerStateContext* ctx) const {
 	if (phase_ == CombatState::AttackRecovery) {
-		//return elapsed_ >= attackSelector_->GetCurrentAttackData().cancelData.recoveryEvadeCancelStart;
+		//return elapsed_ >= ctx->attackSelector->GetCurrentAttackData().cancelData.recoveryEvadeCancelStart;
 		return true;
 	}
 	return false;
 }
 
-bool StateAttack::CanStartMove(const PlayerStatusController* controller) const {
+bool StateAttack::CanStartMove(const PlayerStateContext* ctx) const {
 	// Recovery中の一定タイミングを過ぎたら、移動入力による通常移動への
 	// キャンセルを許可する。CanStartEvade/CanStartAttackと同じ考え方。
 	if (phase_ == CombatState::AttackRecovery) {
-		return elapsed_ >= attackSelector_->GetCurrentAttackData().cancelData.recoveryMoveCancelStart;
+		return elapsed_ >= ctx->attackSelector->GetCurrentAttackData().cancelData.recoveryMoveCancelStart;
 	}
 	return false;
 }
 
 
 // --- Evade State ---
-void StateEvade::Enter(PlayerStatusController* controller) {
+void StateEvade::Enter(PlayerStateContext* ctx) {
 	phase_ = CombatState::Evade;
 	elapsed_ = 0.0f;
 
@@ -128,13 +138,13 @@ void StateEvade::Enter(PlayerStatusController* controller) {
 	// または(useRootMotionがtrueの場合)アニメーションのルートモーションに
 	// 任せる。MovementComponentはTransitionTo側で既に無効化されているため、
 	// 位置を書き換える権利がここで競合することはない。
-	const auto& data = controller->GetCurrentEvadeData();
+	const auto& data = data_;
 
 	// 現在の前方に対する入力方向の相対位置(前後左右)を判定し、
 	// 対応するアニメーションを選ぶ。キャラクター自体は向きを変えない
 	// (facingDirectionComponent_はEvade中無効化されているため、
 	//  ここで回転させない限り自然に維持される)。
-	const EvadeDirection evadeDir = controller->ClassifyEvadeDirection(data.evadeDirection);
+	const EvadeDirection evadeDir = ctx->facing->ClassifyEvadeDirection(direction_);
 
 	// 回避全体(Active+Recovery)の秒数を目標としてアニメーション速度を
 	// 自動スケーリングする(詳細はModelAnimatorComponent::Play参照)。
@@ -142,37 +152,37 @@ void StateEvade::Enter(PlayerStatusController* controller) {
 	// フェーズ分割していない(前後左右4方向とのかけ合わせ方を先に
 	// 決める必要があるため。詳細は別途相談)。
 	const float targetDuration = data.activeDuration + data.recoveryDuration;
-	controller->PlayAnimation(data.GetAnimationName(evadeDir), false, targetDuration, data.useRootMotion);
-	controller->PlaySE(controller->GetSoundData().evade);
+	ctx->PlayAnimation(data.GetAnimationName(evadeDir), false, targetDuration, data.useRootMotion);
+	ctx->PlaySE(data.se);
 	if (!data.useRootMotion) {
-		//controller->RequestStepMove(data.evadeDirection, data.evadeDistance, data.activeDuration + data.recoveryDuration);
+		//ctx->RequestStepMove(direction_, data.evadeDistance, data.activeDuration + data.recoveryDuration);
 	}
 }
 
-void StateEvade::Exit(PlayerStatusController* controller) {
-	controller->CancelStepMove();
+void StateEvade::Exit(PlayerStateContext* ctx) {
+	ctx->combatMovement->CancelStepMove();
 }
 
-void StateEvade::Update(PlayerStatusController* controller, float deltaTime) {
+void StateEvade::Update(PlayerStateContext* ctx, float deltaTime) {
 	elapsed_ += deltaTime;
-	const auto& data = controller->GetCurrentEvadeData();
+	const auto& data = data_;
 	if (phase_ == CombatState::Evade && elapsed_ >= data.activeDuration) {
 		phase_ = CombatState::EvadeRecovery;
 		elapsed_ = 0.0f;
 
 	}
 	else if (phase_ == CombatState::EvadeRecovery && elapsed_ >= data.recoveryDuration) {
-		controller->ChangeStateToNone();
+		ctx->requester->ChangeStateToNone();
 	}
 }
 
-bool StateEvade::IsInJustEvadeWindow(const PlayerStatusController* controller) const {
+bool StateEvade::IsInJustEvadeWindow(const PlayerStateContext* ctx) const {
 	if (phase_ != CombatState::Evade) return false;
-	const auto& data = controller->GetCurrentEvadeData();
+	const auto& data = data_;
 	return elapsed_ >= data.justWindowStart && elapsed_ <= data.justWindowEnd;
 }
 
-bool StateEvade::IsInvincible(const PlayerStatusController* controller) const {
+bool StateEvade::IsInvincible(const PlayerStateContext* ctx) const {
 	// Evade(実移動フェーズ)中のみ無敵。EvadeRecoveryは無敵切れとして
 	// 通常の被弾判定に戻す(後隙に攻撃を合わせられたら普通に食らう)。
 	return phase_ == CombatState::Evade;
@@ -180,7 +190,7 @@ bool StateEvade::IsInvincible(const PlayerStatusController* controller) const {
 
 
 // --- Guard State ---
-void StateGuard::Enter(PlayerStatusController* controller) {
+void StateGuard::Enter(PlayerStateContext* ctx) {
 	elapsed_ = 0.0f;
 	hasEnteredLoop_ = false;
 	parrySucceeded_ = false;
@@ -191,18 +201,18 @@ void StateGuard::Enter(PlayerStatusController* controller) {
 	releaseElapsed_ = 0.0f;
 
 	// Guard中のルートモーション移動量を一律に抑制する(動きすぎ対策)。
-	controller->SetRootMotionScale(controller->GetCurrentGuardData().rootMotionScale);
+	ctx->combatMovement->SetRootMotionScale(data_.rootMotionScale);
 
 	// 構え動作を単発再生する
-	controller->PlayAnimation(controller->GetCurrentGuardData().start);
-	controller->PlaySE(controller->GetSoundData().guardRaise);
+	ctx->PlayAnimation(data_.start);
+	ctx->PlaySE(data_.raiseSE);
 }
 
-void StateGuard::Exit(PlayerStatusController* controller) {
-	controller->ClearRootMotionWarp();
+void StateGuard::Exit(PlayerStateContext* ctx) {
+	ctx->combatMovement->ClearRootMotionWarp();
 }
 
-void StateGuard::Update(PlayerStatusController* controller, float deltaTime) {
+void StateGuard::Update(PlayerStateContext* ctx, float deltaTime) {
 	elapsed_ += deltaTime;
 
 	// 解除要求後は終了アニメーションの再生完了を待つだけの状態。
@@ -210,8 +220,8 @@ void StateGuard::Update(PlayerStatusController* controller, float deltaTime) {
 	// (StateAttackのRecovery終了/StateEvadeのEvadeRecovery終了と同じ考え方)。
 	if (isReleasing_) {
 		releaseElapsed_ += deltaTime;
-		if (releaseElapsed_ >= controller->GetCurrentGuardData().end.duration) {
-			controller->ChangeStateToNone();
+		if (releaseElapsed_ >= data_.end.duration) {
+			ctx->requester->ChangeStateToNone();
 		}
 		return;
 	}
@@ -219,39 +229,39 @@ void StateGuard::Update(PlayerStatusController* controller, float deltaTime) {
 	// Guardは継続状態なので、時間経過による自動終了はない
 
 	// 構え動作(単発)が終わったら、継続姿勢のLoopへ切り替える。
-	if (!hasEnteredLoop_ && elapsed_ >= controller->GetCurrentGuardData().start.duration) {
+	if (!hasEnteredLoop_ && elapsed_ >= data_.start.duration) {
 		hasEnteredLoop_ = true;
-		controller->PlayAnimation(controller->GetCurrentGuardData().loop);
+		ctx->PlayAnimation(data_.loop);
 	}
 
 	if (parrySucceeded_) {
 		parrySuccessElapsed_ += deltaTime;
-		if (parrySuccessElapsed_ >= controller->GetCurrentGuardData().parry.duration) {
+		if (parrySuccessElapsed_ >= data_.parry.duration) {
 			// 演出終了。NormalBlockへ復帰する(ガードキーが既に離されていれば
 			// 次フレームのCanReleaseGuard()判定でHandleActionInput側が解除する)。
 			parrySucceeded_ = false;
-			ResumeLoopAnimation(controller);
+			ResumeLoopAnimation(ctx);
 		}
 	}
 	else if (isReactingToGuardHit_) {
 		guardHitElapsed_ += deltaTime;
-		if (guardHitElapsed_ >= controller->GetCurrentGuardData().hit.duration) {
+		if (guardHitElapsed_ >= data_.hit.duration) {
 			isReactingToGuardHit_ = false;
-			ResumeLoopAnimation(controller);
+			ResumeLoopAnimation(ctx);
 		}
 	}
 }
 
-bool StateGuard::IsInParryWindow(const PlayerStatusController* controller) const {
-	return GetGuardPhase(controller) == GuardPhase::JustWindow;
+bool StateGuard::IsInParryWindow(const PlayerStateContext* ctx) const {
+	return GetGuardPhase(ctx) == GuardPhase::JustWindow;
 }
 
-bool StateGuard::CanReleaseGuard(const PlayerStatusController* controller) const {
+bool StateGuard::CanReleaseGuard(const PlayerStateContext* ctx) const {
 	// パリィ成功演出中だけ解除を保留し、演出を強制的に見せ切る。
 	return !parrySucceeded_;
 }
 
-void StateGuard::RequestRelease(PlayerStatusController* controller) {
+void StateGuard::RequestRelease(PlayerStateContext* ctx) {
 	if (isReleasing_) return; // 多重要求防止(HandleActionInputは毎フレーム呼んでくる)
 
 	isReleasing_ = true;
@@ -261,40 +271,42 @@ void StateGuard::RequestRelease(PlayerStatusController* controller) {
 	isReactingToGuardHit_ = false;
 	hasEnteredLoop_ = true;
 
-	controller->PlayAnimation(controller->GetCurrentGuardData().end);
+	ctx->PlayAnimation(data_.end);
 }
 
-bool StateGuard::CanStartAttack(const PlayerStatusController* controller) const
+bool StateGuard::CanStartAttack(const PlayerStateContext* ctx) const
 {
 	return true;
 }
 
-bool StateGuard::CanStartEvade(const PlayerStatusController* controller) const
+bool StateGuard::CanStartEvade(const PlayerStateContext* ctx) const
 {
 	return isReleasing_;
 }
 
-bool StateGuard::CanStartGuard(const PlayerStatusController* controller) const
+bool StateGuard::CanStartGuard(const PlayerStateContext* ctx) const
 {
 	return true;
 }
 
-bool StateGuard::CanStartMove(const PlayerStatusController* controller) const
+bool StateGuard::CanStartMove(const PlayerStateContext* ctx) const
 {
 	return isReleasing_;
 }
 
-void StateGuard::NotifyParrySuccess(PlayerStatusController* controller) {
+void StateGuard::NotifyParrySuccess(PlayerStateContext* ctx)
+{
 	if (parrySucceeded_) return; // 同一パリィ猶予内での多重成立を防止
 	parrySucceeded_ = true;
 	parrySuccessElapsed_ = 0.0f;
 	isReactingToGuardHit_ = false; // ガードヒット演出より優先して上書きする
 	hasEnteredLoop_ = true;
 
-	controller->PlayAnimation(controller->GetCurrentGuardData().parry);
+	ctx->PlayAnimation(data_.parry);
 }
 
-void StateGuard::NotifyGuardHit(PlayerStatusController* controller) {
+void StateGuard::NotifyGuardHit(PlayerStateContext* ctx) 
+{
 	// パリィ成功演出中はそちらを優先し、上書きしない。
 	if (parrySucceeded_) return;
 
@@ -303,99 +315,118 @@ void StateGuard::NotifyGuardHit(PlayerStatusController* controller) {
 	guardHitElapsed_ = 0.0f;
 	hasEnteredLoop_ = true;
 
-	controller->PlayAnimation(controller->GetCurrentGuardData().hit);
+	ctx->PlayAnimation(data_.hit);
 }
 
-void StateGuard::ResumeLoopAnimation(PlayerStatusController* controller) {
+void StateGuard::ResumeLoopAnimation(PlayerStateContext* ctx) 
+{
 	hasEnteredLoop_ = true;
-	controller->PlayAnimation(controller->GetCurrentGuardData().loop);
+	ctx->PlayAnimation(data_.loop);
 }
 
-StateGuard::GuardPhase StateGuard::GetGuardPhase(const PlayerStatusController* controller) const {
+StateGuard::GuardPhase StateGuard::GetGuardPhase(const PlayerStateContext* ctx) const 
+{
 	if (isReleasing_) return GuardPhase::Release;
 	if (parrySucceeded_) return GuardPhase::ParrySuccess;
-	return elapsed_ <= controller->GetCurrentGuardData().justWindowDuration
+	return elapsed_ <= data_.justWindowDuration
 		? GuardPhase::JustWindow
 		: GuardPhase::NormalBlock;
 }
 
 
 // --- Charge State ---
-void StateCharge::Enter(PlayerStatusController* controller) {
+void StateCharge::Enter(PlayerStateContext* ctx) 
+{
 	elapsed_ = 0.0f;
-	controller->PlayAnimation(controller->GetChargeData().loop);
+
+
+	// ロック中ならロック対象へ、未ロックなら画面中心に最も近い敵へ正対する。
+	ctx->facing->FaceAttackTarget();
+	
+	const ChargeData& data = GetData();
+	ctx->PlayAnimation(data.charge);
 }
 
-void StateCharge::Update(PlayerStatusController* controller, float deltaTime) {
+void StateCharge::Update(PlayerStateContext* ctx, float deltaTime) {
 	// 最大値のクランプはChargeData::GetDamageScale側で行う(最大到達後は保持)。
 	elapsed_ += deltaTime;
 }
 
+void StateCharge::Exit(PlayerStateContext* ctx) 
+{
+	const ChargeData& data = GetData();
+	if (data.GetChargeScale(elapsed_) >= 1.0f) {
+
+	}
+	else {
+
+	}
+}
+
 
 // --- Stagger State ---
-void StateStagger::Enter(PlayerStatusController* controller) {
+void StateStagger::Enter(PlayerStateContext* ctx) {
 	phase_ = Phase::Reaction;
 	elapsed_ = 0.0f;
 
-	const StaggerPhaseData& data = GetPhaseData(controller);
+	const StaggerPhaseData& data = GetPhaseData(ctx);
 	reactionDuration_ = data.reactionDuration; // 秒数はStaggerData側で決める
 
-	controller->SetRootMotionScale(data.rootMotionScale);
-	controller->PlayAnimation(data.animationName, false, reactionDuration_,
+	ctx->combatMovement->SetRootMotionScale(data.rootMotionScale);
+	ctx->PlayAnimation(data.animationName, false, reactionDuration_,
 		static_cast<float>(data.reactionStartFrame), static_cast<float>(data.reactionEndFrame),
 		data.useRootMotion, data.reactionBlendDuration);
 }
 
-void StateStagger::Update(PlayerStatusController* controller, float deltaTime) {
+void StateStagger::Update(PlayerStateContext* ctx, float deltaTime) {
 	elapsed_ += deltaTime;
-	const StaggerPhaseData& data = GetPhaseData(controller);
+	const StaggerPhaseData& data = GetPhaseData(ctx);
 
 	if (phase_ == Phase::Reaction && elapsed_ >= reactionDuration_) {
 		phase_ = Phase::Recovery;
 		elapsed_ = 0.0f;
-		controller->PlayAnimation(data.animationName, false, data.recoveryDuration,
+		ctx->PlayAnimation(data.animationName, false, data.recoveryDuration,
 			static_cast<float>(data.reactionEndFrame), static_cast<float>(data.recoveryEndFrame),
 			data.useRootMotion, data.recoveryBlendDuration);
 	}
 	else if (phase_ == Phase::Recovery && elapsed_ >= data.recoveryDuration) {
-		controller->ChangeStateToNone();
+		ctx->requester->ChangeStateToNone();
 	}
 }
 
-void StateStagger::Exit(PlayerStatusController* controller)
+void StateStagger::Exit(PlayerStateContext* ctx)
 {
-	controller->ClearRootMotionWarp();
+	ctx->combatMovement->ClearRootMotionWarp();
 }
 
-bool StateStagger::CanStartEvade(const PlayerStatusController* controller) const {
+bool StateStagger::CanStartEvade(const PlayerStateContext* ctx) const {
 	if (phase_ != Phase::Recovery) return false;
-	return elapsed_ >= GetPhaseData(controller).recoveryEvadeCancelStart;
+	return elapsed_ >= GetPhaseData(ctx).recoveryEvadeCancelStart;
 }
 
-bool StateStagger::CanStartMove(const PlayerStatusController* controller) const {
-	return CanStartEvade(controller);
+bool StateStagger::CanStartMove(const PlayerStateContext* ctx) const {
+	return CanStartEvade(ctx);
 }
 
-const StaggerPhaseData& StateStagger::GetPhaseData(const PlayerStatusController* controller) const {
-	const StaggerData& data = controller->GetStaggerData();
-	return isLarge_ ? data.staggerLarge : data.staggerSmall;
+const StaggerPhaseData& StateStagger::GetPhaseData(const PlayerStateContext* ctx) const {
+	return isLarge_ ? data_.staggerLarge : data_.staggerSmall;
 }
 
 
 // --- Dead State ---
-void StateDead::Enter(PlayerStatusController* controller) {
+void StateDead::Enter(PlayerStateContext* ctx) {
 	elapsed_ = 0.0f;
 	reloadRequested_ = false;
-	controller->CancelStepMove();
-	controller->ClearRootMotionWarp();
-	controller->ClearLockOn(); // カメラが死体を追い続けないようロック解除
-	controller->PlayAnimation(kDeathAnimationName, false, kDeathAnimationDuration, false);
-	controller->PlaySE(controller->GetSoundData().death);
+	ctx->combatMovement->CancelStepMove();
+	ctx->combatMovement->ClearRootMotionWarp();
+	ctx->lockOn->ClearLockOn(); // カメラが死体を追い続けないようロック解除
+	ctx->PlayAnimation(data_.animationName, false, data_.animationDuration, false);
+	ctx->PlaySE(data_.se);
 }
 
-void StateDead::Update(PlayerStatusController* controller, float deltaTime) {
+void StateDead::Update(PlayerStateContext* ctx, float deltaTime) {
 	elapsed_ += deltaTime;
-	if (reloadRequested_ || elapsed_ < kDeathAnimationDuration) return;
+	if (reloadRequested_ || elapsed_ < data_.animationDuration) return;
 
 	// アニメ終了時に一度だけシーンのリロードを要求する。
 	reloadRequested_ = true;
@@ -403,6 +434,6 @@ void StateDead::Update(PlayerStatusController* controller, float deltaTime) {
 	GLOBALEVENT->Publish(Events::SceneChangeRequest{ SceneType::Title });
 }
 
-void StateDead::Exit(PlayerStatusController* controller) {
+void StateDead::Exit(PlayerStateContext* ctx) {
 	// 復活を実装する際に使う。現状は何もしない。
 }

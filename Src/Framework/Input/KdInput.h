@@ -21,6 +21,7 @@ public:
 
 	void Update();
 
+	// trueの間、アプリが前面にない時は全入力を無効化する(既定ON)
 	void SetRequireFocus(bool enable) { m_requireFocus = enable; }
 
 	// 全ての有効な入力装置からのボタン入力状態を取得
@@ -57,6 +58,7 @@ private:
 	~KdInputManager() { Release(); }
 
 	std::unordered_map<std::string, std::unique_ptr<KdInputCollector>> m_pInputDevices;
+
 	bool m_requireFocus = true;
 };
 
@@ -84,6 +86,7 @@ public:
 	KdInputCollector() {}
 	~KdInputCollector() {}
 
+	// focused=falseの時は有効/監視でも全入力を無入力にする
 	void Update(bool focused = true);
 
 	// 何かしらの入力を検知したか
@@ -204,6 +207,8 @@ public:
 	virtual void PreUpdate() {}
 
 	virtual void Update() = 0;
+
+	// フォーカス喪失中に毎フレーム呼ばれる(状態の持ち越し防止用)
 	virtual void OnFocusLost() {}
 
 	// 強制的に入力無しの状態にする
@@ -280,6 +285,7 @@ public:
 
 	void Update() override;
 
+	// 復帰直後に巨大な移動量が出ないよう、次回を開始フレーム扱いにする
 	void OnFocusLost() override { m_beginFrame = true; }
 
 	// 画面端でカーソルが止まって振り向けなくなる問題への対応。

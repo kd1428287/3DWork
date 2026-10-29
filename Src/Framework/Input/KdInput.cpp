@@ -14,7 +14,7 @@
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void KdInputManager::Update()
 {
-	// フォーカス外は入力を全てリセットし、復帰時に状態を持ち越さない
+	// フォーカス外は入力をリセットし、復帰時に状態を持ち越さない
 	const bool focused = !m_requireFocus || Application::Instance().IsAppForeground();
 
 	for (auto& device : m_pInputDevices)
@@ -224,7 +224,7 @@ void KdInputCollector::Update(bool focused)
 		}
 	}
 
-	// 有効 or 監視：ボタンの状態を更新
+	// 有効 or 監視 かつ フォーカス中：ボタンの状態を更新
 	if (focused && GetActiveState() != ActiveState::Disable)
 	{
 		for (auto& button : m_spButtons)
@@ -235,10 +235,9 @@ void KdInputCollector::Update(bool focused)
 		for (auto& axis : m_spAxes)
 		{
 			axis.second->Update();
-			axis.second->OnFocusLost();
 		}
 	}
-	// 無効：全て入力されていない状態に更新
+	// 無効 or フォーカス外：全て入力されていない状態に更新
 	else
 	{
 		for (auto& button : m_spButtons)
@@ -249,6 +248,7 @@ void KdInputCollector::Update(bool focused)
 		for (auto& axis : m_spAxes)
 		{
 			axis.second->NoInput();
+			axis.second->OnFocusLost();
 		}
 	}
 }
@@ -656,7 +656,8 @@ void KdInputAxisForWindowsMouse::Update()
 	// 中央位置に上書きするため、次フレームの差分計算はそこを基準に行われる。
 	// (needUpdatePrevPosがfalseの時=固定ボタン押下中は、そもそも軸の中心を
 	//  更新しない設計と矛盾するため、その間はセンタリングをスキップする)
-	if (m_confineEnabled && needUpdatePrevPos && Application::Instance().IsMainWindowForeground()) 
+	// 編集パネル(別OSウィンドウ)操作中は引き戻さない
+	if (m_confineEnabled && needUpdatePrevPos && Application::Instance().IsMainWindowForeground())
 	{
 		RecenterCursor();
 	}
@@ -688,6 +689,9 @@ void KdInputAxisForWindowsMouse::RecenterCursor()
 
 void KdInputAxisForWindowsMouse::SetConfineToWindowCenter(bool enable)
 {
+	// 状態が変わらない呼び出し(毎フレーム呼ばれる場合)では何もしない
+	if (m_confineEnabled == enable) { return; }
+
 	m_confineEnabled = enable;
 
 	if (m_confineEnabled)

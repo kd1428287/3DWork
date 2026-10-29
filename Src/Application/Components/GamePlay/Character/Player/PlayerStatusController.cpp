@@ -1,4 +1,4 @@
-// PlayerStatusController.cpp
+﻿// PlayerStatusController.cpp
 #include "PlayerStatusController.h"
 
 #include "PlayerAttackSelector.h"
@@ -8,25 +8,29 @@
 #include "../Common/HealthComponent.h" // パスはプロジェクトの配置に合わせて調整
 #include "../Common/HitReactionComponent.h"
 #include "../../../Physics/Collision/ColliderComponent.h"
-#include "Application/Core/EventBus/Events/AudioEvents.h"
+#include <cassert>
 
 void PlayerStatusController::Awake()
 {
-	inputComponent_ = GetOwner()->GetComponent<PlayerInputComponent>();
-	lockOnComponent_ = GetOwner()->GetComponent<PlayerLockOnComponent>();
-	movementAnimationComponent_ = GetOwner()->GetComponent<PlayerMovementAnimationComponent>();
-	modelAnimatorComponent_ = GetOwner()->GetComponent<ModelAnimatorComponent>();
-	weaponSet_ = GetOwner()->GetComponent<WeaponSetComponent>();
-	attackSelector_ = GetOwner()->GetComponent<PlayerAttackSelector>();
-	facing_ = GetOwner()->GetComponent<PlayerFacingComponent>();
-	combatMovement_ = GetOwner()->GetComponent<PlayerCombatMovementComponent>();
+	ctx_.input = GetOwner()->GetComponent<PlayerInputComponent>();
+	ctx_.lockOn = GetOwner()->GetComponent<PlayerLockOnComponent>();
+	ctx_.movementAnimation = GetOwner()->GetComponent<PlayerMovementAnimationComponent>();
+	ctx_.animator = GetOwner()->GetComponent<ModelAnimatorComponent>();
+	ctx_.weaponSet = GetOwner()->GetComponent<WeaponSetComponent>();
+	ctx_.attackSelector = GetOwner()->GetComponent<PlayerAttackSelector>();
+	ctx_.facing = GetOwner()->GetComponent<PlayerFacingComponent>();
+	ctx_.combatMovement = GetOwner()->GetComponent<PlayerCombatMovementComponent>();
+	ctx_.requester = this;
 	health_ = GetOwner()->GetComponent<HealthComponent>();
+
+	// Stateが前提とするコンポーネント。欠けていれば構成ミス。
+	assert(ctx_.animator && ctx_.combatMovement && ctx_.facing && ctx_.lockOn && ctx_.weaponSet && ctx_.attackSelector);
 
 	// 自分自身をIHitReactionQueryとして登録
 	if (HitReactionComponent* hitReaction = GetOwner()->GetComponent<HitReactionComponent>()) {
 		hitReaction->SetQuerySource(this);
-		if (weaponSet_ != nullptr) {
-			if (WeaponComponent* mainWeapon = weaponSet_->GetWeapon(kMainWeaponSlot)) {
+		if (ctx_.weaponSet != nullptr) {
+			if (WeaponComponent* mainWeapon = ctx_.weaponSet->GetWeapon(kMainWeaponSlot)) {
 				hitReaction->SetWeapon(Handle<WeaponComponent>(mainWeapon));
 			}
 		}
@@ -43,27 +47,27 @@ void PlayerStatusController::Update(float deltaTime)
 		Die();
 	}
 	if (IsDead()) {
-		stateMachine_.Update(this, deltaTime);
+		stateMachine_.Update(&ctx_, deltaTime);
 		return; // 入力・移動処理は一切行わない
 	}
 
-	if (inputComponent_ != nullptr) {
-		HandleMovementInput(*inputComponent_, deltaTime);
-		HandleActionInput(*inputComponent_);
+	if (ctx_.input != nullptr) {
+		HandleMovementInput(*ctx_.input, deltaTime);
+		HandleActionInput(*ctx_.input);
 	}
 
 	// ロック中の向き固定・移動状態の更新は、いずれもCombatState::Noneの間だけ行う
 	if (GetCombatState() == CombatState::None) {
-		if (facing_ != nullptr) {
-			facing_->UpdateLockOnFacing(movementState_ == MovementState::Run);
+		if (ctx_.facing != nullptr) {
+			ctx_.facing->UpdateLockOnFacing(ctx_.movementState == MovementState::Run);
 		}
-		if (combatMovement_ != nullptr) {
-			combatMovement_->UpdateMovementState(movementState_, deltaTime);
+		if (ctx_.combatMovement != nullptr) {
+			ctx_.combatMovement->UpdateMovementState(ctx_.movementState, deltaTime);
 		}
 	}
 
 	// 戦闘状態の更新は共通StateMachineに丸投げ
-	stateMachine_.Update(this, deltaTime);
+	stateMachine_.Update(&ctx_, deltaTime);
 }
 
 void PlayerStatusController::HandleMovementInput(const PlayerInputComponent& input, float deltaTime)
@@ -79,20 +83,20 @@ void PlayerStatusController::HandleMovementInput(const PlayerInputComponent& inp
 		ChangeStateToNone();
 	}
 
-	if (movementState_ != nextState) {
-		movementState_ = nextState;
-		if (combatMovement_ != nullptr) {
-			combatMovement_->ApplyMovementState(movementState_);
+	if (ctx_.movementState != nextState) {
+		ctx_.movementState = nextState;
+		if (ctx_.combatMovement != nullptr) {
+			ctx_.combatMovement->ApplyMovementState(ctx_.movementState);
 		}
 	}
 
-	if (facing_ != nullptr) {
-		const bool shouldFaceMovement = !IsLockedOn() || movementState_ == MovementState::Run;
-		facing_->SetFacingEnabled(shouldFaceMovement);
+	if (ctx_.facing != nullptr) {
+		const bool shouldFaceMovement = !IsLockedOn() || ctx_.movementState == MovementState::Run;
+		ctx_.facing->SetFacingEnabled(shouldFaceMovement);
 	}
 
-	if (movementAnimationComponent_ != nullptr) {
-		movementAnimationComponent_->Tick(deltaTime, movementState_, input.GetMoveDirection(), IsLockedOn());
+	if (ctx_.movementAnimation != nullptr) {
+		ctx_.movementAnimation->Tick(deltaTime, ctx_.movementState, input.GetMoveDirection(), IsLockedOn());
 	}
 }
 
@@ -106,9 +110,9 @@ void PlayerStatusController::HandleActionInput(PlayerInputComponent& input)
 	}
 
 	if (input.HasCommand(ActionCommand::Evade) && CanStartEvade()) {
-		EvadeData data = baseEvadeData_;
-		input.ConsumeCommand(ActionCommand::Evade, data.evadeDirection);
-		TryStartEvade(data);
+		Math::Vector3 direction = Math::Vector3::Zero;
+		input.ConsumeCommand(ActionCommand::Evade, direction);
+		TryStartEvade(direction);
 	}
 	else if (input.HasCommand(ActionCommand::Attack) && input.IsGuardHeld()
 		&& CanStartAttack() && CanStartGuard()) {
@@ -134,25 +138,20 @@ void PlayerStatusController::HandleActionInput(PlayerInputComponent& input)
 	}
 }
 
-EvadeDirection PlayerStatusController::ClassifyEvadeDirection(const Math::Vector3& inputDirection) const
-{
-	return (facing_ != nullptr) ? facing_->ClassifyEvadeDirection(inputDirection) : EvadeDirection::Forward;
-}
-
 bool PlayerStatusController::TryStartAttack()
 {
 	if (!CanStartAttack()) return false;
-	if (attackSelector_ == nullptr || !attackSelector_->TryResolveNext(ActionCommand::Attack)) return false;
+	if (ctx_.attackSelector == nullptr || !ctx_.attackSelector->TryResolveNext(ActionCommand::Attack)) return false;
 
-	attackDamageScale_ = 1.0f;
+	stateAttack_.Setup(1.0f);
 	ForceTransitionTo(&stateAttack_);
 	return true;
 }
 
-bool PlayerStatusController::TryStartEvade(const EvadeData& data)
+bool PlayerStatusController::TryStartEvade(const Math::Vector3& direction)
 {
 	if (!CanStartEvade()) return false;
-	currentEvade_ = data;
+	stateEvade_.Setup(direction);
 	TransitionTo(&stateEvade_);
 	return true;
 }
@@ -160,7 +159,6 @@ bool PlayerStatusController::TryStartEvade(const EvadeData& data)
 bool PlayerStatusController::TryStartGuard()
 {
 	if (!CanStartGuard()) return false;
-	currentGuard_ = baseGuardData_;
 	ForceTransitionTo(&stateGuard_);
 	return true;
 }
@@ -177,19 +175,18 @@ void PlayerStatusController::ReleaseCharge()
 	if (!IsCharging()) return;
 
 	// チャージ技が未登録なら、溜めを捨ててNoneへ戻る。
-	if (attackSelector_ == nullptr || !attackSelector_->TryResolveNext(ActionCommand::ChargeAttack)) {
+	if (ctx_.attackSelector == nullptr || !ctx_.attackSelector->TryResolveNext(ActionCommand::ChargeAttack)) {
 		ChangeStateToNone();
 		return;
 	}
 
-	attackDamageScale_ = baseChargeData_.GetDamageScale(GetCombatElapsed());
 	ForceTransitionTo(&stateAttack_);
 }
 
 void PlayerStatusController::ApplyStagger(bool isLarge)
 {
 	if (IsDead()) return; // 死亡後のよろけで上書きされない
-	stateStagger_.Setup(isLarge); // 継続時間はStateStagger側がGetStaggerData()から決める
+	stateStagger_.Setup(isLarge); // 継続時間はStateStagger側のdata_から決める
 	ForceTransitionTo(&stateStagger_);
 }
 
@@ -203,42 +200,37 @@ void PlayerStatusController::NotifyParrySuccess()
 {
 	// パリィはGuard中にしか成立し得ないため、Guard中でなければ何もしない
 	if (GetCombatState() == CombatState::Guard) {
-		stateGuard_.NotifyParrySuccess(this);
+		stateGuard_.NotifyParrySuccess(&ctx_);
 	}
 }
 
 void PlayerStatusController::NotifyGuardHit()
 {
 	if (GetCombatState() == CombatState::Guard) {
-		stateGuard_.NotifyGuardHit(this);
+		stateGuard_.NotifyGuardHit(&ctx_);
 	}
 }
 
 void PlayerStatusController::RequestGuardRelease()
 {
 	if (GetCombatState() == CombatState::Guard) {
-		stateGuard_.RequestRelease(this);
+		stateGuard_.RequestRelease(&ctx_);
 	}
 }
 
 void PlayerStatusController::TryLockOn()
 {
-	if (lockOnComponent_ != nullptr) lockOnComponent_->TryLockOn();
+	if (ctx_.lockOn != nullptr) ctx_.lockOn->TryLockOn();
 }
 
 void PlayerStatusController::ClearLockOn()
 {
-	if (lockOnComponent_ != nullptr) lockOnComponent_->ClearLockOn();
+	if (ctx_.lockOn != nullptr) ctx_.lockOn->ClearLockOn();
 }
 
 bool PlayerStatusController::IsLockedOn() const
 {
-	return lockOnComponent_ != nullptr && lockOnComponent_->IsLockedOn();
-}
-
-void PlayerStatusController::FaceAttackTarget()
-{
-	if (facing_ != nullptr) facing_->FaceAttackTarget();
+	return ctx_.IsLockedOn();
 }
 
 void PlayerStatusController::SetWeapon(Handle<WeaponComponent> weapon)
@@ -248,105 +240,12 @@ void PlayerStatusController::SetWeapon(Handle<WeaponComponent> weapon)
 	}
 }
 
-void PlayerStatusController::PlayAnimation(const std::string& name, bool loop, float targetDurationSeconds, float startTime, float endTime,
-	bool useRootMotion, float blendDurationSeconds)
-{
-	if (modelAnimatorComponent_ == nullptr) return;
-	// ボーン名はSetConfig(ModelAnimatorConfig)で設定済み。ここでは有効/無効の切り替えのみ行う。
-	modelAnimatorComponent_->SetRootMotionEnabled(useRootMotion);
-	modelAnimatorComponent_->SetBlendDuration(blendDurationSeconds);
-	modelAnimatorComponent_->Play(name, loop, targetDurationSeconds, startTime, endTime, true);
-}
-
-void PlayerStatusController::PlayAnimation(const std::string& name, bool loop, float targetDurationSeconds, bool useRootMotion, float blendDurationSeconds)
-{
-	PlayAnimation(name, loop, targetDurationSeconds, 0.0f, 0.0f, useRootMotion, blendDurationSeconds);
-}
-
-void PlayerStatusController::PlayAnimation(const MotionClipData& clip)
-{
-	if (modelAnimatorComponent_ == nullptr) return;
-	modelAnimatorComponent_->Play(clip);
-}
-
-void PlayerStatusController::PlaySE(const std::string& id) const
-{
-	if (id.empty()) return;
-	Events::PublishSoundPlayEvent(*GlobalEventBus::Instance(), id);
-}
-
-void PlayerStatusController::RefreshMovementAnimation()
-{
-	if (inputComponent_ == nullptr) return;
-	movementState_ = inputComponent_->GetDesiredMovementState();
-	if (combatMovement_ != nullptr) {
-		combatMovement_->ApplyMovementState(movementState_);
-	}
-
-	if (movementAnimationComponent_ != nullptr) {
-		movementAnimationComponent_->Refresh(movementState_, inputComponent_->GetMoveDirection(), IsLockedOn());
-	}
-}
-
-void PlayerStatusController::RequestStepMove(const Math::Vector3& direction, float distance, float duration)
-{
-	if (combatMovement_ != nullptr) {
-		combatMovement_->RequestStepMove(direction, distance, duration);
-	}
-}
-
-void PlayerStatusController::RequestStepMoveTowardsTarget(const Math::Vector3& fallbackDirection,
-	float stepDistance, float engageDistance, float duration)
-{
-	if (combatMovement_ == nullptr) return;
-
-	GameObject* target = (facing_ != nullptr) ? facing_->GetCurrentAttackTarget() : nullptr;
-	combatMovement_->RequestStepMoveTowardsTarget(target, fallbackDirection, stepDistance, engageDistance, duration);
-}
-
-void PlayerStatusController::CancelStepMove()
-{
-	if (combatMovement_ != nullptr) {
-		combatMovement_->CancelStepMove();
-	}
-}
-
-void PlayerStatusController::RequestRootMotionWarpTowardsTarget(float expectedDistance, float engageDistance,
-	float minScale, float maxScale)
-{
-	if (combatMovement_ == nullptr) return;
-
-	GameObject* target = (facing_ != nullptr) ? facing_->GetCurrentAttackTarget() : nullptr;
-	combatMovement_->RequestRootMotionWarpTowardsTarget(target, expectedDistance, engageDistance, minScale, maxScale);
-}
-
-void PlayerStatusController::SetRootMotionScale(float scale)
-{
-	if (combatMovement_ != nullptr) {
-		combatMovement_->SetRootMotionScale(scale);
-	}
-}
-
-void PlayerStatusController::ClearRootMotionWarp()
-{
-	if (combatMovement_ != nullptr) {
-		combatMovement_->ClearRootMotionWarp();
-	}
-}
-
-void PlayerStatusController::SetMovementEnabled(bool enabled)
-{
-	if (combatMovement_ != nullptr) {
-		combatMovement_->SetMovementEnabled(enabled);
-	}
-}
-
 void PlayerStatusController::TransitionTo(IPlayerState* nextState)
 {
 	// 通常の(失敗しうる)遷移。prevStateをOnStateChanged側で参照できるよう、
 	// 遷移前にCurrent()を取得してから渡す。
 	IPlayerState* prevState = stateMachine_.Current();
-	if (stateMachine_.TransitionTo(this, nextState)) {
+	if (stateMachine_.TransitionTo(&ctx_, nextState)) {
 		OnStateChanged(prevState, nextState);
 	}
 }
@@ -357,31 +256,31 @@ void PlayerStatusController::ForceTransitionTo(IPlayerState* nextState)
 	// CanStartXxx()を独自に判定済みで、StateMachine側の可否判定を
 	// バイパスしたい場合に使う。
 	IPlayerState* prevState = stateMachine_.Current();
-	stateMachine_.ForceTransitionTo(this, nextState);
+	stateMachine_.ForceTransitionTo(&ctx_, nextState);
 	OnStateChanged(prevState, nextState);
 }
 
 void PlayerStatusController::OnStateChanged(IPlayerState* prevState, IPlayerState* nextState)
 {
-	if (combatMovement_ != nullptr) {
-		combatMovement_->SetMovementEnabled(nextState == &stateNone_);
+	if (ctx_.combatMovement != nullptr) {
+		ctx_.combatMovement->SetMovementEnabled(nextState == &stateNone_);
 	}
-	if (facing_ != nullptr) {
+	if (ctx_.facing != nullptr) {
 		// None: movement追従で向く。Attack: FaceAttackTarget()のoverrideで向く。
 		// Evade/Guard/Stagger/Deadはfacing完全停止(現在の向きを保つ)。
-		facing_->SetFacingEnabled(nextState == &stateNone_ || nextState == &stateAttack_);
+		ctx_.facing->SetFacingEnabled(nextState == &stateNone_ || nextState == &stateAttack_);
 
 		if (nextState != &stateAttack_) {
-			facing_->ClearAttackFacingOverride();
+			ctx_.facing->ClearAttackFacingOverride();
 		}
 	}
 
-	if (attackSelector_ == nullptr) return;
+	if (ctx_.attackSelector == nullptr) return;
 
 	if (nextState == &stateAttack_) {
 		// 新しい攻撃を実際に開始した時点で通知する
 		// (次にどの技かの選択自体はTryStartAttack内で既に解決済み)。
-		attackSelector_->NotifyAttackStarted();
+		ctx_.attackSelector->NotifyAttackStarted();
 		return;
 	}
 
@@ -389,12 +288,12 @@ void PlayerStatusController::OnStateChanged(IPlayerState* prevState, IPlayerStat
 		// AttackのRecoveryが(中断されずに)自然終了してNoneへ戻った場合のみ、
 		// コンボ継続受付ウィンドウを開く。何秒開けるかはAttackData側の
 		// 値(cancelData.comboWindowAfterRecovery)を使う。
-		attackSelector_->NotifyRecoveryFinishedNaturally(
-			attackSelector_->GetCurrentAttackData().cancelData.comboWindowAfterRecovery);
+		ctx_.attackSelector->NotifyRecoveryFinishedNaturally(
+			ctx_.attackSelector->GetCurrentAttackData().cancelData.comboWindowAfterRecovery);
 		return;
 	}
 
 	// Evade/Guard/Staggerへの割り込みなど、それ以外の遷移では
 	// コンボ継続を認めず即座に打ち切る。
-	attackSelector_->ResetCombo();
+	ctx_.attackSelector->ResetCombo();
 }

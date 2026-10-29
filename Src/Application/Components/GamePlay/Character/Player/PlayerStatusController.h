@@ -8,6 +8,7 @@
 #include "PlayerLockOnComponent.h"
 #include "PlayerMovementAnimationComponent.h"
 #include "PlayerState.h"
+#include "PlayerStateContext.h"
 #include "../Common/CharacterInputBufferComponent.h"
 
 #include "../Common/WeaponSetComponent.h"
@@ -18,24 +19,15 @@ class PlayerFacingComponent;
 class PlayerCombatMovementComponent;
 class HealthComponent;
 
-// 効果音のID(論理IDまたはファイルパス)。空なら鳴らさない。
-// 被弾/ガード/パリィのSEは攻撃側のAttackVisualData(SEName)で指定する。
-struct PlayerSoundData
-{
-	std::string attackSwing = "Asset/Sounds/Game/Kazakiri.wav";		// 攻撃判定の発生時
-	std::string evade;
-	std::string guardRaise = "Asset/Sounds/Game/Kamae.wav";
-	std::string death;
-};
-
-// 初期設定(Prefab/JSONから渡す値)。
+// 初期設定(Prefab/JSONから渡す値)。SetConfigで各Stateへ配る。
 struct PlayerStatusControllerConfig
 {
 	EvadeData evade;
 	GuardData guard;
 	ChargeData charge;
 	StaggerData stagger;
-	PlayerSoundData sound;
+	AttackStateData attack;
+	DeadData dead;
 };
 
 // PlayerStatusController(責務再構成版)
@@ -44,10 +36,9 @@ struct PlayerStatusControllerConfig
 //  1. 戦闘State(IPlayerState)のFSMを保持し、遷移させること
 //  2. 入力を受けて「今何を開始できるか」をStateに問い合わせ、
 //     開始できるなら対応するCollaboratorへ実行を委譲すること
-//  3. Stateが具体的なコンポーネント(ModelAnimatorComponent等)を
-//     直接知らなくて済むよう、薄いファサードを提供すること
+//  3. Stateが依存するコンポーネントをPlayerStateContextにまとめて渡すこと
 
-class PlayerStatusController : public ComponentBase, public IHitReactionQuery
+class PlayerStatusController : public ComponentBase, public IHitReactionQuery, private IPlayerStateRequester
 {
 public:
 	using Config = PlayerStatusControllerConfig;
@@ -56,17 +47,19 @@ public:
 
 	void SetConfig(const Config& config)
 	{
-		SetEvadeAndGuardData(config.evade, config.guard);
-		baseChargeData_ = config.charge;
-		staggerData_ = config.stagger;
-		sound_ = config.sound;
+		stateEvade_.SetData(config.evade);
+		stateGuard_.SetData(config.guard);
+		stateCharge_.SetData(config.charge);
+		stateStagger_.SetData(config.stagger);
+		stateAttack_.SetData(config.attack);
+		stateDead_.SetData(config.dead);
 	}
 
 	void Awake() override;
 	void Update(float deltaTime) override;
 
 	// --- 移動軸: 参照 ---
-	MovementState GetMovementState() const { return movementState_; }
+	MovementState GetMovementState() const { return ctx_.movementState; }
 
 	// --- 戦闘軸: 参照(現在のStateへ委譲するだけ) ---
 	CombatState GetCombatState() const { return stateMachine_.Current()->GetDetailedState(); }
@@ -79,40 +72,24 @@ public:
 	bool IsCharging() const { return GetCombatState() == CombatState::Charge; }
 	bool IsDead() const { return GetCombatState() == CombatState::Dead; }
 
-	bool IsInJustEvadeWindow() const { return stateMachine_.Current()->IsInJustEvadeWindow(this); }
-	bool IsInParryWindow() const override { return stateMachine_.Current()->IsInParryWindow(this); }
-	bool IsInvincible() const { return stateMachine_.Current()->IsInvincible(this); }
+	bool IsInJustEvadeWindow() const { return stateMachine_.Current()->IsInJustEvadeWindow(&ctx_); }
+	bool IsInParryWindow() const override { return stateMachine_.Current()->IsInParryWindow(&ctx_); }
+	bool IsInvincible() const { return stateMachine_.Current()->IsInvincible(&ctx_); }
 
 	// --- 戦闘軸: 実行可否(現在のStateへ委譲するだけ) ---
-	bool CanStartAttack() const { return stateMachine_.Current()->CanStartAttack(this); }
-	bool CanStartEvade() const { return stateMachine_.Current()->CanStartEvade(this); }
-	bool CanStartGuard() const { return stateMachine_.Current()->CanStartGuard(this); }
-	bool CanReleaseGuard() const { return stateMachine_.Current()->CanReleaseGuard(this); }
+	bool CanStartAttack() const { return stateMachine_.Current()->CanStartAttack(&ctx_); }
+	bool CanStartEvade() const { return stateMachine_.Current()->CanStartEvade(&ctx_); }
+	bool CanStartGuard() const { return stateMachine_.Current()->CanStartGuard(&ctx_); }
+	bool CanReleaseGuard() const { return stateMachine_.Current()->CanReleaseGuard(&ctx_); }
 
 	// Recovery中などに移動入力でキャンセルし、通常移動(None)へ復帰して
 	// よいか。HandleMovementInputから使う(CanStartAttack等と同じ位置づけ)。
-	bool CanStartMove() const { return stateMachine_.Current()->CanStartMove(this); }
-
-	// --- 現在実行中の技データ(Stateが毎フレーム参照する) ---
-	const EvadeData& GetCurrentEvadeData() const { return currentEvade_; }
-	const GuardData& GetCurrentGuardData() const { return currentGuard_; }
-	const ChargeData& GetChargeData() const { return baseChargeData_; }
-	const StaggerData& GetStaggerData() const { return staggerData_; }
-
-	// --- 効果音(Stateから呼ぶ薄いファサード) ---
-	const PlayerSoundData& GetSoundData() const { return sound_; }
-	void PlaySE(const std::string& id) const;
-
-	// 現在の攻撃に掛けるダメージ倍率(通常攻撃は1.0、チャージ攻撃は溜め量で決まる)。
-	float GetAttackDamageScale() const { return attackDamageScale_; }
-
-	// 回避方向の分類。現在の向き(Transform)を必要とするためfacing_へ委譲する。
-	EvadeDirection ClassifyEvadeDirection(const Math::Vector3& inputDirection) const;
+	bool CanStartMove() const { return stateMachine_.Current()->CanStartMove(&ctx_); }
 
 	// --- 状態遷移(Stateからの要求の受け口) ---
-	void ChangeStateToNone() { TransitionTo(&stateNone_); }
+	void ChangeStateToNone() override { TransitionTo(&stateNone_); }
 	bool TryStartAttack();
-	bool TryStartEvade(const EvadeData& data);
+	bool TryStartEvade(const Math::Vector3& direction);
 	bool TryStartGuard();
 	bool TryStartCharge();
 
@@ -138,50 +115,15 @@ public:
 	void ClearLockOn();
 	bool IsLockedOn() const;
 
-	// --- 攻撃対象への正対(PlayerFacingComponentへの薄い委譲) ---
-	void FaceAttackTarget();
-
-	// --- 武器の装備登録(WeaponSetComponentへの薄い委譲) ---
-	// ヒットボックス/トレイルのon-offはStateAttackのみが使うため、
-	// StateAttackがWeaponSetComponentを直接保持して呼ぶ(こちらの
-	// 登録処理はPlayerFactory等、Stateの外から呼ばれるため引き続き
-	// Controllerのファサードとして残す)。
+	// --- 武器の装備登録(PlayerFactory等、Stateの外から呼ぶ用) ---
 	void SetWeapon(Handle<WeaponComponent> weapon);
 
-	// PlayerFactory構築時にEvade/Guardデータを注入するためのセッター
+	// 既存呼び出し互換用。各Stateへデータを渡すだけ。
 	void SetEvadeAndGuardData(const EvadeData& evade, const GuardData& guard)
 	{
-		baseEvadeData_ = evade;
-		baseGuardData_ = guard;
+		stateEvade_.SetData(evade);
+		stateGuard_.SetData(guard);
 	}
-
-	// --- アニメーション再生(ModelAnimatorComponentへの薄い委譲) ---
-	void PlayAnimation(const std::string& name, bool loop, float targetDurationSeconds,
-		float startTime, float endTime,
-		bool useRootMotion, float blendDurationSeconds);
-
-	void PlayAnimation(const std::string& name, bool loop = false, float targetDurationSeconds = -1.0f,
-		bool useRootMotion = false, float blendDurationSeconds = kDefaultAnimationBlendDuration);
-
-	void PlayAnimation(const MotionClipData& clip);
-
-	// 戦闘行動からNoneへ復帰した直後、現在の入力状態に合わせて
-	// Idle/Walk/Runへアニメーション・向きを同期し直す(StateNone::Enter参照)。
-	void RefreshMovementAnimation();
-
-	// --- Stateからの移動リクエスト(PlayerCombatMovementComponentへの委譲) ---
-	void RequestStepMove(const Math::Vector3& direction, float distance, float duration);
-	void RequestStepMoveTowardsTarget(const Math::Vector3& fallbackDirection, float stepDistance,
-		float engageDistance, float duration);
-	void CancelStepMove();
-	void SetMovementEnabled(bool enabled);
-
-	// ルートモーション区間の踏み込みを、現在ロック/正対中の対象へワープ補正する
-	// (RequestStepMoveTowardsTargetのルートモーション版。StateAttack::Update参照)。
-	void RequestRootMotionWarpTowardsTarget(float expectedDistance, float engageDistance,
-		float minScale, float maxScale);
-	void SetRootMotionScale(float scale);
-	void ClearRootMotionWarp();
 
 private:
 	void TransitionTo(IPlayerState* nextState);
@@ -191,27 +133,9 @@ private:
 	void HandleMovementInput(const PlayerInputComponent& input, float deltaTime);
 	void HandleActionInput(PlayerInputComponent& input);
 
-	// --- 兄弟コンポーネント ---
-	PlayerInputComponent* inputComponent_ = nullptr;
-	PlayerLockOnComponent* lockOnComponent_ = nullptr;
-	PlayerMovementAnimationComponent* movementAnimationComponent_ = nullptr;
-	ModelAnimatorComponent* modelAnimatorComponent_ = nullptr;
-	WeaponSetComponent* weaponSet_ = nullptr;
-	PlayerAttackSelector* attackSelector_ = nullptr;
-	PlayerFacingComponent* facing_ = nullptr;
-	PlayerCombatMovementComponent* combatMovement_ = nullptr;
+	// Stateが参照するコンポーネント束と共有状態(movementState含む)。
+	PlayerStateContext ctx_;
 	HealthComponent* health_ = nullptr;
-
-	MovementState movementState_ = MovementState::Stand;
-
-	EvadeData baseEvadeData_;
-	EvadeData currentEvade_;
-	GuardData baseGuardData_;
-	GuardData currentGuard_;
-	ChargeData baseChargeData_;
-	StaggerData staggerData_;
-	PlayerSoundData sound_;
-	float attackDamageScale_ = 1.0f;
 
 	// --- Stateインスタンス ---
 	StateNone    stateNone_;
@@ -222,8 +146,7 @@ private:
 	StateStagger stateStagger_;
 	StateDead    stateDead_;
 
-	StateMachine<PlayerStatusController, IPlayerState> stateMachine_;
+	StateMachine<PlayerStateContext, IPlayerState> stateMachine_;
 
-	static constexpr float kDefaultAnimationBlendDuration = 0.35f;
 	static constexpr const char* kMainWeaponSlot = "Main";
 };

@@ -1101,6 +1101,12 @@
     <ClInclude Include="Src\Application\Components\Graphics\Animation\BoneOffsetComponent.h">
       <Filter>Src\Application\Components\Graphics\Animation</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Prefab\ComponentRegister.h">
+      <Filter>Src\Application\Definitions\Prefab</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerStateContext.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -1483,6 +1489,9 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Editor\Tools\ActionEditor.cpp">
       <Filter>Src\Application\Editor\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerStateContext.cpp">
+      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

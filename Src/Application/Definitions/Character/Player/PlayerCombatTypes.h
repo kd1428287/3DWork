@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "../Common/CombatData.h"
 #include "../Common/CharacterDefinitionCommon.h"
@@ -234,6 +234,7 @@ struct EvadeData
 	float evadeDistance = 3.0f;
 	Math::Vector3 evadeDirection = Math::Vector3::Zero;
 	bool useRootMotion = false;
+	std::string se; // 回避開始時のSE。空なら鳴らさない
 
 	std::string animationNameForward = "APose_Slide_F";
 	std::string animationNameBackward = "APose_Slide_B";
@@ -321,6 +322,7 @@ struct GuardData
 	float justWindowDuration = 0.55f;
 
 	std::string loopAnimationName = "DefenseL_Loop_Root";
+	std::string raiseSE = "Asset/Sounds/Game/Kamae.wav"; // 構え開始時のSE
 
 	MotionClipData start;
 	MotionClipData loop;
@@ -368,16 +370,29 @@ struct StaggerData
 struct ChargeData
 {
 	float maxChargeTime = 1.5f;  // この秒数で最大チャージ(以降は保持)
-	float minDamageScale = 1.0f; // 溜めなしで離した時のダメージ倍率
-	float maxDamageScale = 2.0f; // 最大チャージ時のダメージ倍率
 
-	MotionClipData loop; // 溜め中の構えアニメーション
+	MotionClipData charge;  // 溜め中の構えアニメーション
+	std::string id;			// 溜め解放後の攻撃データid
 
-	float GetDamageScale(float elapsed) const
+	float GetChargeScale(float elapsed) const
 	{
-		const float t = (maxChargeTime > 0.0f) ? std::clamp(elapsed / maxChargeTime, 0.0f, 1.0f) : 1.0f;
-		return minDamageScale + (maxDamageScale - minDamageScale) * t;
+		return  (maxChargeTime > 0.0f) ? std::clamp(elapsed / maxChargeTime, 0.0f, 1.0f) : 1.0f;
 	}
+};
+
+// --- 攻撃State共通の設定(技ごとのAttackDataとは別) ---
+// 被弾/ガード/パリィのSEは攻撃側のAttackVisualData(SEName)で指定する。
+struct AttackStateData
+{
+	std::string swingSE = "Asset/Sounds/Game/Kazakiri.wav"; // 攻撃判定発生時のSE
+};
+
+// --- 死亡Stateのデータ ---
+struct DeadData
+{
+	std::string animationName = "Die11_Root";
+	float animationDuration = 3.0f; // 再生秒数。終了後にシーン遷移を要求する
+	std::string se;
 };
 
 // 以前は配列サイズ(コンボ段数の上限)そのものを表す定数だったが、

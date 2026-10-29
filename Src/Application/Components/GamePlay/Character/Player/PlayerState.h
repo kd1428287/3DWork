@@ -1,20 +1,18 @@
-#pragma once
+﻿#pragma once
 #include "Application/Definitions/Character/Player/PlayerCombatTypes.h"
 #include "Application/Definitions/Character/Common/StateMachine/StateMachine.h"
 
 // 前方宣言
-class PlayerStatusController;
-class WeaponSetComponent;
-class PlayerAttackSelector;
+struct PlayerStateContext;
 
 // ============================================================
 // IPlayerState
-// 共通StateMachine基盤(IState<PlayerStatusController>)に、
+// 共通StateMachine基盤(IState<PlayerStateContext>)に、
 // プレイヤー戦闘特有の問い合わせ(具体フェーズ・遷移可否・ジャスト判定)を
 // 追加した軽量Stateパターンのインターフェース。GameObjectにはアタッチせず、
 // PlayerStatusController内部でインスタンスとして保持される。
 // ============================================================
-class IPlayerState : public IState<PlayerStatusController> {
+class IPlayerState : public IState<PlayerStateContext> {
 public:
 	// 現在の具体的なフェーズと経過時間を返す
 	virtual CombatState GetDetailedState() const = 0;
@@ -23,20 +21,32 @@ public:
 	// 次のアクションへの遷移可否（デフォルトは不可）。
 	// Guardもここに揃えることで、HandleActionInput側にCombatStateの
 	// ハードコード判定を書かずに済むようにする。
-	virtual bool CanStartAttack(const PlayerStatusController* controller) const { return false; }
-	virtual bool CanStartEvade(const PlayerStatusController* controller) const { return false; }
-	virtual bool CanStartGuard(const PlayerStatusController* controller) const { return false; }
-	virtual bool CanStartMove(const PlayerStatusController* controller) const { return false; }
+	virtual bool CanStartAttack(const PlayerStateContext* ctx) const { return false; }
+	virtual bool CanStartEvade(const PlayerStateContext* ctx) const { return false; }
+	virtual bool CanStartGuard(const PlayerStateContext* ctx) const { return false; }
+	virtual bool CanStartMove(const PlayerStateContext* ctx) const { return false; }
 
 	// ガードキーを離した際に即座に解除してよいか(デフォルトは常に許可)。
 	// StateGuardがパリィ成功演出中だけfalseを返し、演出を強制的に
 	// 見せ切る(HandleActionInput参照)。
-	virtual bool CanReleaseGuard(const PlayerStatusController* controller) const { return true; }
+	virtual bool CanReleaseGuard(const PlayerStateContext* ctx) const { return true; }
 
 	// ジャスト判定の問い合わせ（該当するStateのみがオーバーライドしてtrueを返す）
-	virtual bool IsInvincible(const PlayerStatusController* controller) const { return false; }
-	virtual bool IsInJustEvadeWindow(const PlayerStatusController* controller) const { return false; }
-	virtual bool IsInParryWindow(const PlayerStatusController* controller) const { return false; }
+	virtual bool IsInvincible(const PlayerStateContext* ctx) const { return false; }
+	virtual bool IsInJustEvadeWindow(const PlayerStateContext* ctx) const { return false; }
+	virtual bool IsInParryWindow(const PlayerStateContext* ctx) const { return false; }
+};
+
+// 自分用のデータ構造体をメンバに持つStateの共通基底。
+// データはSetData()で注入し、Stateはdata_を直接参照する。
+template<class TData>
+class DataState : public IPlayerState {
+public:
+	void SetData(const TData& data) { data_ = data; }
+	const TData& GetData() const { return data_; }
+
+protected:
+	TData data_;
 };
 
 class StateNone : public IPlayerState {
@@ -44,45 +54,40 @@ public:
 	// Noneに戻った瞬間、現在の入力状態に合わせてIdle/Walk/Runへ
 	// アニメーションを同期し直す(行動中ずっと同じ入力のままだった場合の
 	// 固まり対策。詳細はPlayerStatusController::RefreshMovementAnimation参照)。
-	void Enter(PlayerStatusController* controller) override;
+	void Enter(PlayerStateContext* ctx) override;
 
 	CombatState GetDetailedState() const override { return CombatState::None; }
 	float GetElapsed() const override { return 0.0f; }
 
 	// None状態からは何でも出せる
-	bool CanStartAttack(const PlayerStatusController* controller) const override { return true; }
-	bool CanStartEvade(const PlayerStatusController* controller) const override { return true; }
-	bool CanStartGuard(const PlayerStatusController* controller) const override { return true; }
+	bool CanStartAttack(const PlayerStateContext* ctx) const override { return true; }
+	bool CanStartEvade(const PlayerStateContext* ctx) const override { return true; }
+	bool CanStartGuard(const PlayerStateContext* ctx) const override { return true; }
 };
 
-class StateAttack : public IPlayerState {
+class StateAttack : public DataState<AttackStateData> {
 public:
-	void Enter(PlayerStatusController* controller) override;
-	void Update(PlayerStatusController* controller, float deltaTime) override;
-	void Exit(PlayerStatusController* controller) override;
+	// 次のEnter()で掛けるダメージ倍率(通常攻撃は1.0、チャージ攻撃は溜め量で決まる)。
+	void Setup(float damageScale) { damageScale_ = damageScale; }
+
+	void Enter(PlayerStateContext* ctx) override;
+	void Update(PlayerStateContext* ctx, float deltaTime) override;
+	void Exit(PlayerStateContext* ctx) override;
 
 	CombatState GetDetailedState() const override { return phase_; }
 	float GetElapsed() const override { return elapsed_; }
 
 	// Recovery中の一定タイミングを過ぎたら、回避だけでなく次の攻撃
 	// (コンボ)によるキャンセルも許可する。
-	bool CanStartAttack(const PlayerStatusController* controller) const override;
-	bool CanStartEvade(const PlayerStatusController* controller) const override;
-	bool CanStartGuard(const PlayerStatusController* controller) const override;
-	bool CanStartMove(const PlayerStatusController* controller) const override;
+	bool CanStartAttack(const PlayerStateContext* ctx) const override;
+	bool CanStartEvade(const PlayerStateContext* ctx) const override;
+	bool CanStartGuard(const PlayerStateContext* ctx) const override;
+	bool CanStartMove(const PlayerStateContext* ctx) const override;
 
 private:
-	// このAttack Stateでしか使わないコンポーネントは、Controllerの
-	// ファサードを経由せずEnter()で直接解決してメンバに持つ
-	// (WeaponSetComponent/PlayerAttackSelectorはStateAttack以外の
-	//  Stateからは参照されないため。PlayerCombatMovementComponent/
-	//  PlayerFacingComponent/ModelAnimatorComponentはStateEvade等とも
-	//  共有するため、引き続きControllerのファサード経由で呼ぶ)。
-	WeaponSetComponent* weaponSet_ = nullptr;
-	PlayerAttackSelector* attackSelector_ = nullptr;
-
 	CombatState phase_ = CombatState::AttackWindup;
 	float elapsed_ = 0.0f;
+	float damageScale_ = 1.0f;
 
 	// ルートモーション踏み込みの距離スケールをクランプする範囲。
 	// 敵が遠すぎる/近すぎる場合に不自然な速度で動くのを防ぐ安全弁で、
@@ -92,54 +97,58 @@ private:
 };
 
 
-class StateEvade : public IPlayerState {
+class StateEvade : public DataState<EvadeData> {
 public:
-	void Enter(PlayerStatusController* controller) override;
-	void Update(PlayerStatusController* controller, float deltaTime) override;
-	void Exit(PlayerStatusController* controller) override;
+	// 入力方向(実行時入力)。静的な回避データはSetData()で渡す。
+	void Setup(const Math::Vector3& direction) { direction_ = direction; }
+
+	void Enter(PlayerStateContext* ctx) override;
+	void Update(PlayerStateContext* ctx, float deltaTime) override;
+	void Exit(PlayerStateContext* ctx) override;
 
 	CombatState GetDetailedState() const override { return phase_; }
 	float GetElapsed() const override { return elapsed_; }
 
-	bool IsInJustEvadeWindow(const PlayerStatusController* controller) const override;
-	bool IsInvincible(const PlayerStatusController* controller) const override; // 追加
+	bool IsInJustEvadeWindow(const PlayerStateContext* ctx) const override;
+	bool IsInvincible(const PlayerStateContext* ctx) const override; // 追加
 
 private:
 	CombatState phase_ = CombatState::Evade;
 	float elapsed_ = 0.0f;
+	Math::Vector3 direction_ = Math::Vector3::Zero;
 };
 
 
-class StateGuard : public IPlayerState {
+class StateGuard : public DataState<GuardData> {
 public:
-	void Enter(PlayerStatusController* controller) override;
-	void Update(PlayerStatusController* controller, float deltaTime) override;
-	void Exit(PlayerStatusController* controller) override;
+	void Enter(PlayerStateContext* ctx) override;
+	void Update(PlayerStateContext* ctx, float deltaTime) override;
+	void Exit(PlayerStateContext* ctx) override;
 
 	CombatState GetDetailedState() const override { return CombatState::Guard; }
 	float GetElapsed() const override { return elapsed_; }
 
-	bool IsInParryWindow(const PlayerStatusController* controller) const override;
+	bool IsInParryWindow(const PlayerStateContext* ctx) const override;
 
 	// パリィ成功演出中はガードキーを離しても解除させない(強制的に見せ切る)。
-	bool CanReleaseGuard(const PlayerStatusController* controller) const override;
+	bool CanReleaseGuard(const PlayerStateContext* ctx) const override;
 
-	bool CanStartAttack(const PlayerStatusController* controller) const override;
-	bool CanStartEvade(const PlayerStatusController* controller) const override;
-	bool CanStartGuard(const PlayerStatusController* controller) const override;
-	bool CanStartMove(const PlayerStatusController* controller) const override;
+	bool CanStartAttack(const PlayerStateContext* ctx) const override;
+	bool CanStartEvade(const PlayerStateContext* ctx) const override;
+	bool CanStartGuard(const PlayerStateContext* ctx) const override;
+	bool CanStartMove(const PlayerStateContext* ctx) const override;
 
 	// HitReactionComponent(IHitReactionQuery経由、PlayerStatusController::
 	// NotifyParrySuccess/NotifyGuardHit)から呼ばれる通知。
-	void NotifyParrySuccess(PlayerStatusController* controller);
-	void NotifyGuardHit(PlayerStatusController* controller);
+	void NotifyParrySuccess(PlayerStateContext* ctx);
+	void NotifyGuardHit(PlayerStateContext* ctx);
 
 	// ガードキー解放時にPlayerStatusController::HandleActionInputから
 	// 呼ばれる解除要求。ここではまだNoneへ遷移せず、終了アニメーション
 	// (endAnimationName)の再生を開始するだけ。endDuration経過後、
 	// Update()側が自律的にChangeStateToNone()する(StateAttackの
 	// Recovery終了と同じ考え方)。
-	void RequestRelease(PlayerStatusController* controller);
+	void RequestRelease(PlayerStateContext* ctx);
 
 private:
 	// パリィ判定はGuard内部のサブフェーズとして扱う。
@@ -148,11 +157,11 @@ private:
 	// (GetGuardPhase()参照。CombatStateやControllerには手を入れず
 	//  Guard内部だけで完結させる、という元々の方針を踏襲)。
 	enum class GuardPhase { JustWindow, NormalBlock, ParrySuccess, Release };
-	GuardPhase GetGuardPhase(const PlayerStatusController* controller) const;
+	GuardPhase GetGuardPhase(const PlayerStateContext* ctx) const;
 
 	// パリィ成功/ガードヒットの単発リアクション再生が終わった後、
 	// 継続姿勢のLoopアニメーションへ明示的に再生し直すためのヘルパー。
-	void ResumeLoopAnimation(PlayerStatusController* controller);
+	void ResumeLoopAnimation(PlayerStateContext* ctx);
 
 	float elapsed_ = 0.0f;
 
@@ -177,31 +186,32 @@ private:
 
 
 // Attack+Guard同時押し中の溜め状態。発射(ReleaseCharge)はControllerが行う。
-class StateCharge : public IPlayerState {
+class StateCharge : public DataState<ChargeData> {
 public:
-	void Enter(PlayerStatusController* controller) override;
-	void Update(PlayerStatusController* controller, float deltaTime) override;
+	void Enter(PlayerStateContext* ctx) override;
+	void Update(PlayerStateContext* ctx, float deltaTime) override;
+	void Exit(PlayerStateContext* ctx) override;
 
 	CombatState GetDetailedState() const override { return CombatState::Charge; }
 	float GetElapsed() const override { return elapsed_; }
 
 	// 溜め中は回避でキャンセルできる。
-	bool CanStartEvade(const PlayerStatusController* controller) const override { return true; }
+	bool CanStartEvade(const PlayerStateContext* ctx) const override { return true; }
 
 private:
 	float elapsed_ = 0.0f;
 };
 
 
-class StateStagger : public IPlayerState {
+class StateStagger : public DataState<StaggerData> {
 public:
 	// 怯み/ダウンの種別だけを受け取る。Reaction/Recoveryの秒数は
 	// StaggerData(small/large)側の値を使う(Enter()で読み込む)。
 	void Setup(bool isLarge) { isLarge_ = isLarge; }
 
-	void Enter(PlayerStatusController* controller) override;
-	void Update(PlayerStatusController* controller, float deltaTime) override;
-	void Exit(PlayerStatusController* controller) override;
+	void Enter(PlayerStateContext* ctx) override;
+	void Update(PlayerStateContext* ctx, float deltaTime) override;
+	void Exit(PlayerStateContext* ctx) override;
 
 	CombatState GetDetailedState() const override {
 		return isLarge_ ? CombatState::StaggerLarge : CombatState::StaggerSmall;
@@ -210,15 +220,15 @@ public:
 
 	// Recovery中、一定タイミングを過ぎたらEvade/移動によるキャンセルを許可する
 	// (StateAttack::CanStartEvade/CanStartMoveと同じ考え方)。
-	bool CanStartEvade(const PlayerStatusController* controller) const override;
-	bool CanStartMove(const PlayerStatusController* controller) const override;
+	bool CanStartEvade(const PlayerStateContext* ctx) const override;
+	bool CanStartMove(const PlayerStateContext* ctx) const override;
 
 private:
 	enum class Phase { Reaction, Recovery };
 	Phase phase_ = Phase::Reaction;
 
 	// isLarge_に応じてsmall/largeどちらのデータを見るかをまとめるヘルパー。
-	const StaggerPhaseData& GetPhaseData(const PlayerStatusController* controller) const;
+	const StaggerPhaseData& GetPhaseData(const PlayerStateContext* ctx) const;
 
 	bool isLarge_ = false;
 	float reactionDuration_ = 0.0f;
@@ -227,23 +237,19 @@ private:
 
 
 // 死亡状態。CanStart*は全てfalseのままで、入力でも移動キャンセルでも抜けられない終端State。
-class StateDead : public IPlayerState {
+class StateDead : public DataState<DeadData> {
 public:
-	void Enter(PlayerStatusController* controller) override;
-	void Update(PlayerStatusController* controller, float deltaTime) override;
-	void Exit(PlayerStatusController* controller) override;
+	void Enter(PlayerStateContext* ctx) override;
+	void Update(PlayerStateContext* ctx, float deltaTime) override;
+	void Exit(PlayerStateContext* ctx) override;
 
 	CombatState GetDetailedState() const override { return CombatState::Dead; }
 	float GetElapsed() const override { return elapsed_; }
 
 	// 死体への追加被弾を無効化する。
-	bool IsInvincible(const PlayerStatusController* controller) const override { return true; }
+	bool IsInvincible(const PlayerStateContext* ctx) const override { return true; }
 
 private:
 	float elapsed_ = 0.0f;
 	bool reloadRequested_ = false;
-
-	// 死亡アニメ名とその長さ(秒)。仮のハードコード値。
-	static constexpr const char* kDeathAnimationName = "Die11_Root";
-	static constexpr float kDeathAnimationDuration = 3.0f;
 };

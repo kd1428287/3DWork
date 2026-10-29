@@ -311,6 +311,7 @@
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerLockOnComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerMovementAnimationComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerState.h" />
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerStateContext.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerStatusController.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Animation\ArmIKComponents.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Animation\BoneOffsetComponent.h" />
@@ -424,6 +425,7 @@
     <ClInclude Include="Src\Application\Definitions\Physics\ModelCollisionMeshBuilder.h" />
     <ClInclude Include="Src\Application\Definitions\Physics\TriangleMeshData.h" />
     <ClInclude Include="Src\Application\Definitions\Prefab\BitFlags.h" />
+    <ClInclude Include="Src\Application\Definitions\Prefab\ComponentRegister.h" />
     <ClInclude Include="Src\Application\Definitions\Prefab\Prefab.h" />
     <ClInclude Include="Src\Application\Definitions\UI\GaugeBarStyle.h" />
     <ClInclude Include="Src\Application\Definitions\UI\UIData.h" />
@@ -554,6 +556,7 @@
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerFacingComponent.cpp" />
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerMovementAnimationComponent.cpp" />
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerState.cpp" />
+    <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerStateContext.cpp" />
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerStatusController.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\Effect\FootDustComponent.cpp" />
     <ClCompile Include="Src\Application\Components\Graphics\Render\GroundRenderComponent.cpp" />

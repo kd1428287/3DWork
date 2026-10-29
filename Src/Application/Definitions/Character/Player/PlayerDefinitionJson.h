@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "../../Loaders/DefinitionJson.h"
 #include "Application/Definitions/Loaders/ComponentParamsOrderedJson.h"
@@ -10,27 +10,27 @@ COMPONENT_PARAMS_DEFINE_TYPE(EvadeData,
 	activeDuration, recoveryDuration, justWindowStart, justWindowEnd, evadeDistance, useRootMotion,
 	animationNameForward, animationNameBackward, animationNameLeft, animationNameRight)
 
-	COMPONENT_PARAMS_DEFINE_TYPE(GuardData,
-		justWindowDuration, start, loop, parry, hit, end, rootMotionScale)
+COMPONENT_PARAMS_DEFINE_TYPE(GuardData,
+	justWindowDuration, start, loop, parry, hit, end, rootMotionScale)
 
-	COMPONENT_PARAMS_DEFINE_TYPE(StaggerPhaseData,
-		animationName, useRootMotion, rootMotionScale,
-		reactionStartFrame, reactionEndFrame, reactionBlendDuration, reactionDuration,
-		recoveryEndFrame, recoveryDuration, recoveryBlendDuration, recoveryEvadeCancelStart)
+COMPONENT_PARAMS_DEFINE_TYPE(StaggerPhaseData,
+	animationName, useRootMotion, rootMotionScale,
+	reactionStartFrame, reactionEndFrame, reactionBlendDuration, reactionDuration,
+	recoveryEndFrame, recoveryDuration, recoveryBlendDuration, recoveryEvadeCancelStart)
 
-	COMPONENT_PARAMS_DEFINE_TYPE(StaggerData, staggerSmall, staggerLarge)
+COMPONENT_PARAMS_DEFINE_TYPE(StaggerData, staggerSmall, staggerLarge)
 
-	COMPONENT_PARAMS_DEFINE_TYPE(ChargeData,
-		maxChargeTime, minDamageScale, maxDamageScale, loop)
+COMPONENT_PARAMS_DEFINE_TYPE(ChargeData,
+	maxChargeTime, charge, id)
 
-	COMPONENT_PARAMS_DEFINE_TYPE(MovementPhaseClips,
-		startAnimationName, startDuration, loopAnimationName, endAnimationName, endDuration)
+COMPONENT_PARAMS_DEFINE_TYPE(MovementPhaseClips,
+	startAnimationName, startDuration, loopAnimationName, endAnimationName, endDuration)
 
-	COMPONENT_PARAMS_DEFINE_TYPE(WalkLockedAnimationSet,
-		forward, forwardRight, right, backwardRight, backward, backwardLeft, left, forwardLeft)
+COMPONENT_PARAMS_DEFINE_TYPE(WalkLockedAnimationSet,
+	forward, forwardRight, right, backwardRight, backward, backwardLeft, left, forwardLeft)
 
-	COMPONENT_PARAMS_DEFINE_TYPE(WalkAnimationSet, forward, locked)
+COMPONENT_PARAMS_DEFINE_TYPE(WalkAnimationSet, forward, locked)
 
-	COMPONENT_PARAMS_DEFINE_TYPE(TurnAnimationSet, left90, right90, left180, right180)
+COMPONENT_PARAMS_DEFINE_TYPE(TurnAnimationSet, left90, right90, left180, right180)
 
-	COMPONENT_PARAMS_DEFINE_TYPE(PlayerMovementAnimationDefinition, walk, turn, run, idle)
+COMPONENT_PARAMS_DEFINE_TYPE(PlayerMovementAnimationDefinition, walk, turn, run, idle)
