@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <algorithm>
 #include <cfloat>
 #include <unordered_set>
@@ -89,6 +89,8 @@ struct EnemyAttackDefinition
 	float maxRange = 2.0f;
 
 	float weight = 1.0f;	// 抽選重み
+
+	bool isInterruptible_ = false; // (チャージ攻撃などで)キャンセル可能行動か
 
 	// 攻撃中の向き制御(ターゲット追従の速さ)。
 	EnemyAttackFacingData facing;
