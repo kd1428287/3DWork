@@ -570,9 +570,6 @@
     <ClInclude Include="Src\Application\Components\Graphics\Effect\SlashTrailComponent.h">
       <Filter>Src\Application\Components\Graphics\Effect</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\Graphics\Effect\SlowEffectComponent.h">
-      <Filter>Src\Application\Components\Graphics\Effect</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Components\Graphics\Render\ModelRenderComponent.h">
       <Filter>Src\Application\Components\Graphics\Render</Filter>
     </ClInclude>
@@ -1125,6 +1122,9 @@
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerLockOnComponent.h">
       <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Effect\SlashTrail\SlashTrailRecorder.h">
+      <Filter>Src\Application\Effect\SlashTrail</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -1519,6 +1519,9 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerMovementAnimationComponent.cpp">
       <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Effect\SlashTrail\SlashTrailRecorder.cpp">
+      <Filter>Src\Application\Effect\SlashTrail</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

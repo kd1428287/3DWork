@@ -330,7 +330,6 @@
     <ClInclude Include="Src\Application\Components\Graphics\Animation\TwoBoneIKComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Effect\FootDustComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Effect\SlashTrailComponent.h" />
-    <ClInclude Include="Src\Application\Components\Graphics\Effect\SlowEffectComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\GroundRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\ModelRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\Mod\ForceMaxDepthComponent.h" />
@@ -459,6 +458,7 @@
     <ClInclude Include="Src\Application\Effect\Particle\EffectInstance.h" />
     <ClInclude Include="Src\Application\Effect\SlashTrail\SlashTrailDispatcher.h" />
     <ClInclude Include="Src\Application\Effect\SlashTrail\SlashTrailInstance.h" />
+    <ClInclude Include="Src\Application\Effect\SlashTrail\SlashTrailRecorder.h" />
     <ClInclude Include="Src\Application\Entity\ComponentBase.h" />
     <ClInclude Include="Src\Application\Entity\ComponentTypeID.h" />
     <ClInclude Include="Src\Application\Entity\GameObject.h" />
@@ -611,6 +611,7 @@
     <ClCompile Include="Src\Application\Effect\Particle\EffectInstance.cpp" />
     <ClCompile Include="Src\Application\Effect\SlashTrail\SlashTrailDispatcher.cpp" />
     <ClCompile Include="Src\Application\Effect\SlashTrail\SlashTrailInstance.cpp" />
+    <ClCompile Include="Src\Application\Effect\SlashTrail\SlashTrailRecorder.cpp" />
     <ClCompile Include="Src\Application\Entity\GameObject.cpp" />
     <ClCompile Include="Src\Application\Factories\Common\CameraFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\ComponentRegistrations.cpp" />

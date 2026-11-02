@@ -1,8 +1,11 @@
-﻿#include "Application/main.h"
+#include "Application/main.h"
 #include "SlashTrailInstance.h"
 
 namespace
 {
+	// 記録中にSetLivePathが来ないままこの時間(ゲーム時間)が過ぎたら、強制的に消去へ移す
+	constexpr float kLiveTimeout = 0.5f;
+
 	// 0～1にクランプした上で、両端で傾き0の補間を行う
 	float Smoothstep01(float x)
 	{
@@ -27,16 +30,20 @@ namespace
 	}
 }
 
-// 初期化：パラメータを保持し、描画用リソースを生成する
+// 初期化：パラメータ・テクスチャ・頂点バッファを用意する
 bool SlashTrailInstance::Init(const SlashTrailParams& params, ITextureProvider* textureProvider)
 {
 	params_ = params;
 
-	ResetState();
+	state_ = State::Idle;
+	path_.clear();
+	vertices_.clear();
+	coreVertices_.clear();
+
 	ResolveTexture(textureProvider);
 
 	// 未確定の先頭点が1つ増えるぶんを見込んで頂点容量を確保する
-	const UINT capacityPoints = std::max(params_.SplineMaxPoints, params_.MaxSamples + 1);
+	const UINT capacityPoints = std::max(params_.Spline.MaxPoints, params_.Record.MaxSamples + 1);
 
 	renderer_ = std::make_shared<SlashTrailRenderer>();
 	if (!renderer_->Init(capacityPoints * 2))
@@ -48,96 +55,39 @@ bool SlashTrailInstance::Init(const SlashTrailParams& params, ITextureProvider* 
 	return true;
 }
 
-// 記録状態を全て初期化してIdleへ戻す
-void SlashTrailInstance::ResetState()
+// 記録中として使い始める：前回の経路・頂点を破棄する(頂点バッファは使い回す)
+void SlashTrailInstance::BeginLive()
 {
-	state_ = State::Idle;
+	state_ = State::Recording;
 
-	samples_.clear();
+	path_.clear();
 	vertices_.clear();
 	coreVertices_.clear();
 
-	hasCurrentTip_ = false;
-	hasSmoothedSpeed_ = false;
-	smoothedSpeed_ = 0.0f;
-	sinceLastSampleTime_ = 0.0f;
 	dissolveElapsed_ = 0.0f;
-	recordingElapsed_ = 0.0f;
+	liveIdleTime_ = 0.0f;
 }
 
-// 記録開始：既存サンプルを破棄してゼロから記録し直す
-void SlashTrailInstance::BeginRecording()
-{
-	ResetState();
-	state_ = State::Recording;
-}
-
-// 記録中、毎フレーム剣のTip/Base座標を渡す
-void SlashTrailInstance::UpdateTipBase(const DirectX::SimpleMath::Vector3& tip, const DirectX::SimpleMath::Vector3& base)
+// 記録中の経路を受け取る(未確定の先頭点つき)
+void SlashTrailInstance::SetLivePath(const SlashTrailRecorder& recorder)
 {
 	if (state_ != State::Recording) { return; }
 
-	currentTip_ = tip;
-	currentBase_ = base;
-	hasCurrentTip_ = true;
-
-	if (!samples_.empty())
-	{
-		const float minDistSq = params_.MinSampleDistance * params_.MinSampleDistance;
-		if ((tip - samples_.back().Tip).LengthSquared() < minDistSq) { return; }
-	}
-
-	AddSample(tip, base);
+	recorder.BuildPath(path_);
+	liveIdleTime_ = 0.0f;
 }
 
-// サンプルを1つ追加する(上限到達時は何もしない)
-void SlashTrailInstance::AddSample(const DirectX::SimpleMath::Vector3& tip, const DirectX::SimpleMath::Vector3& base)
-{
-	if (samples_.size() >= params_.MaxSamples) { return; }
-
-	const float dt = std::max(sinceLastSampleTime_, 1e-5f);
-
-	SlashTrailSample sample;
-	sample.Tip = tip;
-	sample.Base = base;
-
-	float rawSpeed = params_.SpeedWidthReference;
-	if (!samples_.empty())
-	{
-		const float segLen = (tip - samples_.back().Tip).Length();
-		sample.Dist = samples_.back().Dist + segLen;
-		rawSpeed = segLen / dt;
-	}
-
-	if (hasSmoothedSpeed_)
-	{
-		const float tau = params_.SpeedSmoothingTime;
-		const float alpha = (tau > 1e-5f) ? 1.0f - expf(-dt / tau) : 1.0f;
-		smoothedSpeed_ = std::lerp(smoothedSpeed_, rawSpeed, alpha);
-	}
-	else
-	{
-		smoothedSpeed_ = rawSpeed;
-		hasSmoothedSpeed_ = true;
-	}
-
-	sample.Speed = smoothedSpeed_;
-	samples_.push_back(sample);
-
-	sinceLastSampleTime_ = 0.0f;
-}
-
-// 記録終了：最後の剣先を確定し、一括消去(Dissolving)へ移る
-void SlashTrailInstance::EndRecording()
+// 確定した経路を受け取って消去へ移る
+void SlashTrailInstance::Finish(const SlashTrailRecorder& recorder)
 {
 	if (state_ != State::Recording) { return; }
 
-	if (hasCurrentTip_ && !samples_.empty() &&
-		(currentTip_ - samples_.back().Tip).LengthSquared() > 1e-10f)
-	{
-		AddSample(currentTip_, currentBase_);
-	}
+	recorder.BuildPath(path_);
+	StartDissolve();
+}
 
+void SlashTrailInstance::StartDissolve()
+{
 	state_ = State::Dissolving;
 	dissolveElapsed_ = 0.0f;
 }
@@ -145,12 +95,12 @@ void SlashTrailInstance::EndRecording()
 // 消去タイマーを進めて頂点を作り直す
 void SlashTrailInstance::Update(float deltaTime)
 {
-	sinceLastSampleTime_ += deltaTime;
+	if (state_ == State::Idle) { return; }
 
 	if (state_ == State::Recording)
 	{
-		recordingElapsed_ += deltaTime;
-		if (params_.MaxRecordingTime > 0.0f && recordingElapsed_ >= params_.MaxRecordingTime) { EndRecording(); }
+		liveIdleTime_ += deltaTime;
+		if (liveIdleTime_ >= kLiveTimeout) { StartDissolve(); }
 	}
 
 	if (state_ == State::Dissolving) { dissolveElapsed_ += deltaTime; }
@@ -176,7 +126,7 @@ bool SlashTrailInstance::IsFinished() const
 	// 描画できる軌跡(2点以上)が残らなかった場合は即終了
 	if (state_ == State::Dissolving)
 	{
-		return samples_.size() < 2 || dissolveElapsed_ >= params_.DissolveTime;
+		return path_.size() < 2 || dissolveElapsed_ >= params_.Stroke.DissolveTime;
 	}
 
 	return false;
@@ -187,58 +137,39 @@ void SlashTrailInstance::Draw(ParticleDrawPass pass) const
 {
 	if (!renderer_) { return; }
 
-	if (KdHasDrawPassFlag(params_.DrawPassFlags, pass))
+	if (KdHasDrawPassFlag(params_.Ink.DrawPassFlags, pass))
 	{
-		renderer_->Draw(SlashTrailRenderer::Layer::Ink, params_.BlendMode, texture_);
+		renderer_->Draw(SlashTrailRenderer::Layer::Ink, params_.Ink.BlendMode, texture_);
 	}
 
-	if (params_.CoreEnabled && KdHasDrawPassFlag(params_.CoreDrawPassFlags, pass))
+	if (params_.Core.Enabled && KdHasDrawPassFlag(params_.Core.DrawPassFlags, pass))
 	{
-		renderer_->Draw(SlashTrailRenderer::Layer::Core, params_.CoreBlendMode, texture_);
+		renderer_->Draw(SlashTrailRenderer::Layer::Core, params_.Core.BlendMode, texture_);
 	}
 }
 
-// samples_から、墨レイヤー(vertices_)と芯レイヤー(coreVertices_)の頂点配列を作り直す
+// path_から、墨レイヤー(vertices_)と芯レイヤー(coreVertices_)の頂点配列を作り直す
 void SlashTrailInstance::RebuildVertices()
 {
 	vertices_.clear();
 	coreVertices_.clear();
 
-	if (samples_.empty()) { return; }
-
 	using namespace DirectX::SimpleMath;
-
-	// ----- 1. 経路の構築(記録中は未確定の先頭点を現在の剣先に追従させる) -----
-	path_.assign(samples_.begin(), samples_.end());
-
-	if (state_ == State::Recording && hasCurrentTip_)
-	{
-		const SlashTrailSample& last = samples_.back();
-		const float segLen = (currentTip_ - last.Tip).Length();
-		if (segLen > 1e-5f)
-		{
-			SlashTrailSample head = last;
-			head.Tip = currentTip_;
-			head.Base = currentBase_;
-			head.Dist = last.Dist + segLen;
-			path_.push_back(head);
-		}
-	}
 
 	if (path_.size() < 2) { return; }
 
-	// ----- 2. スプラインによる細分化 -----
+	// ----- 1. スプラインによる細分化 -----
 	resampled_.clear();
 
-	if (params_.SplineEnabled)
+	if (params_.Spline.Enabled)
 	{
 		const size_t pathCount = path_.size();
 		const size_t segmentCount = pathCount - 1;
 
-		UINT subdiv = std::max(params_.SplineSubdivisions, 1u);
-		if (params_.SplineMaxPoints > 1)
+		UINT subdiv = std::max(params_.Spline.Subdivisions, 1u);
+		if (params_.Spline.MaxPoints > 1)
 		{
-			const UINT maxSubdiv = static_cast<UINT>((params_.SplineMaxPoints - 1) / segmentCount);
+			const UINT maxSubdiv = static_cast<UINT>((params_.Spline.MaxPoints - 1) / segmentCount);
 			subdiv = std::clamp(subdiv, 1u, std::max(maxSubdiv, 1u));
 		}
 
@@ -278,10 +209,10 @@ void SlashTrailInstance::RebuildVertices()
 	vertices_.reserve(pointCount * 2);
 	coreVertices_.reserve(pointCount * 2);
 
-	// ----- 3. 頂点生成 -----
-	const float strokeLengthSafe = (params_.StrokeLength > 0.0f) ? params_.StrokeLength : 0.0001f;
-	const float speedRefSafe = (params_.SpeedWidthReference > 0.0f) ? params_.SpeedWidthReference : 0.0001f;
-	const float dissolveTimeSafe = (params_.DissolveTime > 0.0f) ? params_.DissolveTime : 0.0001f;
+	// ----- 2. 頂点生成 -----
+	const float strokeLengthSafe = (params_.Stroke.Length > 0.0f) ? params_.Stroke.Length : 0.0001f;
+	const float speedRefSafe = (params_.Width.SpeedReference > 0.0f) ? params_.Width.SpeedReference : 0.0001f;
+	const float dissolveTimeSafe = (params_.Stroke.DissolveTime > 0.0f) ? params_.Stroke.DissolveTime : 0.0001f;
 
 	const float totalLength = resampled_.back().Dist;
 
@@ -303,15 +234,15 @@ void SlashTrailInstance::RebuildVertices()
 		const float u = std::clamp(sample.Dist / strokeLengthSafe, 0.0f, 1.0f);
 
 		// 先頭(totalLength)に近いほど幅を絞る
-		const float headFactor = (params_.HeadTaperLength > 1e-5f)
-			? Smoothstep01((totalLength - sample.Dist) / params_.HeadTaperLength)
+		const float headFactor = (params_.Stroke.HeadTaperLength > 1e-5f)
+			? Smoothstep01((totalLength - sample.Dist) / params_.Stroke.HeadTaperLength)
 			: 1.0f;
 
-		const Vector3 color = Vector3::Lerp(params_.ColdColor, params_.HotColor, u);
+		const Vector3 color = Vector3::Lerp(params_.Ink.ColdColor, params_.Ink.HotColor, u);
 
 		const float speedScale = std::clamp(
 			sample.Speed / speedRefSafe,
-			params_.MinSpeedWidthScale, params_.MaxSpeedWidthScale);
+			params_.Width.MinScale, params_.Width.MaxScale);
 
 		const Vector3 center = (sample.Tip + sample.Base) * 0.5f;
 
@@ -355,21 +286,21 @@ void SlashTrailInstance::RebuildVertices()
 		vBase.Color = { color.x, color.y, color.z, dissolveAlpha };
 		vertices_.push_back(vBase);
 
-		if (params_.CoreEnabled)
+		if (params_.Core.Enabled)
 		{
-			const Vector3 coreHalfWidth = halfWidth * params_.CoreWidthScale;
-			const float coreAlpha = dissolveAlpha * std::lerp(params_.CoreTailAlpha, 1.0f, u);
+			const Vector3 coreHalfWidth = halfWidth * params_.Core.WidthScale;
+			const float coreAlpha = dissolveAlpha * std::lerp(params_.Core.TailAlpha, 1.0f, u);
 
 			SlashTrailVertex vTipCore;
 			vTipCore.Position = center + coreHalfWidth;
 			vTipCore.UV = { u, 0.0f };
-			vTipCore.Color = { params_.CoreColor.x, params_.CoreColor.y, params_.CoreColor.z, coreAlpha };
+			vTipCore.Color = { params_.Core.Color.x, params_.Core.Color.y, params_.Core.Color.z, coreAlpha };
 			coreVertices_.push_back(vTipCore);
 
 			SlashTrailVertex vBaseCore;
 			vBaseCore.Position = center - coreHalfWidth;
 			vBaseCore.UV = { u, 1.0f };
-			vBaseCore.Color = { params_.CoreColor.x, params_.CoreColor.y, params_.CoreColor.z, coreAlpha };
+			vBaseCore.Color = { params_.Core.Color.x, params_.Core.Color.y, params_.Core.Color.z, coreAlpha };
 			coreVertices_.push_back(vBaseCore);
 		}
 	}

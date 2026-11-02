@@ -9,6 +9,8 @@
 NLOHMANN_JSON_SERIALIZE_ENUM(ActionCommand, {
 	{ ActionCommand::Attack, "Attack" },
 	{ ActionCommand::Evade,  "Evade" },
+	{ ActionCommand::Guard, "Guard" },
+	{ ActionCommand::ChargeAttack, "ChargeAttack" },
 	})
 
 	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(ComboLink, requiredCommand, priority, nextAttackId)
@@ -45,4 +47,41 @@ bool PlayerAttackTableLoader::LoadFromFile(const std::string& path, PlayerAttack
 		OutputDebugStringA(("PlayerAttackTableLoader: " + path + ": " + e.what() + "\n").c_str());
 		return false;
 	}
+}
+
+bool PlayerAttackTableLoader::SaveToFile(const std::string& path, const PlayerAttackTable& table)
+{
+	nlohmann::ordered_json root;
+
+	// 既存ファイルの_commentだけ引き継ぐ
+	nlohmann::ordered_json old;
+	if (JsonLoader::Load(path, old) && old.contains("_comment")) { root["_comment"] = old["_comment"]; }
+
+	// ordered_jsonで書く(キー順をstructの定義順に保つ)。comboLinks/entryCommandは手で組む
+	root["attacks"] = nlohmann::ordered_json::array();
+	for (const PlayerAttackDefinition& def : table.attacks)
+	{
+		nlohmann::ordered_json j;
+		j["id"] = def.id;
+		j["attack"] = def.attack;
+
+		nlohmann::ordered_json links = nlohmann::ordered_json::array();
+		for (const ComboLink& link : def.comboLinks)
+		{
+			nlohmann::ordered_json l;
+			l["requiredCommand"] = link.requiredCommand;
+			l["priority"] = link.priority;
+			l["nextAttackId"] = link.nextAttackId;
+			links.push_back(l);
+		}
+		j["comboLinks"] = links;
+
+		// nullなら読み込み時にnullopt(コンボ中継専用)になる
+		if (def.entryCommand.has_value()) { j["entryCommand"] = def.entryCommand.value(); }
+		else { j["entryCommand"] = nullptr; }
+
+		root["attacks"].push_back(j);
+	}
+
+	return JsonLoader::Save(path, root);
 }

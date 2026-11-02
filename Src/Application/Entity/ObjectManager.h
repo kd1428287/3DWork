@@ -2,6 +2,7 @@
 #include "GameObject.h"
 
 class ColliderRegistry;
+class SlashTrailDispatcher;
 
 // ============================================================
 // ObjectManager: GameObjectの集合を管理する。
@@ -182,6 +183,7 @@ public:
 	{
 		context_.activeCamera = camera;
 	}
+	void SetDispatcher(SlashTrailDispatcher* dispatcher) { context_.slashTrailDispatcher = dispatcher; }
 
 	void SetMasks(uint8_t masks) { currentUpdateMask_ = masks; }
 	void AddMask(uint8_t mask) { currentUpdateMask_ |= mask; }

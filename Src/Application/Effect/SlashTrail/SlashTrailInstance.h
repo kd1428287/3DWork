@@ -2,23 +2,16 @@
 
 #include "Application/Definitions/Effect/SlashTrailParams.h"
 #include "../Common/ITextureProvider.h"
+#include "SlashTrailRecorder.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// トレイル(斬撃の軌跡)1本ぶんの記録と頂点生成
+// トレイル1本ぶんの「描画側」：経路(サンプル列)から頂点を作り、消去演出と描画を行う
 // ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
-// 一筆として記録し、記録終了後は後ろから縮ませず、全体を一括で消す。
-// UVは「始点からの距離 ÷ StrokeLength」(0～1にclamp)で、記録済みサンプルのUVは後から変わらない。
+// サンプルの記録はComponent側のSlashTrailRecorderが行い、ここは経路のコピーを受け取るだけ。
+// 頂点生成はUpdate()で行うので、カメラ更新後にDispatcher::Update()を呼べばカメラ正対が最新になる。
 //
 // 【状態遷移】
-//   Idle → BeginRecording() → Recording → EndRecording() → Dissolving → IsFinished() → Idle扱い
-//
-// 【使い方】
-//   trail.Init(params, textureProvider);
-//   trail.BeginRecording();
-//   trail.UpdateTipBase(tip, base);   // 毎フレーム
-//   trail.Update(deltaTime);
-//   trail.Draw(pass);
-//   trail.EndRecording();             // 以後はDissolveTimeかけて全体が消える
+//   Idle → BeginLive() → Recording(SetLivePathで経路更新) → Finish() → Dissolving → IsFinished()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 class SlashTrailInstance
 {
@@ -33,24 +26,26 @@ public:
 	SlashTrailInstance(SlashTrailInstance&&) = default;
 	SlashTrailInstance& operator=(SlashTrailInstance&&) = default;
 
+	// パラメータ・テクスチャ・頂点バッファを用意する(定義が同じなら再呼び出し不要)
 	bool Init(const SlashTrailParams& params, ITextureProvider* textureProvider);
 
-	void BeginRecording();
+	// 記録中(Recording)として使い始める。前回の経路・頂点は破棄する
+	void BeginLive();
 
-	// 記録中、毎フレーム剣のTip/Base座標を渡す
-	void UpdateTipBase(const DirectX::SimpleMath::Vector3& tip, const DirectX::SimpleMath::Vector3& base);
+	// 記録中の経路を受け取る(Recording以外は無視)
+	void SetLivePath(const SlashTrailRecorder& recorder);
 
-	// 最後の剣先を確定してDissolvingへ移る
-	void EndRecording();
+	// 確定した経路を受け取り、一括消去(Dissolving)へ移る(Recording以外は無視)
+	void Finish(const SlashTrailRecorder& recorder);
 
-	// 毎フレーム呼ぶ：消去タイマー更新→頂点再構築
+	// 毎フレーム：消去タイマー更新→頂点再構築→アップロード
 	void Update(float deltaTime);
 
 	void Draw(ParticleDrawPass pass) const;
 
 	bool IsRecording() const { return state_ == State::Recording; }
 
-	// 消え切った(または一度も描画できる軌跡が無かった)ら呼び出し側が破棄してよい
+	// 消え切った(描画できる軌跡が無い場合も含む)ら破棄・再利用してよい
 	bool IsFinished() const;
 
 	const SlashTrailParams& GetParams() const { return params_; }
@@ -63,11 +58,9 @@ private:
 
 	enum class State { Idle, Recording, Dissolving };
 
-	void ResetState();
+	void StartDissolve();
 
 	void ResolveTexture(ITextureProvider* textureProvider);
-
-	void AddSample(const DirectX::SimpleMath::Vector3& tip, const DirectX::SimpleMath::Vector3& base);
 
 	void RebuildVertices();
 
@@ -75,22 +68,15 @@ private:
 
 	State	state_ = State::Idle;
 
-	std::vector<SlashTrailSample>	samples_;	// 先頭=始点、末尾=最新
-
-	bool							hasCurrentTip_ = false;
-	DirectX::SimpleMath::Vector3	currentTip_ = { 0.0f, 0.0f, 0.0f };
-	DirectX::SimpleMath::Vector3	currentBase_ = { 0.0f, 0.0f, 0.0f };
-
-	float	sinceLastSampleTime_ = 0.0f;
-
-	bool	hasSmoothedSpeed_ = false;
-	float	smoothedSpeed_ = 0.0f;
+	// 頂点生成の入力(記録中は未確定の先頭点つき)
+	std::vector<SlashTrailSample>	path_;
 
 	float	dissolveElapsed_ = 0.0f;
-	float	recordingElapsed_ = 0.0f;
+
+	// 記録中にSetLivePathが来ない時間(Componentが消えた場合の取りこぼし防止)
+	float	liveIdleTime_ = 0.0f;
 
 	// RebuildVertices()用の作業バッファ(毎フレームの確保を避ける)
-	std::vector<SlashTrailSample>	path_;
 	std::vector<SlashTrailSample>	resampled_;
 
 	std::vector<SlashTrailVertex>	vertices_;

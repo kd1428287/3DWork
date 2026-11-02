@@ -1,4 +1,4 @@
-// 見た目(モデル・アニメーション・描画Mod・エフェクト)とカメラまわりのコンポーネント登録。
+﻿// 見た目(モデル・アニメーション・描画Mod・エフェクト)とカメラまわりのコンポーネント登録。
 
 #include "Application/Factories/ComponentRegistry.h"
 #include "Application/Factories/Registrations/RegisterFunctions.h"
@@ -54,7 +54,7 @@ COMPONENT_PARAMS_DEFINE_TYPE(RootMotionConfig,
 COMPONENT_PARAMS_DEFINE_TYPE(ModelAnimatorConfig, fps, speedScale, blendDuration, rootMotion)
 COMPONENT_PARAMS_DEFINE_TYPE(FollowCameraConfig, offset, followPosition, followRotation)
 COMPONENT_PARAMS_DEFINE_TYPE(CameraTargetConfig, offset)
-COMPONENT_PARAMS_DEFINE_TYPE(SlashTrailConfig, trailName, base, tip, key, emitOnStart)
+COMPONENT_PARAMS_DEFINE_TYPE(SlashTrailConfig, trailName, base, tip, emitOnStart)
 COMPONENT_PARAMS_DEFINE_TYPE(OutlineConfig, width)
 COMPONENT_PARAMS_DEFINE_TYPE(FacingDirectionConfig, rotationSpeed, moveThreshold)
 COMPONENT_PARAMS_DEFINE_TYPE(FootstepTrigger, phase, foot)

@@ -7,6 +7,7 @@ class ColliderRegistry;
 class ObjectManager;
 class GameObject;
 class LockOnTargetComponent;
+class SlashTrailDispatcher;
 
 // ============================================================
 // GameObjectが生成時に1つだけ紐付けられる、Scene全体で共有される
@@ -49,6 +50,8 @@ struct SceneContext {
 	// シーンに1つだけの「Player」への弱参照。書き込みはObjectManager::SetPlayer()経由。
 	// UI側(PlayerHudGaugeComponent等)がPlayerの具体クラスを知らずに参照するために使う。
 	Handle<GameObject> player;
+
+	SlashTrailDispatcher* slashTrailDispatcher = nullptr;
 
 	// スケールされていない、フレームの生の経過時間。
 	// 個々のGameObjectのtimeScale_の影響を受けないため、

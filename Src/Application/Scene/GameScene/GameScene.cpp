@@ -131,9 +131,10 @@ void GameScene::BuildWorld()
 
 	// 以降のオブジェクト生成より先にバスを購読させる(元の生成順を維持)
 	slashTrailDispatcher_ = std::make_unique<SlashTrailDispatcher>();
-	slashTrailDispatcher_->Init(*localBus_);
+	slashTrailDispatcher_->Init();
 	SlashTrailParams params;
 	slashTrailDispatcher_->RegisterDefinition("Sword", params);
+	objManager_->SetDispatcher(slashTrailDispatcher_.get());
 
 	// 敵
 	for (const auto& m : markers)
