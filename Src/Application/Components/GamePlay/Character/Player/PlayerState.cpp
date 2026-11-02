@@ -1,4 +1,4 @@
-﻿// PlayerState.cpp (StateAttackのCanStartXxx群のみ抜粋変更・他は元のまま)
+// PlayerState.cpp (StateAttackのCanStartXxx群のみ抜粋変更・他は元のまま)
 #include "PlayerState.h"
 #include "PlayerStateContext.h"
 #include "PlayerAttackSelector.h"
@@ -238,7 +238,7 @@ void StateGuard::Update(PlayerStateContext* ctx, float deltaTime) {
 		parrySuccessElapsed_ += deltaTime;
 		if (parrySuccessElapsed_ >= data_.parry.duration) {
 			// 演出終了。NormalBlockへ復帰する(ガードキーが既に離されていれば
-			// 次フレームのCanReleaseGuard()判定でHandleActionInput側が解除する)。
+			// 次フレームのCanReleaseGuard()判定でPlayerActionDispatcher側が解除する)。
 			parrySucceeded_ = false;
 			ResumeLoopAnimation(ctx);
 		}
@@ -262,7 +262,7 @@ bool StateGuard::CanReleaseGuard(const PlayerStateContext* ctx) const {
 }
 
 void StateGuard::RequestRelease(PlayerStateContext* ctx) {
-	if (isReleasing_) return; // 多重要求防止(HandleActionInputは毎フレーム呼んでくる)
+	if (isReleasing_) return; // 多重要求防止(Dispatcherは毎フレーム呼んでくる)
 
 	isReleasing_ = true;
 	releaseElapsed_ = 0.0f;
@@ -294,8 +294,7 @@ bool StateGuard::CanStartMove(const PlayerStateContext* ctx) const
 	return isReleasing_;
 }
 
-void StateGuard::NotifyParrySuccess(PlayerStateContext* ctx)
-{
+void StateGuard::NotifyParrySuccess(PlayerStateContext* ctx) {
 	if (parrySucceeded_) return; // 同一パリィ猶予内での多重成立を防止
 	parrySucceeded_ = true;
 	parrySuccessElapsed_ = 0.0f;
@@ -305,8 +304,7 @@ void StateGuard::NotifyParrySuccess(PlayerStateContext* ctx)
 	ctx->PlayAnimation(data_.parry);
 }
 
-void StateGuard::NotifyGuardHit(PlayerStateContext* ctx) 
-{
+void StateGuard::NotifyGuardHit(PlayerStateContext* ctx) {
 	// パリィ成功演出中はそちらを優先し、上書きしない。
 	if (parrySucceeded_) return;
 
@@ -318,14 +316,12 @@ void StateGuard::NotifyGuardHit(PlayerStateContext* ctx)
 	ctx->PlayAnimation(data_.hit);
 }
 
-void StateGuard::ResumeLoopAnimation(PlayerStateContext* ctx) 
-{
+void StateGuard::ResumeLoopAnimation(PlayerStateContext* ctx) {
 	hasEnteredLoop_ = true;
 	ctx->PlayAnimation(data_.loop);
 }
 
-StateGuard::GuardPhase StateGuard::GetGuardPhase(const PlayerStateContext* ctx) const 
-{
+StateGuard::GuardPhase StateGuard::GetGuardPhase(const PlayerStateContext* ctx) const {
 	if (isReleasing_) return GuardPhase::Release;
 	if (parrySucceeded_) return GuardPhase::ParrySuccess;
 	return elapsed_ <= data_.justWindowDuration
@@ -335,31 +331,36 @@ StateGuard::GuardPhase StateGuard::GetGuardPhase(const PlayerStateContext* ctx) 
 
 
 // --- Charge State ---
-void StateCharge::Enter(PlayerStateContext* ctx) 
-{
+void StateCharge::Enter(PlayerStateContext* ctx) {
 	elapsed_ = 0.0f;
-
-
-	// ロック中ならロック対象へ、未ロックなら画面中心に最も近い敵へ正対する。
-	ctx->facing->FaceAttackTarget();
-	
-	const ChargeData& data = GetData();
-	ctx->PlayAnimation(data.charge);
+	ctx->PlayAnimation(data_.charge);
 }
 
 void StateCharge::Update(PlayerStateContext* ctx, float deltaTime) {
-	// 最大値のクランプはChargeData::GetDamageScale側で行う(最大到達後は保持)。
-	elapsed_ += deltaTime;
+	elapsed_ += deltaTime; // 溜め率は最大到達後も保持される(ChargeData::GetChargeScale)
+
+	// 入力ロック中は発射せず溜めを捨てる(ロックでintentが空になり「離した」扱いになるため)。
+	if (ctx->input == nullptr || ctx->input->IsInputLocked()) {
+		ctx->requester->ChangeStateToNone();
+		return;
+	}
+
+	if (!ctx->input->GetIntent().ChargeHeld()) {
+		Release(ctx); // 自身のStateから抜けるため、以後このStateには触れない
+	}
 }
 
-void StateCharge::Exit(PlayerStateContext* ctx) 
-{
-	const ChargeData& data = GetData();
-	if (data.GetChargeScale(elapsed_) >= 1.0f) {
+void StateCharge::Release(PlayerStateContext* ctx) {
+	// 溜め中に押された入力が、発射した攻撃の後隙から連鎖しないよう捨てる。
+	auto& buffer = ctx->input->GetBuffer();
+	buffer.Clear(PlayerInputCommand::Attack);
+	buffer.Clear(PlayerInputCommand::Guard);
 
-	}
-	else {
-
+	PlayerAttackRequest request;
+	request.attackId = data_.id;
+	request.chargeRatio = GetChargeRatio();
+	if (!ctx->requester->RequestAttack(request)) {
+		ctx->requester->ChangeStateToNone(); // idが未設定/不明なら溜めを捨てる
 	}
 }
 

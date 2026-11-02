@@ -1,5 +1,7 @@
-﻿#pragma once
+﻿// PlayerInputComponent.h
+#pragma once
 #include "Application/Definitions/Character/Player/PlayerCombatTypes.h"
+#include "Application/Definitions/Character/Player/PlayerInputTypes.h"
 #include "Application/Core/EventBus/EventBus.h"
 #include "Application/Core/EventBus/Events/InputLockEvents.h"
 #include "../../../Tags/IMovementSource.h"
@@ -7,99 +9,85 @@
 #include "../../Camera/CameraComponent.h"
 #include "../../Camera/CameraOrbitComponent.h"
 
-#include "../Common/CharacterInputBufferComponent.h"
-#include "PlayerLockOnComponent.h" 
+#include "Application/Entity/InputBuffer.h"
+#include "PlayerLockOnComponent.h"
+#include "PlayerCommandResolver.h"
+#include "KdPlayerInputDevice.h" // KdInputManagerが見える位置でinclude
+
+#include <memory>
 
 // ロック中限定の変換式。CameraComponent側の変換(オフセット方向→スクリーン前方向、
 // のため反転が必要)とは意味が異なり、こちらは自身のforwardをそのままスクリーン前方向
 // として使いたいため反転しない。
-static float ComputeYawFromOwnForward(const Math::Vector3& horizontalForward)
+inline float ComputeYawFromOwnForward(const Math::Vector3& horizontalForward)
 {
 	return std::atan2(horizontalForward.x, horizontalForward.z);
 }
 
+// 入力の窓口。デバイスの読み取り→基準変換(カメラ/ロック)→コマンド化までを担い、
+// 実行の判断はPlayerActionDispatcherに任せる。
 class PlayerInputComponent : public ComponentBase, public IMovementSource {
 public:
-	explicit PlayerInputComponent(GameObject* owner) : ComponentBase(owner) {}
+	explicit PlayerInputComponent(GameObject* owner)
+		: ComponentBase(owner), device_(std::make_unique<KdPlayerInputDevice>()) {}
 
 	void Awake()
 	{
-		actionBuffer_ = GetOwner()->GetComponent<PlayerActionBufferComponent>();
-		if (actionBuffer_ == nullptr) {
-			actionBuffer_ = GetOwner()->RequestAddComponent<PlayerActionBufferComponent>();
-		}
-		transform_ = GetOwner()->GetComponent<TransformComponent>();       // 追加
-		lockOnComponent_ = GetOwner()->GetComponent<PlayerLockOnComponent>(); // 追加
+		transform_ = GetOwner()->GetComponent<TransformComponent>();
+		lockOnComponent_ = GetOwner()->GetComponent<PlayerLockOnComponent>();
 
 		inputLockSub_ = GLOBALEVENT->SubscribeScoped<Events::InputLockChanged>(
 			[this](const Events::InputLockChanged& e) { SetInputLocked(e.locked); });
 	}
 
-	// ロック中は入力を読まず、移動・押下状態と先行入力をすべて空にする
+	// リプレイ・テスト・AI操作用に生入力の取得元を差し替える。
+	void SetInputDevice(std::unique_ptr<IPlayerInputDevice> device) { device_ = std::move(device); }
+
+	// ロック中は入力を読まず、保持状態と先行入力をすべて空にする
 	void SetInputLocked(bool locked) {
 		if (inputLocked_ == locked) return;
 		inputLocked_ = locked;
 		if (locked) ClearInput();
 	}
 
-	// カメラのactiveCamera(SceneContext経由)が使えない/yawを決められない場合に
-	// フォールバック先として参照するCameraOrbitComponent。
-	// 別GameObject(カメラリグ)上のコンポーネントのためHandle<T>で保持する。
+	// activeCameraが使えない/yawを決められない場合のフォールバック先(別GameObject上のためHandle保持)。
 	void SetCameraOrbitFallback(Handle<CameraOrbitComponent> orbit) { cameraOrbitFallback_ = orbit; }
 
-	// GameObjectのUpdate、またはPreUpdateで毎フレーム呼び出す。
-	// KdInputManagerから今フレームの生入力を読み取ってmoveDirection_/
-	// dashHeld_等へ反映し、タップ入力はactionBuffer_へ積む。先行入力バッファ
-	// 自体の寿命管理はCharacterInputBufferComponent::PostUpdate()側が行う
-	// (このコンポーネントのPreUpdateより後に呼ばれるため、今フレーム
-	//  積んだ分がその場で減算されてしまうことはない)。
+	// 毎フレームPreUpdateで呼ばれる。バッファの期限減算もここで行うため、
+	// 今フレームに積んだ入力は丸々1フレーム分の猶予を持つ。
 	void PreUpdate(float deltaTime) override
 	{
-		if (inputLocked_) return;
+		if (inputLocked_ || device_ == nullptr) return;
 
-		const Math::Vector2 axis = KdInputManager::Instance().GetAxisState("Move");
-		Math::Vector3 dir{ axis.x, 0.0f, axis.y };
+		const PlayerRawInput raw = device_->Poll();
+		const Math::Vector3 dir{ raw.moveAxis.x, 0.0f, raw.moveAxis.y };
 
 		const bool isLockedOn = lockOnComponent_ != nullptr && lockOnComponent_->IsLockedOn();
-		const bool wantsRun = KdInputManager::Instance().IsHold("Dash"); // dashHeld_確定より前に判定用として先読み
 
 		// 移動(Walk)用の基準: ロック中かつWalkの場合だけ自身の向きを使う。
-		// ロック中でもRunなら向きのバインドを外し、下のカメラ基準にフォールスルーする。
+		// ロック中でもRunなら向きのバインドを外し、カメラ基準にフォールスルーする。
 		Math::Quaternion moveBasis = Math::Quaternion::Identity;
 		bool hasMoveBasis = false;
-		if (isLockedOn && !wantsRun && transform_ != nullptr) {
+		if (isLockedOn && !raw.dashHeld && transform_ != nullptr) {
 			Math::Vector3 basisForward = transform_->GetForward();
 			basisForward.y = 0.0f;
 			if (basisForward.LengthSquared() > kMinForwardLengthSq) {
 				basisForward.Normalize();
-				const float yaw = ComputeYawFromOwnForward(basisForward);
-				moveBasis = Math::Quaternion::CreateFromAxisAngle(Math::Vector3::Up, yaw);
+				moveBasis = Math::Quaternion::CreateFromAxisAngle(
+					Math::Vector3::Up, ComputeYawFromOwnForward(basisForward));
 				hasMoveBasis = true;
 			}
 		}
 
-		// カメラ基準: Run時の移動、および回避方向(ロック中でも常に)から共通で参照する。
 		Math::Quaternion cameraBasis = Math::Quaternion::Identity;
-		bool hasCameraBasis = false;
-		if (const SceneContext* context = GetOwner()->GetContext()) {
-			if (CameraComponent* camera = context->activeCamera) {
-				cameraBasis = camera->GetMovementYawRotation();
-				hasCameraBasis = true;
-			}
-		}
-		if (!hasCameraBasis) {
-			if (CameraOrbitComponent* orbit = cameraOrbitFallback_.Resolve()) {
-				cameraBasis = Math::Quaternion::CreateFromYawPitchRoll(orbit->GetYaw(), 0.0f, 0.0f);
-				hasCameraBasis = true;
-			}
-		}
+		const bool hasCameraBasis = ResolveCameraBasis(cameraBasis);
 
 		Math::Vector3 moveDir = dir;
 		if (dir != Math::Vector3::Zero) {
 			if (hasMoveBasis)        moveDir = Math::Vector3::Transform(dir, moveBasis);
 			else if (hasCameraBasis) moveDir = Math::Vector3::Transform(dir, cameraBasis);
 		}
-		SetMoveDirection(moveDir);
+		moveDir.Normalize();
 
 		// 回避方向はロック中でも常にカメラ基準(自身の向き基準にはしない)
 		Math::Vector3 evadeDir = dir;
@@ -108,113 +96,64 @@ public:
 			evadeDir.Normalize();
 		}
 
-		dashHeld_ = wantsRun;
-		guardHeld_ = KdInputManager::Instance().IsHold("Guard");
-		attackHeld_ = KdInputManager::Instance().IsHold("Attack");
+		intent_.moveDirection = moveDir;
+		intent_.dashHeld = raw.dashHeld;
+		intent_.guardHeld = raw.guardHeld;
+		intent_.attackHeld = raw.attackHeld;
 
-		if (actionBuffer_ != nullptr) {
-			if (KdInputManager::Instance().IsPress("Attack")) {
-				actionBuffer_->PushCommand(ActionCommand::Attack, moveDirection_);
-			}
-			if (KdInputManager::Instance().IsPress("Evade")) {
-				actionBuffer_->PushCommand(ActionCommand::Evade, evadeDir); // moveDirection_ではなくevadeDirを積む
-			}
-			if (KdInputManager::Instance().IsPress("Guard")) {
-				actionBuffer_->PushCommand(ActionCommand::Guard, Math::Vector3::Zero);
-			}
-		}
-		if (KdInputManager::Instance().IsPress("Lock")) {
-			lockPressed_ = true;
-		}
+		resolver_.Update(deltaTime, raw, moveDir, evadeDir, buffer_);
 	}
 
-	// --- 外部（PlayerStatusControllerなど）が先行入力を確認/消費する関数 ---
-	// 実体はactionBuffer_(CharacterInputBufferComponent)への薄い委譲。
+	// --- ディスパッチャ向け ---
+	const PlayerIntent& GetIntent() const { return intent_; }
+	InputBuffer<PlayerInputCommand>& GetBuffer() { return buffer_; }
 
-	bool HasCommand(ActionCommand command) const {
-		return actionBuffer_ != nullptr && actionBuffer_->HasCommand(command);
-	}
-
-	bool ConsumeCommand(ActionCommand command) {
-		return actionBuffer_ != nullptr && actionBuffer_->ConsumeCommand(command);
-	}
-
-	// 方向スナップショットも合わせて取り出したい場合(Evade等)はこちら。
-	bool ConsumeCommand(ActionCommand command, Math::Vector3& outDirection) {
-		return actionBuffer_ != nullptr && actionBuffer_->ConsumeCommand(command, outDirection);
-	}
-
-	bool IsGuardHeld() const { return guardHeld_; }
-	bool IsAttackHeld() const { return attackHeld_; }
-	bool IsDashHeld() const { return dashHeld_; }
-
-	// このフレームLockが押されていたかを取り出し、同時にフラグを消費(false)する。
-	// HasCommand()に相当する「覗き見だけ」の版は用意していない。Lockは
-	// CanStart*系のような実行可否判定を挟まず常に処理してよい入力のため、
-	// ConsumeCommand()相当の一発だけで足りる。
-	bool ConsumeLockPressed() {
-		bool pressed = lockPressed_;
-		lockPressed_ = false;
-		return pressed;
-	}
-
-	// 移動方向とDashキーの状態から、今フレームの移動意思をMovementStateとして
-	// 解決する。キーボード操作前提のため、アナログの傾き量ではなく
-	// Dashキーが押されているか否かでWalk/Runを切り替える。
-	MovementState GetDesiredMovementState() const {
-		if (moveDirection_.LengthSquared() <= 0.0f) return MovementState::Stand;
-		return dashHeld_ ? MovementState::Run : MovementState::Walk;
-	}
+	// --- 参照用アクセサ ---
+	bool IsInputLocked() const { return inputLocked_; }
+	bool IsGuardHeld() const { return intent_.guardHeld; }
+	bool IsAttackHeld() const { return intent_.attackHeld; }
+	bool IsDashHeld() const { return intent_.dashHeld; }
+	MovementState GetDesiredMovementState() const { return intent_.DesiredMovementState(); }
+	Math::Vector3 GetMoveDirection() const { return intent_.moveDirection; }
 
 	// IMovementSourceの実装
-	Math::Vector3 GetDesiredVelocity() override {
-		return moveDirection_;
-	}
-
-	// moveDirection_の読み取り専用アクセサ。GetDesiredVelocity()は
-	// IMovementSource側の都合でconstにできないため、const参照からも
-	// 呼べる版を別途用意する(PlayerStatusController::HandleMovementInput
-	// がWalk中の前後左右判定に使う。ClassifyEvadeDirection参照)。
-	Math::Vector3 GetMoveDirection() const { return moveDirection_; }
+	Math::Vector3 GetDesiredVelocity() override { return intent_.moveDirection; }
 
 private:
 	void ClearInput() {
-		moveDirection_ = Math::Vector3::Zero;
-		dashHeld_ = false;
-		guardHeld_ = false;
-		attackHeld_ = false;
-		lockPressed_ = false;
+		intent_ = PlayerIntent{};
+		buffer_.ClearAll(); // ロック前に積まれた先行入力が演出中に発動しないよう捨てる
+		resolver_.Reset();
+	}
 
-		// ロック前に積まれた先行入力が、演出中に発動しないよう捨てる
-		if (actionBuffer_ != nullptr) {
-			for (ActionCommand command : { ActionCommand::Attack, ActionCommand::Evade, ActionCommand::Guard }) {
-				while (actionBuffer_->ConsumeCommand(command)) {}
+	bool ResolveCameraBasis(Math::Quaternion& outBasis) const
+	{
+		if (const SceneContext* context = GetOwner()->GetContext()) {
+			if (CameraComponent* camera = context->activeCamera) {
+				outBasis = camera->GetMovementYawRotation();
+				return true;
 			}
 		}
+		if (CameraOrbitComponent* orbit = cameraOrbitFallback_.Resolve()) {
+			outBasis = Math::Quaternion::CreateFromYawPitchRoll(orbit->GetYaw(), 0.0f, 0.0f);
+			return true;
+		}
+		return false;
 	}
 
-	void SetMoveDirection(Math::Vector3 direction) {
-		direction.Normalize();
-		moveDirection_ = direction;
-	}
+	std::unique_ptr<IPlayerInputDevice> device_;
+	PlayerCommandResolver resolver_;
+	InputBuffer<PlayerInputCommand> buffer_;
+	PlayerIntent intent_;
 
-	PlayerActionBufferComponent* actionBuffer_ = nullptr;
-	TransformComponent* transform_ = nullptr;           // 追加
-	PlayerLockOnComponent* lockOnComponent_ = nullptr;   // 追加
-
-	Math::Vector3 moveDirection_;
-	bool dashHeld_ = false;
-	bool guardHeld_ = false;
-	bool attackHeld_ = false;
-	bool lockPressed_ = false; // このフレームLockが押されたか(消費されるまで保持)
+	TransformComponent* transform_ = nullptr;
+	PlayerLockOnComponent* lockOnComponent_ = nullptr;
 
 	bool inputLocked_ = false;
 	ScopedSubscriber inputLockSub_;
 
-	Handle<CameraOrbitComponent> cameraOrbitFallback_; // activeCamera不使用時のyawフォールバック先
+	Handle<CameraOrbitComponent> cameraOrbitFallback_;
 
-	// 自身/カメラの水平前方ベクトルがこれ以下(ほぼ真上/真下を向いている)
-	// の場合は、そこからyawを決めずCameraOrbitComponent側にフォールバックする、
-	// という閾値。
+	// 自身の水平前方ベクトルがこれ以下(ほぼ真上/真下)ならyawを決めずカメラ基準へフォールバックする閾値。
 	static constexpr float kMinForwardLengthSq = 1e-6f;
 };

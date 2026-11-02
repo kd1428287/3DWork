@@ -1,4 +1,4 @@
-﻿// PlayerStatusController.cpp
+// PlayerStatusController.cpp
 #include "PlayerStatusController.h"
 
 #include "PlayerAttackSelector.h"
@@ -25,6 +25,8 @@ void PlayerStatusController::Awake()
 
 	// Stateが前提とするコンポーネント。欠けていれば構成ミス。
 	assert(ctx_.animator && ctx_.combatMovement && ctx_.facing && ctx_.lockOn && ctx_.weaponSet && ctx_.attackSelector);
+	// チャージ後の攻撃idは、設定されているなら攻撃テーブルに存在すること。
+	assert(stateCharge_.GetData().id.empty() || ctx_.attackSelector->HasAttack(stateCharge_.GetData().id));
 
 	// 自分自身をIHitReactionQueryとして登録
 	if (HitReactionComponent* hitReaction = GetOwner()->GetComponent<HitReactionComponent>()) {
@@ -52,8 +54,9 @@ void PlayerStatusController::Update(float deltaTime)
 	}
 
 	if (ctx_.input != nullptr) {
-		HandleMovementInput(*ctx_.input, deltaTime);
-		HandleActionInput(*ctx_.input);
+		const PlayerIntent& intent = ctx_.input->GetIntent();
+		movementDriver_.Tick(ctx_, intent, *this, deltaTime);
+		actionDispatcher_.Dispatch(ctx_.input->GetBuffer(), intent, *this);
 	}
 
 	// ロック中の向き固定・移動状態の更新は、いずれもCombatState::Noneの間だけ行う
@@ -70,72 +73,21 @@ void PlayerStatusController::Update(float deltaTime)
 	stateMachine_.Update(&ctx_, deltaTime);
 }
 
-void PlayerStatusController::HandleMovementInput(const PlayerInputComponent& input, float deltaTime)
+bool PlayerStatusController::Allows(PlayerAction action) const
 {
-	const MovementState nextState = input.GetDesiredMovementState();
-
-	if (GetCombatState() != CombatState::None) {
-		// Attack Recovery中など、recoveryMoveCancelStart等を過ぎていて
-		// 実際に移動入力がある場合のみ、Evade/Attackキャンセルと同じ
-		// 考え方で通常移動(None)へキャンセルする。それ以外は従来通り
-		// 移動処理を行わない。
-		if (!CanStartMove() || nextState == MovementState::Stand) return;
-		ChangeStateToNone();
-	}
-
-	if (ctx_.movementState != nextState) {
-		ctx_.movementState = nextState;
-		if (ctx_.combatMovement != nullptr) {
-			ctx_.combatMovement->ApplyMovementState(ctx_.movementState);
-		}
-	}
-
-	if (ctx_.facing != nullptr) {
-		const bool shouldFaceMovement = !IsLockedOn() || ctx_.movementState == MovementState::Run;
-		ctx_.facing->SetFacingEnabled(shouldFaceMovement);
-	}
-
-	if (ctx_.movementAnimation != nullptr) {
-		ctx_.movementAnimation->Tick(deltaTime, ctx_.movementState, input.GetMoveDirection(), IsLockedOn());
-	}
+	return stateMachine_.Current()->Allows(action, &ctx_);
 }
 
-void PlayerStatusController::HandleActionInput(PlayerInputComponent& input)
+bool PlayerStatusController::TryStart(PlayerAction action, const Math::Vector3& direction)
 {
-	if (IsStaggered()) return;
-
-	if (input.ConsumeLockPressed()) {
-		if (IsLockedOn()) ClearLockOn();
-		else TryLockOn();
+	switch (action) {
+	case PlayerAction::Attack: return TryStartAttack();
+	case PlayerAction::Evade:  return TryStartEvade(direction);
+	case PlayerAction::Guard:  return TryStartGuard();
+	case PlayerAction::Charge: return TryStartCharge();
+	case PlayerAction::Move:   break;
 	}
-
-	if (input.HasCommand(ActionCommand::Evade) && CanStartEvade()) {
-		Math::Vector3 direction = Math::Vector3::Zero;
-		input.ConsumeCommand(ActionCommand::Evade, direction);
-		TryStartEvade(direction);
-	}
-	else if (input.HasCommand(ActionCommand::Attack) && input.IsGuardHeld()
-		&& CanStartAttack() && CanStartGuard()) {
-		// 同時押しは個別のAttack/Guardより優先し、両方消費してチャージ開始。
-		input.ConsumeCommand(ActionCommand::Attack);
-		input.ConsumeCommand(ActionCommand::Guard);
-		TryStartCharge();
-	}
-	else if (input.HasCommand(ActionCommand::Attack) && CanStartAttack()) {
-		input.ConsumeCommand(ActionCommand::Attack);
-		TryStartAttack();
-	}
-	else if (input.HasCommand(ActionCommand::Guard) && CanStartGuard()) {
-		input.ConsumeCommand(ActionCommand::Guard);
-		TryStartGuard();
-	}
-	else if (!input.IsGuardHeld() && GetCombatState() == CombatState::Guard && CanReleaseGuard()) {
-		RequestGuardRelease();
-	}
-	else if (IsCharging() && !(input.IsAttackHeld() && input.IsGuardHeld())) {
-		// どちらかのボタンを離したら発射。
-		ReleaseCharge();
-	}
+	return false;
 }
 
 bool PlayerStatusController::TryStartAttack()
@@ -144,6 +96,15 @@ bool PlayerStatusController::TryStartAttack()
 	if (ctx_.attackSelector == nullptr || !ctx_.attackSelector->TryResolveNext(ActionCommand::Attack)) return false;
 
 	stateAttack_.Setup(1.0f);
+	ForceTransitionTo(&stateAttack_);
+	return true;
+}
+
+bool PlayerStatusController::RequestAttack(const PlayerAttackRequest& request)
+{
+	if (ctx_.attackSelector == nullptr || !ctx_.attackSelector->TryResolveById(request.attackId)) return false;
+
+	stateAttack_.Setup(request.damageScale, request.chargeRatio);
 	ForceTransitionTo(&stateAttack_);
 	return true;
 }
@@ -168,19 +129,6 @@ bool PlayerStatusController::TryStartCharge()
 	if (!CanStartAttack() || !CanStartGuard()) return false;
 	ForceTransitionTo(&stateCharge_);
 	return true;
-}
-
-void PlayerStatusController::ReleaseCharge()
-{
-	if (!IsCharging()) return;
-
-	// チャージ技が未登録なら、溜めを捨ててNoneへ戻る。
-	if (ctx_.attackSelector == nullptr || !ctx_.attackSelector->TryResolveNext(ActionCommand::ChargeAttack)) {
-		ChangeStateToNone();
-		return;
-	}
-
-	ForceTransitionTo(&stateAttack_);
 }
 
 void PlayerStatusController::ApplyStagger(bool isLarge)

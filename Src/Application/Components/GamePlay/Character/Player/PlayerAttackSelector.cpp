@@ -1,4 +1,4 @@
-﻿#include "PlayerAttackSelector.h"
+#include "PlayerAttackSelector.h"
 
 void PlayerAttackSelector::Awake()
 {
@@ -33,6 +33,16 @@ bool PlayerAttackSelector::TryResolveNext(ActionCommand command)
 	if (entry == nullptr) return false;
 
 	currentAttack_ = *entry;
+	comboWindowRemaining_ = 0.0f;
+	return true;
+}
+
+bool PlayerAttackSelector::TryResolveById(const std::string& id)
+{
+	const PlayerAttackDefinition* attack = attackTable_.Find(id);
+	if (attack == nullptr) return false;
+
+	currentAttack_ = *attack;
 	comboWindowRemaining_ = 0.0f;
 	return true;
 }

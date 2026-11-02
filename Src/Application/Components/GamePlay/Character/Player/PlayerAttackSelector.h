@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Application/Definitions/Character/Player/PlayerCombatTypes.h"
 
 // ============================================================
@@ -26,6 +26,12 @@ public:
 	// GetCurrentAttackData()で取得できるようになる。見つからなければ
 	// falseを返す(呼び出し側は何もしない=攻撃を開始しない)。
 	bool TryResolveNext(ActionCommand command);
+
+	// コンボ木を介さず、攻撃idを直接指定して技を選ぶ(チャージ攻撃など)。
+	// idが存在しなければfalseを返し、状態は変えない。
+	bool TryResolveById(const std::string& id);
+
+	bool HasAttack(const std::string& id) const { return attackTable_.Find(id) != nullptr; }
 
 	// PlayerFactory構築時に、PlayerDefinition::combatBehavior.attackTableを
 	// 注入するためのセッター(SetWeapon/SetMovementSpeedsと同じ位置づけ。

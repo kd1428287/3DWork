@@ -11,12 +11,23 @@ class PlayerAttackSelector;
 class PlayerFacingComponent;
 class PlayerCombatMovementComponent;
 
+// 攻撃idを直接指定して攻撃へ遷移する要求(チャージ攻撃など)。
+struct PlayerAttackRequest
+{
+	std::string attackId;
+	float damageScale = 1.0f;
+	float chargeRatio = 0.0f; // チャージ攻撃の溜め率(0〜1)。通常は0
+};
+
 // Stateからの状態遷移要求の受け口(PlayerStatusControllerが実装する)。
 class IPlayerStateRequester
 {
 public:
 	virtual ~IPlayerStateRequester() = default;
 	virtual void ChangeStateToNone() = 0;
+
+	// 開始できなければ遷移せずfalseを返す(呼び出し側が代替行動を決める)。
+	virtual bool RequestAttack(const PlayerAttackRequest& request) = 0;
 };
 
 // Stateが依存する協調コンポーネントと共有状態をまとめた束。

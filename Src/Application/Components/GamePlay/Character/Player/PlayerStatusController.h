@@ -9,6 +9,8 @@
 #include "PlayerMovementAnimationComponent.h"
 #include "PlayerState.h"
 #include "PlayerStateContext.h"
+#include "PlayerActionDispatcher.h"
+#include "PlayerMovementDriver.h"
 #include "../Common/CharacterInputBufferComponent.h"
 
 #include "../Common/WeaponSetComponent.h"
@@ -38,7 +40,7 @@ struct PlayerStatusControllerConfig
 //     開始できるなら対応するCollaboratorへ実行を委譲すること
 //  3. Stateが依存するコンポーネントをPlayerStateContextにまとめて渡すこと
 
-class PlayerStatusController : public ComponentBase, public IHitReactionQuery, private IPlayerStateRequester
+class PlayerStatusController : public ComponentBase, public IHitReactionQuery, private IPlayerStateRequester, private IPlayerActionTarget
 {
 public:
 	using Config = PlayerStatusControllerConfig;
@@ -62,7 +64,7 @@ public:
 	MovementState GetMovementState() const { return ctx_.movementState; }
 
 	// --- 戦闘軸: 参照(現在のStateへ委譲するだけ) ---
-	CombatState GetCombatState() const { return stateMachine_.Current()->GetDetailedState(); }
+	CombatState GetCombatState() const override { return stateMachine_.Current()->GetDetailedState(); }
 	float GetCombatElapsed() const { return stateMachine_.Current()->GetElapsed(); }
 
 	bool IsAttacking() const { return GetCombatState() == CombatState::AttackWindup || GetCombatState() == CombatState::AttackActive || GetCombatState() == CombatState::AttackRecovery; }
@@ -80,21 +82,22 @@ public:
 	bool CanStartAttack() const { return stateMachine_.Current()->CanStartAttack(&ctx_); }
 	bool CanStartEvade() const { return stateMachine_.Current()->CanStartEvade(&ctx_); }
 	bool CanStartGuard() const { return stateMachine_.Current()->CanStartGuard(&ctx_); }
-	bool CanReleaseGuard() const { return stateMachine_.Current()->CanReleaseGuard(&ctx_); }
+	bool CanReleaseGuard() const override { return stateMachine_.Current()->CanReleaseGuard(&ctx_); }
 
 	// Recovery中などに移動入力でキャンセルし、通常移動(None)へ復帰して
-	// よいか。HandleMovementInputから使う(CanStartAttack等と同じ位置づけ)。
+	// よいか。PlayerMovementDriverから使う(CanStartAttack等と同じ位置づけ)。
 	bool CanStartMove() const { return stateMachine_.Current()->CanStartMove(&ctx_); }
 
 	// --- 状態遷移(Stateからの要求の受け口) ---
 	void ChangeStateToNone() override { TransitionTo(&stateNone_); }
 	bool TryStartAttack();
+
+	// 攻撃idを指定して攻撃Stateへ遷移する(遷移元の可否判定は呼び出し側のStateが行う)。
+	bool RequestAttack(const PlayerAttackRequest& request) override;
 	bool TryStartEvade(const Math::Vector3& direction);
 	bool TryStartGuard();
 	bool TryStartCharge();
 
-	// 溜めを解放してチャージ攻撃を発射する。HandleActionInputから呼ぶ。
-	void ReleaseCharge();
 	void ApplyStagger(bool isLarge);
 
 	// HPが0になった際に死亡Stateへ強制遷移する(一度入ったら抜けない)。
@@ -105,15 +108,15 @@ public:
 	void NotifyParrySuccess() override;
 	void NotifyGuardHit() override;
 
-	// ガードキーが離された際にHandleActionInputから呼ばれる。即座にNoneへは
+	// ガードキーが離された際にPlayerActionDispatcherから呼ばれる。即座にNoneへは
 	// 戻らず、StateGuardに終了アニメーションの再生を開始させるだけ
 	// (完了後はStateGuard::Update()が自律的にChangeStateToNone()する)。
-	void RequestGuardRelease();
+	void RequestGuardRelease() override;
 
 	// --- ロックオン(PlayerLockOnComponentへの薄い委譲) ---
-	void TryLockOn();
-	void ClearLockOn();
-	bool IsLockedOn() const;
+	void TryLockOn() override;
+	void ClearLockOn() override;
+	bool IsLockedOn() const override;
 
 	// --- 武器の装備登録(PlayerFactory等、Stateの外から呼ぶ用) ---
 	void SetWeapon(Handle<WeaponComponent> weapon);
@@ -130,11 +133,14 @@ private:
 	void ForceTransitionTo(IPlayerState* nextState);
 	void OnStateChanged(IPlayerState* prevState, IPlayerState* nextState);
 
-	void HandleMovementInput(const PlayerInputComponent& input, float deltaTime);
-	void HandleActionInput(PlayerInputComponent& input);
+	// --- IPlayerActionTarget(入力ディスパッチャからの操作口) ---
+	bool Allows(PlayerAction action) const override;
+	bool TryStart(PlayerAction action, const Math::Vector3& direction) override;
 
 	// Stateが参照するコンポーネント束と共有状態(movementState含む)。
 	PlayerStateContext ctx_;
+	PlayerMovementDriver movementDriver_;
+	PlayerActionDispatcher actionDispatcher_;
 	HealthComponent* health_ = nullptr;
 
 	// --- Stateインスタンス ---

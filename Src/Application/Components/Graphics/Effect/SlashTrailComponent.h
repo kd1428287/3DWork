@@ -1,6 +1,21 @@
 ﻿#pragma once
 #include "Application/Core/EventBus/Events/SlashTrailEvents.h"
 
+// SlashTrailリファクタ案
+/*
+* 既存のSlashTrailComponentから拡張し、生成するトレイルのIDの保持(設定)と頂点の記録を行う
+* 記録した頂点情報とIDを描画に渡すようにする。
+* IDと頂点群は紐づけて保存
+* ↑のデータはSlashTrailInstanceなどとして、一つのSlashTrailComponentで複数のリボンを持てるように
+* Instanceの配列を持つ
+* 
+* 【思案中】
+* にじみ/かすれなどの見た目に関する更新処理はどこで行うのか。
+* 記録開始時/記録中にエフェクトを発生させたい場合の処理の仕方
+*/
+
+
+
 // 初期設定(Prefab/JSONから渡す値)。base/tipはローカル座標。emitOnStartがtrueならAwakeで発光を開始する。
 struct SlashTrailConfig
 {

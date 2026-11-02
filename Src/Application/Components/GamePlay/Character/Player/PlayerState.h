@@ -1,5 +1,6 @@
-﻿#pragma once
+#pragma once
 #include "Application/Definitions/Character/Player/PlayerCombatTypes.h"
+#include "Application/Definitions/Character/Player/PlayerInputTypes.h"
 #include "Application/Definitions/Character/Common/StateMachine/StateMachine.h"
 
 // 前方宣言
@@ -19,7 +20,7 @@ public:
 	virtual float GetElapsed() const = 0;
 
 	// 次のアクションへの遷移可否（デフォルトは不可）。
-	// Guardもここに揃えることで、HandleActionInput側にCombatStateの
+	// Guardもここに揃えることで、PlayerActionDispatcher側にCombatStateの
 	// ハードコード判定を書かずに済むようにする。
 	virtual bool CanStartAttack(const PlayerStateContext* ctx) const { return false; }
 	virtual bool CanStartEvade(const PlayerStateContext* ctx) const { return false; }
@@ -28,8 +29,20 @@ public:
 
 	// ガードキーを離した際に即座に解除してよいか(デフォルトは常に許可)。
 	// StateGuardがパリィ成功演出中だけfalseを返し、演出を強制的に
-	// 見せ切る(HandleActionInput参照)。
+	// 見せ切る(PlayerActionDispatcher参照)。
 	virtual bool CanReleaseGuard(const PlayerStateContext* ctx) const { return true; }
+
+	// 入力ディスパッチャ向けの統一窓口。個別のCanStartXxxへ振り分けるだけ。
+	bool Allows(PlayerAction action, const PlayerStateContext* ctx) const {
+		switch (action) {
+		case PlayerAction::Attack: return CanStartAttack(ctx);
+		case PlayerAction::Evade:  return CanStartEvade(ctx);
+		case PlayerAction::Guard:  return CanStartGuard(ctx);
+		case PlayerAction::Charge: return CanStartAttack(ctx) && CanStartGuard(ctx);
+		case PlayerAction::Move:   return CanStartMove(ctx);
+		}
+		return false;
+	}
 
 	// ジャスト判定の問い合わせ（該当するStateのみがオーバーライドしてtrueを返す）
 	virtual bool IsInvincible(const PlayerStateContext* ctx) const { return false; }
@@ -67,8 +80,9 @@ public:
 
 class StateAttack : public DataState<AttackStateData> {
 public:
-	// 次のEnter()で掛けるダメージ倍率(通常攻撃は1.0、チャージ攻撃は溜め量で決まる)。
-	void Setup(float damageScale) { damageScale_ = damageScale; }
+	// 次のEnter()で掛けるダメージ倍率と、チャージ攻撃の溜め率(通常攻撃は0)。
+	void Setup(float damageScale, float chargeRatio = 0.0f) { damageScale_ = damageScale; chargeRatio_ = chargeRatio; }
+	float GetChargeRatio() const { return chargeRatio_; }
 
 	void Enter(PlayerStateContext* ctx) override;
 	void Update(PlayerStateContext* ctx, float deltaTime) override;
@@ -88,6 +102,7 @@ private:
 	CombatState phase_ = CombatState::AttackWindup;
 	float elapsed_ = 0.0f;
 	float damageScale_ = 1.0f;
+	float chargeRatio_ = 0.0f;
 
 	// ルートモーション踏み込みの距離スケールをクランプする範囲。
 	// 敵が遠すぎる/近すぎる場合に不自然な速度で動くのを防ぐ安全弁で、
@@ -143,7 +158,7 @@ public:
 	void NotifyParrySuccess(PlayerStateContext* ctx);
 	void NotifyGuardHit(PlayerStateContext* ctx);
 
-	// ガードキー解放時にPlayerStatusController::HandleActionInputから
+	// ガードキー解放時にPlayerActionDispatcherから
 	// 呼ばれる解除要求。ここではまだNoneへ遷移せず、終了アニメーション
 	// (endAnimationName)の再生を開始するだけ。endDuration経過後、
 	// Update()側が自律的にChangeStateToNone()する(StateAttackの
@@ -185,20 +200,25 @@ private:
 };
 
 
-// Attack+Guard同時押し中の溜め状態。発射(ReleaseCharge)はControllerが行う。
+// Attack+Guard同時押し中の溜め状態。どちらかを離すとdata_.idの攻撃へ遷移する。
 class StateCharge : public DataState<ChargeData> {
 public:
 	void Enter(PlayerStateContext* ctx) override;
 	void Update(PlayerStateContext* ctx, float deltaTime) override;
-	void Exit(PlayerStateContext* ctx) override;
 
 	CombatState GetDetailedState() const override { return CombatState::Charge; }
 	float GetElapsed() const override { return elapsed_; }
+
+	// 現在の溜め率(0〜1)。エフェクトやUIからも参照できる。
+	float GetChargeRatio() const { return data_.GetChargeScale(elapsed_); }
 
 	// 溜め中は回避でキャンセルできる。
 	bool CanStartEvade(const PlayerStateContext* ctx) const override { return true; }
 
 private:
+	// 溜めを解放し、チャージ後の攻撃へ遷移する。遷移できなければNoneへ戻る。
+	void Release(PlayerStateContext* ctx);
+
 	float elapsed_ = 0.0f;
 };
 

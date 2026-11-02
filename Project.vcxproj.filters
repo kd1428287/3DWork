@@ -516,21 +516,6 @@
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Enemy\Warrock\WarrockBehavior.h">
       <Filter>Src\Application\Components\GamePlay\Character\Enemy\Warrock</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerInputComponent.h">
-      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerLockOnComponent.h">
-      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerMovementAnimationComponent.h">
-      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerState.h">
-      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerStatusController.h">
-      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Components\GamePlay\Camera\CameraCollisionComponent.h">
       <Filter>Src\Application\Components\GamePlay\Camera</Filter>
     </ClInclude>
@@ -852,15 +837,6 @@
     <ClInclude Include="Src\Application\Editor\EditorHost.h">
       <Filter>Src\Application\Editor</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerFacingComponent.h">
-      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerCombatMovementComponent.h">
-      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerAttackSelector.h">
-      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Components\Graphics\Render\WireFrameComponent.h">
       <Filter>Src\Application\Components\Graphics\Render</Filter>
     </ClInclude>
@@ -971,9 +947,6 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\PlayerHudGaugeComponent.h">
       <Filter>Src\Application\Components\Graphics\UI\Gauge</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerComponent.h">
-      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Graphics\UI\Gauge\GaugeBar.h">
       <Filter>Src\Application\Components\Graphics\UI\Gauge</Filter>
@@ -1104,7 +1077,52 @@
     <ClInclude Include="Src\Application\Definitions\Prefab\ComponentRegister.h">
       <Filter>Src\Application\Definitions\Prefab</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Entity\InputBuffer.h">
+      <Filter>Src\Application\Entity</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerMovementAnimationComponent.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerState.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
+    </ClInclude>
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerStateContext.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerStatusController.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\KdPlayerInputDevice.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerActionDispatcher.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerCommandResolver.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerInputComponent.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerInputDevice.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerMovementDriver.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerCombatMovementComponent.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerFacingComponent.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerAttackSelector.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerComponent.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerLockOnComponent.h">
       <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
     </ClInclude>
   </ItemGroup>
@@ -1268,15 +1286,6 @@
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Enemy\Warrock\WarrockBehavior.cpp">
       <Filter>Src\Application\Components\GamePlay\Character\Enemy\Warrock</Filter>
     </ClCompile>
-    <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerMovementAnimationComponent.cpp">
-      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
-    </ClCompile>
-    <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerState.cpp">
-      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
-    </ClCompile>
-    <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerStatusController.cpp">
-      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
-    </ClCompile>
     <ClCompile Include="Src\Application\Components\Graphics\Render\ModelRenderComponent.cpp">
       <Filter>Src\Application\Components\Graphics\Render</Filter>
     </ClCompile>
@@ -1366,15 +1375,6 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Editor\EditorHost.cpp">
       <Filter>Src\Application\Editor</Filter>
-    </ClCompile>
-    <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerAttackSelector.cpp">
-      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
-    </ClCompile>
-    <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerCombatMovementComponent.cpp">
-      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
-    </ClCompile>
-    <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerFacingComponent.cpp">
-      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
     </ClCompile>
     <ClCompile Include="Src\Application\Components\Graphics\Render\WireFrameComponent.cpp">
       <Filter>Src\Application\Components\Graphics\Render</Filter>
@@ -1490,7 +1490,34 @@
     <ClCompile Include="Src\Application\Editor\Tools\ActionEditor.cpp">
       <Filter>Src\Application\Editor\Tools</Filter>
     </ClCompile>
+    <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerState.cpp">
+      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
+    </ClCompile>
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerStateContext.cpp">
+      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerStatusController.cpp">
+      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerActionDispatcher.cpp">
+      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerCommandResolver.cpp">
+      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerMovementDriver.cpp">
+      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerCombatMovementComponent.cpp">
+      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerFacingComponent.cpp">
+      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerAttackSelector.cpp">
+      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerMovementAnimationComponent.cpp">
       <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
     </ClCompile>
   </ItemGroup>
