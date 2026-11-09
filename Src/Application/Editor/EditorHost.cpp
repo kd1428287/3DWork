@@ -15,7 +15,6 @@
 
 #include "Application/Core/EventBus/Events/SceneEvents.h"
 
-
 // DockBuilder系APIを使うために必要(公式にも初期配置構築の定番として使われる内部ヘッダ)
 // ※旧KdDebugGUI.cppから移設。ドッキングレイアウトはエディタ固有の関心事のためこちらに置く
 #include "imgui_internal.h"

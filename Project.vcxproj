@@ -294,6 +294,7 @@
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\FootstepEventComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\HealthComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\HitReactionComponent.h" />
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\ISyncroAnimation.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\LifeComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\PostureComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\ShapeSurfaceQuery.h" />
@@ -494,6 +495,7 @@
     <ClInclude Include="Src\Application\Systems\GamePlay\GameInputSystem.h" />
     <ClInclude Include="Src\Application\Systems\GamePlay\ResultController.h" />
     <ClInclude Include="Src\Application\Systems\GamePlay\ResultView.h" />
+    <ClInclude Include="Src\Application\Systems\GamePlay\RethalSynchronizationSystem.h" />
     <ClInclude Include="Src\Application\Systems\GamePlay\TimeScaleSystem.h" />
     <ClInclude Include="Src\Application\Systems\InputSystem.h" />
     <ClInclude Include="Src\Application\Systems\SelectableManager.h" />
@@ -636,6 +638,8 @@
     <ClCompile Include="Src\Application\Scene\ResultScene\ResultScene.cpp" />
     <ClCompile Include="Src\Application\Scene\TitleScene\TitleScene.cpp" />
     <ClCompile Include="Src\Application\Systems\GamePlay\ResultView.cpp" />
+    <ClCompile Include="Src\Application\Systems\GamePlay\RethalSynchronizationSystem.cpp" />
+    <ClCompile Include="Src\Application\Systems\GamePlay\RethalSyncronizationSystem.cpp" />
     <ClCompile Include="Src\Application\Systems\SelectableManager.cpp" />
     <ClCompile Include="Src\Framework\Audio\KdSoundDef.cpp" />
     <ClCompile Include="Src\Framework\Direct3D\KdMaterial.cpp">

@@ -133,6 +133,19 @@ void WarrockBehavior::OnDied(EnemyAIController* owner)
 	}
 }
 
+void WarrockBehavior::OnFatalized(EnemyAIController* owner)
+{
+	return;
+
+	owner->StopMovement();
+
+	const auto& table = owner->GetData().oneShotAnimations;
+	const auto it = table.find("Fatalized");
+	if (it != table.end()) {
+		owner->PlayAnimation(it->second.animationName, false, it->second.duration, it->second.useRootMotion);
+	}
+}
+
 float WarrockBehavior::GetDespawnDelay(const EnemyAIController* owner) const
 {
 	const auto& data = owner->GetData();

@@ -93,6 +93,8 @@ public:
 	// 行う。
 	virtual void OnDied(EnemyAIController* owner) {}
 
+	virtual void OnFatalized(EnemyAIController* owner) {};
+
 	// 死亡確定から消滅(RequestDespawn)までの猶予秒数。敵種ごとに死亡
 	// 演出の長さが変わりうるため、Behavior側の値を使う。
 	// ownerを受け取るのはEnemyAIData(owner->GetData())側のDying尺+

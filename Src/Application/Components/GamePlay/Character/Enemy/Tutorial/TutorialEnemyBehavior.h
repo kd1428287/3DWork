@@ -1,7 +1,8 @@
-#pragma once
+﻿#pragma once
 #include <string>
 #include <vector>
 #include "Application/Definitions/Character/Enemy/IEnemyBehavior.h"
+#include "Application/Definitions/Character/Enemy/EnemyAIData.h"
 
 // フェーズ中の敵の振る舞い。Idle=棒立ち、Scripted=指定技を使う、Free=通常の抽選戦闘。
 enum class TutorialPhaseMode { Idle, Scripted, Free };
@@ -24,8 +25,7 @@ public:
 	static constexpr const char* kPhaseKey = "TutorialPhase";
 
 	explicit TutorialEnemyBehavior(std::vector<TutorialPhase> phases = DefaultPhases())
-		: phases_(std::move(phases)) {
-	}
+		: phases_(std::move(phases)) {}
 
 	std::unique_ptr<IBTNode<EnemyAIController>> BuildTree(EnemyAIController* owner) override;
 	void OnStaggered(EnemyAIController* owner, bool isLarge, float duration) override;

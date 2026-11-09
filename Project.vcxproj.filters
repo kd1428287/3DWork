@@ -1131,6 +1131,12 @@
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Enemy\Tutorial\TutorialEnemyBehavior.h">
       <Filter>Src\Application\Components\GamePlay\Character\Enemy\Tutorial</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Systems\GamePlay\RethalSynchronizationSystem.h">
+      <Filter>Src\Application\Systems\GamePlay</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\ISyncroAnimation.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -1532,6 +1538,10 @@
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Enemy\Tutorial\TutorialEnemyBehavior.cpp">
       <Filter>Src\Application\Components\GamePlay\Character\Enemy\Tutorial</Filter>
     </ClCompile>
+    <ClCompile Include="Src\Application\Systems\GamePlay\RethalSyncronizationSystem.cpp">
+      <Filter>Src\Application\Systems\GamePlay</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Systems\GamePlay\RethalSynchronizationSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Src\Framework\Shader\inc_KdCommon.hlsli">

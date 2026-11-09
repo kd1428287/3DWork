@@ -259,7 +259,7 @@ bool Application::Init(int w, int h)
 	//===================================================================
 	// ウィンドウ作成
 	//===================================================================
-	if (m_window.Create(w, h, "幽玄調伏伝", "Window") == false) {
+	if (m_window.Create(w, h, "NowLoading", "Window") == false) {
 		MessageBoxA(nullptr, "ウィンドウ作成に失敗", "エラー", MB_OK);
 		return false;
 	}
@@ -434,7 +434,7 @@ void Application::Execute()
 		m_fpsController.UpdateStartTime();
 		//KdDebugGUI::Instance().ClearLog();
 
-		std::wstring str = L"幽玄調伏伝 FPS: " + std::to_wstring(Application::Instance().GetNowFPS());
+		std::wstring str = L"YugenChobukuDen FPS: " + std::to_wstring(Application::Instance().GetNowFPS());
 		SetWindowTextW(m_window.GetWndHandle(), str.c_str());
 
 

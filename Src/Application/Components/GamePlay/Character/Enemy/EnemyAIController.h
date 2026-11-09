@@ -17,6 +17,7 @@
 #include "../Common/HealthComponent.h"
 #include "../Common/WeaponSetComponent.h"
 #include "../Common/HitReactionComponent.h"
+#include "../Common/ISyncroAnimation.h"
 
 #include "../../../Physics/Movement/MovementComponent.h"
 #include "../../../Physics/Collision/ColliderComponent.h"
@@ -25,7 +26,6 @@
 
 #include "Application/Core/EventBus/Events/CombatEvents.h"
 #include "Application/Core/EventBus/Events/DebugEvents.h"
-
 
 // 効果音のID(論理IDまたはファイルパス)。空なら鳴らさない。
 // 被弾/ブロックのSEは攻撃側のAttackVisualData(SEName)で指定する。
@@ -63,7 +63,7 @@ struct EnemySoundData
 // behavior名("Warrock"等)から具象IEnemyBehaviorを選んで組み立てている
 // ============================================================
 
-class EnemyAIController : public ComponentBase, public IMovementSource, public IHitReactionQuery
+class EnemyAIController : public ComponentBase, public IMovementSource, public IHitReactionQuery, public ISyncroAnimation
 {
 public:
 	EnemyAIController(GameObject* owner, const EnemyAIData& data, std::unique_ptr<IEnemyBehavior> behavior)
@@ -165,23 +165,15 @@ public:
 		ApplyRootMotion();
 	}
 
-	// --- IMovementSourceの実装 ---------------------------------------------
+	// --- IMovementSource ---
 	Math::Vector3 GetDesiredVelocity() override { return desiredVelocity_; }
 
-	// --- IHitReactionQueryの実装 --------------------------------------------
-	// 【変更】以前は常にfalse固定だった。武器を持たない大型モンスターは
-	// 常時ハイパーアーマー気味で、自分の攻撃のRecoveryフェーズ(隙)の
-	// 間だけ無防備になる、という性質をここで表現する
-	// (isVulnerable_はBTWeightedAttackAction::Tick()がRecoveryフェーズの
-	// 開始/終了に合わせてSetVulnerable()経由で書き換える。クラス冒頭
-	// コメント参照)。ガード時はHitReactionComponent側がモーション無しで
-	// 体幹ダメージ+チップダメージ(AttackDamageData::guardDamageRatio)を
-	// 処理し、無防備時のみEnterStagger()経由で被弾リアクションが起きる。
-	// パリィはこの敵種には実装しないため常にfalse。
+	// --- IHitReactionQuery ---
 	bool IsGuarding() const override { return !isVulnerable_; }
 	bool IsInParryWindow() const override { return false; }
 	void NotifyParrySuccess() override {}
 	void NotifyGuardHit() override {}
+
 
 	// 通常被弾の結果(体幹が壊れたか=isLarge)を敵種固有のBehaviorへ
 	// そのまま橋渡しするだけ(クラス冒頭コメント参照)。スタン時間は
@@ -189,6 +181,11 @@ public:
 	void EnterStagger(bool isLarge) override {
 		if (behavior_) behavior_->OnStaggered(this, isLarge, 0.0f);
 	}
+
+	// --- ISyncroAnimation ---
+	void NotifyRethalAnimation() override {
+		if (behavior_) behavior_->OnFatalized(this);
+	};
 
 	// --- 実行層API(各Behaviorが組み立てるActionノードから呼ばれる) --------
 	const EnemyAIData& GetData() const { return data_; }

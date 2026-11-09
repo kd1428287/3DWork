@@ -27,6 +27,8 @@ public:
 	void OnStaggered(EnemyAIController* owner, bool isLarge, float duration) override;
 	void OnParrySucceeded(EnemyAIController* owner, const Events::ParrySucceeded& event) override;
 	void OnDied(EnemyAIController* owner) override;
+	void OnFatalized(EnemyAIController* owner) override;
+
 	float GetDespawnDelay(const EnemyAIController* owner) const override;
 
 private:

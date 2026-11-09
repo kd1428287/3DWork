@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Event.h"
 #include "Application/Definitions/Character/Common/CombatData.h"
@@ -43,6 +43,13 @@ namespace Events
 		float parryPostureDamage = 0.0f;
 		Math::Vector3 incomingDir;		// 攻撃の進入方向(ワールド、正規化済み)
 		ReactionEventConfig reaction;	// パリィされた攻撃のparry演出データ
+	};
+
+	struct Syncronization : public Event
+	{
+		Handle<GameObject> attacker;
+		Handle<GameObject> victim;
+
 	};
 
 	inline void PublishHealthChangeEvent(EventBus& bus, Handle<GameObject> obj, float ratio)
