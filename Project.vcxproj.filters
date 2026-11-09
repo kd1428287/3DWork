@@ -277,6 +277,9 @@
     <Filter Include="Src\Application\Factories\Registrations">
       <UniqueIdentifier>{56483869-722e-4ff0-88a5-79ca4f5b4813}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\Components\GamePlay\Character\Enemy\Tutorial">
+      <UniqueIdentifier>{769c5b4f-7b3f-4aa5-bbd8-c2dc53c022c9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -1125,6 +1128,9 @@
     <ClInclude Include="Src\Application\Effect\SlashTrail\SlashTrailRecorder.h">
       <Filter>Src\Application\Effect\SlashTrail</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Enemy\Tutorial\TutorialEnemyBehavior.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Enemy\Tutorial</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -1522,6 +1528,9 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Effect\SlashTrail\SlashTrailRecorder.cpp">
       <Filter>Src\Application\Effect\SlashTrail</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\GamePlay\Character\Enemy\Tutorial\TutorialEnemyBehavior.cpp">
+      <Filter>Src\Application\Components\GamePlay\Character\Enemy\Tutorial</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

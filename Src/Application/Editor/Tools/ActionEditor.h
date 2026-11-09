@@ -2,13 +2,15 @@
 
 #include "nlohmann/json.hpp"
 #include "Application/Definitions/Loaders/EnemyAttackTableLoader.h"
+#include "Application/Definitions/Loaders/PlayerAttackTableLoader.h"
 #include "Application/Definitions/Physics/ColliderParams.h"
 #include "Application/Components/Graphics/Animation/RootMotionExtractor.h"
 #include "../Common/EditorPreviewViewport.h"
 #include "Application/Components/Graphics/Render/WireFrameComponent.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// 敵の攻撃テーブル(EnemyAttackTable)を、アニメーションと判定ワイヤーを見ながら調整するエディタ
+// 敵・プレイヤーの攻撃テーブル(EnemyAttackTable/PlayerAttackTable)を、アニメーションと判定ワイヤーを見ながら調整するエディタ
+//	Prefabのコンポーネント(EnemyAIController/PlayerAttackSelector)で敵かプレイヤーかを自動判定する
 //	Prefab(Warrock.json等)からモデル・武器スロット・攻撃テーブルのパスを読み、
 //	攻撃テーブルJSONを編集・保存する。時間はゲームと同じ秒、区間はクリップのフレームで扱う。
 //	EditorHost::Draw() から Update()、EditorHost::RenderPreviewViewports() から
@@ -26,7 +28,15 @@ public:
 
 private:
 
-	enum class Pool { Attacks, GapClosers };
+	enum class Pool { Attacks, GapClosers, PlayerAttacks };
+	enum class Target { Enemy, Player };
+
+	// Undo/Redo用。敵・プレイヤーどちらのテーブルも丸ごと保持する
+	struct Snapshot
+	{
+		EnemyAttackTable	enemy;
+		PlayerAttackTable	player;
+	};
 
 	// Prefabの武器子オブジェクト1つ分(スロット名・ボーン追従・HitBox形状)
 	struct SlotInfo
@@ -42,11 +52,12 @@ private:
 	// ---- ウィンドウ ----
 	void DrawTargets();
 	void DrawPoolList(const char* title, Pool pool);
+	void DrawPlayerList();
 	void DrawInspector();
 	void DrawSegments(MotionClipData& clip, float markerSec);
 	void DrawTimeline();
-	void DrawGameTimeStrip(EnemyAttackDefinition& atk);
-	void DrawClipStrip(EnemyAttackDefinition& atk);
+	void DrawGameTimeStrip(AttackData& ad, const EnemyAttackDefinition* enemy);
+	void DrawClipStrip(AttackData& ad);
 	void DrawPreviewWindow();
 
 	// ---- データ ----
@@ -55,7 +66,9 @@ private:
 	void CollectAnimNames();
 
 	std::vector<EnemyAttackDefinition>& PoolVec(Pool pool);
-	EnemyAttackDefinition* CurrentAttack();
+	EnemyAttackDefinition* CurrentAttack();			// 敵のときだけ非null
+	PlayerAttackDefinition* CurrentPlayerAttack();	// プレイヤーのときだけ非null
+	AttackData* CurrentAttackData();				// 敵・プレイヤー共通(タイムライン・プレビュー用)
 	const SlotInfo* FindSlot(const std::string& slot) const;
 	std::string MakeUniqueName(const std::string& base) const;
 	std::string MakeUniqueId(const std::string& base) const;
@@ -84,7 +97,9 @@ private:
 	std::string		m_tablePath;
 	std::string		m_tableComment;
 
+	Target						m_target = Target::Enemy;
 	EnemyAttackTable			m_table;
+	PlayerAttackTable			m_playerTable;
 	std::vector<std::string>	m_animNames;	// テーブル内で使われているクリップ名(選択候補)
 	std::vector<std::string>	m_recoilChains;	// PrefabのBoneOffsetに定義された鎖名(跳ね返しの選択候補)
 	std::vector<SlotInfo>		m_slots;
@@ -94,8 +109,8 @@ private:
 	int		m_index = -1;
 	int		m_selectedPhase = 0;	// クリップストリップに表示するフェーズ
 
-	std::vector<EnemyAttackTable>	m_undoStack;
-	std::vector<EnemyAttackTable>	m_redoStack;
+	std::vector<Snapshot>	m_undoStack;
+	std::vector<Snapshot>	m_redoStack;
 
 	// 再生
 	float	m_time = 0.0f;

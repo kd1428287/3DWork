@@ -185,9 +185,9 @@ void ActionEditor::Update()
 
 	if (m_playing)
 	{
-		if (EnemyAttackDefinition* atk = CurrentAttack())
+		if (AttackData* ad = CurrentAttackData())
 		{
-			const float total = PhaseTotalTime(atk->attackData.phaseData);
+			const float total = PhaseTotalTime(ad->phaseData);
 			m_time += io.DeltaTime;
 			if (m_time >= total)
 			{
@@ -237,7 +237,7 @@ void ActionEditor::DrawTargets()
 	if (ImGui::Button("Load")) { LoadPrefab(m_prefabPathBuf); }
 
 	// 整合性エラーのまま保存するとゲーム側のassertで落ちるため、直るまでSaveを止める
-	const bool tableValid = !m_loaded || m_table.Validate();
+	const bool tableValid = !m_loaded || ((m_target == Target::Player) ? m_playerTable.Validate() : m_table.Validate());
 
 	ImGui::SameLine();
 	ImGui::BeginDisabled(!m_loaded || !m_dirty || !tableValid);
@@ -261,12 +261,19 @@ void ActionEditor::DrawTargets()
 		return;
 	}
 
-	ImGui::TextDisabled("%s%s", m_tablePath.c_str(), m_dirty ? " *" : "");
+	ImGui::TextDisabled("[%s] %s%s", (m_target == Target::Player) ? "Player" : "Enemy", m_tablePath.c_str(), m_dirty ? " *" : "");
 	if (!tableValid) { ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "idの重複、またはcomboLinksの参照先なし(Save不可)"); }
 	ImGui::Separator();
 
-	DrawPoolList("Attacks", Pool::Attacks);
-	DrawPoolList("Gap Closers", Pool::GapClosers);
+	if (m_target == Target::Player)
+	{
+		DrawPlayerList();
+	}
+	else
+	{
+		DrawPoolList("Attacks", Pool::Attacks);
+		DrawPoolList("Gap Closers", Pool::GapClosers);
+	}
 
 	ImGui::End();
 }
@@ -319,6 +326,57 @@ void ActionEditor::DrawPoolList(const char* title, Pool pool)
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// プレイヤーの攻撃一覧(コンボ中継専用の技は[combo]付き)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void ActionEditor::DrawPlayerList()
+{
+	std::vector<PlayerAttackDefinition>& vec = m_playerTable.attacks;
+
+	ImGui::PushID("PlayerAttacks");
+	ImGui::TextDisabled("Attacks");
+
+	for (int i = 0; i < (int)vec.size(); ++i)
+	{
+		ImGui::PushID(i);
+		const std::string label = vec[i].entryCommand.has_value() ? vec[i].id : vec[i].id + "  [combo]";
+		if (ImGui::Selectable(label.c_str(), m_pool == Pool::PlayerAttacks && m_index == i)) { SelectAttack(Pool::PlayerAttacks, i); }
+		ImGui::PopID();
+	}
+
+	const bool hasSelection = (CurrentPlayerAttack() != nullptr);
+
+	// 追加は選択中の技の複製(コンボ接続とentryCommandは外す。必要ならInspectorで設定する)
+	if (ImGui::Button("Add"))
+	{
+		PlayerAttackDefinition def = hasSelection ? *CurrentPlayerAttack() : PlayerAttackDefinition();
+		def.id = MakeUniqueId((def.id.empty() ? std::string("Attack") : def.id) + "_Copy");
+		def.comboLinks.clear();
+		def.entryCommand = std::nullopt;
+
+		PushUndo();
+		vec.push_back(def);
+		SelectAttack(Pool::PlayerAttacks, (int)vec.size() - 1);
+		MarkEdited();
+	}
+
+	ImGui::SameLine();
+	ImGui::BeginDisabled(!hasSelection);
+	if (ImGui::Button("Delete"))
+	{
+		PushUndo();
+		vec.erase(vec.begin() + m_index);
+		ClampSelection();
+		m_time = 0.0f;
+		m_playing = false;
+		MarkEdited();
+	}
+	ImGui::EndDisabled();
+
+	ImGui::PopID();
+	ImGui::Spacing();
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // Inspector(選択中の攻撃の全項目)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void ActionEditor::DrawInspector()
@@ -326,15 +384,17 @@ void ActionEditor::DrawInspector()
 	ImGui::Begin("Action Inspector");
 	if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows)) { m_focused = true; }
 
-	EnemyAttackDefinition* atk = CurrentAttack();
-	if (atk == nullptr)
+	AttackData* dp = CurrentAttackData();
+	if (dp == nullptr)
 	{
 		ImGui::TextDisabled("攻撃を選択してください");
 		ImGui::End();
 		return;
 	}
 
-	AttackData& d = atk->attackData;
+	AttackData& d = *dp;
+	EnemyAttackDefinition* atk = CurrentAttack();			// 敵のときだけ非null
+	PlayerAttackDefinition* pl = CurrentPlayerAttack();	// プレイヤーのときだけ非null
 
 	// 変更の開始(IsItemActivated)でUndo用スナップショットを取る
 	auto dragFloat = [&](const char* label, float& v, float speed, float mn, float mx)
@@ -365,10 +425,201 @@ void ActionEditor::DrawInspector()
 			if (ImGui::IsItemActivated()) { PushUndo(); }
 		};
 
-	inputText("name", atk->name);
-	inputText("id (コンボの参照先)", atk->id);
+	if (atk != nullptr)
+	{
+		inputText("name", atk->name);
+		inputText("id (コンボの参照先)", atk->id);
+	}
 
-	if (ImGui::CollapsingHeader("Selection", ImGuiTreeNodeFlags_DefaultOpen))
+	if (pl != nullptr)
+	{
+		const ImVec4 warnCol(1.0f, 0.8f, 0.2f, 1.0f);
+		static const char* const kEntryNames[5] = { "(なし: コンボ中継専用)", "Attack", "Evade", "Guard", "ChargeAttack" };
+		static const char* const kCommandNames[4] = { "Attack", "Evade", "Guard", "ChargeAttack" };
+
+		// idを変えたら、それを繋ぎ先にしているリンクも追従させる
+		{
+			const std::string oldId = pl->id;
+			inputText("id", pl->id);
+			if (pl->id != oldId && !oldId.empty())
+			{
+				for (PlayerAttackDefinition& a : m_playerTable.attacks)
+				{
+					for (ComboLink& l : a.comboLinks)
+					{
+						if (l.nextAttackId == oldId) { l.nextAttackId = pl->id; }
+					}
+				}
+			}
+		}
+		if (CountAttackId(pl->id) > 1) { ImGui::TextColored(warnCol, "id '%s' が重複しています", pl->id.c_str()); }
+
+		int entry = pl->entryCommand.has_value() ? (int)pl->entryCommand.value() + 1 : 0;
+		if (ImGui::Combo("entryCommand", &entry, kEntryNames, 5))
+		{
+			PushUndo();
+			if (entry == 0) { pl->entryCommand = std::nullopt; }
+			else { pl->entryCommand = (ActionCommand)(entry - 1); }
+			MarkEdited();
+		}
+		if (pl->entryCommand.has_value())
+		{
+			// 同じentryCommandの技が複数ある場合、登録順で先頭の技だけが使われる
+			for (const PlayerAttackDefinition& a : m_playerTable.attacks)
+			{
+				if (&a != pl && a.entryCommand == pl->entryCommand)
+				{
+					ImGui::TextColored(warnCol, "'%s' も同じentryCommandです(登録順で先頭だけが使われます)", a.id.c_str());
+					break;
+				}
+			}
+		}
+
+		if (ImGui::CollapsingHeader("Combo Links", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			// この技へ繋がっている技(参照元)
+			std::string referrers;
+			for (const PlayerAttackDefinition& a : m_playerTable.attacks)
+			{
+				for (const ComboLink& l : a.comboLinks)
+				{
+					if (!pl->id.empty() && l.nextAttackId == pl->id) { referrers += a.id + " "; break; }
+				}
+			}
+			if (!referrers.empty()) { ImGui::TextDisabled("参照元: %s", referrers.c_str()); }
+			else if (!pl->entryCommand.has_value()) { ImGui::TextColored(warnCol, "どこからも繋がらず、entryCommandもないため出せません"); }
+
+			const std::vector<std::string> ids = CollectAttackIds();
+			int removeIdx = -1;
+			for (int i = 0; i < (int)pl->comboLinks.size(); ++i)
+			{
+				ComboLink& link = pl->comboLinks[i];
+				ImGui::PushID(i);
+				ImGui::Separator();
+
+				int cmd = (int)link.requiredCommand;
+				if (ImGui::Combo("command", &cmd, kCommandNames, 4))
+				{
+					PushUndo();
+					link.requiredCommand = (ActionCommand)cmd;
+					MarkEdited();
+				}
+
+				if (ImGui::BeginCombo("next", link.nextAttackId.empty() ? "(未選択)" : link.nextAttackId.c_str()))
+				{
+					for (const std::string& n : ids)
+					{
+						if (ImGui::Selectable(n.c_str(), n == link.nextAttackId))
+						{
+							PushUndo();
+							link.nextAttackId = n;
+							MarkEdited();
+						}
+					}
+					ImGui::EndCombo();
+				}
+				if (link.nextAttackId.empty()) { ImGui::TextColored(warnCol, "繋ぎ先が未選択です"); }
+				else if (std::find(ids.begin(), ids.end(), link.nextAttackId) == ids.end())
+				{
+					ImGui::TextColored(warnCol, "繋ぎ先 '%s' がありません", link.nextAttackId.c_str());
+				}
+
+				inputInt("priority (小さいほど優先)", link.priority);
+
+				if (ImGui::SmallButton("Remove link")) { removeIdx = i; }
+				ImGui::PopID();
+			}
+
+			if (removeIdx >= 0)
+			{
+				PushUndo();
+				pl->comboLinks.erase(pl->comboLinks.begin() + removeIdx);
+				MarkEdited();
+			}
+			if (ImGui::SmallButton("+ Link"))
+			{
+				PushUndo();
+				pl->comboLinks.push_back(ComboLink());
+				MarkEdited();
+			}
+
+			// この技から先を、Attack入力で辿った場合の流れ
+			{
+				std::string chain = pl->id;
+				const PlayerAttackDefinition* cur = pl;
+				std::vector<const PlayerAttackDefinition*> visited = { cur };
+				int steps = 1;
+				bool looped = false;
+
+				while (steps <= kMaxComboChainLength + 1)
+				{
+					const ComboLink* best = nullptr;
+					for (const ComboLink& l : cur->comboLinks)
+					{
+						if (l.requiredCommand == ActionCommand::Attack && (best == nullptr || l.priority < best->priority)) { best = &l; }
+					}
+					if (best == nullptr) { break; }
+
+					const PlayerAttackDefinition* next = m_playerTable.Find(best->nextAttackId);
+					if (next == nullptr) { break; }
+
+					chain += " -> " + next->id;
+					++steps;
+					if (std::find(visited.begin(), visited.end(), next) != visited.end()) { looped = true; break; }
+
+					visited.push_back(next);
+					cur = next;
+				}
+
+				ImGui::Spacing();
+				ImGui::TextDisabled("Attack入力で辿る流れ(%d段): %s", steps, chain.c_str());
+				if (looped) { ImGui::TextColored(warnCol, "ループしています(ゲーム側のassertに掛かります)"); }
+				else if (steps > kMaxComboChainLength) { ImGui::TextColored(warnCol, "段数が安全弁(kMaxComboChainLength=%d)を超えています", kMaxComboChainLength); }
+			}
+
+			// 直線チェーンの延長: 選択中の技を複製し、Attack入力で繋ぐ
+			if (ImGui::Button("+ Append next attack (clone and link)"))
+			{
+				PushUndo();
+
+				PlayerAttackDefinition next = *pl;
+				next.id = MakeUniqueId(pl->id + "_Next");
+				next.comboLinks.clear();
+				next.entryCommand = std::nullopt;
+
+				ComboLink link;
+				link.requiredCommand = ActionCommand::Attack;
+				link.nextAttackId = next.id;
+				pl->comboLinks.push_back(link);
+
+				m_playerTable.attacks.push_back(std::move(next));
+				SelectAttack(Pool::PlayerAttacks, (int)m_playerTable.attacks.size() - 1);
+				MarkEdited();
+
+				// attacksの再確保でpl/dが無効になるため、このフレームはここで止める
+				ImGui::End();
+				return;
+			}
+		}
+
+		if (ImGui::CollapsingHeader("Cancel (Recovery内の秒)", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			AttackCancelData& cd = d.cancelData;
+			dragFloat("recoveryMoveCancelStart", cd.recoveryMoveCancelStart, 0.01f, 0.0f, 5.0f);
+			dragFloat("recoveryEvadeCancelStart", cd.recoveryEvadeCancelStart, 0.01f, 0.0f, 5.0f);
+			dragFloat("recoveryAttackCancelStart", cd.recoveryAttackCancelStart, 0.01f, 0.0f, 5.0f);
+			dragFloat("comboWindowAfterRecovery", cd.comboWindowAfterRecovery, 0.01f, 0.0f, 5.0f);
+
+			const float recDur = d.phaseData.recovery.duration;
+			if (cd.recoveryMoveCancelStart >= recDur || cd.recoveryEvadeCancelStart >= recDur || cd.recoveryAttackCancelStart >= recDur)
+			{
+				ImGui::TextColored(warnCol, "recovery.duration(%.2fs)以上の項目は、Recovery中には受け付けません", recDur);
+			}
+			ImGui::TextDisabled("タイムラインのM/E/Aマーカーをドラッグしても調整できます");
+		}
+	}
+
+	if (atk != nullptr && ImGui::CollapsingHeader("Selection", ImGuiTreeNodeFlags_DefaultOpen))
 	{
 		dragFloat("minRange", atk->minRange, 0.05f, 0.0f, 100.0f);
 		dragFloat("maxRange", atk->maxRange, 0.05f, 0.0f, 100.0f);
@@ -377,7 +628,7 @@ void ActionEditor::DrawInspector()
 		dragFloat("activeTurnSpeed", atk->facing.activeTurnSpeed, 0.1f, 0.0f, 50.0f);
 	}
 
-	if (ImGui::CollapsingHeader("Combo / Interval", ImGuiTreeNodeFlags_DefaultOpen))
+	if (atk != nullptr && ImGui::CollapsingHeader("Combo / Interval", ImGuiTreeNodeFlags_DefaultOpen))
 	{
 		const ImVec4 warnCol(1.0f, 0.8f, 0.2f, 1.0f);
 
@@ -516,7 +767,7 @@ void ActionEditor::DrawInspector()
 		}
 	}
 
-	if (ImGui::CollapsingHeader("Telegraph"))
+	if (atk != nullptr && ImGui::CollapsingHeader("Telegraph"))
 	{
 		int type = (int)atk->telegraph.type;
 		if (ImGui::Combo("type", &type, kTelegraphNames, 3))
@@ -640,15 +891,15 @@ void ActionEditor::DrawTimeline()
 	ImGui::Begin("Action Timeline");
 	if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows)) { m_focused = true; }
 
-	EnemyAttackDefinition* atk = CurrentAttack();
-	if (atk == nullptr)
+	AttackData* ad = CurrentAttackData();
+	if (ad == nullptr)
 	{
 		ImGui::TextDisabled("攻撃を選択してください");
 		ImGui::End();
 		return;
 	}
 
-	const float total = PhaseTotalTime(atk->attackData.phaseData);
+	const float total = PhaseTotalTime(ad->phaseData);
 
 	if (ImGui::Button(m_playing ? "Pause" : "Play"))
 	{
@@ -670,9 +921,9 @@ void ActionEditor::DrawTimeline()
 	ImGui::SameLine();
 	ImGui::Text("%.3f / %.3f s  (%d / %d f @60)", m_time, total, (int)std::round(m_time * 60.0f), (int)std::round(total * 60.0f));
 
-	DrawGameTimeStrip(*atk);
+	DrawGameTimeStrip(*ad, CurrentAttack());
 	ImGui::Spacing();
-	DrawClipStrip(*atk);
+	DrawClipStrip(*ad);
 
 	ImGui::End();
 }
@@ -825,9 +1076,17 @@ void ActionEditor::DrawSegments(MotionClipData& clip, float markerSec)
 
 	ImGui::TreePop();
 }
-void ActionEditor::DrawGameTimeStrip(EnemyAttackDefinition& atk)
+void ActionEditor::DrawGameTimeStrip(AttackData& ad, const EnemyAttackDefinition* enemy)
 {
-	AttackPhaseData& ph = atk.attackData.phaseData;
+	AttackPhaseData& ph = ad.phaseData;
+
+	// プレイヤー用: Recovery内のキャンセル受付開始(M=移動 / E=回避 / A=攻撃)
+	struct CancelMarker { const char* initial; const char* name; float* value; ImU32 color; };
+	CancelMarker markers[3] = {
+		{ "M", "Move cancel", &ad.cancelData.recoveryMoveCancelStart, IM_COL32(255, 200, 80, 255) },
+		{ "E", "Evade cancel", &ad.cancelData.recoveryEvadeCancelStart, IM_COL32(120, 255, 160, 255) },
+		{ "A", "Attack cancel", &ad.cancelData.recoveryAttackCancelStart, IM_COL32(120, 200, 255, 255) },
+	};
 	ImDrawList* dl = ImGui::GetWindowDrawList();
 	ImGuiIO& io = ImGui::GetIO();
 
@@ -837,7 +1096,9 @@ void ActionEditor::DrawGameTimeStrip(EnemyAttackDefinition& atk)
 	const ImVec2 origin = ImGui::GetCursorScreenPos();
 
 	// ドラッグ中に全体の長さが変わっても境界がマウスからずれないよう、表示スケールを固定する
-	if (!m_draggingTimeline) { m_viewSec = std::max(total * 1.1f, 1.0f); }
+	// プレイヤーは、Recovery後のコンボ受付窓も表示範囲に含める
+	const float tail = (enemy == nullptr) ? std::max(ad.cancelData.comboWindowAfterRecovery, 0.0f) : 0.0f;
+	if (!m_draggingTimeline) { m_viewSec = std::max((total + tail) * 1.1f, 1.0f); }
 	const float pxPerSec = width / m_viewSec;
 
 	// 背景クリックでシーク、フェーズ選択
@@ -913,22 +1174,43 @@ void ActionEditor::DrawGameTimeStrip(EnemyAttackDefinition& atk)
 	}
 
 	// 予備動作エフェクトの発生位置(Windup終了のleadTime前)
-	if (atk.telegraph.type != TelegraphType::None)
+	if (enemy != nullptr && enemy->telegraph.type != TelegraphType::None)
 	{
-		const float tt = std::max(ph.windup.duration - atk.telegraph.leadTime, 0.0f);
+		const float tt = std::max(ph.windup.duration - enemy->telegraph.leadTime, 0.0f);
 		const float x = origin.x + tt * pxPerSec;
 		dl->AddLine(ImVec2(x, origin.y - 6.0f), ImVec2(x, origin.y + kHeight), IM_COL32(255, 220, 60, 255), 2.0f);
 		dl->AddText(ImVec2(x + 3.0f, origin.y - 18.0f), IM_COL32(255, 220, 60, 255), "Telegraph");
 	}
 
 	// コンボ判定のタイミング(Recovery内のlinkStart)
-	if (!atk.comboLinks.empty())
+	if (enemy != nullptr && !enemy->comboLinks.empty())
 	{
 		const float ct = std::max(ph.windup.duration, 0.0f) + std::max(ph.active.duration, 0.0f)
-			+ std::min(atk.attackData.cancelData.recoveryAttackCancelStart, std::max(ph.recovery.duration, 0.0f));
+			+ std::min(ad.cancelData.recoveryAttackCancelStart, std::max(ph.recovery.duration, 0.0f));
 		const float x = origin.x + ct * pxPerSec;
 		dl->AddLine(ImVec2(x, origin.y - 6.0f), ImVec2(x, origin.y + kHeight), IM_COL32(120, 200, 255, 255), 2.0f);
 		dl->AddText(ImVec2(x + 3.0f, origin.y - 18.0f), IM_COL32(120, 200, 255, 255), "Combo");
+	}
+
+	// プレイヤー: コンボ受付窓(Recovery終了後)とキャンセルマーカー
+	if (enemy == nullptr)
+	{
+		const float recStart = std::max(ph.windup.duration, 0.0f) + std::max(ph.active.duration, 0.0f);
+		const float recDur = std::max(ph.recovery.duration, 0.0f);
+
+		if (tail > 0.0f)
+		{
+			const float wx0 = origin.x + total * pxPerSec;
+			dl->AddRectFilled(ImVec2(wx0, origin.y), ImVec2(wx0 + tail * pxPerSec, origin.y + kHeight), IM_COL32(120, 200, 255, 60));
+			dl->AddText(ImVec2(wx0 + 3.0f, origin.y + 3.0f), IM_COL32(120, 200, 255, 255), "combo window");
+		}
+
+		for (const CancelMarker& m : markers)
+		{
+			const float x = origin.x + (recStart + std::min(*m.value, recDur)) * pxPerSec;
+			dl->AddLine(ImVec2(x, origin.y), ImVec2(x, origin.y + kHeight), m.color, 2.0f);
+			dl->AddText(ImVec2(x + 3.0f, origin.y + kHeight - 15.0f), m.color, m.initial);
+		}
 	}
 
 	// 再生位置
@@ -958,13 +1240,44 @@ void ActionEditor::DrawGameTimeStrip(EnemyAttackDefinition& atk)
 		ImGui::PopID();
 	}
 
+	// プレイヤー: キャンセルマーカーのドラッグ(Recovery開始からの秒。1/60刻み)
+	if (enemy == nullptr)
+	{
+		const float recStart = std::max(ph.windup.duration, 0.0f) + std::max(ph.active.duration, 0.0f);
+		const float recDur = std::max(ph.recovery.duration, 0.0f);
+
+		for (int i = 0; i < 3; ++i)
+		{
+			float& v = *markers[i].value;
+			const float x = origin.x + (recStart + std::min(v, recDur)) * pxPerSec;
+
+			ImGui::SetCursorScreenPos(ImVec2(x - 4.0f, origin.y + kHeight * 0.5f));
+			ImGui::PushID(100 + i);
+			ImGui::InvisibleButton("##cancel", ImVec2(8.0f, kHeight * 0.5f));
+
+			if (ImGui::IsItemActivated()) { PushUndo(); m_draggingTimeline = true; }
+			if (ImGui::IsItemActive())
+			{
+				v = std::max(SnapSec(mouseSec - recStart), 0.0f);
+				MarkEdited();
+			}
+			if (ImGui::IsItemDeactivated()) { m_draggingTimeline = false; }
+			if (ImGui::IsItemHovered() || ImGui::IsItemActive())
+			{
+				ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
+				ImGui::SetTooltip("%s  %.3fs", markers[i].name, v);
+			}
+			ImGui::PopID();
+		}
+	}
+
 	ImGui::SetCursorScreenPos(ImVec2(origin.x, origin.y + kHeight + 10.0f));
 	ImGui::Dummy(ImVec2(width, 0.0f));
 }
 
-void ActionEditor::DrawClipStrip(EnemyAttackDefinition& atk)
+void ActionEditor::DrawClipStrip(AttackData& ad)
 {
-	AttackPhaseData& ph = atk.attackData.phaseData;
+	AttackPhaseData& ph = ad.phaseData;
 	MotionClipData& target = PhaseClip(ph, m_selectedPhase);
 
 	const auto anim = m_model.IsEnable() ? m_model.GetAnimation(target.animationName) : nullptr;
@@ -1070,10 +1383,10 @@ void ActionEditor::DrawPreviewWindow()
 		{
 			if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows)) { m_focused = true; }
 
-			const EnemyAttackDefinition* atk = CurrentAttack();
-			if (atk == nullptr) { return; }
+			const AttackData* ad = CurrentAttackData();
+			if (ad == nullptr) { return; }
 
-			const AttackPhaseData& ph = atk->attackData.phaseData;
+			const AttackPhaseData& ph = ad->phaseData;
 			float local = 0.0f;
 			const int idx = PhaseIndexAt(ph, m_time, local);
 			const MotionClipData& clip = PhaseClip(ph, idx);
@@ -1130,10 +1443,10 @@ void ActionEditor::EvaluatePose()
 	m_rootMotionAccum = Math::Vector3::Zero;
 	m_modelWorld = Math::Matrix::CreateScale(m_rootScale);
 
-	const EnemyAttackDefinition* atk = CurrentAttack();
-	if (atk == nullptr || !m_model.IsEnable()) { return; }
+	const AttackData* ad = CurrentAttackData();
+	if (ad == nullptr || !m_model.IsEnable()) { return; }
 
-	const AttackPhaseData& ph = atk->attackData.phaseData;
+	const AttackPhaseData& ph = ad->phaseData;
 	float local = 0.0f;
 	m_phaseAtTime = PhaseIndexAt(ph, m_time, local);
 
@@ -1184,15 +1497,15 @@ void ActionEditor::EvaluatePose()
 // 選択中の攻撃のweaponSlotsのHitBoxを、現在のポーズに追従させて描く。Activeの間は赤、それ以外は灰
 void ActionEditor::DrawHitboxWires()
 {
-	const EnemyAttackDefinition* atk = CurrentAttack();
-	if (atk == nullptr || !m_model.IsEnable()) { return; }
+	const AttackData* ad = CurrentAttackData();
+	if (ad == nullptr || !m_model.IsEnable()) { return; }
 
 	const bool isActive = (m_phaseAtTime == 1);
 	if (!isActive && !m_showInactiveHitbox) { return; }
 
 	const Math::Color col = isActive ? kRedColor : Math::Color(0.5f, 0.5f, 0.5f, 1.0f);
 
-	for (const std::string& slotName : atk->attackData.weaponSlots)
+	for (const std::string& slotName : ad->weaponSlots)
 	{
 		const SlotInfo* slot = FindSlot(slotName);
 		if (slot == nullptr) { continue; }
@@ -1224,20 +1537,30 @@ bool ActionEditor::LoadPrefab(const std::string& path)
 		return false;
 	}
 
-	// 攻撃テーブルのパスはEnemyAIControllerのparamsから取る
+	// 攻撃テーブルのパスは、EnemyAIController(敵)かPlayerAttackSelector(プレイヤー)のparamsから取る
 	std::string tablePath;
+	Target target = Target::Enemy;
 	if (nlohmann::ordered_json* ai = FindComponent(root, "EnemyAIController"))
 	{
 		if (ai->contains("params")) { tablePath = (*ai)["params"].value("attackTablePath", std::string()); }
 	}
+	else if (nlohmann::ordered_json* sel = FindComponent(root, "PlayerAttackSelector"))
+	{
+		target = Target::Player;
+		if (sel->contains("params")) { tablePath = (*sel)["params"].value("attackTablePath", std::string()); }
+	}
 	if (tablePath.empty())
 	{
-		KdDebugGUI::Instance().AddLog("ActionEditor: EnemyAIControllerのattackTablePathが見つかりません\n");
+		KdDebugGUI::Instance().AddLog("ActionEditor: attackTablePathが見つかりません(EnemyAIController/PlayerAttackSelector)\n");
 		return false;
 	}
 
 	EnemyAttackTable table;
-	if (!EnemyAttackTableLoader::LoadFromFile(tablePath, table))
+	PlayerAttackTable playerTable;
+	const bool tableLoaded = (target == Target::Player)
+		? PlayerAttackTableLoader::LoadFromFile(tablePath, playerTable)
+		: EnemyAttackTableLoader::LoadFromFile(tablePath, table);
+	if (!tableLoaded)
 	{
 		KdDebugGUI::Instance().AddLog("ActionEditor: 攻撃テーブル読み込み失敗 %s\n", tablePath.c_str());
 		return false;
@@ -1336,7 +1659,9 @@ bool ActionEditor::LoadPrefab(const std::string& path)
 		}
 	}
 
+	m_target = target;
 	m_table = std::move(table);
+	m_playerTable = std::move(playerTable);
 	m_tablePath = tablePath;
 	CollectAnimNames();
 
@@ -1365,9 +1690,10 @@ bool ActionEditor::LoadPrefab(const std::string& path)
 	m_dirty = false;
 	m_loaded = true;
 
-	m_pool = Pool::Attacks;
+	m_pool = (target == Target::Player) ? Pool::PlayerAttacks : Pool::Attacks;
 	m_index = -1;
-	SelectAttack(Pool::Attacks, m_table.attacks.empty() ? -1 : 0);
+	const bool noAttacks = (target == Target::Player) ? m_playerTable.attacks.empty() : m_table.attacks.empty();
+	SelectAttack(m_pool, noAttacks ? -1 : 0);
 
 	KdDebugGUI::Instance().AddLog("ActionEditor: 読み込みました %s\n", tablePath.c_str());
 	return true;
@@ -1377,12 +1703,21 @@ void ActionEditor::Save()
 {
 	if (!m_loaded) { return; }
 
-	nlohmann::ordered_json out;
-	if (!m_tableComment.empty()) { out["_comment"] = m_tableComment; }
-	out["attacks"] = m_table.attacks;
-	out["gapCloserAttacks"] = m_table.gapCloserAttacks;
+	bool saved = false;
+	if (m_target == Target::Player)
+	{
+		saved = PlayerAttackTableLoader::SaveToFile(m_tablePath, m_playerTable);
+	}
+	else
+	{
+		nlohmann::ordered_json out;
+		if (!m_tableComment.empty()) { out["_comment"] = m_tableComment; }
+		out["attacks"] = m_table.attacks;
+		out["gapCloserAttacks"] = m_table.gapCloserAttacks;
+		saved = JsonLoader::Save(m_tablePath, out);
+	}
 
-	if (!JsonLoader::Save(m_tablePath, out))
+	if (!saved)
 	{
 		KdDebugGUI::Instance().AddLog("ActionEditor: 保存失敗 %s\n", m_tablePath.c_str());
 		return;
@@ -1416,6 +1751,18 @@ void ActionEditor::CollectAnimNames()
 		};
 	collect(m_table.attacks);
 	collect(m_table.gapCloserAttacks);
+
+	for (const PlayerAttackDefinition& a : m_playerTable.attacks)
+	{
+		for (int i = 0; i < 3; ++i)
+		{
+			const std::string& n = PhaseClip(a.attack.phaseData, i).animationName;
+			if (!n.empty() && std::find(m_animNames.begin(), m_animNames.end(), n) == m_animNames.end())
+			{
+				m_animNames.push_back(n);
+			}
+		}
+	}
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -1428,10 +1775,31 @@ std::vector<EnemyAttackDefinition>& ActionEditor::PoolVec(Pool pool)
 
 EnemyAttackDefinition* ActionEditor::CurrentAttack()
 {
-	if (!m_loaded) { return nullptr; }
+	if (!m_loaded || m_target != Target::Enemy) { return nullptr; }
 
 	std::vector<EnemyAttackDefinition>& vec = PoolVec(m_pool);
 	return (m_index >= 0 && m_index < (int)vec.size()) ? &vec[m_index] : nullptr;
+}
+
+PlayerAttackDefinition* ActionEditor::CurrentPlayerAttack()
+{
+	if (!m_loaded || m_target != Target::Player) { return nullptr; }
+
+	std::vector<PlayerAttackDefinition>& vec = m_playerTable.attacks;
+	return (m_index >= 0 && m_index < (int)vec.size()) ? &vec[m_index] : nullptr;
+}
+
+// 敵・プレイヤー共通で、選択中の攻撃のAttackData(タイムライン・プレビューが使う)
+AttackData* ActionEditor::CurrentAttackData()
+{
+	if (m_target == Target::Player)
+	{
+		PlayerAttackDefinition* p = CurrentPlayerAttack();
+		return (p != nullptr) ? &p->attack : nullptr;
+	}
+
+	EnemyAttackDefinition* e = CurrentAttack();
+	return (e != nullptr) ? &e->attackData : nullptr;
 }
 
 const ActionEditor::SlotInfo* ActionEditor::FindSlot(const std::string& slot) const
@@ -1473,6 +1841,12 @@ std::string ActionEditor::MakeUniqueId(const std::string& base) const
 int ActionEditor::CountAttackId(const std::string& id) const
 {
 	int count = 0;
+	if (m_target == Target::Player)
+	{
+		for (const PlayerAttackDefinition& a : m_playerTable.attacks) { if (a.id == id) { ++count; } }
+		return count;
+	}
+
 	for (const EnemyAttackDefinition& a : m_table.attacks) { if (a.id == id) { ++count; } }
 	for (const EnemyAttackDefinition& a : m_table.gapCloserAttacks) { if (a.id == id) { ++count; } }
 	return count;
@@ -1482,6 +1856,15 @@ int ActionEditor::CountAttackId(const std::string& id) const
 std::vector<std::string> ActionEditor::CollectAttackIds() const
 {
 	std::vector<std::string> ids;
+	if (m_target == Target::Player)
+	{
+		for (const PlayerAttackDefinition& a : m_playerTable.attacks)
+		{
+			if (!a.id.empty() && std::find(ids.begin(), ids.end(), a.id) == ids.end()) { ids.push_back(a.id); }
+		}
+		return ids;
+	}
+
 	for (const auto* vec : { &m_table.attacks, &m_table.gapCloserAttacks })
 	{
 		for (const EnemyAttackDefinition& a : *vec)
@@ -1503,7 +1886,7 @@ void ActionEditor::SelectAttack(Pool pool, int index)
 
 void ActionEditor::ClampSelection()
 {
-	const int count = (int)PoolVec(m_pool).size();
+	const int count = (m_target == Target::Player) ? (int)m_playerTable.attacks.size() : (int)PoolVec(m_pool).size();
 	if (m_index >= count) { m_index = count - 1; }
 	m_poseDirty = true;
 }
@@ -1516,7 +1899,7 @@ void ActionEditor::MarkEdited()
 
 void ActionEditor::PushUndo()
 {
-	m_undoStack.push_back(m_table);
+	m_undoStack.push_back({ m_table, m_playerTable });
 	if (m_undoStack.size() > kMaxUndoDepth) { m_undoStack.erase(m_undoStack.begin()); }
 	m_redoStack.clear();
 }
@@ -1525,8 +1908,9 @@ void ActionEditor::Undo()
 {
 	if (m_undoStack.empty()) { return; }
 
-	m_redoStack.push_back(m_table);
-	m_table = std::move(m_undoStack.back());
+	m_redoStack.push_back({ m_table, m_playerTable });
+	m_table = std::move(m_undoStack.back().enemy);
+	m_playerTable = std::move(m_undoStack.back().player);
 	m_undoStack.pop_back();
 
 	ClampSelection();
@@ -1537,8 +1921,9 @@ void ActionEditor::Redo()
 {
 	if (m_redoStack.empty()) { return; }
 
-	m_undoStack.push_back(m_table);
-	m_table = std::move(m_redoStack.back());
+	m_undoStack.push_back({ m_table, m_playerTable });
+	m_table = std::move(m_redoStack.back().enemy);
+	m_playerTable = std::move(m_redoStack.back().player);
 	m_redoStack.pop_back();
 
 	ClampSelection();

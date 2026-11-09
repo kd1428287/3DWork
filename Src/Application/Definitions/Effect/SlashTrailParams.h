@@ -1,7 +1,7 @@
-#pragma once
+﻿#pragma once
 
-#include "EffectParams.h"	// ParticleBlendMode / ParticleDrawPass / KdHasDrawPassFlag を流用する為
-#include "Framework/Shader/SlashTrailShader/SlashTrailRenderer.h"	// SlashTrailVertex(=Vertex)の実体を流用する為
+#include "EffectParams.h"
+#include "Framework/Shader/SlashTrailShader/SlashTrailRenderer.h"
 
 // トレイル(斬撃の軌跡)の描画用1頂点
 using SlashTrailVertex = SlashTrailRenderer::Vertex;
@@ -99,7 +99,7 @@ struct SlashTrailCoreParams
 	ParticleDrawPass	DrawPassFlags = ParticleDrawPass::Default;
 };
 
-// トレイル1本ぶんの定義(データ駆動で読み書きする単位)
+// トレイル1本分の定義
 struct SlashTrailParams
 {
 	SlashTrailRecordParams	Record;
@@ -109,6 +109,6 @@ struct SlashTrailParams
 	SlashTrailInkParams		Ink;
 	SlashTrailCoreParams	Core;
 
-	// Asset/Textures/Game/Effect/からの相対パス(パーティクルのTexturePathと同じ規約)。墨・芯で共用
+	// Asset/Textures/Game/Effect/からの相対パス
 	std::string	TexturePath = "Trail2.png";
 };

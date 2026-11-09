@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Application/Definitions/Character/Enemy/EnemyAIData.h"
 #include "Application/Definitions/Character/Enemy/EnemyBlackboardKeys.h"
 #include "../../../Tags/IMovementSource.h"
@@ -329,15 +329,6 @@ public:
 		}
 	}
 
-	// 【修正】以前はcurrentAnimationName_を更新していなかった。この
-	// オーバーロードはBTWeightedAttackAction(Windup/Active/Recovery)が
-	// 使う経路で、更新を怠るとキャッシュが攻撃前の値(例:"Idle")の
-	// まま古くなり、攻撃終了後にEnemyActionMaintainDistance等が
-	// PlayAnimationIfChanged("Idle", true)を呼んでも「既にIdleのはず」と
-	// 誤判定してスキップされてしまっていた(実際はRecoveryクリップの
-	// 最終フレームで止まったまま)。移動アニメーションが再生されない/
-	// ブレンドがおかしい不具合の原因だったため、こちらのオーバーロードも
-	// 文字列版と同じくキャッシュを更新するようにした。
 	void PlayAnimation(const MotionClipData& clip) {
 		currentAnimationName_ = clip.animationName;
 		if (modelAnimatorComponent_ == nullptr) return;

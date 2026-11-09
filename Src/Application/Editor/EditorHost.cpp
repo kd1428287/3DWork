@@ -1,4 +1,4 @@
-#include "Application/main.h"
+﻿#include "Application/main.h"
 
 #include "EditorHost.h"
 
@@ -12,6 +12,9 @@
 #include "Tools/UIEditor.h"
 #include "Tools/ColliderEditor.h"
 #include "Tools/ActionEditor.h"
+
+#include "Application/Core/EventBus/Events/SceneEvents.h"
+
 
 // DockBuilder系APIを使うために必要(公式にも初期配置構築の定番として使われる内部ヘッダ)
 // ※旧KdDebugGUI.cppから移設。ドッキングレイアウトはエディタ固有の関心事のためこちらに置く
@@ -52,9 +55,16 @@ static void SetupDefaultDockLayout(ImGuiID dockspaceId)
 
 void EditorHost::SetEnabled(bool enabled)
 {
-	m_enabled = enabled;
-	KdInputManager::Instance().SetAxisConfineToWindowCenter("Look", !m_enabled);
-	Application::Instance().ShowCursolEnable(m_enabled);
+	enabled_ = enabled;
+	KdInputManager::Instance().SetAxisConfineToWindowCenter("Look", !enabled_);
+	Application::Instance().ShowCursolEnable(enabled_);
+
+	if (!enabled_) { Reload(); }
+}
+
+void EditorHost::Reload()
+{
+	GLOBALEVENT->Publish(Events::ReloadingScene());
 }
 
 void EditorHost::Init(int w, int h)
@@ -66,13 +76,13 @@ void EditorHost::BeginSceneDraw()
 {
 	// EditorViewportは自分では有効/無効を持たない。EditorHostが一元管理するm_enabledを
 	// そのまま渡すことで、「今エディタ表示中かどうか」の情報源を一箇所に集約している
-	EditorViewport::Instance().BeginSceneDraw(m_enabled);
+	EditorViewport::Instance().BeginSceneDraw(enabled_);
 }
 
 void EditorHost::RenderPreviewViewports()
 {
 	// 無効な間は、プレビュー描画のコストも払わない
-	if (!m_enabled) { return; }
+	if (!enabled_) { return; }
 
 	KdShaderManager::Instance().ChangeRasterizerState(KdRasterizerState::CullNone);
 
@@ -97,7 +107,7 @@ void EditorHost::Draw()
 
 	// エディタ表示中のみ、ドッキングUI一式(Hierarchy/Inspector/Assets/Scene/Log)を描画する
 	// (F1キーでのトグル。main.cpp Execute()内を参照)
-	if (m_enabled)
+	if (enabled_)
 	{
 		// 画面全体を覆うドックスペースの土台
 		ImGuiID dockspaceId = ImGui::GetID("MainDockSpace");
@@ -112,7 +122,7 @@ void EditorHost::Draw()
 		ImGui::DockSpaceOverViewport(dockspaceId, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
 		// ゲーム画面を表示するSceneウィンドウ(中身はオフスクリーンに描画されたゲーム画面)
-		EditorViewport::Instance().DrawSceneWindow(m_enabled);
+		EditorViewport::Instance().DrawSceneWindow(enabled_);
 
 		// マップエディタ
 		MapEditor::Instance().Update();

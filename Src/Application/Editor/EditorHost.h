@@ -27,8 +27,10 @@ public:
 	//	  (ImGui自体のBeginFrame/EndFrameは継続して呼ばれるため、ImGui内部状態が壊れる心配はない)
 	//=====================================================
 	void SetEnabled(bool enabled);
-	bool IsEnabled() const { return m_enabled; }
+	bool IsEnabled() const { return enabled_; }
 	void ToggleEnabled() {  SetEnabled(!IsEnabled()); }
+
+	void Reload();
 
 	// アプリケーション初期化時に一度だけ呼ぶ(内部でKdDebugGUI::GuiInitを呼ぶ)
 	void Init(int w, int h);
@@ -39,11 +41,9 @@ public:
 	void BeginSceneDraw();
 
 	// メインループの描画パスから呼ぶ(Draw()の後、PostDraw()の前)
-	//	旧: main.cpp Execute()内で EffectEditor/MapEditor の RenderPreviewViewport() を個別に呼んでいた処理
 	void RenderPreviewViewports();
 
 	// KdPostDraw()から呼ぶ。エディタ用ドッキングUI一式の描画一式(ImGui NewFrame〜Render〜マルチビューポート処理まで)
-	//	旧: KdDebugGUI::GuiProcess()
 	void Draw();
 
 	// アプリケーション終了時に呼ぶ(内部でBTEditor::Shutdown→KdDebugGUI::GuiReleaseの順で呼ぶ)
@@ -52,7 +52,8 @@ public:
 private:
 	EditorHost() {}
 
-	bool m_enabled = false;
+	bool enabled_ = false;
+	bool isDirty_ = false;
 };
 
 #else
