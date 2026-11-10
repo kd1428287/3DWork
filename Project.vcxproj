@@ -402,6 +402,7 @@
     <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\BTWeightedAttackAction.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\BehaviorTree\IBTNode.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\CharacterCollisionDefaults.h" />
+    <ClInclude Include="Src\Application\Definitions\Character\Common\CharacterData.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\CharacterDefinitionCommon.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\CombatData.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\FootstepTypes.h" />
@@ -415,6 +416,7 @@
     <ClInclude Include="Src\Application\Definitions\Character\Player\PlayerDefinitionJson.h" />
     <ClInclude Include="Src\Application\Definitions\Effect\EffectParams.h" />
     <ClInclude Include="Src\Application\Definitions\Effect\SlashTrailParams.h" />
+    <ClInclude Include="Src\Application\Definitions\Effect\SlashTrailParamsJson.h" />
     <ClInclude Include="Src\Application\Definitions\Loaders\ComponentParamsOrderedJson.h" />
     <ClInclude Include="Src\Application\Definitions\Loaders\DefinitionJson.h" />
     <ClInclude Include="Src\Application\Definitions\Loaders\EffectDataLoader.h" />
@@ -450,6 +452,7 @@
     <ClInclude Include="Src\Application\Editor\ThirdParty\ImGuizmo.h" />
     <ClInclude Include="Src\Application\Editor\Tools\ActionEditor.h" />
     <ClInclude Include="Src\Application\Editor\Tools\BTEditor.h" />
+    <ClInclude Include="Src\Application\Editor\Tools\CharacterEditor.h" />
     <ClInclude Include="Src\Application\Editor\Tools\ColliderEditor.h" />
     <ClInclude Include="Src\Application\Editor\Tools\EffectEditor.h" />
     <ClInclude Include="Src\Application\Editor\Tools\MapEditor.h" />
@@ -585,6 +588,7 @@
     <ClCompile Include="Src\Application\Components\Graphics\UI\UITransformComponent.cpp" />
     <ClCompile Include="Src\Application\Core\Scene\SceneManager.cpp" />
     <ClCompile Include="Src\Application\Core\Scene\TransitionController.cpp" />
+    <ClCompile Include="Src\Application\Definitions\Character\Common\CharacterData.cpp" />
     <ClCompile Include="Src\Application\Definitions\Effect\EffectParams.cpp" />
     <ClCompile Include="Src\Application\Definitions\Loaders\EffectDataLoader.cpp" />
     <ClCompile Include="Src\Application\Definitions\Loaders\EnemyAttackTableLoader.cpp" />
@@ -606,6 +610,7 @@
     <ClCompile Include="Src\Application\Editor\ThirdParty\ImGuizmo.cpp" />
     <ClCompile Include="Src\Application\Editor\Tools\ActionEditor.cpp" />
     <ClCompile Include="Src\Application\Editor\Tools\BTEditor.cpp" />
+    <ClCompile Include="Src\Application\Editor\Tools\CharacterEditor.cpp" />
     <ClCompile Include="Src\Application\Editor\Tools\ColliderEditor.cpp" />
     <ClCompile Include="Src\Application\Editor\Tools\EffectEditor.cpp" />
     <ClCompile Include="Src\Application\Editor\Tools\MapEditor.cpp" />
@@ -800,6 +805,10 @@
     <FxCompile Include="Src\Framework\Shader\SlashTrailShader\SlashTrail_PS_AddMasked.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\SlashTrailShader\SlashTrail_PS_AlphaMasked.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\SlashTrailShader\SlashTrail_VS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>

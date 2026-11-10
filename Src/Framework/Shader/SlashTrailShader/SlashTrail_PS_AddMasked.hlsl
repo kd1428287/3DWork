@@ -1,4 +1,5 @@
 #include "../GPUParticle/inc_GPUParticleShader.hlsli"
+#include "../GPUParticle/inc_GPUParticleNoise.hlsli"
 
 // トレイル用テクスチャ
 Texture2D g_tex : register(t1);
@@ -27,8 +28,9 @@ PSOutput main(VSOutput In)
 
 	float4 outColor = texColor * In.Color;
 
-	// 寿命の終わりに向かってフェードアウトさせる
-	outColor.a *= In.LifeRate;
+	// ディゾルブ無効時は線形フェード、有効時はノイズで消す(Seedはノイズ用のUV)
+	if (!(g_NoiseFlags & NOISE_DISSOLVE)) { outColor.a *= In.LifeRate; }
+	outColor = ApplyParticleNoise(outColor, In.Seed, In.LifeRate, float2(0.0f, 0.0f));
 
 	PSOutput Out;
 	Out.Color = outColor;

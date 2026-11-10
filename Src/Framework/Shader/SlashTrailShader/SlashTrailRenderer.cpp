@@ -74,7 +74,8 @@ void SlashTrailRenderer::Upload(const std::vector<Vertex>& inkVertices, const st
 }
 
 // 描画：Upload済みの頂点を三角形ストリップとして描画する
-void SlashTrailRenderer::Draw(Layer layer, ParticleBlendMode blendMode, const std::shared_ptr<KdTexture>& texture)
+void SlashTrailRenderer::Draw(Layer layer, ParticleBlendMode blendMode, const std::shared_ptr<KdTexture>& texture,
+	const ParticleNoiseParams& noise, const std::shared_ptr<KdTexture>& noiseTexture)
 {
 	if (!m_initialized) { return; }
 
@@ -90,6 +91,7 @@ void SlashTrailRenderer::Draw(Layer layer, ParticleBlendMode blendMode, const st
 	ID3D11DeviceContext* DevCon = KdDirect3D::Instance().WorkDevContext();
 
 	shaderMgr.m_slashTrailShader.Begin(blendMode);
+	shaderMgr.m_slashTrailShader.BindNoise(noise, noiseTexture);
 
 	// テクスチャ未指定なら白テクスチャ(頂点カラーのみで描画)
 	ID3D11ShaderResourceView* srv = texture ? texture->WorkSRView() : KdDirect3D::Instance().GetWhiteTex()->WorkSRView();
@@ -123,5 +125,6 @@ void SlashTrailRenderer::Draw(Layer layer, ParticleBlendMode blendMode, const st
 	ID3D11ShaderResourceView* nullSRV = nullptr;
 	DevCon->PSSetShaderResources(1, 1, &nullSRV);
 
+	shaderMgr.m_slashTrailShader.UnbindNoise();
 	shaderMgr.m_slashTrailShader.End();
 }

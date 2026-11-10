@@ -1,569 +1,585 @@
 {
-	"name": "player",
-	"positon": [ 0, 20, 0 ],
-	"components": [
-		{ "type": "Player" },
-		{
-			"type": "ModelRender",
-			"params": {
-				"model": "Asset/Models/Character/Kachujin/kachujin.gltf",
-				"animations": "Asset/Animations/Character"
-			}
-		},
-		{
-			"type": "Outline",
-			"params": { "width": 0.02 }
-		},
-		{
-			"type": "ModelAnimator",
-			"params": {
-				"speedScale": 0.25,
-				"blendDuration": 0.15,
-				"rootMotion": {
-					"boneName": "mixamorig:Hips",
-					"unitScale": 1.0,
-					"forwardAxis": "Y",
-					"forwardSign": -1.0,
-					"rightAxis": "X",
-					"rightSign": 1.0,
-					"extractRotation": false,
-					"yawSign": 1.0
-				}
-			}
-		},
-		{
-			"type": "RootMotionApplier"
-		},
-		{
-			"type": "FootDust",
-			"params": {
-				"leftFootBone": "mixamorig:LeftFoot",
-				"rightFootBone": "mixamorig:RightFoot",
-				"effectId": "FootDust",
-				"clips": [
-					{
-						"clip": "Strafe_Walk_F_Loop_Inplace",
-						"triggers": [
-							{
-								"phase": 0.48,
-								"foot": "Left"
-							},
-							{
-								"phase": 0.92,
-								"foot": "Right"
-							}
-						]
-					},
-					{
-						"clip": "Strafe_Walk_FR_Inplace",
-						"triggers": [
-							{
-								"phase": 0.0,
-								"foot": "Left"
-							},
-							{
-								"phase": 0.5,
-								"foot": "Right"
-							}
-						]
-					},
-					{
-						"clip": "Strafe_Walk_R_Inplace",
-						"triggers": [
-							{
-								"phase": 0.0,
-								"foot": "Left"
-							},
-							{
-								"phase": 0.5,
-								"foot": "Right"
-							}
-						]
-					},
-					{
-						"clip": "Strafe_Walk_BR_Inplace",
-						"triggers": [
-							{
-								"phase": 0.0,
-								"foot": "Left"
-							},
-							{
-								"phase": 0.5,
-								"foot": "Right"
-							}
-						]
-					},
-					{
-						"clip": "Strafe_Walk_B_Inplace",
-						"triggers": [
-							{
-								"phase": 0.0,
-								"foot": "Left"
-							},
-							{
-								"phase": 0.5,
-								"foot": "Right"
-							}
-						]
-					},
-					{
-						"clip": "Strafe_Walk_BL_Inplace",
-						"triggers": [
-							{
-								"phase": 0.0,
-								"foot": "Left"
-							},
-							{
-								"phase": 0.5,
-								"foot": "Right"
-							}
-						]
-					},
-					{
-						"clip": "Strafe_Walk_L_Inplace",
-						"triggers": [
-							{
-								"phase": 0.0,
-								"foot": "Left"
-							},
-							{
-								"phase": 0.5,
-								"foot": "Right"
-							}
-						]
-					},
-					{
-						"clip": "Strafe_Walk_FL_Inplace",
-						"triggers": [
-							{
-								"phase": 0.0,
-								"foot": "Left"
-							},
-							{
-								"phase": 0.5,
-								"foot": "Right"
-							}
-						]
-					},
-					{
-						"clip": "Strafe_Run_F_Loop_Inplace",
-						"triggers": [
-							{
-								"phase": 0.48,
-								"foot": "Left"
-							},
-							{
-								"phase": 0.92,
-								"foot": "Right"
-							}
-						]
-					}
-				]
-			}
-		},
-		{
-			"type": "Gravity"
-		},
-		{
-			"type": "Velocity",
-			"params": {
-				"dampingPerSecond": 0.01
-			}
-		},
-		{
-			"type": "Collider",
-			"params": {
-				"shapes": [
-					{
-						"name": "Body",
-						"shape": "Capsule",
-						"radius": 0.4,
-						"offset": [
-							0.0,
-							0.465,
-							0.0
-						],
-						"capsuleEnd": [
-							0.0,
-							1.6,
-							0.0
-						],
-						"categoryMask": [
-							"Bump"
-						]
-					},
-					{
-						"name": "HurtBox",
-						"shape": "Capsule",
-						"radius": 0.3,
-						"offset": [
-							0.0,
-							0.365,
-							0.0
-						],
-						"capsuleEnd": [
-							0.0,
-							1.7,
-							0.0
-						],
-						"categoryMask": [
-							"HurtBox"
-						],
-						"useDefaultCollideMask": false,
-						"collideMask": [
-							"HitBox"
-						],
-						"isTrigger": true
-					}
-				],
-				"bodyShapeName": "Body",
-				"wireFrame": false
-			}
-		},
-		{
-			"type": "GroundSensor",
-			"params": {
-				"footOffset": -0.065
-			}
-		},
-		{
-			"type": "PlayerMovementAnimation",
-			"params": {
-				"walk": {
-					"forward": {
-						"startAnimationName": "Strafe_Walk_F_Start_Root",
-						"startDuration": -1.0,
-						"loopAnimationName": "Strafe_Walk_F_Loop_Inplace",
-						"endAnimationName": "Strafe_Walk_F_End_Root",
-						"endDuration": -1.0
-					},
-					"locked": {
-						"forward": "Strafe_Walk_F_Loop_Inplace",
-						"forwardRight": "Strafe_Walk_FR_Inplace",
-						"right": "Strafe_Walk_R_Inplace",
-						"backwardRight": "Strafe_Walk_BR_Inplace",
-						"backward": "Strafe_Walk_B_Inplace",
-						"backwardLeft": "Strafe_Walk_BL_Inplace",
-						"left": "Strafe_Walk_L_Inplace",
-						"forwardLeft": "Strafe_Walk_FL_Inplace"
-					}
-				},
-				"run": {
-					"startAnimationName": "Strafe_Run_F_Start_Root",
-					"startDuration": -1.0,
-					"loopAnimationName": "Strafe_Run_F_Loop_Inplace",
-					"endAnimationName": "Strafe_Run_F_End_Root",
-					"endDuration": -1.0
-				},
-				"turn": {
-					"left90": {
-						"duration": 0.25,
-						"animationName": "TurnL90_Root",
-						"useRootMotion": true,
-						"blendDuration": 0.1
-					},
-					"right90": {
-						"duration": 0.25,
-						"animationName": "TurnR90_Root",
-						"useRootMotion": true,
-						"blendDuration": 0.1
-					},
-					"left180": {
-						"duration": 0.35,
-						"animationName": "TurnL180_Root",
-						"useRootMotion": true,
-						"blendDuration": 0.1
-					},
-					"right180": {
-						"duration": 0.35,
-						"animationName": "TurnR180_Root",
-						"useRootMotion": true,
-						"blendDuration": 0.1
-					}
-				},
-				"idle": "Idle"
-			}
-		},
-		{
-			"type": "FacingDirection"
-		},
-		{
-			"type": "Posture"
-		},
-		{
-			"type": "Health",
-			"params": {
-				"max": 100.0
-			}
-		},
-		{
-			"type": "PlayerLockOn"
-		},
-		{
-			"type": "HitReaction",
-			"params": {
-				"hitStopDelaySeconds": 0.0,
-				"largeStaggerDuration": 0.6
-			}
-		},
-		{
-			"type": "WeaponSet"
-		},
-		{
-			"type": "PlayerInput"
-		},
-		{
-			"type": "Movement",
-			"params": {
-				"speed": 2.0
-			}
-		},
-		{
-			"type": "MovementResolver"
-		},
-		{
-			"type": "PlayerStatusController",
-			"params": {
-				"sound": {
-					"attackSwing": "Asset/Sounds/Game/Kazakiri.wav",
-					"evade": "",
-					"guardRaise": "Asset/Sounds/Game/Kamae.wav",
-					"death": ""
-				},
-				"evade": {
-					"activeDuration": 0.35,
-					"recoveryDuration": 0.25,
-					"justWindowStart": 0.05,
-					"justWindowEnd": 0.15,
-					"evadeDistance": 3.0,
-					"useRootMotion": true,
-					"animationNameForward": "Slide_F_Root",
-					"animationNameBackward": "Slide_B_Root",
-					"animationNameLeft": "Slide_L_Root",
-					"animationNameRight": "Slide_R_Root"
-				},
-				"guard": {
-					"justWindowDuration": 0.15,
-					"start": {
-						"duration": 0.35,
-						"animationName": "APose2DefenseL_Root",
-						"useRootMotion": true,
-						"blendDuration": 0.1
-					},
-					"loop": {
-						"duration": -1.0,
-						"animationName": "DefenseL_Loop_Root",
-						"useRootMotion": true,
-						"blendDuration": 0.1,
-						"loop": true
-					},
-					"parry": {
-						"duration": 1.0,
-						"animationName": "DefenseL_Parry01_Root",
-						"useRootMotion": true,
-						"blendDuration": 0.1
-					},
-					"hit": {
-						"duration": 0.5,
-						"animationName": "DefenseL_Hit01_Root",
-						"useRootMotion": true,
-						"blendDuration": 0.1
-					},
-					"end": {
-						"duration": 0.35,
-						"animationName": "DefenseL2APose_Root",
-						"useRootMotion": true,
-						"blendDuration": 0.1
-					},
-					"rootMotionScale": 0.3
-				},
-				"charge": {
-					"maxChargeTime": 1.5,
-					"minDamageScale": 1.0,
-					"maxDamageScale": 2.0,
-					"loop": {
-						"duration": -1.0,
-						"animationName": "SPAttack04_Root",
-						"useRootMotion": false,
-						"blendDuration": 0.15,
-						"loop": true
-					}
-				},
-				"stagger": {
-					"staggerSmall": {
-						"animationName": "Hit_F_Root",
-						"useRootMotion": true,
-						"rootMotionScale": 0.1,
-						"reactionStartFrame": 0,
-						"reactionEndFrame": 85,
-						"reactionBlendDuration": 0.1,
-						"recoveryEndFrame": 141,
-						"recoveryDuration": 0.15,
-						"recoveryBlendDuration": 0.0,
-						"recoveryEvadeCancelStart": 0.05
-					},
-					"staggerLarge": {
-						"animationName": "Large_Hit_Root",
-						"useRootMotion": true,
-						"reactionStartFrame": 0,
-						"reactionEndFrame": 185,
-						"reactionBlendDuration": 0.1,
-						"recoveryEndFrame": 242,
-						"recoveryDuration": 0.6,
-						"recoveryBlendDuration": 0.0,
-						"recoveryEvadeCancelStart": 0.3
-					}
-				}
-			}
-		},
-		{
-			"type": "CameraTarget"
-		},
-		{
-			"type": "PlayerCombatMovement",
-			"params": {
-				"walkSpeed": 2.0,
-				"runSpeed": 6.0
-			}
-		},
-		{
-			"type": "PlayerAttackSelector",
-			"params": {
-				"attackTablePath": "Asset/Data/Game/PlayerAttackTable.json"
-			}
-		},
-		{
-			"type": "PlayerFacing"
-		},
-		{
-			"type": "BoneSockets",
-			"params": {
-				"bones": [
-					"mixamorig:LeftHand",
-					"mixamorig:LeftForeArm",
-					"mixamorig:LeftArm",
-					"mixamorig:LeftShoulder"
-				]
-			}
-		}
-	],
-	"children": [
-		{
-			"name": "weapon",
-			"components": [
-				{
-					"type": "AttachToBone",
-					"params": {
-						"bone": "katana_r",
-						"position": [
-							0.0,
-							0.0,
-							0.0
-						],
-						"rotationEulerDeg": [
-							0,
-							180,
-							-90
-						]
-					}
-				},
-				{
-					"type": "ModelRender",
-					"params": {
-						"model": "Asset/Models/Character/Ninja/Tachi.gltf"
-					}
-				},
-				{
-					"type": "Collider",
-					"params": {
-						"ignoreParent": true,
-						"wireFrame": false,
-						"shapes": [
-							{
-								"name": "HitBox",
-								"shape": "Box",
-								"halfExtents": [
-									0.3,
-									0.3,
-									1.0
-								],
-								"offset": [
-									0.0,
-									0.0,
-									0.75
-								],
-								"categoryMask": [
-									"HitBox"
-								],
-								"enabled": false,
-								"isTrigger": true
-							}
-						]
-					}
-				},
-				{
-					"type": "AttackSource"
-				},
-				{
-					"type": "TwoBoneIK",
-					"params": {
-						"rootBone": "mixamorig:RightShoulder",
-						"midBone": "mixamorig:RightArm",
-						"tipParentBone": "mixamorig:RightForeArm",
-						"tipBone": "mixamorig:RightHand"
-					}
-				},
-				{
-					"type": "SlashTrail",
-					"params": {
-						"trailName": "Sword",
-						"base": [
-							0,
-							0,
-							1.0
-						],
-						"tip": [
-							0,
-							0,
-							1.75
-						],
-						"key": "Sword_Player",
-						"emitOnStart": false
-					}
-				},
-				{
-					"type": "Weapon",
-					"params": { "slot": "Main" }
-				}
-			]
-		},
-		{
-			"name": "mask",
-			"components": [
-				{
-					"type": "AttachBoneToBone",
-					"params": {
-						"parentBone": "mask",
-						"childBone": "Nose",
-						"position": [
-							0.0,
-							0.0,
-							0.0
-						],
-						"rotationEulerDeg": [
-							0,
-							180,
-							-90
-						]
-					}
-				},
-				{
-					"type": "ModelRender",
-					"params": {
-						"model": "Asset/Models/Character/Masks/DemonMask.gltf"
-					}
-				}
-			]
-		}
-	]
+  "children": [
+    {
+      "components": [
+        {
+          "params": {
+            "bone": "katana_r",
+            "position": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rotationEulerDeg": [
+              0,
+              180,
+              -90
+            ]
+          },
+          "type": "AttachToBone"
+        },
+        {
+          "params": {
+            "model": "Asset/Models/Character/Ninja/Tachi.gltf"
+          },
+          "type": "ModelRender"
+        },
+        {
+          "params": {
+            "ignoreParent": true,
+            "shapes": [
+              {
+                "categoryMask": [
+                  "HitBox"
+                ],
+                "enabled": false,
+                "halfExtents": [
+                  0.3,
+                  0.3,
+                  1.0
+                ],
+                "isTrigger": true,
+                "name": "HitBox",
+                "offset": [
+                  0.0,
+                  0.0,
+                  0.75
+                ],
+                "shape": "Box"
+              }
+            ],
+            "wireFrame": false
+          },
+          "type": "Collider"
+        },
+        {
+          "type": "AttackSource"
+        },
+        {
+          "params": {
+            "midBone": "mixamorig:RightArm",
+            "rootBone": "mixamorig:RightShoulder",
+            "tipBone": "mixamorig:RightHand",
+            "tipParentBone": "mixamorig:RightForeArm"
+          },
+          "type": "TwoBoneIK"
+        },
+        {
+          "params": {
+            "base": [
+              0,
+              0,
+              1.0
+            ],
+            "emitOnStart": false,
+            "key": "Sword_Player",
+            "tip": [
+              0,
+              0,
+              1.75
+            ],
+            "trailName": "Sword"
+          },
+          "type": "SlashTrail"
+        },
+        {
+          "params": {
+            "slot": "Main"
+          },
+          "type": "Weapon"
+        }
+      ],
+      "name": "weapon"
+    },
+    {
+      "components": [
+        {
+          "params": {
+            "childBone": "Nose",
+            "parentBone": "mask",
+            "position": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rotationEulerDeg": [
+              0,
+              180,
+              -90
+            ]
+          },
+          "type": "AttachBoneToBone"
+        },
+        {
+          "params": {
+            "model": "Asset/Models/Character/Masks/DemonMask.gltf"
+          },
+          "type": "ModelRender"
+        }
+      ],
+      "name": "mask"
+    }
+  ],
+  "components": [
+    {
+      "type": "Player"
+    },
+    {
+      "params": {
+        "animations": "Asset/Animations/Character",
+        "model": "Asset/Models/Character/Kachujin/kachujin.gltf"
+      },
+      "type": "ModelRender"
+    },
+    {
+      "params": {
+        "width": 0.02
+      },
+      "type": "Outline"
+    },
+    {
+      "params": {
+        "blendDuration": 0.15,
+        "rootMotion": {
+          "boneName": "mixamorig:Hips",
+          "extractRotation": false,
+          "forwardAxis": "Y",
+          "forwardSign": -1.0,
+          "rightAxis": "X",
+          "rightSign": 1.0,
+          "unitScale": 1.0,
+          "yawSign": 1.0
+        },
+        "speedScale": 0.25
+      },
+      "type": "ModelAnimator"
+    },
+    {
+      "type": "RootMotionApplier"
+    },
+    {
+      "params": {
+        "clips": [
+          {
+            "clip": "Strafe_Walk_F_Loop_Inplace",
+            "triggers": [
+              {
+                "foot": "Left",
+                "phase": 0.48
+              },
+              {
+                "foot": "Right",
+                "phase": 0.92
+              }
+            ]
+          },
+          {
+            "clip": "Strafe_Walk_FR_Inplace",
+            "triggers": [
+              {
+                "foot": "Left",
+                "phase": 0.0
+              },
+              {
+                "foot": "Right",
+                "phase": 0.5
+              }
+            ]
+          },
+          {
+            "clip": "Strafe_Walk_R_Inplace",
+            "triggers": [
+              {
+                "foot": "Left",
+                "phase": 0.0
+              },
+              {
+                "foot": "Right",
+                "phase": 0.5
+              }
+            ]
+          },
+          {
+            "clip": "Strafe_Walk_BR_Inplace",
+            "triggers": [
+              {
+                "foot": "Left",
+                "phase": 0.0
+              },
+              {
+                "foot": "Right",
+                "phase": 0.5
+              }
+            ]
+          },
+          {
+            "clip": "Strafe_Walk_B_Inplace",
+            "triggers": [
+              {
+                "foot": "Left",
+                "phase": 0.0
+              },
+              {
+                "foot": "Right",
+                "phase": 0.5
+              }
+            ]
+          },
+          {
+            "clip": "Strafe_Walk_BL_Inplace",
+            "triggers": [
+              {
+                "foot": "Left",
+                "phase": 0.0
+              },
+              {
+                "foot": "Right",
+                "phase": 0.5
+              }
+            ]
+          },
+          {
+            "clip": "Strafe_Walk_L_Inplace",
+            "triggers": [
+              {
+                "foot": "Left",
+                "phase": 0.0
+              },
+              {
+                "foot": "Right",
+                "phase": 0.5
+              }
+            ]
+          },
+          {
+            "clip": "Strafe_Walk_FL_Inplace",
+            "triggers": [
+              {
+                "foot": "Left",
+                "phase": 0.0
+              },
+              {
+                "foot": "Right",
+                "phase": 0.5
+              }
+            ]
+          },
+          {
+            "clip": "Strafe_Run_F_Loop_Inplace",
+            "triggers": [
+              {
+                "foot": "Left",
+                "phase": 0.48
+              },
+              {
+                "foot": "Right",
+                "phase": 0.92
+              }
+            ]
+          }
+        ],
+        "effectId": "FootDust",
+        "leftFootBone": "mixamorig:LeftFoot",
+        "rightFootBone": "mixamorig:RightFoot"
+      },
+      "type": "FootDust"
+    },
+    {
+      "type": "Gravity"
+    },
+    {
+      "params": {
+        "dampingPerSecond": 0.01
+      },
+      "type": "Velocity"
+    },
+    {
+      "params": {
+        "bodyShapeName": "Body",
+        "shapes": [
+          {
+            "capsuleEnd": [
+              0.0,
+              1.6,
+              0.0
+            ],
+            "categoryMask": [
+              "Bump"
+            ],
+            "name": "Body",
+            "offset": [
+              0.0,
+              0.465,
+              0.0
+            ],
+            "radius": 0.4,
+            "shape": "Capsule"
+          },
+          {
+            "capsuleEnd": [
+              0.0,
+              1.7,
+              0.0
+            ],
+            "categoryMask": [
+              "HurtBox"
+            ],
+            "collideMask": [
+              "HitBox"
+            ],
+            "isTrigger": true,
+            "name": "HurtBox",
+            "offset": [
+              0.0,
+              0.365,
+              0.0
+            ],
+            "radius": 0.3,
+            "shape": "Capsule",
+            "useDefaultCollideMask": false
+          }
+        ],
+        "wireFrame": false
+      },
+      "type": "Collider"
+    },
+    {
+      "params": {
+        "footOffset": -0.065
+      },
+      "type": "GroundSensor"
+    },
+    {
+      "params": {
+        "idle": "Idle",
+        "run": {
+          "endAnimationName": "Strafe_Run_F_End_Root",
+          "endDuration": -1.0,
+          "loopAnimationName": "Strafe_Run_F_Loop_Inplace",
+          "startAnimationName": "Strafe_Run_F_Start_Root",
+          "startDuration": -1.0
+        },
+        "turn": {
+          "left180": {
+            "animationName": "TurnL180_Root",
+            "blendDuration": 0.1,
+            "duration": 0.35,
+            "useRootMotion": true
+          },
+          "left90": {
+            "animationName": "TurnL90_Root",
+            "blendDuration": 0.1,
+            "duration": 0.25,
+            "useRootMotion": true
+          },
+          "right180": {
+            "animationName": "TurnR180_Root",
+            "blendDuration": 0.1,
+            "duration": 0.35,
+            "useRootMotion": true
+          },
+          "right90": {
+            "animationName": "TurnR90_Root",
+            "blendDuration": 0.1,
+            "duration": 0.25,
+            "useRootMotion": true
+          }
+        },
+        "walk": {
+          "forward": {
+            "endAnimationName": "Strafe_Walk_F_End_Root",
+            "endDuration": -1.0,
+            "loopAnimationName": "Strafe_Walk_F_Loop_Inplace",
+            "startAnimationName": "Strafe_Walk_F_Start_Root",
+            "startDuration": -1.0
+          },
+          "locked": {
+            "backward": "Strafe_Walk_B_Inplace",
+            "backwardLeft": "Strafe_Walk_BL_Inplace",
+            "backwardRight": "Strafe_Walk_BR_Inplace",
+            "forward": "Strafe_Walk_F_Loop_Inplace",
+            "forwardLeft": "Strafe_Walk_FL_Inplace",
+            "forwardRight": "Strafe_Walk_FR_Inplace",
+            "left": "Strafe_Walk_L_Inplace",
+            "right": "Strafe_Walk_R_Inplace"
+          }
+        }
+      },
+      "type": "PlayerMovementAnimation"
+    },
+    {
+      "type": "FacingDirection"
+    },
+    {
+      "type": "Posture"
+    },
+    {
+      "params": {
+        "max": 100.0
+      },
+      "type": "Health"
+    },
+    {
+      "type": "PlayerLockOn"
+    },
+    {
+      "params": {
+        "hitStopDelaySeconds": 0.0,
+        "largeStaggerDuration": 0.6
+      },
+      "type": "HitReaction"
+    },
+    {
+      "type": "WeaponSet"
+    },
+    {
+      "type": "PlayerInput"
+    },
+    {
+      "params": {
+        "speed": 2.0
+      },
+      "type": "Movement"
+    },
+    {
+      "type": "MovementResolver"
+    },
+    {
+      "params": {
+        "charge": {
+          "loop": {
+            "animationName": "SPAttack04_Root",
+            "blendDuration": 0.15,
+            "duration": -1.0,
+            "loop": true,
+            "useRootMotion": false
+          },
+          "maxChargeTime": 1.5,
+          "maxDamageScale": 2.0,
+          "minDamageScale": 1.0
+        },
+        "evade": {
+          "activeDuration": 0.35,
+          "animationNameBackward": "Slide_B_Root",
+          "animationNameForward": "Slide_F_Root",
+          "animationNameLeft": "Slide_L_Root",
+          "animationNameRight": "Slide_R_Root",
+          "evadeDistance": 3.0,
+          "justWindowEnd": 0.15,
+          "justWindowStart": 0.05,
+          "recoveryDuration": 0.25,
+          "useRootMotion": true
+        },
+        "guard": {
+          "end": {
+            "animationName": "DefenseL2APose_Root",
+            "blendDuration": 0.1,
+            "duration": 0.35,
+            "useRootMotion": true
+          },
+          "hit": {
+            "animationName": "DefenseL_Hit01_Root",
+            "blendDuration": 0.1,
+            "duration": 0.5,
+            "useRootMotion": true
+          },
+          "justWindowDuration": 0.15,
+          "loop": {
+            "animationName": "DefenseL_Loop_Root",
+            "blendDuration": 0.1,
+            "duration": -1.0,
+            "loop": true,
+            "useRootMotion": true
+          },
+          "parry": {
+            "animationName": "DefenseL_Parry01_Root",
+            "blendDuration": 0.1,
+            "duration": 1.0,
+            "useRootMotion": true
+          },
+          "rootMotionScale": 0.3,
+          "start": {
+            "animationName": "APose2DefenseL_Root",
+            "blendDuration": 0.1,
+            "duration": 0.35,
+            "useRootMotion": true
+          }
+        },
+        "sound": {
+          "attackSwing": "Asset/Sounds/Game/Kazakiri.wav",
+          "death": "",
+          "evade": "",
+          "guardRaise": "Asset/Sounds/Game/Kamae.wav"
+        },
+        "stagger": {
+          "staggerLarge": {
+            "animationName": "Large_Hit_Root",
+            "reactionBlendDuration": 0.1,
+            "reactionEndFrame": 185,
+            "reactionStartFrame": 0,
+            "recoveryBlendDuration": 0.0,
+            "recoveryDuration": 0.6,
+            "recoveryEndFrame": 242,
+            "recoveryEvadeCancelStart": 0.3,
+            "useRootMotion": true
+          },
+          "staggerSmall": {
+            "animationName": "Hit_F_Root",
+            "reactionBlendDuration": 0.1,
+            "reactionEndFrame": 85,
+            "reactionStartFrame": 0,
+            "recoveryBlendDuration": 0.0,
+            "recoveryDuration": 0.15,
+            "recoveryEndFrame": 141,
+            "recoveryEvadeCancelStart": 0.05,
+            "rootMotionScale": 0.1,
+            "useRootMotion": true
+          }
+        }
+      },
+      "type": "PlayerStatusController"
+    },
+    {
+      "type": "CameraTarget"
+    },
+    {
+      "params": {
+        "runSpeed": 6.0,
+        "walkSpeed": 2.0
+      },
+      "type": "PlayerCombatMovement"
+    },
+    {
+      "params": {
+        "attackTablePath": "Asset/Data/Game/PlayerAttackTable.json"
+      },
+      "type": "PlayerAttackSelector"
+    },
+    {
+      "type": "PlayerFacing"
+    },
+    {
+      "params": {
+        "bones": [
+          "mixamorig:LeftHand",
+          "mixamorig:LeftForeArm",
+          "mixamorig:LeftArm",
+          "mixamorig:LeftShoulder"
+        ]
+      },
+      "type": "BoneSockets"
+    },
+    {
+      "params": {
+        "preset": "Dark"
+      },
+      "type": "InkStyle"
+    }
+  ],
+  "name": "player",
+  "positon": [
+    0,
+    20,
+    0
+  ]
 }

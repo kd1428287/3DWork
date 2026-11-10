@@ -1140,6 +1140,15 @@
     <ClInclude Include="Src\Application\Components\Graphics\Render\Mod\InkStyleComponent.h">
       <Filter>Src\Application\Components\Graphics\Render\Mod</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Editor\Tools\CharacterEditor.h">
+      <Filter>Src\Application\Editor\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Character\Common\CharacterData.h">
+      <Filter>Src\Application\Definitions\Character\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Effect\SlashTrailParamsJson.h">
+      <Filter>Src\Application\Definitions\Effect</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -1545,6 +1554,12 @@
       <Filter>Src\Application\Systems\GamePlay</Filter>
     </ClCompile>
     <ClCompile Include="Src\Application\Systems\GamePlay\RethalSynchronizationSystem.cpp" />
+    <ClCompile Include="Src\Application\Editor\Tools\CharacterEditor.cpp">
+      <Filter>Src\Application\Editor\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Definitions\Character\Common\CharacterData.cpp">
+      <Filter>Src\Application\Definitions\Character\Common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Src\Framework\Shader\inc_KdCommon.hlsli">
@@ -1681,6 +1696,9 @@
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\PostProcessShader\KdPostProcessShader_PS_MotionBlur.hlsl">
       <Filter>Src\Framework\Shader\PostProcessShader</Filter>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\SlashTrailShader\SlashTrail_PS_AlphaMasked.hlsl">
+      <Filter>Src\Framework\Shader\SlashTrailShader</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

@@ -14,7 +14,7 @@
 // 【使い方】
 //   renderer.Init(maxVertexCountPerLayer);
 //   renderer.Upload(inkVertices, coreVertices);                 // 頂点を作り直した時(毎フレーム1回)
-//   renderer.Draw(SlashTrailRenderer::Layer::Ink, blendMode, texture);   // 描画パスごと
+//   renderer.Draw(SlashTrailRenderer::Layer::Ink, blendMode, texture, noise, noiseTexture);   // 描画パスごと
 //====================================================================
 class SlashTrailRenderer
 {
@@ -26,7 +26,8 @@ public:
 	{
 		Math::Vector3   Position;
 		Math::Vector2	UV;
-		Math::Vector4	Color;	// rgb + フェード込みのアルファ
+		Math::Vector4	Color;	// rgb + アルファ(消去はExtraとノイズで行うので通常は1)
+		Math::Vector4	Extra;	// x=消去用LifeRate(1→0) yz=ノイズUV w=予約
 	};
 
 	enum class Layer { Ink, Core };
@@ -48,8 +49,10 @@ public:
 
 	// Upload済みの頂点を三角形ストリップとして描画する。4頂点未満のレイヤーは何もしない。
 	//	textureがnullptrなら白テクスチャで描画する(頂点カラーのみ)
+	//	noise.flagsが0、またはnoiseTextureが無い場合はノイズ無し(消去は線形フェード)で描画する
 	// ※事前にShaderManager::WriteCBCamera等でカメラ情報の転送が済んでいる事
-	void Draw(Layer layer, ParticleBlendMode blendMode, const std::shared_ptr<KdTexture>& texture);
+	void Draw(Layer layer, ParticleBlendMode blendMode, const std::shared_ptr<KdTexture>& texture,
+		const ParticleNoiseParams& noise, const std::shared_ptr<KdTexture>& noiseTexture);
 
 private:
 

@@ -10,12 +10,12 @@ struct VSInput
 	float3 Position : POSITION;
 	float2 UV : TEXCOORD0;
 	float4 Color : COLOR;
+	float4 Extra : TEXCOORD1;	// x=消去用LifeRate(1→0) yz=ノイズUV w=予約
 };
 
 //================================
-// 頂点シェーダ：GPUパーティクルと違い、頂点(ワールド座標・UV・色)は
-// CPU側(SlashTrailInstance::RebuildVertices())で毎フレーム計算済みのものが
-// 渡されてくるだけなので、ここではView×Projで変換するだけで良い
+// 頂点シェーダ：頂点(ワールド座標・UV・色)はCPU側(SlashTrailInstance::RebuildVertices())で
+// 毎フレーム計算済みなので、ここではView×Projで変換するだけ
 //================================
 VSOutput main(VSInput In)
 {
@@ -27,11 +27,12 @@ VSOutput main(VSInput In)
 	Out.UV = In.UV;
 	Out.Color = In.Color;
 
-	// フェードは頂点カラーのアルファ(In.Color.a)に既に焼き込まれている
-	// (SlashTrailInstance側でAgeから計算済み)為、PS側の追加フェード計算
-	// (KdGPUParticle_PS.hlslのoutColor.a *= In.LifeRate;)を無効化する目的で1.0固定にする。
-	// ここを0〜1の可変値にしてしまうと、Color.aとの二重乗算でフェードが不自然に急になる
-	Out.LifeRate = 1.0f;
+	// 消去はパーティクルと同じ仕組み：LifeRateをPS側のノイズ(ディゾルブ)が使う。
+	// ノイズ無しの場合も、PS側がLifeRateで線形フェードする
+	Out.LifeRate = In.Extra.x;
+
+	// ノイズUVはSeedで渡す(PS側はSeedを足さずにそのままノイズUVとして使う)
+	Out.Seed = In.Extra.yz;
 
 	return Out;
 }

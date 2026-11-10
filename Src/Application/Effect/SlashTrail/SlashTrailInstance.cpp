@@ -1,10 +1,19 @@
-#include "Application/main.h"
+﻿#include "Application/main.h"
 #include "SlashTrailInstance.h"
 
 namespace
 {
 	// 記録中にSetLivePathが来ないままこの時間(ゲーム時間)が過ぎたら、強制的に消去へ移す
 	constexpr float kLiveTimeout = 0.5f;
+
+	// 整数からワールド単位のずらし量(0〜100)を作る簡易ハッシュ
+	float HashOffset(uint32_t x)
+	{
+		x ^= x >> 16; x *= 0x7feb352dU;
+		x ^= x >> 15; x *= 0x846ca68bU;
+		x ^= x >> 16;
+		return static_cast<float>(x & 0xFFFFFFu) / static_cast<float>(0x1000000u) * 100.0f;
+	}
 
 	// 0～1にクランプした上で、両端で傾き0の補間を行う
 	float Smoothstep01(float x)
@@ -42,6 +51,16 @@ bool SlashTrailInstance::Init(const SlashTrailParams& params, ITextureProvider* 
 
 	ResolveTexture(textureProvider);
 
+	// ノイズが無い(テクスチャ未解決)ときはflags=0にして、線形フェードで消す
+	noiseParams_ = ParticleNoiseParams{};
+	noiseParams_.flags = noiseTexture_ ? ParticleNoiseFlag_Dissolve : 0;
+	noiseParams_.noiseScale = 1.0f;	// タイリングは長さ/幅で別々に頂点のノイズUVへ反映する
+	noiseParams_.scroll = { params_.Dissolve.ScrollU, params_.Dissolve.ScrollV };
+	noiseParams_.dissolveStart = 0.0f;
+	noiseParams_.dissolveSoftness = params_.Dissolve.Softness;
+	noiseParams_.edgeWidth = params_.Dissolve.EdgeWidth;
+	noiseParams_.edgeColor = { params_.Dissolve.EdgeColor.x, params_.Dissolve.EdgeColor.y, params_.Dissolve.EdgeColor.z, params_.Dissolve.EdgeIntensity };
+
 	// 未確定の先頭点が1つ増えるぶんを見込んで頂点容量を確保する
 	const UINT capacityPoints = std::max(params_.Spline.MaxPoints, params_.Record.MaxSamples + 1);
 
@@ -66,6 +85,10 @@ void SlashTrailInstance::BeginLive()
 
 	dissolveElapsed_ = 0.0f;
 	liveIdleTime_ = 0.0f;
+
+	static uint32_t s_counter = 0;
+	++s_counter;
+	noiseOffset_ = { HashOffset(s_counter * 2u), HashOffset(s_counter * 2u + 1u) };
 }
 
 // 記録中の経路を受け取る(未確定の先頭点つき)
@@ -126,7 +149,7 @@ bool SlashTrailInstance::IsFinished() const
 	// 描画できる軌跡(2点以上)が残らなかった場合は即終了
 	if (state_ == State::Dissolving)
 	{
-		return path_.size() < 2 || dissolveElapsed_ >= params_.Stroke.DissolveTime;
+		return path_.size() < 2 || dissolveElapsed_ >= params_.Dissolve.Time;
 	}
 
 	return false;
@@ -139,12 +162,12 @@ void SlashTrailInstance::Draw(ParticleDrawPass pass) const
 
 	if (KdHasDrawPassFlag(params_.Ink.DrawPassFlags, pass))
 	{
-		renderer_->Draw(SlashTrailRenderer::Layer::Ink, params_.Ink.BlendMode, texture_);
+		renderer_->Draw(SlashTrailRenderer::Layer::Ink, params_.Ink.BlendMode, texture_, noiseParams_, noiseTexture_);
 	}
 
 	if (params_.Core.Enabled && KdHasDrawPassFlag(params_.Core.DrawPassFlags, pass))
 	{
-		renderer_->Draw(SlashTrailRenderer::Layer::Core, params_.Core.BlendMode, texture_);
+		renderer_->Draw(SlashTrailRenderer::Layer::Core, params_.Core.BlendMode, texture_, noiseParams_, noiseTexture_);
 	}
 }
 
@@ -212,12 +235,12 @@ void SlashTrailInstance::RebuildVertices()
 	// ----- 2. 頂点生成 -----
 	const float strokeLengthSafe = (params_.Stroke.Length > 0.0f) ? params_.Stroke.Length : 0.0001f;
 	const float speedRefSafe = (params_.Width.SpeedReference > 0.0f) ? params_.Width.SpeedReference : 0.0001f;
-	const float dissolveTimeSafe = (params_.Stroke.DissolveTime > 0.0f) ? params_.Stroke.DissolveTime : 0.0001f;
+	const float dissolveTimeSafe = (params_.Dissolve.Time > 0.0f) ? params_.Dissolve.Time : 0.0001f;
 
 	const float totalLength = resampled_.back().Dist;
 
-	// 一括消去：全頂点に共通のα係数
-	const float dissolveAlpha = (state_ == State::Dissolving)
+	// 一括消去：全頂点に共通のLifeRate(1→0)。PS側のノイズ(ノイズ無しなら線形フェード)が消す
+	const float lifeRate = (state_ == State::Dissolving)
 		? 1.0f - Smoothstep01(dissolveElapsed_ / dissolveTimeSafe)
 		: 1.0f;
 
@@ -274,45 +297,62 @@ void SlashTrailInstance::RebuildVertices()
 
 		const Vector3 halfWidth = correctedWidthVec * 0.5f;
 
+		// ノイズUV(タイル単位)：uは始点からの距離、vは(0/1)×Tip-Base間の距離に、長さ/幅別の倍率を掛ける。
+		// 幅の変化(速度・先端の絞り)を含めないので、記録済みの点の模様は後から動かない
+		const float noiseU = sample.Dist * params_.Dissolve.NoiseScaleU + noiseOffset_.x;
+		const float noiseVBase = widthLen * params_.Dissolve.NoiseScaleV + noiseOffset_.y;
+
 		SlashTrailVertex vTip;
 		vTip.Position = center + halfWidth;
 		vTip.UV = { u, 0.0f };
-		vTip.Color = { color.x, color.y, color.z, dissolveAlpha };
+		vTip.Color = { color.x, color.y, color.z, 1.0f };
+		vTip.Extra = { lifeRate, noiseU, noiseOffset_.y, 0.0f };
 		vertices_.push_back(vTip);
 
 		SlashTrailVertex vBase;
 		vBase.Position = center - halfWidth;
 		vBase.UV = { u, 1.0f };
-		vBase.Color = { color.x, color.y, color.z, dissolveAlpha };
+		vBase.Color = { color.x, color.y, color.z, 1.0f };
+		vBase.Extra = { lifeRate, noiseU, noiseVBase, 0.0f };
 		vertices_.push_back(vBase);
 
 		if (params_.Core.Enabled)
 		{
 			const Vector3 coreHalfWidth = halfWidth * params_.Core.WidthScale;
-			const float coreAlpha = dissolveAlpha * std::lerp(params_.Core.TailAlpha, 1.0f, u);
+			const float coreAlpha = std::lerp(params_.Core.TailAlpha, 1.0f, u);
 
 			SlashTrailVertex vTipCore;
 			vTipCore.Position = center + coreHalfWidth;
 			vTipCore.UV = { u, 0.0f };
 			vTipCore.Color = { params_.Core.Color.x, params_.Core.Color.y, params_.Core.Color.z, coreAlpha };
+			vTipCore.Extra = { lifeRate, noiseU, noiseOffset_.y, 0.0f };
 			coreVertices_.push_back(vTipCore);
 
 			SlashTrailVertex vBaseCore;
 			vBaseCore.Position = center - coreHalfWidth;
 			vBaseCore.UV = { u, 1.0f };
 			vBaseCore.Color = { params_.Core.Color.x, params_.Core.Color.y, params_.Core.Color.z, coreAlpha };
+			vBaseCore.Extra = { lifeRate, noiseU, noiseVBase, 0.0f };
 			coreVertices_.push_back(vBaseCore);
 		}
 	}
 }
 
-// TexturePathからテクスチャを解決する(未指定・解決失敗ならnullptr＝白テクスチャ描画)
+// テクスチャを解決する(未指定・解決失敗ならnullptr。墨の帯は白テクスチャ、消去は線形フェードになる)
 void SlashTrailInstance::ResolveTexture(ITextureProvider* textureProvider)
 {
 	texture_.reset();
+	noiseTexture_.reset();
 
 	if (!textureProvider) { return; }
-	if (params_.TexturePath.empty()) { return; }
 
-	texture_ = textureProvider->GetTexture(params_.TexturePath);
+	if (!params_.TexturePath.empty())
+	{
+		texture_ = textureProvider->GetTexture(params_.TexturePath);
+	}
+
+	if (!params_.Dissolve.NoiseTexturePath.empty())
+	{
+		noiseTexture_ = textureProvider->GetTexture(params_.Dissolve.NoiseTexturePath);
+	}
 }

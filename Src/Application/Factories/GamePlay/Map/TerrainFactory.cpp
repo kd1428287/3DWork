@@ -29,7 +29,7 @@ GameObject* TerrainFactory::CreateSkydome(ObjectManager& objectManager, int owne
 {
 	auto* skydome = objectManager.Instantiate("skydome");
 	auto* transform = skydome->AddComponent<TransformComponent>();
-	transform->SetScale({ 10.0f,10.0f,10.0f });
+	transform->SetScale({ 6.0f,6.0f,6.0f });
 	auto* model = skydome->AddComponent<SkeletonComponent>();
 	model->SetModelData("Asset/Models/SkySphere/SkyDome.gltf");
 	auto* renderer = skydome->AddComponent<ModelRenderComponent>();

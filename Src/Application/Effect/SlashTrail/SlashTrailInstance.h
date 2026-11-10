@@ -9,6 +9,7 @@
 // ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
 // サンプルの記録はComponent側のSlashTrailRecorderが行い、ここは経路のコピーを受け取るだけ。
 // 頂点生成はUpdate()で行うので、カメラ更新後にDispatcher::Update()を呼べばカメラ正対が最新になる。
+// 消去は頂点のLifeRateとノイズ(パーティクルと同じディゾルブ)で行い、αは焼き込まない。
 //
 // 【状態遷移】
 //   Idle → BeginLive() → Recording(SetLivePathで経路更新) → Finish() → Dissolving → IsFinished()
@@ -60,6 +61,7 @@ private:
 
 	void StartDissolve();
 
+	// 墨の帯用テクスチャと、消去用ノイズテクスチャを解決する
 	void ResolveTexture(ITextureProvider* textureProvider);
 
 	void RebuildVertices();
@@ -85,4 +87,11 @@ private:
 
 	std::shared_ptr<SlashTrailRenderer>	renderer_;
 	std::shared_ptr<KdTexture>				texture_;
+
+	// 消去用ノイズ。noiseTexture_が無い場合はflags=0(ノイズ無し＝線形フェード)になる
+	std::shared_ptr<KdTexture>				noiseTexture_;
+	ParticleNoiseParams						noiseParams_;
+
+	// 軌跡ごとに別の模様にする為の、ノイズUVのずらし量(BeginLiveのたびに変わる)
+	DirectX::SimpleMath::Vector2			noiseOffset_ = { 0.0f, 0.0f };
 };
