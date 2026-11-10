@@ -12,6 +12,7 @@
 #include "Tools/UIEditor.h"
 #include "Tools/ColliderEditor.h"
 #include "Tools/ActionEditor.h"
+#include "Tools/CharacterEditor.h"
 
 #include "Application/Core/EventBus/Events/SceneEvents.h"
 
@@ -143,6 +144,8 @@ void EditorHost::Draw()
 
 		// アクションエディタ
 		ActionEditor::Instance().Update();
+
+		CharacterEditor::Instance().Update();
 	}
 
 	// ここより上にImGuiの描画はする事(EndFrame内でImGui::Render()を呼ぶため)

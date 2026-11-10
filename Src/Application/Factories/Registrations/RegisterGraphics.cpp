@@ -1,4 +1,4 @@
-﻿// 見た目(モデル・アニメーション・描画Mod・エフェクト)とカメラまわりのコンポーネント登録。
+// 見た目(モデル・アニメーション・描画Mod・エフェクト)とカメラまわりのコンポーネント登録。
 
 #include "Application/Factories/ComponentRegistry.h"
 #include "Application/Factories/Registrations/RegisterFunctions.h"
@@ -12,6 +12,7 @@
 #include "Application/Components/Graphics/Render/OutlineRenderComponent.h"
 #include "Application/Components/Graphics/Render/GroundRenderComponent.h"
 #include "Application/Components/Graphics/Render/Mod/RasterizerStateComponent.h"
+#include "Application/Components/Graphics/Render/Mod/InkStyleComponent.h"
 #include "Application/Components/Graphics/Effect/SlashTrailComponent.h"
 #include "Application/Components/Graphics/Effect/FootDustComponent.h"
 #include "Application/Components/Graphics/Animation/SkeletonComponent.h"
@@ -48,6 +49,16 @@ NLOHMANN_JSON_SERIALIZE_ENUM(KdRasterizerState, {
 	{ KdRasterizerState::WireFrame, "WireFrame" },
 	})
 
+// KdInkPreset: JSONではプリセット名の文字列で指定する。未知の値はNoneになる。
+NLOHMANN_JSON_SERIALIZE_ENUM(KdInkPreset, {
+	{ KdInkPreset::None, "None" },
+	{ KdInkPreset::Bright, "Bright" },
+	{ KdInkPreset::Dark, "Dark" },
+	})
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(KdInkStyle,
+	Black, Amount, Paper, Bias, Contrast, Steps, LumaScale, NoiseAmount, NoiseScale)
+
 COMPONENT_PARAMS_DEFINE_TYPE(SkeletonConfig, model, animations)
 COMPONENT_PARAMS_DEFINE_TYPE(RootMotionConfig,
 	boneName, unitScale, forwardAxis, forwardSign, rightAxis, rightSign, extractRotation, yawSign)
@@ -68,6 +79,13 @@ namespace
 		KdRasterizerState state = KdRasterizerState::CullNone;
 	};
 	COMPONENT_PARAMS_DEFINE_TYPE(RasterizerStateParams, state)
+
+	// 墨の濃淡変換のMod。JSONではプリセット名("Bright"/"Dark")を指定する。
+	struct InkStyleParams
+	{
+		KdInkPreset preset = KdInkPreset::None;
+	};
+	COMPONENT_PARAMS_DEFINE_TYPE(InkStyleParams, preset)
 
 	// 1クリップ分の接地phase定義。clipはアニメーションクリップ名
 	// (ModelAnimatorComponentが再生する名前と一致させる)。
@@ -137,6 +155,9 @@ void RegisterGraphicsComponents(ComponentRegistry& registry)
 	registry.Add<OutlineRenderComponent>("Outline");
 	registry.AddWithParams<RasterizerStateParams>("RasterizerState", [](BuildContext& ctx, const RasterizerStateParams& p) {
 		ctx.Add<RasterizerStateComponent>(p.state);
+		});
+	registry.AddWithParams<InkStyleParams>("InkStyle", [](BuildContext& ctx, const InkStyleParams& p) {
+		ctx.Add<InkStyleComponent>(KdInkStyle::FromPreset(p.preset));
 		});
 	registry.AddWithParams<FootDustParams>("FootDust", BuildFootDust);
 	registry.AddRaw("WireFrame", [](BuildContext& ctx, const nlohmann::json&) { AddWireFrameOnce(ctx.self); });

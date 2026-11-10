@@ -335,6 +335,7 @@
     <ClInclude Include="Src\Application\Components\Graphics\Render\GroundRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\ModelRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\Mod\ForceMaxDepthComponent.h" />
+    <ClInclude Include="Src\Application\Components\Graphics\Render\Mod\InkStyleComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\Mod\RasterizerStateComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\Mod\SkyDomeEdgeFadeComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\OutlineRenderComponent.h" />
@@ -704,6 +705,7 @@
     <None Include="Src\Framework\Shader\PerlinNoise.hlsli" />
     <None Include="Src\Framework\Shader\PostProcessShader\inc_KdPostProcessShader.hlsli" />
     <None Include="Src\Framework\Shader\SpriteShader\inc_KdSpriteShader.hlsli" />
+    <None Include="Src\Framework\Shader\StandardShader\inc_KdInkTone.hlsli" />
     <None Include="Src\Framework\Shader\StandardShader\inc_KdMotionVector.hlsli" />
     <None Include="Src\Framework\Shader\StandardShader\inc_KdSkyDomeShader.hlsli" />
     <None Include="Src\Framework\Shader\StandardShader\inc_KdStandardShader.hlsli" />

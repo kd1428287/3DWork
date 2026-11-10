@@ -1,6 +1,7 @@
 #include "inc_KdStandardShader.hlsli"
 #include "../inc_KdCommon.hlsli"
 #include "inc_KdMotionVector.hlsli"
+#include "inc_KdInkTone.hlsli"
 
 // モデル描画用テクスチャ
 Texture2D g_baseTex : register(t0);			// ベースカラーテクスチャ
@@ -242,6 +243,9 @@ float4 main(VSOutputLit InLit, out float4 outVelocity : SV_Target2) : SV_Target0
 		outColor += g_emissiveTex.Sample(g_ss, In.UV).rgb * g_Emissive * In.Color.rgb;
 	}
 	
+	// 墨の濃淡変換(フォグ・明度の前に行う)
+	if (g_InkAmount > 0) { outColor = ApplyInkTone(outColor, In.wPos); }
+
 	// 輪郭パスは墨一色(以降のフォグで遠景ほど霞む)
 	if (g_OutlineWidth > 0)
 	{

@@ -5,6 +5,48 @@
 // 基本シェーダー
 //
 //============================================================
+// 墨変換のプリセット名(JSONからは名前で指定する。増やす時はFromPresetとJSON側のenum表も更新)
+enum class KdInkPreset
+{
+	None,		// 変換なし
+	Bright,		// 白主体(環境)
+	Dark,		// 黒主体(敵)
+};
+
+// 墨の濃淡変換の設定(Amount=0なら従来の描画)。HLSL側cbObjectの並びと一致させること
+struct KdInkStyle
+{
+	Math::Vector3	Black = { 0.02f, 0.02f, 0.025f };	// 最暗の墨色
+	float			Amount = 0.0f;						// 0=変換なし 1=完全に墨
+
+	Math::Vector3	Paper = { 2.5f, 2.4f, 2.2f };		// 最明の紙色(ACES後に白へ近づく値)
+	float			Bias = 1.0f;						// 1未満で白寄り、1超で黒寄り
+
+	float			Contrast = 1.0f;
+	float			Steps = 0.0f;						// 濃淡の段数(0で連続)
+	float			LumaScale = 1.0f;					// 変換前の輝度補正(Lambertが1/πのため3前後から)
+	float			NoiseAmount = 0.0f;					// 濃淡ゆらぎの強さ(0で無効。白寄りの面ほど効く)
+
+	float			NoiseScale = 0.5f;					// ゆらぎの細かさ(ワールド座標への倍率)
+	float			_blank[3] = { 0.0f, 0.0f, 0.0f };
+
+	// 白主体(環境オブジェクト用)
+	static KdInkStyle Bright() { KdInkStyle s; s.Amount = 0.65f; s.Bias = 0.75f; s.Contrast = 1.2f; s.Steps = 0.0f; s.NoiseAmount = 0.35f; return s; }
+	// 黒主体(敵用)
+	static KdInkStyle Dark() { KdInkStyle s; s.Amount = 0.65f; s.Bias = 1.3f; s.Contrast = 1.5f; s.Steps = 2.0f; return s; }
+
+	// プリセット名から設定を作る(Noneは変換なし)
+	static KdInkStyle FromPreset(KdInkPreset preset)
+	{
+		switch (preset)
+		{
+		case KdInkPreset::Bright: return Bright();
+		case KdInkPreset::Dark: return Dark();
+		default: return KdInkStyle();
+		}
+	}
+};
+
 class KdStandardShader
 {
 public:
@@ -37,6 +79,8 @@ public:
 		Math::Vector3	DissolveEmissive = { 0.0f, 1.0f, 1.0f };
 
 		float			OutlineWidth = 0.0f;	// 輪郭線(裏面拡大)の太さ。0なら通常描画(64byte境界の末尾に収まる)
+
+		KdInkStyle		Ink;					// 墨の濃淡変換(64byte)
 	};
 
 	// 定数バッファ(メッシュ単位更新)
@@ -128,6 +172,13 @@ public:
 	void SetOutlineWidth(float width)
 	{
 		m_cb0_Obj.Work().OutlineWidth = width;
+		m_dirtyCBObj = true;
+	}
+
+	// 墨の濃淡変換の設定。描画後に自動で初期値へ戻る
+	void SetInkStyle(const KdInkStyle& style)
+	{
+		m_cb0_Obj.Work().Ink = style;
 		m_dirtyCBObj = true;
 	}
 

@@ -13,6 +13,17 @@ cbuffer cbObject : register(b0)
 	float g_dissolveEdgeRange;	// ディゾルブの境界線の太さ
 	float3 g_dissolveEmissive;	// 境界の色
 	float g_OutlineWidth;		// 輪郭線(裏面拡大)の太さ。0なら通常描画
+
+	float3 g_InkBlack;			// 墨変換：最暗の墨色
+	float  g_InkAmount;			// 0=変換なし 1=完全に墨
+	float3 g_InkPaper;			// 墨変換：最明の紙色
+	float  g_InkBias;			// 1未満で白寄り、1超で黒寄り
+	float  g_InkContrast;
+	float  g_InkSteps;			// 濃淡の段数(0で連続)
+	float  g_InkLumaScale;
+	float  g_InkNoiseAmount;	// 濃淡ゆらぎの強さ(0で無効。白寄りの面ほど効く)
+	float  g_InkNoiseScale;		// ゆらぎの細かさ(ワールド座標への倍率)
+	float3 _inkPad;
 };
 
 // 定数バッファ(メッシュ単位)

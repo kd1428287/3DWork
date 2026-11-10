@@ -224,12 +224,12 @@ void GameScene::SetupEnvironment()
 	auto& ambient = KdShaderManager::Instance().WorkAmbientController();
 
 	// ライト・フォグ
-	ambient.SetDirLight(Math::Vector3(-0.5f, -1.0f, -0.5f), Math::Vector3(1.0f, 1.0f, 1.0f));
+	ambient.SetDirLight(Math::Vector3(-0.45f, -0.75f, 0.48f), Math::Vector3(1.62f, 1.66f, 1.6f));
 	ambient.SetDirLightShadowArea(Math::Vector2(100.f, 100.f), 100);
 	//ambient.AddPointLight(Math::Vector3(0.2f,0.2f,0.2f), 10.0f, Math::Vector3(0, 5, 0), true);
 	ambient.SetFogEnable(false, true);
 	ambient.SetheightFog({ 0.9f, 0.9f, 0.9f }, 80.f, -10.f, 100.f);
-	ambient.SetAmbientLight(Math::Vector4(1.0f, 1.0f, 1.0f, 0.2f));
+	ambient.SetAmbientLight(Math::Vector4(0.28f,0.31f,0.36f,1.0f));
 
 	// ポストプロセス
 	post.SetFarClippingDistance(50.f);

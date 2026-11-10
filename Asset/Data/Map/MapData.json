@@ -346,6 +346,12 @@
             "wireFrame": false
           },
           "type": "Collider"
+        },
+        {
+          "params": {
+            "preset": "Bright"
+          },
+          "type": "InkStyle"
         }
       ],
       "id": 9,
