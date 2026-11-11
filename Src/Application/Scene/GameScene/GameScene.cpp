@@ -10,6 +10,7 @@
 #include "Application/Systems/Collision/CollisionSystem.h"
 #include "Application/Effect/Particle/EffectDispatcher.h"
 #include "Application/Effect/SlashTrail/SlashTrailDispatcher.h"
+#include "Application/Effect/Shape/ShapeEffectDispatcher.h"
 
 // factory
 #include "Application/Factories/PrefabFactory.h"
@@ -43,6 +44,49 @@ namespace
 	constexpr float kResultTimeScale = 0.1f;        // 撃破後のスロー倍率
 	const Math::Vector2 kInkCenter = { 0.5f, 0.5f }; // 墨が広がる起点(画面中央)
 
+#ifdef _DEBUG
+	// ShapeEffect検証用(確認後に削除)
+	constexpr const char* kShapeTestTexture = "Cloud.png";	// 手元のテクスチャへ差し替え
+	const Math::Vector3 kShapeTestCenter = { 0.0f, 3.5f, 0.0f };					// プレイヤー付近へ合わせる
+
+	// 中心を軸にyaw回転する基準点
+	Math::Matrix ShapeTestBase(float yaw)
+	{
+		return Math::Matrix::CreateFromYawPitchRoll(yaw, 0.0f, 0.0f) * Math::Matrix::CreateTranslation(kShapeTestCenter);
+	}
+
+	void RegisterShapeEffectTest(ShapeEffectDispatcher& dispatcher)
+	{
+		// A(2.0秒)：出現(拡大+フェードイン) → ロール1周 → 縦に伸びて消える。+X側へずらしてあり、基準点の回転で周回する
+		auto motionA = std::make_shared<KeyframeMotion>();
+		motionA->keys = {
+			{ { 1.5f, 0.0f, 0.0f }, { 0.0f, 0.0f,   0.0f }, { 0.1f, 0.1f }, 0.0f },
+			{ { 1.5f, 0.5f, 0.0f }, { 0.0f, 0.0f,   0.0f }, { 1.0f, 1.0f }, 1.0f, EaseType::OutCubic, 0.4f },
+			{ { 1.5f, 0.5f, 0.0f }, { 0.0f, 0.0f, 360.0f }, { 1.0f, 1.0f }, 1.0f, EaseType::Linear,   1.0f },
+			{ { 1.5f, 1.5f, 0.0f }, { 0.0f, 0.0f, 360.0f }, { 0.3f, 2.0f }, 0.0f, EaseType::InQuad,   0.6f },
+		};
+		ShapeEffectDefinition defA;
+		defA.Params.TexturePath = kShapeTestTexture;
+		defA.Params.BlendMode = ParticleBlendMode::Alpha;
+		defA.Motion = motionA;
+		dispatcher.RegisterDefinition("ShapeTestAlpha", defA);
+
+		// B(3.0秒)：その場で拡大しながらフェードイン → 保持 → フェードアウト(加算)
+		auto motionB = std::make_shared<KeyframeMotion>();
+		motionB->keys = {
+			{ { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f }, 0.0f },
+			{ { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 2.0f, 2.0f }, 1.0f, EaseType::InOutQuad, 0.5f },
+			{ { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 2.0f, 2.0f }, 1.0f, EaseType::Linear,     1.0f },
+			{ { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 3.0f, 3.0f }, 0.0f, EaseType::OutQuad,    1.5f },
+		};
+		ShapeEffectDefinition defB;
+		defB.Params.TexturePath = kShapeTestTexture;
+		defB.Params.BlendMode = ParticleBlendMode::Add;
+		defB.Motion = motionB;
+		dispatcher.RegisterDefinition("ShapeTestAdd", defB);
+	}
+#endif
+
 	// マーカーの位置・向きでPrefabを生成する。読み込みに失敗したらnullptr
 	GameObject* SpawnAtMarker(ObjectManager& om, const std::string& path, const SpawnMarkerDef& m)
 	{
@@ -63,6 +107,33 @@ void GameScene::OnUpdate(float deltaTime)
 #ifdef _DEBUG
 	// 開発用: F7で撃破扱いにして演出を確認する
 	if (GetAsyncKeyState(VK_F7) & 0x8000) { result_->Start(); }
+
+	// ShapeEffect検証用(確認後に削除)
+	// F8：A(Alpha)を発生し、基準点を毎フレーム回転させる。F9：B(Add)を固定で発生し、1.2秒で強制終了させる
+	{
+		static bool prevF8 = false;
+		static bool prevF9 = false;
+		static float angle = 0.0f;
+
+		const bool f8 = (GetAsyncKeyState(VK_F8) & 0x8000) != 0;
+		const bool f9 = (GetAsyncKeyState(VK_F9) & 0x8000) != 0;
+
+		if (f8 && !prevF8)
+		{
+			angle = 0.0f;
+			Events::PublishShapeEffectAttach(*localBus_, "shape_test_a", "ShapeTestAlpha", ShapeTestBase(angle));
+		}
+		if (f9 && !prevF9)
+		{
+			Events::PublishShapeEffectAttach(*localBus_, "shape_test_b", "ShapeTestAdd",
+				Math::Matrix::CreateTranslation(kShapeTestCenter + Math::Vector3(0.0f, 0.0f, 2.0f)), 1.2f);
+		}
+		prevF8 = f8;
+		prevF9 = f9;
+
+		angle += deltaTime * DirectX::XM_PIDIV2;	// 90度/秒
+		Events::PublishShapeEffectBaseUpdate(*localBus_, "shape_test_a", ShapeTestBase(angle));
+	}
 #endif
 
 	result_->Update(deltaTime, PollConfirm());
@@ -74,12 +145,14 @@ void GameScene::OnUpdate(float deltaTime)
 void GameScene::OnPreDraw(float deltaTime)
 {
 	effectDispatcher_->Update(deltaTime);
+	shapeEffectDispatcher_->Update(deltaTime);
 }
 
 void GameScene::OnDrawEffects()
 {
 	effectDispatcher_->Draw(ParticleDrawPass::Default);
 	slashTrailDispatcher_->Draw(ParticleDrawPass::Default);
+	shapeEffectDispatcher_->Draw(ParticleDrawPass::Default);
 	effectDispatcher_->DrawLiquid();
 }
 
@@ -87,6 +160,7 @@ void GameScene::OnDrawBright()
 {
 	effectDispatcher_->Draw(ParticleDrawPass::Bright);
 	slashTrailDispatcher_->Draw(ParticleDrawPass::Bright);
+	shapeEffectDispatcher_->Draw(ParticleDrawPass::Bright);
 }
 
 void GameScene::OnDrawSprite()
@@ -202,6 +276,12 @@ void GameScene::BuildSystems()
 	effectDispatcher_ = std::make_unique<EffectDispatcher>();
 	effectDispatcher_->Init(*localBus_);
 
+	shapeEffectDispatcher_ = std::make_unique<ShapeEffectDispatcher>();
+	shapeEffectDispatcher_->Init(*localBus_);
+#ifdef _DEBUG
+	RegisterShapeEffectTest(*shapeEffectDispatcher_);
+#endif
+
 	timeScaleSystem_ = std::make_unique<TimeScaleSystem>(*localBus_, *objManager_);
 
 	// 更新順はここで一括管理する
@@ -229,7 +309,7 @@ void GameScene::SetupEnvironment()
 	//ambient.AddPointLight(Math::Vector3(0.2f,0.2f,0.2f), 10.0f, Math::Vector3(0, 5, 0), true);
 	ambient.SetFogEnable(false, true);
 	ambient.SetheightFog({ 0.7f, 0.7f, 0.7f }, 80.f, -10.f, 100.f);
-	ambient.SetAmbientLight(Math::Vector4(0.28f,0.31f,0.36f,1.0f));
+	ambient.SetAmbientLight(Math::Vector4(0.28f, 0.31f, 0.36f, 1.0f));
 
 	// ポストプロセス
 	post.SetFarClippingDistance(50.f);
@@ -241,7 +321,7 @@ void GameScene::SetupEnvironment()
 	post.SetTint(-0.15f);
 
 	post.SetMotionBlurEnabled(true);
-	post.SetMotionBlurStrength(0.f);	
+	post.SetMotionBlurStrength(0.f);
 	post.SetMotionBlurMaxLength(0.08f);
 	post.SetMotionBlurObjectStrength(1.0f);
 

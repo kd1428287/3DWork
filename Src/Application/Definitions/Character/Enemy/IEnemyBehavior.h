@@ -79,13 +79,8 @@ public:
 	// する設計のため、多くの実装ではこの引数を無視してよい。
 	virtual void OnStaggered(EnemyAIController* owner, bool isLarge, float duration) {}
 
-	// 自分自身の攻撃(そのHitBoxを持つ武器のAttackSourceComponent::
-	// ownerCharacterが自分自身を指している攻撃)がパリィされた時に呼ばれる
-	// フック。EnemyAIController側が自身のローカルEventBusでこのイベントを
-	// Subscribe<AttackSourceComponent::ParriedEvent>()しており、受信した
-	// 瞬間にこれを呼ぶ(AttackSourceComponent::ParriedEvent冒頭コメント
-	// 参照)。何もしない敵種はデフォルト実装(何もしない)のままでよい。
-	virtual void OnParrySucceeded(EnemyAIController* owner, const Events::ParrySucceeded& event) {}
+	// 自分自身の攻撃がパリィされた時に呼ばれる
+	virtual void OnAttackDeflected(EnemyAIController* owner, const Events::AttackDeflected& event) {}
 
 	// HealthComponentのDiedEventを受けてEnemyAIController側が
 	// 移動停止・当たり判定無効化等の共通死亡処理を終えた直後に呼ばれる

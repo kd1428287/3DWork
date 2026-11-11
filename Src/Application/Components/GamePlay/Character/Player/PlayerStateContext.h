@@ -1,4 +1,4 @@
-// PlayerStateContext.h
+﻿// PlayerStateContext.h
 #pragma once
 #include "Application/Definitions/Character/Player/PlayerCombatTypes.h"
 
@@ -34,6 +34,7 @@ public:
 // ポインタはPlayerStatusController::Awakeで設定され、Stateはこれだけを知ればよい。
 struct PlayerStateContext
 {
+	GameObject* owner = nullptr;
 	PlayerInputComponent* input = nullptr;
 	PlayerLockOnComponent* lockOn = nullptr;
 	PlayerMovementAnimationComponent* movementAnimation = nullptr;

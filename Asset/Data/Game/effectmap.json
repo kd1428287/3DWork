@@ -721,15 +721,15 @@
               1.0
             ],
             "colorStartMax": [
-              0.12941177189350128,
-              0.12941177189350128,
-              0.12941177189350128,
+              0.05882352963089943,
+              0.05882352963089943,
+              0.05882352963089943,
               1.0
             ],
             "colorStartMin": [
-              0.12941177189350128,
-              0.12941177189350128,
-              0.12941177189350128,
+              0.05882352963089943,
+              0.05882352963089943,
+              0.05882352963089943,
               1.0
             ],
             "convergeRadius": 5.0,
@@ -754,8 +754,8 @@
             "radialSpeedMin": 1.0,
             "sizeEndMax": 0.05999999865889549,
             "sizeEndMin": 0.019999999552965164,
-            "sizeMax": 0.07999999821186066,
-            "sizeMin": 0.03999999910593033,
+            "sizeMax": 1.2000000476837158,
+            "sizeMin": 0.07999999821186066,
             "stretchScale": 0.15000000596046448
           },
           {
@@ -812,58 +812,6 @@
           },
           {
             "billboardMode": "Normal",
-            "colorMax": [
-              0.04901963472366333,
-              0.04901963472366333,
-              0.04901963472366333,
-              1.0
-            ],
-            "colorMin": [
-              0.01826220564544201,
-              0.019607841968536377,
-              0.018800459802150726,
-              1.0
-            ],
-            "colorStartMax": [
-              0.10000000149011612,
-              0.10000000149011612,
-              0.10000000149011612,
-              1.0
-            ],
-            "colorStartMin": [
-              0.10000000149011612,
-              0.10000000149011612,
-              0.10000000149011612,
-              1.0
-            ],
-            "convergeRadius": 5.0,
-            "convergeSpeed": 0.0,
-            "count": 0,
-            "dirScaleMax": 0.0,
-            "dirScaleMin": 0.0,
-            "distribution": "Directional",
-            "lifeMax": 0.6000000238418579,
-            "lifeMin": 0.44999998807907104,
-            "offsetMax": [
-              8.0,
-              8.5,
-              8.0
-            ],
-            "offsetMin": [
-              8.0,
-              0.5,
-              8.0
-            ],
-            "radialSpeedMax": 4.0,
-            "radialSpeedMin": 1.0,
-            "sizeEndMax": 0.10000000149011612,
-            "sizeEndMin": 0.019999999552965164,
-            "sizeMax": 0.10000000149011612,
-            "sizeMin": 0.019999999552965164,
-            "stretchScale": 0.15000000596046448
-          },
-          {
-            "billboardMode": "Stretch",
             "colorMax": [
               0.09803920984268188,
               0.09803920984268188,
@@ -923,7 +871,7 @@
             0.0,
             0.0,
             0.0,
-            0.0
+            0.10000000149011612
           ],
           "edgeWidth": 0.10000000149011612,
           "flags": [
@@ -1022,162 +970,6 @@
             "sizeMax": 0.07999999821186066,
             "sizeMin": 0.04500000178813934,
             "stretchScale": 0.11999999731779099
-          },
-          {
-            "billboardMode": "Normal",
-            "colorMax": [
-              0.0,
-              0.0,
-              0.0,
-              1.0
-            ],
-            "colorMin": [
-              0.0,
-              0.0,
-              0.0,
-              1.0
-            ],
-            "colorStartMax": [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ],
-            "colorStartMin": [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ],
-            "convergeRadius": 5.0,
-            "convergeSpeed": 0.0,
-            "count": 100,
-            "dirScaleMax": 8.0,
-            "dirScaleMin": 4.0,
-            "distribution": "Directional",
-            "lifeMax": 0.800000011920929,
-            "lifeMin": 0.5,
-            "offsetMax": [
-              1.5,
-              1.5,
-              1.5
-            ],
-            "offsetMin": [
-              1.5,
-              1.5,
-              1.5
-            ],
-            "radialSpeedMax": 4.0,
-            "radialSpeedMin": 1.0,
-            "sizeEndMax": 0.07000000029802322,
-            "sizeEndMin": 0.029999999329447746,
-            "sizeMax": 0.1599999964237213,
-            "sizeMin": 0.10000000149011612,
-            "stretchScale": 0.15000000596046448
-          },
-          {
-            "billboardMode": "Normal",
-            "colorMax": [
-              0.0,
-              0.0,
-              0.0,
-              1.0
-            ],
-            "colorMin": [
-              0.0,
-              0.0,
-              0.0,
-              1.0
-            ],
-            "colorStartMax": [
-              0.8999999761581421,
-              0.8999999761581421,
-              0.8999999761581421,
-              1.0
-            ],
-            "colorStartMin": [
-              0.8999999761581421,
-              0.8999999761581421,
-              0.8999999761581421,
-              1.0
-            ],
-            "convergeRadius": 5.0,
-            "convergeSpeed": 0.0,
-            "count": 160,
-            "dirScaleMax": 7.0,
-            "dirScaleMin": 2.0,
-            "distribution": "Directional",
-            "lifeMax": 0.8999999761581421,
-            "lifeMin": 0.5,
-            "offsetMax": [
-              3.0,
-              3.0,
-              3.0
-            ],
-            "offsetMin": [
-              3.0,
-              0.5,
-              3.0
-            ],
-            "radialSpeedMax": 4.0,
-            "radialSpeedMin": 1.0,
-            "sizeEndMax": 0.029999999329447746,
-            "sizeEndMin": 0.014999999664723873,
-            "sizeMax": 0.05999999865889549,
-            "sizeMin": 0.03500000014901161,
-            "stretchScale": 0.15000000596046448
-          },
-          {
-            "billboardMode": "Normal",
-            "colorMax": [
-              0.10000000149011612,
-              0.8500000238418579,
-              0.4000000059604645,
-              1.0
-            ],
-            "colorMin": [
-              0.10000000149011612,
-              0.8500000238418579,
-              0.4000000059604645,
-              1.0
-            ],
-            "colorStartMax": [
-              1.0,
-              0.1666666865348816,
-              0.1666666865348816,
-              1.0
-            ],
-            "colorStartMin": [
-              1.0,
-              0.044117629528045654,
-              0.044117629528045654,
-              1.0
-            ],
-            "convergeRadius": 5.0,
-            "convergeSpeed": 0.0,
-            "count": 500,
-            "dirScaleMax": 4.0,
-            "dirScaleMin": 1.0,
-            "distribution": "Directional",
-            "lifeMax": 0.800000011920929,
-            "lifeMin": 0.44999998807907104,
-            "offsetMax": [
-              1.0,
-              1.5,
-              1.0
-            ],
-            "offsetMin": [
-              1.0,
-              0.5,
-              1.0
-            ],
-            "radialSpeedMax": 4.0,
-            "radialSpeedMin": 1.0,
-            "sizeEndMax": 0.05999999865889549,
-            "sizeEndMin": 0.019999999552965164,
-            "sizeMax": 0.05999999865889549,
-            "sizeMin": 0.019999999552965164,
-            "stretchScale": 0.15000000596046448
           }
         ],
         "maxParticleNum": 1500,
@@ -1661,9 +1453,9 @@
           {
             "billboardMode": "Stretch",
             "colorMax": [
-              0.5490195751190186,
-              0.22155506908893585,
-              0.0188389141112566,
+              0.5490196347236633,
+              0.13333334028720856,
+              0.05882352963089943,
               1.0
             ],
             "colorMin": [
@@ -1673,9 +1465,9 @@
               1.0
             ],
             "colorStartMax": [
-              0.5490195751190186,
-              0.22155506908893585,
-              0.0188389141112566,
+              0.5490196347236633,
+              0.13333334028720856,
+              0.05882352963089943,
               1.0
             ],
             "colorStartMin": [
@@ -1686,21 +1478,21 @@
             ],
             "convergeRadius": 5.0,
             "convergeSpeed": 0.0,
-            "count": 15,
+            "count": 45,
             "dirScaleMax": 0.0,
             "dirScaleMin": 0.0,
             "distribution": "Directional",
-            "lifeMax": 0.25,
-            "lifeMin": 0.15000000596046448,
+            "lifeMax": 0.15000000596046448,
+            "lifeMin": 0.05000000074505806,
             "offsetMax": [
-              7.0,
-              7.0,
-              7.0
+              12.0,
+              12.0,
+              12.0
             ],
             "offsetMin": [
-              7.0,
-              7.0,
-              7.0
+              12.0,
+              12.0,
+              12.0
             ],
             "radialSpeedMax": 8.0,
             "radialSpeedMin": 3.0,
@@ -1742,7 +1534,7 @@
             "dirScaleMax": 0.0,
             "dirScaleMin": 0.0,
             "distribution": "Directional",
-            "lifeMax": 0.3499999940395355,
+            "lifeMax": 0.44999998807907104,
             "lifeMin": 0.20000000298023224,
             "offsetMax": [
               8.0,
@@ -1758,8 +1550,8 @@
             "radialSpeedMin": 2.0,
             "sizeEndMax": 0.009999999776482582,
             "sizeEndMin": 0.009999999776482582,
-            "sizeMax": 0.10000000149011612,
-            "sizeMin": 0.05000000074505806,
+            "sizeMax": 0.3499999940395355,
+            "sizeMin": 0.20000000298023224,
             "stretchScale": 0.4000000059604645
           },
           {
@@ -1790,21 +1582,21 @@
             ],
             "convergeRadius": 5.0,
             "convergeSpeed": 0.0,
-            "count": 7,
+            "count": 30,
             "dirScaleMax": 0.0,
             "dirScaleMin": 0.0,
             "distribution": "Directional",
-            "lifeMax": 0.6000000238418579,
+            "lifeMax": 0.5,
             "lifeMin": 0.44999998807907104,
             "offsetMax": [
-              5.0,
-              5.0,
-              5.0
+              9.0,
+              9.0,
+              9.0
             ],
             "offsetMin": [
-              5.0,
-              5.0,
-              5.0
+              9.0,
+              9.0,
+              9.0
             ],
             "radialSpeedMax": 4.0,
             "radialSpeedMin": 1.0,
@@ -1812,7 +1604,7 @@
             "sizeEndMin": 0.019999999552965164,
             "sizeMax": 0.05999999865889549,
             "sizeMin": 0.019999999552965164,
-            "stretchScale": 0.15000000596046448
+            "stretchScale": 1.0
           },
           {
             "billboardMode": "Stretch",
@@ -1864,7 +1656,7 @@
             "sizeEndMin": 0.019999999552965164,
             "sizeMax": 0.05999999865889549,
             "sizeMin": 0.019999999552965164,
-            "stretchScale": 0.15000000596046448
+            "stretchScale": 9.999999747378752e-06
           }
         ],
         "maxParticleNum": 500,
@@ -1887,7 +1679,7 @@
           ]
         },
         "noiseTexture": "",
-        "texture": "circle.png"
+        "texture": "star.png"
       },
       "pos": [
         0.0,
@@ -2913,6 +2705,483 @@
         1.0,
         1.0
       ]
+    },
+    {
+      "name": "InkClashSpark",
+      "params": {
+        "blendMode": "Alpha",
+        "drawPass": [
+          "Default"
+        ],
+        "emitInterval": 0.0,
+        "emitMode": "Burst",
+        "gravity": [
+          0.0,
+          -2.0,
+          0.0
+        ],
+        "layers": [
+          {
+            "billboardMode": "Normal",
+            "colorMax": [
+              1.0,
+              0.5,
+              0.15000000596046448,
+              1.0
+            ],
+            "colorMin": [
+              1.0,
+              0.8500000238418579,
+              0.4000000059604645,
+              1.0
+            ],
+            "colorStartMax": [
+              2.0,
+              2.0,
+              1.600000023841858,
+              1.0
+            ],
+            "colorStartMin": [
+              2.0,
+              2.0,
+              1.600000023841858,
+              1.0
+            ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
+            "count": 50,
+            "dirScaleMax": 4.0,
+            "dirScaleMin": 1.0,
+            "distribution": "Directional",
+            "lifeMax": 1.0,
+            "lifeMin": 0.44999998807907104,
+            "offsetMax": [
+              1.0,
+              1.5,
+              1.0
+            ],
+            "offsetMin": [
+              1.0,
+              0.5,
+              1.0
+            ],
+            "radialSpeedMax": 4.0,
+            "radialSpeedMin": 1.0,
+            "sizeEndMax": 0.009999999776482582,
+            "sizeEndMin": 0.004999999888241291,
+            "sizeMax": 0.009999999776482582,
+            "sizeMin": 0.004999999888241291,
+            "stretchScale": 1.0
+          },
+          {
+            "billboardMode": "Normal",
+            "colorMax": [
+              0.8500000238418579,
+              0.2985294759273529,
+              0.1000000461935997,
+              1.0
+            ],
+            "colorMin": [
+              0.8500000238418579,
+              0.2764706313610077,
+              0.1000000461935997,
+              1.0
+            ],
+            "colorStartMax": [
+              0.10000000149011612,
+              0.10000000149011612,
+              0.10000000149011612,
+              1.0
+            ],
+            "colorStartMin": [
+              0.10000000149011612,
+              0.10000000149011612,
+              0.10000000149011612,
+              1.0
+            ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
+            "count": 50,
+            "dirScaleMax": 4.0,
+            "dirScaleMin": 1.0,
+            "distribution": "Directional",
+            "lifeMax": 0.6000000238418579,
+            "lifeMin": 0.5,
+            "offsetMax": [
+              1.0,
+              1.5,
+              1.0
+            ],
+            "offsetMin": [
+              0.5,
+              0.0,
+              0.5
+            ],
+            "radialSpeedMax": 4.0,
+            "radialSpeedMin": 1.0,
+            "sizeEndMax": 0.019999999552965164,
+            "sizeEndMin": 0.019999999552965164,
+            "sizeMax": 0.019999999552965164,
+            "sizeMin": 0.019999999552965164,
+            "stretchScale": 0.15000000596046448
+          }
+        ],
+        "maxParticleNum": 800,
+        "noise": {
+          "dissolveSoftness": 0.05000000074505806,
+          "dissolveStart": 0.5,
+          "edgeColor": [
+            1.0,
+            0.5,
+            0.10000000149011612,
+            1.0
+          ],
+          "edgeWidth": 0.10000000149011612,
+          "flags": [],
+          "maskPower": 1.0,
+          "noiseScale": 1.0,
+          "scroll": [
+            0.0,
+            0.0
+          ]
+        },
+        "noiseTexture": "",
+        "texture": "star.png"
+      },
+      "pos": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotate": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "InkLiquidSplash_copy",
+      "params": {
+        "blendMode": "LiquidInk",
+        "drawPass": [
+          "Default"
+        ],
+        "emitInterval": 0.0,
+        "emitMode": "Burst",
+        "gravity": [
+          0.0,
+          -5.0,
+          0.0
+        ],
+        "layers": [
+          {
+            "billboardMode": "Stretch",
+            "colorMax": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "colorMin": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "colorStartMax": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "colorStartMin": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
+            "count": 140,
+            "dirScaleMax": 9.0,
+            "dirScaleMin": 3.0,
+            "distribution": "Directional",
+            "lifeMax": 0.75,
+            "lifeMin": 0.44999998807907104,
+            "offsetMax": [
+              1.2000000476837158,
+              1.2000000476837158,
+              1.2000000476837158
+            ],
+            "offsetMin": [
+              1.2000000476837158,
+              1.2000000476837158,
+              1.2000000476837158
+            ],
+            "radialSpeedMax": 4.0,
+            "radialSpeedMin": 1.0,
+            "sizeEndMax": 0.029999999329447746,
+            "sizeEndMin": 0.014999999664723873,
+            "sizeMax": 0.07999999821186066,
+            "sizeMin": 0.04500000178813934,
+            "stretchScale": 0.11999999731779099
+          },
+          {
+            "billboardMode": "Normal",
+            "colorMax": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "colorMin": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "colorStartMax": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "colorStartMin": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
+            "count": 100,
+            "dirScaleMax": 8.0,
+            "dirScaleMin": 4.0,
+            "distribution": "Directional",
+            "lifeMax": 0.800000011920929,
+            "lifeMin": 0.5,
+            "offsetMax": [
+              1.5,
+              1.5,
+              1.5
+            ],
+            "offsetMin": [
+              1.5,
+              1.5,
+              1.5
+            ],
+            "radialSpeedMax": 4.0,
+            "radialSpeedMin": 1.0,
+            "sizeEndMax": 0.07000000029802322,
+            "sizeEndMin": 0.029999999329447746,
+            "sizeMax": 0.1599999964237213,
+            "sizeMin": 0.10000000149011612,
+            "stretchScale": 0.15000000596046448
+          },
+          {
+            "billboardMode": "Normal",
+            "colorMax": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "colorMin": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "colorStartMax": [
+              0.8999999761581421,
+              0.8999999761581421,
+              0.8999999761581421,
+              1.0
+            ],
+            "colorStartMin": [
+              0.8999999761581421,
+              0.8999999761581421,
+              0.8999999761581421,
+              1.0
+            ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
+            "count": 160,
+            "dirScaleMax": 7.0,
+            "dirScaleMin": 2.0,
+            "distribution": "Directional",
+            "lifeMax": 0.8999999761581421,
+            "lifeMin": 0.5,
+            "offsetMax": [
+              3.0,
+              3.0,
+              3.0
+            ],
+            "offsetMin": [
+              3.0,
+              0.5,
+              3.0
+            ],
+            "radialSpeedMax": 4.0,
+            "radialSpeedMin": 1.0,
+            "sizeEndMax": 0.029999999329447746,
+            "sizeEndMin": 0.014999999664723873,
+            "sizeMax": 0.05999999865889549,
+            "sizeMin": 0.03500000014901161,
+            "stretchScale": 0.15000000596046448
+          }
+        ],
+        "maxParticleNum": 1500,
+        "noise": {
+          "dissolveSoftness": 0.05000000074505806,
+          "dissolveStart": 0.5,
+          "edgeColor": [
+            1.0,
+            0.5,
+            0.10000000149011612,
+            1.0
+          ],
+          "edgeWidth": 0.10000000149011612,
+          "flags": [],
+          "maskPower": 1.0,
+          "noiseScale": 1.0,
+          "scroll": [
+            0.0,
+            0.0
+          ]
+        },
+        "noiseTexture": "",
+        "texture": "circle.png"
+      },
+      "pos": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotate": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "InkParticleSplash_gold",
+      "params": {
+        "blendMode": "Alpha",
+        "drawPass": [
+          "Default"
+        ],
+        "emitInterval": 0.0,
+        "emitMode": "Burst",
+        "gravity": [
+          0.0,
+          -5.0,
+          0.0
+        ],
+        "layers": [
+          {
+            "billboardMode": "Stretch",
+            "colorMax": [
+              0.8970588445663452,
+              0.6383913159370422,
+              0.0175893884152174,
+              1.0
+            ],
+            "colorMin": [
+              0.720588207244873,
+              0.6033991575241089,
+              0.05651671811938286,
+              1.0
+            ],
+            "colorStartMax": [
+              0.656862735748291,
+              0.31024831533432007,
+              0.06761820614337921,
+              1.0
+            ],
+            "colorStartMin": [
+              0.8333333134651184,
+              0.48370808362960815,
+              0.04084969311952591,
+              1.0
+            ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
+            "count": 15,
+            "dirScaleMax": 6.0,
+            "dirScaleMin": 0.10000000149011612,
+            "distribution": "Directional",
+            "lifeMax": 0.6000000238418579,
+            "lifeMin": 0.44999998807907104,
+            "offsetMax": [
+              1.600000023841858,
+              1.600000023841858,
+              1.600000023841858
+            ],
+            "offsetMin": [
+              0.10000000149011612,
+              0.10000000149011612,
+              0.10000000149011612
+            ],
+            "radialSpeedMax": 4.0,
+            "radialSpeedMin": 1.0,
+            "sizeEndMax": 0.05999999865889549,
+            "sizeEndMin": 0.019999999552965164,
+            "sizeMax": 0.07999999821186066,
+            "sizeMin": 0.05000000074505806,
+            "stretchScale": 1.0
+          }
+        ],
+        "maxParticleNum": 1000,
+        "noise": {
+          "dissolveSoftness": 0.10000000149011612,
+          "dissolveStart": 0.5,
+          "edgeColor": [
+            0.0,
+            0.0,
+            0.0,
+            0.10000000149011612
+          ],
+          "edgeWidth": 0.10000000149011612,
+          "flags": [
+            "Mask",
+            "Dissolve"
+          ],
+          "maskPower": 1.2519999742507935,
+          "noiseScale": 1.0,
+          "scroll": [
+            0.0,
+            0.0
+          ]
+        },
+        "noiseTexture": "ink_noise.png",
+        "texture": "ink_blob.png"
+      },
+      "pos": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotate": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
     }
   ],
   "groups": {
@@ -2922,7 +3191,9 @@
     "InkHitEffect": [
       "InkHitSpark",
       "InkLiquidSplash",
-      "InkParticleSplash"
+      "InkParticleSplash",
+      "InkClashSpark",
+      "InkParticleSplash_gold"
     ],
     "ParryEffect": [
       "Flare",
@@ -2944,9 +3215,9 @@
     "edgeWidth": 0.15000000596046448,
     "haloAlpha": 0.25,
     "inkColor": [
-      0.03921568766236305,
-      0.03921568766236305,
-      0.03921568766236305
+      0.0117647061124444,
+      0.01568627543747425,
+      0.01568627543747425
     ],
     "softness": 0.05000000074505806,
     "threshold": 0.3499999940395355

@@ -280,6 +280,15 @@
     <Filter Include="Src\Application\Components\GamePlay\Character\Enemy\Tutorial">
       <UniqueIdentifier>{769c5b4f-7b3f-4aa5-bbd8-c2dc53c022c9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Framework\Shader\ShallShader">
+      <UniqueIdentifier>{9d6bd7dd-7a69-4f87-ae5a-cb00d7e14ec4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Framework\Shader\ShapeEffectShader">
+      <UniqueIdentifier>{c1a7251c-b07b-436b-a261-e4bddbc1b540}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Effect\Shape">
+      <UniqueIdentifier>{a6e30e91-3a20-4ddd-ab91-ede28936f2b0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -1149,6 +1158,27 @@
     <ClInclude Include="Src\Application\Definitions\Effect\SlashTrailParamsJson.h">
       <Filter>Src\Application\Definitions\Effect</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Framework\Shader\ShellShader\WindShellShader.h">
+      <Filter>Src\Framework\Shader\ShallShader</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerInkGaugeComponent.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Framework\Shader\ShapeEffectShader\ShapeEffectShader.h">
+      <Filter>Src\Framework\Shader\ShapeEffectShader</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Core\EventBus\Events\ShapeEffectEvents.h">
+      <Filter>Src\Application\Core\EventBus\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Effect\Shape\ShapeEffectDispatcher.h">
+      <Filter>Src\Application\Effect\Shape</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Effect\Shape\ShapeEffectInstance.h">
+      <Filter>Src\Application\Effect\Shape</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Effect\Shape\ShapeEffectMotion.h">
+      <Filter>Src\Application\Effect\Shape</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -1553,12 +1583,26 @@
     <ClCompile Include="Src\Application\Systems\GamePlay\RethalSyncronizationSystem.cpp">
       <Filter>Src\Application\Systems\GamePlay</Filter>
     </ClCompile>
-    <ClCompile Include="Src\Application\Systems\GamePlay\RethalSynchronizationSystem.cpp" />
     <ClCompile Include="Src\Application\Editor\Tools\CharacterEditor.cpp">
       <Filter>Src\Application\Editor\Tools</Filter>
     </ClCompile>
     <ClCompile Include="Src\Application\Definitions\Character\Common\CharacterData.cpp">
       <Filter>Src\Application\Definitions\Character\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Systems\GamePlay\RethalSynchronizationSystem.cpp">
+      <Filter>Src\Application\Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Framework\Shader\ShellShader\WindShellShader.cpp">
+      <Filter>Src\Framework\Shader\ShallShader</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Framework\Shader\ShapeEffectShader\ShapeEffectShader.cpp">
+      <Filter>Src\Framework\Shader\ShapeEffectShader</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Effect\Shape\ShapeEffectDispatcher.cpp">
+      <Filter>Src\Application\Effect\Shape</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Effect\Shape\ShapeEffectInstance.cpp">
+      <Filter>Src\Application\Effect\Shape</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1604,9 +1648,11 @@
     <None Include="Src\Framework\Shader\GPUParticle\inc_GPUParticleNoise.hlsli">
       <Filter>Src\Framework\Shader\GPUParticle</Filter>
     </None>
-    <None Include=".github\copilot-instructions.md" />
     <None Include="Src\Framework\Shader\StandardShader\inc_KdInkTone.hlsli">
       <Filter>Src\Framework\Shader\StandardShader</Filter>
+    </None>
+    <None Include="Src\Framework\Shader\ShellShader\inc_WindShell.hlsli">
+      <Filter>Src\Framework\Shader\ShallShader</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -1699,6 +1745,18 @@
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\SlashTrailShader\SlashTrail_PS_AlphaMasked.hlsl">
       <Filter>Src\Framework\Shader\SlashTrailShader</Filter>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\ShellShader\WindShell_PS.hlsl">
+      <Filter>Src\Framework\Shader\ShallShader</Filter>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\ShellShader\WindShell_VS.hlsl">
+      <Filter>Src\Framework\Shader\ShallShader</Filter>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\ShapeEffectShader\ShapeEffect_PS.hlsl">
+      <Filter>Src\Framework\Shader\ShapeEffectShader</Filter>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\ShapeEffectShader\ShapeEffect_VS.hlsl">
+      <Filter>Src\Framework\Shader\ShapeEffectShader</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

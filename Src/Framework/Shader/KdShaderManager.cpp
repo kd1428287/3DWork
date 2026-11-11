@@ -18,6 +18,7 @@ void KdShaderManager::Init()
 	m_postProcessShader.Init();
 	m_slashTrailShader.Init();
 	m_particleShader.Init();
+	m_shapeEffectShader.Init();
 
 	//============================================
 	// 定数バッファ
@@ -551,6 +552,7 @@ void KdShaderManager::Release()
 	m_postProcessShader.Release();
 	m_spriteShader.Release();
 	m_slashTrailShader.Release();
+	m_shapeEffectShader.Release();
 
 	m_perlinNoiseGPU.Release();
 

@@ -107,9 +107,9 @@ void WarrockBehavior::OnStaggered(EnemyAIController* owner, bool isLarge, float 
 }
 
 // --- 被パリィ処理 ---------------------------------------------------------
-void WarrockBehavior::OnParrySucceeded(EnemyAIController* owner, const Events::ParrySucceeded& event)
+void WarrockBehavior::OnAttackDeflected(EnemyAIController* owner, const Events::AttackDeflected& event)
 {
-	RequestReaction(owner, "ParrySucceeded", ReactionPriority::Parried);
+	RequestReaction(owner, "AttackDeflected", ReactionPriority::Deflected);
 
 	if (PostureComponent* posture = owner->GetPostureComponent()) {
 		posture->AddPostureDamage(event.parryPostureDamage);

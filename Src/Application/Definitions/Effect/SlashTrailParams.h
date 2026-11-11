@@ -62,7 +62,7 @@ struct SlashTrailSplineParams
 	bool	Enabled = true;
 
 	// 1区間あたりの分割数
-	UINT	Subdivisions = 8;
+	UINT	Subdivisions = 16;
 
 	// 細分化後の点数の上限(頂点バッファの容量にも使う)
 	UINT	MaxPoints = 768;
@@ -104,7 +104,7 @@ struct SlashTrailInkParams
 {
 	// 始点側(u=0)から先頭側(u=1)へ補間する色
 	DirectX::SimpleMath::Vector3	ColdColor = { 0.001f, 0.001f, 0.001f };
-	DirectX::SimpleMath::Vector3	HotColor = { 0.01f, 0.01f, 0.01f };
+	DirectX::SimpleMath::Vector3	HotColor = { 0.001f, 0.001f, 0.001f };
 
 	ParticleBlendMode	BlendMode = ParticleBlendMode::Alpha;
 	ParticleDrawPass	DrawPassFlags = ParticleDrawPass::Default;
@@ -113,17 +113,17 @@ struct SlashTrailInkParams
 // 芯(コア)レイヤー：墨の上に重ねる、細く明るい加算合成の線
 struct SlashTrailCoreParams
 {
-	bool	Enabled = false;
+	bool	Enabled = true;
 
 	// 墨の幅に対する倍率
-	float	WidthScale = 0.1f;
+	float	WidthScale = 0.3f;
 
-	DirectX::SimpleMath::Vector3	Color = { 0.45f, 0.325f, 0.3f };
+	DirectX::SimpleMath::Vector3	Color = {0.2f,0.00f,0.00f};// { 0.45f, 0.325f, 0.3f };
 
 	// 始点側のα(先頭側は1。0なら始点へ向かって薄れる)
 	float	TailAlpha = 0.0f;
 
-	ParticleBlendMode	BlendMode = ParticleBlendMode::Add;
+	ParticleBlendMode	BlendMode = ParticleBlendMode::Alpha;
 	ParticleDrawPass	DrawPassFlags = ParticleDrawPass::Default;
 };
 
@@ -139,5 +139,5 @@ struct SlashTrailParams
 	SlashTrailCoreParams	Core;
 
 	// Asset/Textures/Game/Effect/からの相対パス(パーティクルのTexturePathと同じ規約)。墨・芯で共用
-	std::string	TexturePath = "Trail2.png";
+	std::string	TexturePath = "Trail2_.png";
 };

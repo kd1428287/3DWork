@@ -5,6 +5,7 @@
 #include "SpriteShader/KdSpriteShader.h"
 #include "SlashTrailShader/SlashTrailShader.h"	// トレイル(斬撃の軌跡)描画用シェーダー
 #include "GPUParticle/GPUParticleShader.h"		// GPUパーティクル描画用シェーダー
+#include "ShapeEffectShader/ShapeEffectShader.h"	// 一枚テクスチャ(クアッド)エフェクト描画用シェーダー
 #include "PerlinNoiseGPU.h"			// Perlin順列テーブルのGPU転送(全シェーダー共有)
 
 // 点光源データ
@@ -149,6 +150,7 @@ public:
 	KdSpriteShader			m_spriteShader;			// 2Dテクスチャ描画シェーダ
 	SlashTrailShader		m_slashTrailShader;		// トレイル(斬撃の軌跡)描画用シェーダー(全SlashTrailInstance/Rendererで共有)
 	GPUParticleShader		m_particleShader;		// GPUパーティクル描画用シェーダー(全ParticleBufferで共有)
+	ShapeEffectShader		m_shapeEffectShader;	// 一枚テクスチャ(クアッド)エフェクト描画用シェーダー(全ShapeEffectInstanceで共有)
 
 	//==========================
 	//

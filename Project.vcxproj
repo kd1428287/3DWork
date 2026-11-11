@@ -312,6 +312,7 @@
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerCommandResolver.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerFacingComponent.h" />
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerInkGaugeComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerInputComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerInputDevice.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerLockOnComponent.h" />
@@ -383,6 +384,7 @@
     <ClInclude Include="Src\Application\Core\EventBus\Events\AudioEvents.h" />
     <ClInclude Include="Src\Application\Core\EventBus\Events\InputLockEvents.h" />
     <ClInclude Include="Src\Application\Core\EventBus\Events\SceneEvents.h" />
+    <ClInclude Include="Src\Application\Core\EventBus\Events\ShapeEffectEvents.h" />
     <ClInclude Include="Src\Application\Core\EventBus\Events\SlashTrailEvents.h" />
     <ClInclude Include="Src\Application\Core\EventBus\Events\TimeScaleEvents.h" />
     <ClInclude Include="Src\Application\Core\EventBus\Events\TransitionEvents.h" />
@@ -462,6 +464,9 @@
     <ClInclude Include="Src\Application\Effect\Common\KdAssetsTextureProvider.h" />
     <ClInclude Include="Src\Application\Effect\Particle\EffectDispatcher.h" />
     <ClInclude Include="Src\Application\Effect\Particle\EffectInstance.h" />
+    <ClInclude Include="Src\Application\Effect\Shape\ShapeEffectDispatcher.h" />
+    <ClInclude Include="Src\Application\Effect\Shape\ShapeEffectInstance.h" />
+    <ClInclude Include="Src\Application\Effect\Shape\ShapeEffectMotion.h" />
     <ClInclude Include="Src\Application\Effect\SlashTrail\SlashTrailDispatcher.h" />
     <ClInclude Include="Src\Application\Effect\SlashTrail\SlashTrailInstance.h" />
     <ClInclude Include="Src\Application\Effect\SlashTrail\SlashTrailRecorder.h" />
@@ -532,6 +537,8 @@
     <ClInclude Include="Src\Framework\Shader\KdRenderTargetChange.h" />
     <ClInclude Include="Src\Framework\Shader\PerlinNoiseGPU.h" />
     <ClInclude Include="Src\Framework\Shader\PostProcessShader\FluidSimulator.h" />
+    <ClInclude Include="Src\Framework\Shader\ShapeEffectShader\ShapeEffectShader.h" />
+    <ClInclude Include="Src\Framework\Shader\ShellShader\WindShellShader.h" />
     <ClInclude Include="Src\Framework\Shader\SlashTrailShader\SlashTrailShader.h" />
     <ClInclude Include="Src\Framework\Shader\SlashTrailShader\SlashTrailRenderer.h" />
     <ClInclude Include="Src\Framework\Shader\StandardShader\KdStandardShader.h" />
@@ -619,6 +626,8 @@
     <ClCompile Include="Src\Application\Effect\Common\KdAssetsTextureProvider.cpp" />
     <ClCompile Include="Src\Application\Effect\Particle\EffectDispatcher.cpp" />
     <ClCompile Include="Src\Application\Effect\Particle\EffectInstance.cpp" />
+    <ClCompile Include="Src\Application\Effect\Shape\ShapeEffectDispatcher.cpp" />
+    <ClCompile Include="Src\Application\Effect\Shape\ShapeEffectInstance.cpp" />
     <ClCompile Include="Src\Application\Effect\SlashTrail\SlashTrailDispatcher.cpp" />
     <ClCompile Include="Src\Application\Effect\SlashTrail\SlashTrailInstance.cpp" />
     <ClCompile Include="Src\Application\Effect\SlashTrail\SlashTrailRecorder.cpp" />
@@ -676,6 +685,8 @@
     <ClCompile Include="Src\Framework\Shader\KdAmbientController.cpp" />
     <ClCompile Include="Src\Framework\Shader\KdRenderTargetChange.cpp" />
     <ClCompile Include="Src\Framework\Shader\PostProcessShader\FluidSimulator.cpp" />
+    <ClCompile Include="Src\Framework\Shader\ShapeEffectShader\ShapeEffectShader.cpp" />
+    <ClCompile Include="Src\Framework\Shader\ShellShader\WindShellShader.cpp" />
     <ClCompile Include="Src\Framework\Shader\SlashTrailShader\SlashTrailShader.cpp" />
     <ClCompile Include="Src\Framework\Shader\SlashTrailShader\SlashTrailRenderer.cpp" />
     <ClCompile Include="Src\Framework\Shader\StandardShader\KdStandardShader.cpp" />
@@ -698,7 +709,6 @@
     <ClCompile Include="src\Framework\Window\KdWindow.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include=".github\copilot-instructions.md" />
     <None Include="Asset\Data\Game\EnemyData.json" />
     <None Include="Asset\Data\Game\EnemySchema.json" />
     <None Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_bezier_math.inl" />
@@ -709,6 +719,7 @@
     <None Include="Src\Framework\Shader\inc_KdCommon.hlsli" />
     <None Include="Src\Framework\Shader\PerlinNoise.hlsli" />
     <None Include="Src\Framework\Shader\PostProcessShader\inc_KdPostProcessShader.hlsli" />
+    <None Include="Src\Framework\Shader\ShellShader\inc_WindShell.hlsli" />
     <None Include="Src\Framework\Shader\SpriteShader\inc_KdSpriteShader.hlsli" />
     <None Include="Src\Framework\Shader\StandardShader\inc_KdInkTone.hlsli" />
     <None Include="Src\Framework\Shader\StandardShader\inc_KdMotionVector.hlsli" />
@@ -800,6 +811,22 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\ShapeEffectShader\ShapeEffect_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\ShapeEffectShader\ShapeEffect_VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\ShellShader\WindShell_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\ShellShader\WindShell_VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\SlashTrailShader\SlashTrail_PS_AddMasked.hlsl">

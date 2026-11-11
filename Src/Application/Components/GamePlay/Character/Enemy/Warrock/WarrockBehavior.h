@@ -25,7 +25,7 @@ public:
 	std::unique_ptr<IBTNode<EnemyAIController>> BuildTree(EnemyAIController* owner) override;
 	void OnSpawned(EnemyAIController* owner) override;
 	void OnStaggered(EnemyAIController* owner, bool isLarge, float duration) override;
-	void OnParrySucceeded(EnemyAIController* owner, const Events::ParrySucceeded& event) override;
+	void OnAttackDeflected(EnemyAIController* owner, const Events::AttackDeflected& event) override;
 	void OnDied(EnemyAIController* owner) override;
 	void OnFatalized(EnemyAIController* owner) override;
 
@@ -37,7 +37,7 @@ private:
 	// この数値として明示的に持つ形に置き換えた。
 	enum class ReactionPriority : int {
 		BigStagger = 0,
-		Parried = 1,
+		Deflected = 1,
 		HitReaction = 2,
 		Roar = 3,
 	};

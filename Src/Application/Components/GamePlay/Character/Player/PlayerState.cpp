@@ -1,4 +1,4 @@
-// PlayerState.cpp (StateAttackのCanStartXxx群のみ抜粋変更・他は元のまま)
+﻿// PlayerState.cpp (StateAttackのCanStartXxx群のみ抜粋変更・他は元のまま)
 #include "PlayerState.h"
 #include "PlayerStateContext.h"
 #include "PlayerAttackSelector.h"
@@ -10,6 +10,7 @@
 #include "../Common/WeaponSetComponent.h"
 #include "../../../Physics/Movement/TweenMoveComponent.h"
 #include "Application/Core/EventBus/Events/SceneEvents.h" // パスは配置に合わせて調整
+#include "Application/Core/EventBus/Events/CombatEvents.h" // パスは配置に合わせて調整
 
 // =================================================================
 // 各Stateの具体的なロジック実装
@@ -188,6 +189,12 @@ bool StateEvade::IsInvincible(const PlayerStateContext* ctx) const {
 	return phase_ == CombatState::Evade;
 }
 
+
+void StateGuard::SetUp(PlayerStateContext* ctx)
+{
+	parrySuccessSub_ = ctx->owner->GetLocalEventBus().SubscribeScoped<Events::ParrySucceeded>([this](const Events::ParrySucceeded& e) { });
+
+}
 
 // --- Guard State ---
 void StateGuard::Enter(PlayerStateContext* ctx) {

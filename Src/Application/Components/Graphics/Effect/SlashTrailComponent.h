@@ -84,7 +84,7 @@ public:
 			const Math::Vector3 worldTip = Math::Vector3::Transform(ribbon.tip, worldMat);
 			const Math::Vector3 worldBase = Math::Vector3::Transform(ribbon.base, worldMat);
 
-			ribbon.recorder.UpdateTipBase(worldTip, worldBase);
+			// 先に時間を進める(今フレームの移動にかかった時間を、速度(太さ)の計算に含める為)
 			ribbon.recorder.Tick(dt);
 
 			// 最大記録時間で記録器が自動終了した場合も、ここで確定して描画側へ渡す
@@ -93,6 +93,8 @@ public:
 				FinishRibbon(ribbon);
 				continue;
 			}
+
+			ribbon.recorder.UpdateTipBase(worldTip, worldBase);
 
 			dispatcher_->SubmitLive(ribbon.handle, ribbon.recorder);
 		}
@@ -176,7 +178,7 @@ private:
 		dispatcher_ = GetOwner()->GetContext()->slashTrailDispatcher;
 	}
 
-	TransformComponent*   transform_ = nullptr;
+	TransformComponent* transform_ = nullptr;
 	SlashTrailDispatcher* dispatcher_ = nullptr;
 
 	std::vector<Ribbon>   ribbons_;

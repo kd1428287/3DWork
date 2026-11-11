@@ -10,40 +10,40 @@
         },
         {
           "params": {
-            "bodyShapeName": "",
-            "ignoreParent": true,
             "shapes": [
               {
-                "capsuleEnd": [
-                  0.0,
-                  1.0,
-                  0.0
-                ],
-                "categoryMask": [
-                  "HitBox"
-                ],
-                "collideMask": [],
-                "enabled": true,
-                "halfExtents": [
-                  0.75,
-                  1.25,
-                  0.75
-                ],
-                "isStatic": false,
-                "isTrigger": true,
                 "name": "HitBox",
+                "shape": "Box",
                 "offset": [
                   0.0065651871263980865,
                   -0.5,
                   1.4958359315642156e-05
                 ],
                 "radius": 0.5,
-                "shape": "Box",
+                "capsuleEnd": [
+                  0.0,
+                  1.0,
+                  0.0
+                ],
+                "halfExtents": [
+                  0.4099999964237213,
+                  1.250000238418579,
+                  0.3901168406009674
+                ],
+                "categoryMask": [
+                  "HitBox"
+                ],
                 "useDefaultCollideMask": true,
+                "collideMask": [],
+                "enabled": true,
+                "isTrigger": true,
+                "isStatic": false,
                 "wantsStayEvent": false
               }
             ],
-            "wireFrame": false
+            "bodyShapeName": "",
+            "wireFrame": false,
+            "ignoreParent": true
           },
           "type": "Collider"
         },
@@ -135,40 +135,40 @@
         },
         {
           "params": {
-            "bodyShapeName": "",
-            "ignoreParent": true,
             "shapes": [
               {
-                "capsuleEnd": [
-                  0.0,
-                  1.0,
-                  0.0
-                ],
-                "categoryMask": [
-                  "HitBox"
-                ],
-                "collideMask": [],
-                "enabled": true,
-                "halfExtents": [
-                  0.75,
-                  1.25,
-                  0.75
-                ],
-                "isStatic": false,
-                "isTrigger": true,
                 "name": "HitBox",
+                "shape": "Box",
                 "offset": [
                   0.0,
                   -0.5,
                   0.0
                 ],
                 "radius": 0.5,
-                "shape": "Box",
+                "capsuleEnd": [
+                  0.0,
+                  1.0,
+                  0.0
+                ],
+                "halfExtents": [
+                  0.4099999964237213,
+                  1.25,
+                  0.38999998569488525
+                ],
+                "categoryMask": [
+                  "HitBox"
+                ],
                 "useDefaultCollideMask": true,
+                "collideMask": [],
+                "enabled": true,
+                "isTrigger": true,
+                "isStatic": false,
                 "wantsStayEvent": false
               }
             ],
-            "wireFrame": false
+            "bodyShapeName": "",
+            "wireFrame": false,
+            "ignoreParent": true
           },
           "type": "Collider"
         },
@@ -519,7 +519,7 @@
               "animationName": "Hit_Middle",
               "duration": 0.4
             },
-            "ParrySucceeded": {
+            "AttackDeflected": {
               "animationName": "Hit_High",
               "duration": 0.4
             },

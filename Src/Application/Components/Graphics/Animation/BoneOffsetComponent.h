@@ -48,8 +48,8 @@ public:
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
 
 		// 自分の攻撃がパリィされたときだけ届く(解除はScopedSubscriberの破棄で自動)
-		parrySub_ = GetOwner()->GetLocalEventBus().SubscribeScoped<Events::ParrySucceeded>(
-			[this](const Events::ParrySucceeded& e) { OnParrySucceeded(e); });
+		parrySub_ = GetOwner()->GetLocalEventBus().SubscribeScoped<Events::AttackDeflected>(
+			[this](const Events::AttackDeflected& e) { OnAttackDeflected(e); });
 	}
 
 	// 鎖chainNameを弾く。recoilDirWorldは押し戻したい向き(ワールド)、strengthはimpulseへの倍率。
@@ -173,7 +173,7 @@ private:
 		return 0.0f;
 	}
 
-	void OnParrySucceeded(const Events::ParrySucceeded& e)
+	void OnAttackDeflected(const Events::AttackDeflected& e)
 	{
 		if (e.reaction.recoilChain.empty()) { return; }
 

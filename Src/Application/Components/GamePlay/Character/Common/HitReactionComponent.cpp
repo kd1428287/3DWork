@@ -203,10 +203,10 @@ void HitReactionComponent::OnHit(const Events::AttackHit& ctx)
 			if (PostureComponent* attackerPosture = attacker->GetComponent<PostureComponent>()) {
 				attackerPosture->AddPostureDamage(attackData.parryPostureDamage);
 			}
-			Events::ParrySucceeded parried;
-			parried.incomingDir = ComputeIncomingDirection(ctx);
-			parried.reaction = visual.parry;
-			attacker->GetLocalEventBus().Publish(parried);
+			Events::AttackDeflected deflected;
+			deflected.incomingDir = ComputeIncomingDirection(ctx);
+			deflected.reaction = visual.parry;
+			attacker->GetLocalEventBus().Publish(deflected);
 		}
 		HitReaction(visual.parry, ctx);
 

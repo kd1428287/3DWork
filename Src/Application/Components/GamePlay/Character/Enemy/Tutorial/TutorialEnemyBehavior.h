@@ -29,7 +29,7 @@ public:
 
 	std::unique_ptr<IBTNode<EnemyAIController>> BuildTree(EnemyAIController* owner) override;
 	void OnStaggered(EnemyAIController* owner, bool isLarge, float duration) override;
-	void OnParrySucceeded(EnemyAIController* owner, const Events::ParrySucceeded& event) override;
+	void OnAttackDeflected(EnemyAIController* owner, const Events::AttackDeflected& event) override;
 	void OnDied(EnemyAIController* owner) override;
 	float GetDespawnDelay(const EnemyAIController* owner) const override;
 
@@ -37,7 +37,7 @@ public:
 
 private:
 	// 数値が小さいほど優先度が高い。
-	enum class ReactionPriority : int { BigStagger = 0, Parried = 1, HitReaction = 2 };
+	enum class ReactionPriority : int { BigStagger = 0, Deflected = 1, HitReaction = 2 };
 
 	struct PendingReaction {
 		std::string oneShotAnimationKey; // 空なら要求無し

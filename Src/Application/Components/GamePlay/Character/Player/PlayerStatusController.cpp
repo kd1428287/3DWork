@@ -1,4 +1,4 @@
-// PlayerStatusController.cpp
+﻿// PlayerStatusController.cpp
 #include "PlayerStatusController.h"
 
 #include "PlayerAttackSelector.h"
@@ -12,6 +12,7 @@
 
 void PlayerStatusController::Awake()
 {
+	ctx_.owner = GetOwner();
 	ctx_.input = GetOwner()->GetComponent<PlayerInputComponent>();
 	ctx_.lockOn = GetOwner()->GetComponent<PlayerLockOnComponent>();
 	ctx_.movementAnimation = GetOwner()->GetComponent<PlayerMovementAnimationComponent>();

@@ -1200,7 +1200,7 @@
       },
       "minRange": 0.0,
       "maxRange": 4.0,
-      "weight": 1.0,
+      "weight": 0.0,
       "facing": {
         "windupTurnSpeed": 10.0,
         "activeTurnSpeed": 0.0

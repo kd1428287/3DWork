@@ -155,9 +155,9 @@ void TutorialEnemyBehavior::OnStaggered(EnemyAIController* owner, bool isLarge, 
 		isLarge ? ReactionPriority::BigStagger : ReactionPriority::HitReaction);
 }
 
-void TutorialEnemyBehavior::OnParrySucceeded(EnemyAIController* owner, const Events::ParrySucceeded& event)
+void TutorialEnemyBehavior::OnAttackDeflected(EnemyAIController* owner, const Events::AttackDeflected& event)
 {
-	RequestReaction(owner, "ParrySucceeded", ReactionPriority::Parried);
+	RequestReaction(owner, "AttackDeflected", ReactionPriority::Deflected);
 
 	if (PostureComponent* posture = owner->GetPostureComponent()) {
 		posture->AddPostureDamage(event.parryPostureDamage);

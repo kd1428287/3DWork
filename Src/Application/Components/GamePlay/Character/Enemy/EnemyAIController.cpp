@@ -1,4 +1,4 @@
-#include <algorithm>
+﻿#include <algorithm>
 #include "EnemyAIController.h"
 #include "../Common/CharacterEvents.h"
 #include "Application/Core/EventBus/Events/AudioEvents.h"
@@ -190,7 +190,7 @@ void EnemyAIController::StopTelegraphEffect()
 }
 
 // --- 被パリィ処理 ---------------------------------------------------------
-void EnemyAIController::OnParrySucceeded(const Events::ParrySucceeded& e)
+void EnemyAIController::OnAttackDeflected(const Events::AttackDeflected& e)
 {
 	if (behavior_) {
 		//behavior_->OnParrySucceeded(this, e);

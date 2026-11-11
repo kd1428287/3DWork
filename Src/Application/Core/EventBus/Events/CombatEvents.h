@@ -28,6 +28,11 @@ namespace Events
 		float ratio = 0.0f;
 	};
 
+	struct InkGaugeChanged : public Event {
+		Handle<GameObject> source;
+		float ratio = 0.0f;
+	};
+
 	struct AttackHit : public Event {
 		CollisionMath::OverlapResult hitResult;
 		Handle<GameObject> attacker;
@@ -38,12 +43,14 @@ namespace Events
 		Math::Vector3 lastValidSwingDir;
 	};
 
-	struct ParrySucceeded : public Event
+	struct AttackDeflected : public Event
 	{
 		float parryPostureDamage = 0.0f;
 		Math::Vector3 incomingDir;		// 攻撃の進入方向(ワールド、正規化済み)
 		ReactionEventConfig reaction;	// パリィされた攻撃のparry演出データ
 	};
+
+	struct ParrySucceeded : public Event {};
 
 	struct Syncronization : public Event
 	{

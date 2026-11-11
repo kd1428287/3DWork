@@ -67,16 +67,16 @@
         {
           "params": {
             "base": [
-              0,
-              0,
+              0.0,
+              0.0,
               1.0
             ],
             "emitOnStart": false,
             "key": "Sword_Player",
             "tip": [
-              0,
-              0,
-              1.75
+              0.0,
+              0.0,
+              2.0
             ],
             "trailName": "Sword"
           },

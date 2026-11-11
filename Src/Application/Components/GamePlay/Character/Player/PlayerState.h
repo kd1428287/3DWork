@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Application/Definitions/Character/Player/PlayerCombatTypes.h"
 #include "Application/Definitions/Character/Player/PlayerInputTypes.h"
 #include "Application/Definitions/Character/Common/StateMachine/StateMachine.h"
@@ -136,6 +136,7 @@ private:
 
 class StateGuard : public DataState<GuardData> {
 public:
+	void SetUp(PlayerStateContext* ctx);
 	void Enter(PlayerStateContext* ctx) override;
 	void Update(PlayerStateContext* ctx, float deltaTime) override;
 	void Exit(PlayerStateContext* ctx) override;
@@ -197,6 +198,9 @@ private:
 	// 更新を止め、endDuration経過を待つだけの状態になる。
 	bool isReleasing_ = false;
 	float releaseElapsed_ = 0.0f;
+
+	ScopedSubscriber parrySuccessSub_;
+	ScopedSubscriber guardHitSub_;
 };
 
 

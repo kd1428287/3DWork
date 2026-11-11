@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 //#include <d3d11.h>
 //#include <wrl/client.h>
@@ -44,6 +44,10 @@ public:
 	void BindPS(ID3D11DeviceContext* ctx, UINT slot) const {
 		ID3D11ShaderResourceView* srv = srv_.Get();
 		ctx->PSSetShaderResources(slot, 1, &srv);
+	}
+	void BindVS(ID3D11DeviceContext* ctx, UINT slot) const {
+		ID3D11ShaderResourceView* srv = srv_.Get();
+		ctx->VSSetShaderResources(slot, 1, &srv);
 	}
 
 	// デバイス解放前にKdShaderManager::Release()から呼ぶ

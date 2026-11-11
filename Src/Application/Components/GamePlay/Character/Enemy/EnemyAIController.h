@@ -116,8 +116,8 @@ public:
 				[this](const Events::Died& e) { OnDied(); });
 		}
 
-		ParrySucceededSubscriber_ = GetOwner()->GetLocalEventBus().SubscribeScoped<Events::ParrySucceeded>(
-			[this](const Events::ParrySucceeded& e) { OnParrySucceeded(e); });
+		ParrySucceededSubscriber_ = GetOwner()->GetLocalEventBus().SubscribeScoped<Events::AttackDeflected>(
+			[this](const Events::AttackDeflected& e) { OnAttackDeflected(e); });
 
 		enemyKillSubscriber_ = GLOBALEVENT->SubscribeScoped<Events::EnemyKill>(
 			[this](const Events::EnemyKill& e) {
@@ -412,7 +412,7 @@ private:
 	void UpdateTelegraphEffect();
 	Math::Vector3 ComputeTelegraphPosition() const;
 	TransformComponent* FindPlayerTransform() const;
-	void OnParrySucceeded(const Events::ParrySucceeded& e);
+	void OnAttackDeflected(const Events::AttackDeflected& e);
 	void OnDied();
 	void RequestDespawn();
 	void ApplyRootMotion();
