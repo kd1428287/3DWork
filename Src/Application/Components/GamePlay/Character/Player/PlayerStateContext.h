@@ -10,6 +10,7 @@ class WeaponSetComponent;
 class PlayerAttackSelector;
 class PlayerFacingComponent;
 class PlayerCombatMovementComponent;
+class PlayerInkGaugeComponent;
 
 // 攻撃idを直接指定して攻撃へ遷移する要求(チャージ攻撃など)。
 struct PlayerAttackRequest
@@ -44,6 +45,7 @@ struct PlayerStateContext
 	PlayerFacingComponent* facing = nullptr;
 	PlayerCombatMovementComponent* combatMovement = nullptr;
 	IPlayerStateRequester* requester = nullptr;
+	PlayerInkGaugeComponent* inkGauge = nullptr;
 
 	MovementState movementState = MovementState::Stand;
 

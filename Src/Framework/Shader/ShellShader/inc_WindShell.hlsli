@@ -26,7 +26,9 @@ cbuffer cbWindShell : register(b10)	// ※C++側WindShellShader::kCBSlotと一�
 	float g_Seed;			// レイヤーごとの位相ずらし
 
 	float g_LifeRate;		// 消去用 1→0
-	float3 _windPad;
+	float g_Scatter;		// 筋UVの歪み量(繰り返し・整列を崩す)
+	float g_SpinJitter;		// 位置ごとの回転角のゆらぎ(ラジアン)
+	float g_NoiseSpeed;		// 半径ノイズの時間変化の速さ
 };
 
 struct WindVSOut

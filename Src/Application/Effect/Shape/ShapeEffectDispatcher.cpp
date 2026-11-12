@@ -1,12 +1,17 @@
 ﻿#include "Application/main.h"
 #include "ShapeEffectDispatcher.h"
+#include "Application/Definitions/Loaders/ShapeEffectDataLoader.h"
 #include "Framework/Shader/KdShaderManager.h"
-#include "Application/Definitions/Effect/EffectParams.h"
 
+std::vector<ShapeEffectDispatcher*> ShapeEffectDispatcher::s_instances;
+std::mutex ShapeEffectDispatcher::s_instancesMutex;
 
-// 購読開始
-bool ShapeEffectDispatcher::Init(EventBus& bus)
+// JSON読み込み、購読開始
+bool ShapeEffectDispatcher::Init(EventBus& bus, const std::string& dataPath)
 {
+	dataPath_ = dataPath;
+	LoadData(dataPath_);
+
 	subscriptions_.reserve(3);
 
 	subscriptions_.push_back(
@@ -33,11 +38,21 @@ bool ShapeEffectDispatcher::Init(EventBus& bus)
 				pendingEvents_.push_back(PendingDetach{ e.InstanceKey });
 			}));
 
+	{
+		std::lock_guard<std::mutex> lock(s_instancesMutex);
+		s_instances.push_back(this);
+	}
+
 	return true;
 }
 
 void ShapeEffectDispatcher::Release()
 {
+	{
+		std::lock_guard<std::mutex> lock(s_instancesMutex);
+		s_instances.erase(std::remove(s_instances.begin(), s_instances.end(), this), s_instances.end());
+	}
+
 	subscriptions_.clear();
 
 	{
@@ -52,6 +67,34 @@ void ShapeEffectDispatcher::Release()
 void ShapeEffectDispatcher::RegisterDefinition(const std::string& name, const ShapeEffectDefinition& def)
 {
 	definitions_[name] = def;
+}
+
+bool ShapeEffectDispatcher::LoadData(const std::string& path)
+{
+	ShapeEffectDataFile data;
+	if (!ShapeEffectDataLoader::Load(path, data)) { return false; }
+
+	for (const ShapeEffectData& effect : data.Effects)
+	{
+		auto motion = std::make_shared<KeyframeMotion>();
+		motion->keys = effect.Keys;
+
+		ShapeEffectDefinition def;
+		def.Params = effect.Params;
+		def.Motion = std::move(motion);
+		definitions_[effect.Name] = std::move(def);
+	}
+	return true;
+}
+
+void ShapeEffectDispatcher::NotifyDataSaved(const std::string& path)
+{
+	std::lock_guard<std::mutex> lock(s_instancesMutex);
+
+	for (ShapeEffectDispatcher* dispatcher : s_instances)
+	{
+		if (dispatcher->dataPath_ == path) { dispatcher->reloadRequested_.store(true, std::memory_order_release); }
+	}
 }
 
 // pendingを取り出して1件ずつ処理する
@@ -96,6 +139,9 @@ void ShapeEffectDispatcher::ProcessPendingEvents()
 
 void ShapeEffectDispatcher::Update(float deltaTime)
 {
+	// 再生中のインスタンスは旧定義のまま最後まで再生し、以降のAttachから新定義になる
+	if (reloadRequested_.exchange(false, std::memory_order_acq_rel)) { LoadData(dataPath_); }
+
 	ProcessPendingEvents();
 
 	for (auto it = active_.begin(); it != active_.end(); )
@@ -128,7 +174,7 @@ void ShapeEffectDispatcher::Draw(ParticleDrawPass pass)
 	for (auto& pair : active_)
 	{
 		const Active& active = pair.second;
-		if (active.instance.GetParams().DrawPass != pass) { continue; }
+		if (!KdHasDrawPassFlag(active.instance.GetParams().DrawPassFlags, pass)) { continue; }
 
 		active.instance.Draw(active.base);
 	}

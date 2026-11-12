@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <vector>
+#include <string>
 #include <algorithm>
 #include <cmath>
 
@@ -16,7 +17,28 @@ enum class EaseType
 	Linear,
 	InQuad, OutQuad, InOutQuad,
 	InCubic, OutCubic, InOutCubic,
+	Count,	// 個数(名前表・エディタのコンボ用。末尾に保つ)
 };
+
+// JSON保存・エディタ表示用の名前
+inline const char* EaseTypeName(EaseType type)
+{
+	static const char* const kNames[] = { "Linear", "InQuad", "OutQuad", "InOutQuad", "InCubic", "OutCubic", "InOutCubic" };
+	static_assert(sizeof(kNames) / sizeof(kNames[0]) == (size_t)EaseType::Count, "EaseTypeの名前表と個数を合わせる事");
+
+	const size_t i = (size_t)type;
+	return (i < (size_t)EaseType::Count) ? kNames[i] : "Linear";
+}
+
+// 未知の名前はLinearになる
+inline EaseType EaseTypeFromName(const std::string& name)
+{
+	for (size_t i = 0; i < (size_t)EaseType::Count; ++i)
+	{
+		if (name == EaseTypeName((EaseType)i)) { return (EaseType)i; }
+	}
+	return EaseType::Linear;
+}
 
 // 0〜1のtにイージングをかける(範囲外はクランプ)
 inline float ApplyEase(EaseType type, float t)

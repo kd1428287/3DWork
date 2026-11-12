@@ -8,6 +8,7 @@
 #include "../Common/HealthComponent.h" // パスはプロジェクトの配置に合わせて調整
 #include "../Common/HitReactionComponent.h"
 #include "../../../Physics/Collision/ColliderComponent.h"
+#include "PlayerInkGaugeComponent.h"
 #include <cassert>
 
 void PlayerStatusController::Awake()
@@ -21,6 +22,7 @@ void PlayerStatusController::Awake()
 	ctx_.attackSelector = GetOwner()->GetComponent<PlayerAttackSelector>();
 	ctx_.facing = GetOwner()->GetComponent<PlayerFacingComponent>();
 	ctx_.combatMovement = GetOwner()->GetComponent<PlayerCombatMovementComponent>();
+	ctx_.inkGauge = GetOwner()->GetComponent<PlayerInkGaugeComponent>();
 	ctx_.requester = this;
 	health_ = GetOwner()->GetComponent<HealthComponent>();
 
@@ -121,6 +123,7 @@ bool PlayerStatusController::TryStartEvade(const Math::Vector3& direction)
 bool PlayerStatusController::TryStartGuard()
 {
 	if (!CanStartGuard()) return false;
+	stateGuard_.SetUp(&ctx_);
 	ForceTransitionTo(&stateGuard_);
 	return true;
 }
@@ -149,14 +152,14 @@ void PlayerStatusController::NotifyParrySuccess()
 {
 	// パリィはGuard中にしか成立し得ないため、Guard中でなければ何もしない
 	if (GetCombatState() == CombatState::Guard) {
-		stateGuard_.NotifyParrySuccess(&ctx_);
+		stateGuard_.ParrySuccess(&ctx_);
 	}
 }
 
 void PlayerStatusController::NotifyGuardHit()
 {
 	if (GetCombatState() == CombatState::Guard) {
-		stateGuard_.NotifyGuardHit(&ctx_);
+		stateGuard_.GuardHit(&ctx_);
 	}
 }
 

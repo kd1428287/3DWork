@@ -1,4 +1,4 @@
-// Player専用のコンポーネント登録。
+﻿// Player専用のコンポーネント登録。
 
 #include "Application/Factories/ComponentRegistry.h"
 #include "Application/Factories/Registrations/RegisterFunctions.h"
@@ -16,11 +16,13 @@
 #include "Application/Components/GamePlay/Character/Player/PlayerLockOnComponent.h"
 #include "Application/Components/GamePlay/Character/Player/PlayerMovementAnimationComponent.h"
 #include "Application/Components/GamePlay/Character/Player/PlayerStatusController.h"
+#include "Application/Components/GamePlay/Character/Player/PlayerInkGaugeComponent.h"
 
 using namespace Registration;
 
 COMPONENT_PARAMS_DEFINE_TYPE(PlayerCombatMovementConfig, walkSpeed, runSpeed)
 COMPONENT_PARAMS_DEFINE_TYPE(PlayerStatusControllerConfig, evade, guard, charge, stagger)
+COMPONENT_PARAMS_DEFINE_TYPE(InkGaugeConfig, max, regenPerSecond, gainOnParry, chargeLine);
 
 // 接続を伴う型のparams。ODR違反を避けるため、マクロも含めて無名名前空間に入れる。
 namespace
@@ -48,6 +50,7 @@ void RegisterPlayerComponents(ComponentRegistry& registry)
 	registry.Add<PlayerInputComponent>("PlayerInput");
 	registry.Add<PlayerLockOnComponent>("PlayerLockOn");
 	registry.Add<PlayerFacingComponent>("PlayerFacing");
+	registry.Add<PlayerFacingComponent>("PlayerInkGauge");
 	registry.Add<PlayerMovementAnimationComponent>("PlayerMovementAnimation");
 	registry.Add<PlayerStatusController>("PlayerStatusController");
 	registry.AddWithParams<PlayerCombatMovementConfig>("PlayerCombatMovement", [](BuildContext& ctx, const PlayerCombatMovementConfig& config) {

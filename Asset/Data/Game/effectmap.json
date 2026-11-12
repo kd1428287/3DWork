@@ -90,8 +90,8 @@
             0.0
           ]
         },
-        "noiseTexture": "ink_noise.png",
-        "texture": "ink_blob.png"
+        "noiseTexture": "Noise/ink_noise.png",
+        "texture": "Particle/ink_blob.png"
       },
       "pos": [
         0.0,
@@ -251,8 +251,8 @@
             0.0
           ]
         },
-        "noiseTexture": "ink_noise.png",
-        "texture": "circle.png"
+        "noiseTexture": "Noise/ink_noise.png",
+        "texture": "Particle/circle.png"
       },
       "pos": [
         0.0,
@@ -463,7 +463,7 @@
           ]
         },
         "noiseTexture": "",
-        "texture": "circle.png"
+        "texture": "Particle/circle.png"
       },
       "pos": [
         0.0,
@@ -673,7 +673,7 @@
           ]
         },
         "noiseTexture": "",
-        "texture": "circle.png"
+        "texture": "Particle/circle.png"
       },
       "pos": [
         0.0,
@@ -885,8 +885,8 @@
             0.0
           ]
         },
-        "noiseTexture": "ink_noise.png",
-        "texture": "ink_blob.png"
+        "noiseTexture": "Noise/ink_noise.png",
+        "texture": "Particle/ink_blob.png"
       },
       "pos": [
         0.0,
@@ -992,7 +992,7 @@
           ]
         },
         "noiseTexture": "",
-        "texture": "circle.png"
+        "texture": "Particle/circle.png"
       },
       "pos": [
         0.0,
@@ -1151,7 +1151,7 @@
           ]
         },
         "noiseTexture": "",
-        "texture": "Ring.png"
+        "texture": "Particle/Ring.png"
       },
       "pos": [
         0.0,
@@ -1258,7 +1258,7 @@
           ]
         },
         "noiseTexture": "",
-        "texture": "circle.png"
+        "texture": "Particle/dia.png"
       },
       "pos": [
         0.0,
@@ -1416,7 +1416,7 @@
           ]
         },
         "noiseTexture": "",
-        "texture": "circle.png"
+        "texture": "Particle/circle.png"
       },
       "pos": [
         0.0,
@@ -1679,7 +1679,7 @@
           ]
         },
         "noiseTexture": "",
-        "texture": "star.png"
+        "texture": "Particle/dia.png"
       },
       "pos": [
         0.0,
@@ -1785,7 +1785,7 @@
           ]
         },
         "noiseTexture": "",
-        "texture": "circle.png"
+        "texture": "Particle/circle.png"
       },
       "pos": [
         0.0,
@@ -1996,7 +1996,7 @@
           ]
         },
         "noiseTexture": "",
-        "texture": "circle.png"
+        "texture": "Particle/circle.png"
       },
       "pos": [
         0.0,
@@ -2103,8 +2103,8 @@
             0.0
           ]
         },
-        "noiseTexture": "ink_noise.png",
-        "texture": "ink_blob.png"
+        "noiseTexture": "Noise/ink_noise.png",
+        "texture": "Particle/ink_blob.png"
       },
       "pos": [
         0.0,
@@ -2210,7 +2210,7 @@
           ]
         },
         "noiseTexture": "",
-        "texture": "star.png"
+        "texture": "Particle/star.png"
       },
       "pos": [
         0.0,
@@ -2317,7 +2317,7 @@
           ]
         },
         "noiseTexture": "",
-        "texture": "circle.png"
+        "texture": "Particle/circle.png"
       },
       "pos": [
         0.0,
@@ -2423,7 +2423,7 @@
           ]
         },
         "noiseTexture": "",
-        "texture": "circle.png"
+        "texture": "Particle/circle.png"
       },
       "pos": [
         0.0,
@@ -2687,8 +2687,8 @@
             0.0
           ]
         },
-        "noiseTexture": "ink_noise.png",
-        "texture": "ink_blob.png"
+        "noiseTexture": "Noise/ink_noise.png",
+        "texture": "Particle/ink_blob.png"
       },
       "pos": [
         0.0,
@@ -2846,7 +2846,7 @@
           ]
         },
         "noiseTexture": "",
-        "texture": "star.png"
+        "texture": "Particle/star.png"
       },
       "pos": [
         0.0,
@@ -3056,7 +3056,7 @@
           ]
         },
         "noiseTexture": "",
-        "texture": "circle.png"
+        "texture": "Particle/circle.png"
       },
       "pos": [
         0.0,
@@ -3164,8 +3164,8 @@
             0.0
           ]
         },
-        "noiseTexture": "ink_noise.png",
-        "texture": "ink_blob.png"
+        "noiseTexture": "Noise/ink_noise.png",
+        "texture": "Particle/ink_blob.png"
       },
       "pos": [
         0.0,

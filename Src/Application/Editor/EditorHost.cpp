@@ -7,6 +7,7 @@
 #include "Common/EditorViewport.h"
 #include "Tools/MapEditor.h"
 #include "Tools/EffectEditor.h"
+#include "Tools/ShapeEffectEditor.h"
 #include "Tools/ShaderTuningEditor.h"
 #include "Tools/BTEditor.h"
 #include "Tools/UIEditor.h"
@@ -88,6 +89,8 @@ void EditorHost::RenderPreviewViewports()
 
 	// エフェクトプレビュー専用ビューポートへの描画
 	EffectEditor::Instance().RenderPreviewViewport();
+	// 一枚テクスチャエフェクトのプレビュー
+	ShapeEffectEditor::Instance().RenderPreviewViewport();
 	// マッププレビュー
 	MapEditor::Instance().RenderPreviewViewport();
 	// UIプレビュー
@@ -132,6 +135,9 @@ void EditorHost::Draw()
 
 		// エフェクトエディタ
 		EffectEditor::Instance().Update();
+
+		// 一枚テクスチャエフェクトエディタ
+		ShapeEffectEditor::Instance().Update();
 
 		// BTエディタ
 		BTEditor::Instance().Update();

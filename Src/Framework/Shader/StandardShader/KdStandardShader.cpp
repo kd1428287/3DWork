@@ -93,6 +93,41 @@ void KdStandardShader::EndUnLit()
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// オーラの描画の直前処理(スキニング対応VSと、フレネル+ノイズのPSへ切り替える)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void KdStandardShader::BeginAura()
+{
+	KdShaderManager& manager = KdShaderManager::Instance();
+
+	manager.SetVertexShader(m_VS_Aura);
+	manager.SetInputLayout(m_inputLayout);
+	manager.SetVSConstantBuffer(0, m_cb0_Obj.GetAddress());
+	manager.SetVSConstantBuffer(1, m_cb1_Mesh.GetAddress());
+	// BeginLitに依存せず、ボーンは自前でバインドする
+	manager.SetVSConstantBuffer(3, m_cb3_Bone.GetAddress());
+
+	manager.SetPixelShader(m_PS_Aura);
+	manager.SetPSConstantBuffer(0, m_cb0_Obj.GetAddress());
+
+	// ノイズ用のWrapサンプラー(他のスロットは触らない)
+	manager.ChangeSamplerState(KdSamplerState::Anisotropic_Wrap, kAuraSamplerSlot);
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// オーラの描画終了(呼び出し元のUnLitパスのパイプラインへ戻す)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void KdStandardShader::EndAura()
+{
+	ID3D11ShaderResourceView* pNullSRV = nullptr;
+	KdDirect3D::Instance().WorkDevContext()->PSSetShaderResources(kAuraNoiseSlot, 1, &pNullSRV);
+
+	KdShaderManager::Instance().UndoSamplerState(kAuraSamplerSlot);
+
+	// DrawEffectはUnLitパス内で呼ばれるため、後続の描画用にUnLitへ戻す
+	BeginUnLit();
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 影を生み出すオブジェクトの情報描画（光を遮る物体）
 // ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
 // シェーダーのパイプライン変更
@@ -561,6 +596,17 @@ bool KdStandardShader::Init()
 		}
 	}
 
+	{
+#include "KdStandardShader_VS_Aura.shaderInc"
+
+		// 頂点シェーダー作成(入力レイアウトはVS_Litと共通)
+		if (FAILED(KdDirect3D::Instance().WorkDev()->CreateVertexShader(compiledBuffer, sizeof(compiledBuffer), nullptr, &m_VS_Aura))) {
+			assert(0 && "頂点シェーダー作成失敗(Aura)");
+			Release();
+			return false;
+		}
+	}
+
 	//-------------------------------------
 	// ピクセルシェーダ
 	//-------------------------------------
@@ -593,6 +639,16 @@ bool KdStandardShader::Init()
 			return false;
 		}
 	}
+	{
+#include "KdStandardShader_PS_Aura.shaderInc"
+
+		if (FAILED(KdDirect3D::Instance().WorkDev()->CreatePixelShader(compiledBuffer, sizeof(compiledBuffer), nullptr, &m_PS_Aura))) {
+			assert(0 && "ピクセルシェーダー作成失敗(Aura)");
+			Release();
+			return false;
+		}
+	}
+
 	//-------------------------------------
 	// 定数バッファ作成
 	//-------------------------------------
@@ -631,12 +687,14 @@ void KdStandardShader::Release()
 	KdSafeRelease(m_VS_Lit);
 	KdSafeRelease(m_VS_GenDepthFromLight);
 	KdSafeRelease(m_VS_UnLit);
+	KdSafeRelease(m_VS_Aura);
 
 	KdSafeRelease(m_inputLayout);
 
 	KdSafeRelease(m_PS_Lit);
 	KdSafeRelease(m_PS_GenDepthFromLight);
 	KdSafeRelease(m_PS_UnLit);
+	KdSafeRelease(m_PS_Aura);
 
 	m_cb0_Obj.Release();
 	m_cb1_Mesh.Release();

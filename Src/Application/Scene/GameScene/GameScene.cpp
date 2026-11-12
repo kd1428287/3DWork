@@ -11,6 +11,7 @@
 #include "Application/Effect/Particle/EffectDispatcher.h"
 #include "Application/Effect/SlashTrail/SlashTrailDispatcher.h"
 #include "Application/Effect/Shape/ShapeEffectDispatcher.h"
+#include "Application/Effect/Shell/WindShellDispatcher.h"
 
 // factory
 #include "Application/Factories/PrefabFactory.h"
@@ -46,44 +47,12 @@ namespace
 
 #ifdef _DEBUG
 	// ShapeEffect検証用(確認後に削除)
-	constexpr const char* kShapeTestTexture = "Cloud.png";	// 手元のテクスチャへ差し替え
 	const Math::Vector3 kShapeTestCenter = { 0.0f, 3.5f, 0.0f };					// プレイヤー付近へ合わせる
 
 	// 中心を軸にyaw回転する基準点
 	Math::Matrix ShapeTestBase(float yaw)
 	{
 		return Math::Matrix::CreateFromYawPitchRoll(yaw, 0.0f, 0.0f) * Math::Matrix::CreateTranslation(kShapeTestCenter);
-	}
-
-	void RegisterShapeEffectTest(ShapeEffectDispatcher& dispatcher)
-	{
-		// A(2.0秒)：出現(拡大+フェードイン) → ロール1周 → 縦に伸びて消える。+X側へずらしてあり、基準点の回転で周回する
-		auto motionA = std::make_shared<KeyframeMotion>();
-		motionA->keys = {
-			{ { 1.5f, 0.0f, 0.0f }, { 0.0f, 0.0f,   0.0f }, { 0.1f, 0.1f }, 0.0f },
-			{ { 1.5f, 0.5f, 0.0f }, { 0.0f, 0.0f,   0.0f }, { 1.0f, 1.0f }, 1.0f, EaseType::OutCubic, 0.4f },
-			{ { 1.5f, 0.5f, 0.0f }, { 0.0f, 0.0f, 360.0f }, { 1.0f, 1.0f }, 1.0f, EaseType::Linear,   1.0f },
-			{ { 1.5f, 1.5f, 0.0f }, { 0.0f, 0.0f, 360.0f }, { 0.3f, 2.0f }, 0.0f, EaseType::InQuad,   0.6f },
-		};
-		ShapeEffectDefinition defA;
-		defA.Params.TexturePath = kShapeTestTexture;
-		defA.Params.BlendMode = ParticleBlendMode::Alpha;
-		defA.Motion = motionA;
-		dispatcher.RegisterDefinition("ShapeTestAlpha", defA);
-
-		// B(3.0秒)：その場で拡大しながらフェードイン → 保持 → フェードアウト(加算)
-		auto motionB = std::make_shared<KeyframeMotion>();
-		motionB->keys = {
-			{ { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f }, 0.0f },
-			{ { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 2.0f, 2.0f }, 1.0f, EaseType::InOutQuad, 0.5f },
-			{ { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 2.0f, 2.0f }, 1.0f, EaseType::Linear,     1.0f },
-			{ { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 3.0f, 3.0f }, 0.0f, EaseType::OutQuad,    1.5f },
-		};
-		ShapeEffectDefinition defB;
-		defB.Params.TexturePath = kShapeTestTexture;
-		defB.Params.BlendMode = ParticleBlendMode::Add;
-		defB.Motion = motionB;
-		dispatcher.RegisterDefinition("ShapeTestAdd", defB);
 	}
 #endif
 
@@ -134,6 +103,36 @@ void GameScene::OnUpdate(float deltaTime)
 		angle += deltaTime * DirectX::XM_PIDIV2;	// 90度/秒
 		Events::PublishShapeEffectBaseUpdate(*localBus_, "shape_test_a", ShapeTestBase(angle));
 	}
+
+	// WindShell検証用(確認後に削除)
+	// テンキー1：EnemyAura(カプセル)、テンキー2：Charge(球)を発生。以後は毎フレーム位置・軸・進行度を更新し続ける
+	{
+		static bool prevKey1 = false;
+		static bool prevKey2 = false;
+		static float windTime = 0.0f;
+
+		const bool key1 = (GetAsyncKeyState('1') & 0x8000) != 0;
+		const bool key2 = (GetAsyncKeyState('2') & 0x8000) != 0;
+
+		windTime += deltaTime;
+
+		const Math::Vector3 posA = kShapeTestCenter + Math::Vector3(-2.0f, 0.0f, 0.0f);
+		const Math::Vector3 posB = kShapeTestCenter + Math::Vector3(2.0f, 0.0f, 0.0f);
+
+		// カプセルの軸は水平付近でぐるぐる回す(90度/秒)。球の進行度は3秒で0→1を繰り返す
+		const float angle = windTime * DirectX::XM_PIDIV2;
+		Math::Vector3 axisA(cosf(angle), 0.3f, sinf(angle));
+		axisA.Normalize();
+		const float progressB = fmodf(windTime, 3.0f) / 3.0f;
+
+		if (key1 && !prevKey1) { Events::PublishWindShellAttach(*localBus_, "wind_test_a", "EnemyAura", posA, axisA); }
+		if (key2 && !prevKey2) { Events::PublishWindShellAttach(*localBus_, "wind_test_b", "Charge", posB, Math::Vector3::Up); }
+		prevKey1 = key1;
+		prevKey2 = key2;
+
+		Events::PublishWindShellUpdate(*localBus_, "wind_test_a", posA, axisA, 0.0f);
+		Events::PublishWindShellUpdate(*localBus_, "wind_test_b", posB, Math::Vector3::Up, progressB);
+	}
 #endif
 
 	result_->Update(deltaTime, PollConfirm());
@@ -146,6 +145,7 @@ void GameScene::OnPreDraw(float deltaTime)
 {
 	effectDispatcher_->Update(deltaTime);
 	shapeEffectDispatcher_->Update(deltaTime);
+	windShellDispatcher_->Update(deltaTime);
 }
 
 void GameScene::OnDrawEffects()
@@ -153,6 +153,7 @@ void GameScene::OnDrawEffects()
 	effectDispatcher_->Draw(ParticleDrawPass::Default);
 	slashTrailDispatcher_->Draw(ParticleDrawPass::Default);
 	shapeEffectDispatcher_->Draw(ParticleDrawPass::Default);
+	windShellDispatcher_->Draw(ParticleDrawPass::Default);
 	effectDispatcher_->DrawLiquid();
 }
 
@@ -278,9 +279,11 @@ void GameScene::BuildSystems()
 
 	shapeEffectDispatcher_ = std::make_unique<ShapeEffectDispatcher>();
 	shapeEffectDispatcher_->Init(*localBus_);
-#ifdef _DEBUG
-	RegisterShapeEffectTest(*shapeEffectDispatcher_);
-#endif
+
+	windShellDispatcher_ = std::make_unique<WindShellDispatcher>();
+	windShellDispatcher_->Init(*localBus_);
+	windShellDispatcher_->RegisterPreset("EnemyAura", WindShellPreset::EnemyAura());
+	windShellDispatcher_->RegisterPreset("Charge", WindShellPreset::Charge());
 
 	timeScaleSystem_ = std::make_unique<TimeScaleSystem>(*localBus_, *objManager_);
 
@@ -309,7 +312,7 @@ void GameScene::SetupEnvironment()
 	//ambient.AddPointLight(Math::Vector3(0.2f,0.2f,0.2f), 10.0f, Math::Vector3(0, 5, 0), true);
 	ambient.SetFogEnable(false, true);
 	ambient.SetheightFog({ 0.7f, 0.7f, 0.7f }, 80.f, -10.f, 100.f);
-	ambient.SetAmbientLight(Math::Vector4(0.28f, 0.31f, 0.36f, 1.0f));
+	ambient.SetAmbientLight(Math::Vector4(0.28f,0.31f,0.36f,1.0f));
 
 	// ポストプロセス
 	post.SetFarClippingDistance(50.f);
@@ -321,7 +324,7 @@ void GameScene::SetupEnvironment()
 	post.SetTint(-0.15f);
 
 	post.SetMotionBlurEnabled(true);
-	post.SetMotionBlurStrength(0.f);
+	post.SetMotionBlurStrength(0.f);	
 	post.SetMotionBlurMaxLength(0.08f);
 	post.SetMotionBlurObjectStrength(1.0f);
 

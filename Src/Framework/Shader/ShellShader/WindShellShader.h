@@ -1,7 +1,7 @@
-﻿#pragma once
+#pragma once
 
 #include "../GPUParticle/ParticleBuffer.h"	// ParticleBlendMode / ParticleNoiseParams を流用する為
-#include "../PerlinNoiseGPU.h"
+#include "PerlinNoiseGPU.h"
 
 //====================================================================
 //
@@ -44,7 +44,9 @@ struct WindShellParams
 	float			Seed = 0.0f;			// レイヤーごとの位相ずらし
 
 	float			LifeRate = 1.0f;		// 消去用 1→0
-	float			_blank[3] = { 0.0f, 0.0f, 0.0f };
+	float			Scatter = 0.0f;		// 筋UVの歪み量
+	float			SpinJitter = 0.0f;	// 位置ごとの回転角のゆらぎ(ラジアン)
+	float			NoiseSpeed = 0.0f;	// 半径ノイズの時間変化の速さ
 };
 static_assert(sizeof(WindShellParams) == 160, "cbWindShellのサイズと一致させる事");
 
@@ -85,10 +87,11 @@ public:
 	//	blendMode：Alpha(墨)かAdd(芯)。それ以外はAlpha扱い
 	//	streakTexture：筋テクスチャ。noiseTextureが無ければ消去は線形フェード
 	//	perlin：頂点ノイズ用の順列テーブル(Init済みのもの)
+	//	effectLayerBlend：falseならトレイルと同じ(AlphaMasked/Add)、trueならエフェクト層用(Alpha/EffectAdd)
 	void Draw(const WindShellParams& params, ParticleBlendMode blendMode,
 		const std::shared_ptr<KdTexture>& streakTexture,
 		const ParticleNoiseParams& noise, const std::shared_ptr<KdTexture>& noiseTexture,
-		const PerlinNoiseGPU& perlin);
+		const PerlinNoiseGPU& perlin, bool effectLayerBlend = false);
 
 	bool IsInitialized() const { return m_initialized; }
 
@@ -96,10 +99,9 @@ private:
 
 	bool CreateGridMesh();
 
-	// HLSL側と一致させる事(cbWindShell:b10 / g_streakTex:t1 / PerlinNoise.hlsliのPERLIN_PERM_SLOT:VSのt10)
+	// HLSL側と一致させる事(cbWindShell:b10 / g_streakTex:t1)。Perlin順列テーブルはKdShaderManager::PerlinPermSlotをVSへバインドする
 	static constexpr UINT	kCBSlot = 10;
 	static constexpr UINT	kStreakTexSlot = 1;
-	static constexpr UINT	kPerlinSlot = 10;
 
 	// グリッドの分割数(角度 x 軸方向)
 	static constexpr int	kSegU = 32;

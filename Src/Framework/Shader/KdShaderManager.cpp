@@ -1,4 +1,4 @@
-﻿#include "Framework/KdFramework.h"
+#include "Framework/KdFramework.h"
 #include "KdShaderManager.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -19,6 +19,7 @@ void KdShaderManager::Init()
 	m_slashTrailShader.Init();
 	m_particleShader.Init();
 	m_shapeEffectShader.Init();
+	m_windShellShader.Init();
 
 	//============================================
 	// 定数バッファ
@@ -553,6 +554,7 @@ void KdShaderManager::Release()
 	m_spriteShader.Release();
 	m_slashTrailShader.Release();
 	m_shapeEffectShader.Release();
+	m_windShellShader.Release();
 
 	m_perlinNoiseGPU.Release();
 

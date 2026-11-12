@@ -12,7 +12,7 @@ struct ShapeEffectParams
 {
 	std::string			TexturePath;
 	ParticleBlendMode	BlendMode = ParticleBlendMode::Alpha;
-	ParticleDrawPass	DrawPass = ParticleDrawPass::Default;	// 描画されるパス(Default/Bright)
+	ParticleDrawPass	DrawPassFlags = ParticleDrawPass::Default;	// 描画されるパス(ビットフラグ)
 	Math::Vector4		Color = { 1, 1, 1, 1 };	// テクスチャへ乗算(aは動きのalphaと掛け合わされる)
 };
 
@@ -30,6 +30,10 @@ public:
 	void Init(std::shared_ptr<IEffectMotion> motion, const ShapeEffectParams& params, ITextureProvider* textureProvider);
 
 	void Update(float deltaTime) { time_ += deltaTime; }
+
+	// 経過時間を直接指定する(エディタの再生バーでのシーク用)
+	void SetTime(float time) { time_ = time; }
+	float GetTime() const { return time_; }
 
 	// 動きの最後まで再生したか
 	bool IsFinished() const { return !motion_ || time_ >= motion_->GetDuration(); }

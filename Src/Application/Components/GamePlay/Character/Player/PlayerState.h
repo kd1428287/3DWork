@@ -156,8 +156,8 @@ public:
 
 	// HitReactionComponent(IHitReactionQuery経由、PlayerStatusController::
 	// NotifyParrySuccess/NotifyGuardHit)から呼ばれる通知。
-	void NotifyParrySuccess(PlayerStateContext* ctx);
-	void NotifyGuardHit(PlayerStateContext* ctx);
+	void ParrySuccess(PlayerStateContext* ctx);
+	void GuardHit(PlayerStateContext* ctx);
 
 	// ガードキー解放時にPlayerActionDispatcherから
 	// 呼ばれる解除要求。ここではまだNoneへ遷移せず、終了アニメーション
@@ -179,6 +179,8 @@ private:
 	// 継続姿勢のLoopアニメーションへ明示的に再生し直すためのヘルパー。
 	void ResumeLoopAnimation(PlayerStateContext* ctx);
 
+
+
 	float elapsed_ = 0.0f;
 
 	// 構え動作(animationName)の単発再生が終わり、継続姿勢のLoop
@@ -199,8 +201,7 @@ private:
 	bool isReleasing_ = false;
 	float releaseElapsed_ = 0.0f;
 
-	ScopedSubscriber parrySuccessSub_;
-	ScopedSubscriber guardHitSub_;
+	ScopedSubscriber HitReactionSub_;
 };
 
 

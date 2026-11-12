@@ -1,4 +1,4 @@
-// 見た目(モデル・アニメーション・描画Mod・エフェクト)とカメラまわりのコンポーネント登録。
+﻿// 見た目(モデル・アニメーション・描画Mod・エフェクト)とカメラまわりのコンポーネント登録。
 
 #include "Application/Factories/ComponentRegistry.h"
 #include "Application/Factories/Registrations/RegisterFunctions.h"
@@ -10,6 +10,7 @@
 
 #include "Application/Components/Graphics/Render/ModelRenderComponent.h"
 #include "Application/Components/Graphics/Render/OutlineRenderComponent.h"
+#include "Application/Components/Graphics/Render/AuraRenderComponent.h"
 #include "Application/Components/Graphics/Render/GroundRenderComponent.h"
 #include "Application/Components/Graphics/Render/Mod/RasterizerStateComponent.h"
 #include "Application/Components/Graphics/Render/Mod/InkStyleComponent.h"
@@ -56,6 +57,12 @@ NLOHMANN_JSON_SERIALIZE_ENUM(KdInkPreset, {
 	{ KdInkPreset::Dark, "Dark" },
 	})
 
+// KdAuraKind: JSONでは"Rim"/"Flame"の文字列で指定する。未知の値はRimになる。
+NLOHMANN_JSON_SERIALIZE_ENUM(KdAuraKind, {
+	{ KdAuraKind::Rim, "Rim" },
+	{ KdAuraKind::Flame, "Flame" },
+	})
+
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(KdInkStyle,
 	Black, Amount, Paper, Bias, Contrast, Steps, LumaScale, NoiseAmount, NoiseScale)
 
@@ -67,6 +74,9 @@ COMPONENT_PARAMS_DEFINE_TYPE(FollowCameraConfig, offset, followPosition, followR
 COMPONENT_PARAMS_DEFINE_TYPE(CameraTargetConfig, offset)
 COMPONENT_PARAMS_DEFINE_TYPE(SlashTrailConfig, trailName, base, tip, emitOnStart)
 COMPONENT_PARAMS_DEFINE_TYPE(OutlineConfig, width)
+COMPONENT_PARAMS_DEFINE_TYPE(AuraConfig,
+	kind, color, coreColor, intensity, width, rise, height, softness,
+	fresnelPower, noiseScale, scrollSpeed, layers, noiseTexturePath)
 COMPONENT_PARAMS_DEFINE_TYPE(FacingDirectionConfig, rotationSpeed, moveThreshold)
 COMPONENT_PARAMS_DEFINE_TYPE(FootstepTrigger, phase, foot)
 
@@ -153,6 +163,7 @@ void RegisterGraphicsComponents(ComponentRegistry& registry)
 		});
 	registry.Add<SlashTrailComponent>("SlashTrail");
 	registry.Add<OutlineRenderComponent>("Outline");
+	registry.Add<AuraRenderComponent>("Aura");
 	registry.AddWithParams<RasterizerStateParams>("RasterizerState", [](BuildContext& ctx, const RasterizerStateParams& p) {
 		ctx.Add<RasterizerStateComponent>(p.state);
 		});

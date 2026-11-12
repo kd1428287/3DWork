@@ -77,7 +77,7 @@ struct SlashTrailDissolveParams
 
 	// Asset/Textures/Game/Effect/からの相対パス(タイリング可能なもの。Rチャンネルを使用)。
 	// 空・解決失敗ならノイズを使わず、線形フェードで消える
-	std::string	NoiseTexturePath = "ink_noise.png";
+	std::string	NoiseTexturePath = "Noise/ink_noise.png";
 
 	// ノイズのタイリング(1ワールド単位あたりのタイル数)。長さ方向を粗く・幅方向を細かくすると、
 	// 筆の進行方向に沿った筋状の消え方になる
@@ -139,5 +139,5 @@ struct SlashTrailParams
 	SlashTrailCoreParams	Core;
 
 	// Asset/Textures/Game/Effect/からの相対パス(パーティクルのTexturePathと同じ規約)。墨・芯で共用
-	std::string	TexturePath = "Trail2_.png";
+	std::string	TexturePath = "Trail/Trail2_.png";
 };

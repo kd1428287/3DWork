@@ -24,6 +24,22 @@ cbuffer cbObject : register(b0)
 	float  g_InkNoiseAmount;	// 濃淡ゆらぎの強さ(0で無効。白寄りの面ほど効く)
 	float  g_InkNoiseScale;		// ゆらぎの細かさ(ワールド座標への倍率)
 	float3 _inkPad;
+
+	float3 g_AuraColor;
+	float g_AuraIntensity;
+	float3 g_AuraCoreColor;
+	float g_AuraWidth;
+	float g_AuraFresnelPower;
+	float g_AuraNoiseScale;
+	float g_AuraScrollSpeed;
+	float g_AuraTime;
+	float g_AuraRise;
+	float g_AuraBaseY;
+	float g_AuraHeight;
+	float g_AuraSoftness;
+
+	int g_AuraKind;
+	float3 _auraKindPad;
 };
 
 // 定数バッファ(メッシュ単位)

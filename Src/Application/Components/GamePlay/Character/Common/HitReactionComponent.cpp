@@ -211,6 +211,7 @@ void HitReactionComponent::OnHit(const Events::AttackHit& ctx)
 		HitReaction(visual.parry, ctx);
 
 		query_->NotifyParrySuccess();
+
 	}
 	else if (inParryWindow || query_->IsGuarding()) {
 		// ブロック(パリィ不可の攻撃は猶予中でもここに落ちる)。

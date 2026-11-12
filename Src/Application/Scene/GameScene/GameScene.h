@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "../BaseScene/BaseScene.h"
 #include "Application/Core/EventBus/Events/AudioEvents.h"
@@ -6,6 +6,7 @@
 class EffectDispatcher;
 class SlashTrailDispatcher;
 class ShapeEffectDispatcher;
+class WindShellDispatcher;
 
 class InputSystem;
 class TimeScaleSystem;
@@ -53,6 +54,7 @@ private:
 	std::unique_ptr<EffectDispatcher> effectDispatcher_ = nullptr;
 	std::unique_ptr<SlashTrailDispatcher> slashTrailDispatcher_ = nullptr;
 	std::unique_ptr<ShapeEffectDispatcher> shapeEffectDispatcher_ = nullptr;
+	std::unique_ptr<WindShellDispatcher> windShellDispatcher_ = nullptr;
 	std::unique_ptr<InputSystem> inputSystem_ = nullptr;
 	std::unique_ptr<TimeScaleSystem> timeScaleSystem_ = nullptr;
 	std::unique_ptr<CameraSystem> cameraSystem_ = nullptr;

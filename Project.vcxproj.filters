@@ -289,6 +289,9 @@
     <Filter Include="Src\Application\Effect\Shape">
       <UniqueIdentifier>{a6e30e91-3a20-4ddd-ab91-ede28936f2b0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\Effect\Shell">
+      <UniqueIdentifier>{be42bd4c-e305-447c-a8a6-8892d7f93f88}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -1179,6 +1182,30 @@
     <ClInclude Include="Src\Application\Effect\Shape\ShapeEffectMotion.h">
       <Filter>Src\Application\Effect\Shape</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Loaders\ShapeEffectDataLoader.h">
+      <Filter>Src\Application\Definitions\Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Editor\Tools\ShapeEffectEditor.h">
+      <Filter>Src\Application\Editor\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Graphics\Render\AuraRenderComponent.h">
+      <Filter>Src\Application\Components\Graphics\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Effect\WindShellPreset.h">
+      <Filter>Src\Application\Definitions\Effect</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Core\EventBus\Events\WindShellEvents.h">
+      <Filter>Src\Application\Core\EventBus\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Effect\shell\WindShellDispatcher.h">
+      <Filter>Src\Application\Effect\Shell</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Effect\shell\WindShellInstance.h">
+      <Filter>Src\Application\Effect\Shell</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Effect\shell\WindShellPreset.h">
+      <Filter>Src\Application\Effect\Shell</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -1604,6 +1631,21 @@
     <ClCompile Include="Src\Application\Effect\Shape\ShapeEffectInstance.cpp">
       <Filter>Src\Application\Effect\Shape</Filter>
     </ClCompile>
+    <ClCompile Include="Src\Application\Definitions\Loaders\ShapeEffectDataLoader.cpp">
+      <Filter>Src\Application\Definitions\Loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Editor\Tools\ShapeEffectEditor.cpp">
+      <Filter>Src\Application\Editor\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\Graphics\Render\AuraRenderComponent.cpp">
+      <Filter>Src\Application\Components\Graphics\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Effect\shell\WindShellDispatcher.cpp">
+      <Filter>Src\Application\Effect\Shell</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Effect\shell\WindShellInstance.cpp">
+      <Filter>Src\Application\Effect\Shell</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Src\Framework\Shader\inc_KdCommon.hlsli">
@@ -1653,6 +1695,9 @@
     </None>
     <None Include="Src\Framework\Shader\ShellShader\inc_WindShell.hlsli">
       <Filter>Src\Framework\Shader\ShallShader</Filter>
+    </None>
+    <None Include="Src\Framework\Shader\StandardShader\inc_KdAura.hlsli">
+      <Filter>Src\Framework\Shader\StandardShader</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -1757,6 +1802,12 @@
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\ShapeEffectShader\ShapeEffect_VS.hlsl">
       <Filter>Src\Framework\Shader\ShapeEffectShader</Filter>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\StandardShader\KdStandardShader_PS_Aura.hlsl">
+      <Filter>Src\Framework\Shader\StandardShader</Filter>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\StandardShader\KdStandardShader_VS_Aura.hlsl">
+      <Filter>Src\Framework\Shader\StandardShader</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

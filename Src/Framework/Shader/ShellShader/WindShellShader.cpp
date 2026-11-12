@@ -140,7 +140,7 @@ void WindShellShader::Release()
 void WindShellShader::Draw(const WindShellParams& params, ParticleBlendMode blendMode,
 	const std::shared_ptr<KdTexture>& streakTexture,
 	const ParticleNoiseParams& noise, const std::shared_ptr<KdTexture>& noiseTexture,
-	const PerlinNoiseGPU& perlin)
+	const PerlinNoiseGPU& perlin, bool effectLayerBlend)
 {
 	if (!m_initialized || !streakTexture) { return; }
 
@@ -167,8 +167,8 @@ void WindShellShader::Draw(const WindShellParams& params, ParticleBlendMode blen
 
 	// 順列テーブル(VSのt10)。直前のバインドを退避する
 	ID3D11ShaderResourceView* prevPerm = nullptr;
-	DevCon->VSGetShaderResources(kPerlinSlot, 1, &prevPerm);
-	perlin.BindVS(DevCon, kPerlinSlot);
+	DevCon->VSGetShaderResources(KdShaderManager::PerlinPermSlot, 1, &prevPerm);
+	perlin.BindVS(DevCon, KdShaderManager::PerlinPermSlot);
 
 	// 筋テクスチャ(PSのt1)。サンプラーはBindNoiseが設定するs1(wrap)を使う
 	ID3D11ShaderResourceView* srv = streakTexture->WorkSRView();
@@ -176,9 +176,9 @@ void WindShellShader::Draw(const WindShellParams& params, ParticleBlendMode blen
 
 	shaderMgr.ChangeRasterizerState(KdRasterizerState::CullNone);
 
-	// ※Alphaはマスク(SV_Target1)への書き込みを許可するAlphaMaskedを使う事
-	KdBlendState blendState = KdBlendState::AlphaMasked;
-	if (blendMode == ParticleBlendMode::Add) { blendState = KdBlendState::Add; }
+	// ※通常はマスク(SV_Target1)への書き込みを許可するAlphaMaskedを使う事(トレイルと同じ)
+	KdBlendState blendState = effectLayerBlend ? KdBlendState::Alpha : KdBlendState::AlphaMasked;
+	if (blendMode == ParticleBlendMode::Add) { blendState = effectLayerBlend ? KdBlendState::EffectAdd : KdBlendState::Add; }
 	else if (blendMode == ParticleBlendMode::Multiply) { blendState = KdBlendState::Multiply; }
 
 	shaderMgr.ChangeBlendState(blendState);
@@ -199,7 +199,7 @@ void WindShellShader::Draw(const WindShellParams& params, ParticleBlendMode blen
 	shaderMgr.UndoRasterizerState();
 
 	// SRVの復元・解除
-	DevCon->VSSetShaderResources(kPerlinSlot, 1, &prevPerm);
+	DevCon->VSSetShaderResources(KdShaderManager::PerlinPermSlot, 1, &prevPerm);
 	KdSafeRelease(prevPerm);
 
 	ID3D11ShaderResourceView* nullSRV = nullptr;

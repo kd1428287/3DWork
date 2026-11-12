@@ -47,6 +47,37 @@ struct KdInkStyle
 	}
 };
 
+// オーラの見た目の種類(HLSL側g_AuraKindの値と一致させること)
+enum class KdAuraKind
+{
+	Rim,	// 輪郭が光るリムライト型
+	Flame,	// 輪郭に沿って立ち上る炎型
+};
+
+// オーラの設定(Intensity=0なら実質描画されない)。HLSL側cbObjectの並びと一致させること
+// ・Rimは Color/Width/FresnelPower/NoiseScale/ScrollSpeed/Time のみ使う
+struct KdAuraStyle
+{
+	Math::Vector3	Color = { 1.5f, 0.35f, 0.05f };		// 縁の色(HDR)
+	float			Intensity = 0.0f;
+
+	Math::Vector3	CoreColor = { 2.5f, 1.6f, 0.5f };	// 炎の芯の色(HDR。Flameのみ)
+	float			Width = 0.08f;						// 法線方向の膨らみ量(ワールド単位)
+
+	float			FresnelPower = 1.5f;				// 大きいほど輪郭側だけが見える
+	float			NoiseScale = 0.8f;					// ゆらぎの細かさ(ワールド座標への倍率)
+	float			ScrollSpeed = 0.6f;					// 炎が上へ流れる速さ
+	float			Time = 0.0f;						// ゆらぎ用の経過時間
+
+	float			Rise = 0.25f;						// 上向きの面を持ち上げる量(炎の背丈)
+	float			BaseY = 0.0f;						// 炎の根元のワールドY
+	float			Height = 2.0f;						// 根元から先端までの高さ
+	float			Softness = 0.15f;					// 炎の縁のぼかし
+
+	int				Kind = 0;							// KdAuraKindの値
+	float			_blank[3] = { 0.0f, 0.0f, 0.0f };
+};
+
 class KdStandardShader
 {
 public:
@@ -81,6 +112,8 @@ public:
 		float			OutlineWidth = 0.0f;	// 輪郭線(裏面拡大)の太さ。0なら通常描画(64byte境界の末尾に収まる)
 
 		KdInkStyle		Ink;					// 墨の濃淡変換(64byte)
+
+		KdAuraStyle		Aura;					// オーラ(80byte)
 	};
 
 	// 定数バッファ(メッシュ単位更新)
@@ -132,6 +165,10 @@ public:
 	static const int kMotionCBSlot = 5;
 	static const int kPrevBoneCBSlot = 6;
 
+	// オーラ描画用のテクスチャ/サンプラーのスロット(HLSL側PS_Auraと一致させること)
+	static const int kAuraNoiseSlot = 12;
+	static const int kAuraSamplerSlot = 2;
+
 
 
 	//================================================
@@ -180,6 +217,19 @@ public:
 	{
 		m_cb0_Obj.Work().Ink = style;
 		m_dirtyCBObj = true;
+	}
+
+	// オーラの設定。描画後に自動で初期値へ戻る
+	void SetAuraStyle(const KdAuraStyle& style)
+	{
+		m_cb0_Obj.Work().Aura = style;
+		m_dirtyCBObj = true;
+	}
+
+	// オーラのゆらぎ用ノイズテクスチャ設定(BeginAura後に呼ぶ)
+	void SetAuraNoiseTexture(KdTexture& noise)
+	{
+		KdDirect3D::Instance().WorkDevContext()->PSSetShaderResources(kAuraNoiseSlot, 1, noise.WorkSRViewAddress());
 	}
 
 	// ディゾルブ設定
@@ -259,6 +309,10 @@ public:
 	// 陰影をつけないオブジェクト等を描画する前後に行う
 	void BeginUnLit();
 	void EndUnLit();
+
+	// オーラ(法線方向に膨らませた加算シェル)を描画する前後に行う。UnLitパス内で呼ぶ前提
+	void BeginAura();
+	void EndAura();
 
 	// 最も初めに行う、光を遮るオブジェクトを描画する前後に行う
 	void BeginGenerateDepthMapFromLight();
@@ -349,6 +403,7 @@ private:
 	ID3D11VertexShader* m_VS_Lit = nullptr;					// 陰影あり
 	ID3D11VertexShader* m_VS_UnLit = nullptr;				// 陰影なし
 	ID3D11VertexShader* m_VS_GenDepthFromLight = nullptr;	// 光からの深度
+	ID3D11VertexShader* m_VS_Aura = nullptr;				// オーラ(スキニング+法線押し出し)
 
 	// 頂点入力レイアウト
 	ID3D11InputLayout* m_inputLayout = nullptr;
@@ -357,6 +412,7 @@ private:
 	ID3D11PixelShader* m_PS_Lit = nullptr;					// 陰影あり
 	ID3D11PixelShader* m_PS_UnLit = nullptr;				// 陰影なし
 	ID3D11PixelShader* m_PS_GenDepthFromLight = nullptr;	// 光からの深度
+	ID3D11PixelShader* m_PS_Aura = nullptr;					// オーラ(フレネル+ノイズ)
 
 	// テクスチャ
 	std::shared_ptr<KdTexture>	m_dissolveTex = nullptr;	// ディゾルブで使用するデフォルトテクスチャ

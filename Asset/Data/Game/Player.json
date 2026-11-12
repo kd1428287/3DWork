@@ -574,6 +574,9 @@
         "preset": "Dark"
       },
       "type": "InkStyle"
+    },
+    {
+      "type": "PlayerInkGauge"
     }
   ],
   "name": "player",

@@ -1,0 +1,173 @@
+{
+  "shapeEffects": [
+    {
+      "keys": [
+        {
+          "alpha": 0.0,
+          "duration": 0.0,
+          "ease": "Linear",
+          "pos": [
+            1.5,
+            0.0,
+            0.0
+          ],
+          "rotDeg": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "scale": [
+            0.10000000149011612,
+            0.10000000149011612
+          ]
+        },
+        {
+          "alpha": 1.0,
+          "duration": 0.4000000059604645,
+          "ease": "OutCubic",
+          "pos": [
+            1.5,
+            0.5,
+            0.0
+          ],
+          "rotDeg": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "alpha": 1.0,
+          "duration": 1.0,
+          "ease": "Linear",
+          "pos": [
+            1.5,
+            0.5,
+            0.0
+          ],
+          "rotDeg": [
+            0.0,
+            0.0,
+            360.0
+          ],
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "alpha": 0.0,
+          "duration": 0.6000000238418579,
+          "ease": "InQuad",
+          "pos": [
+            1.5,
+            1.5,
+            0.0
+          ],
+          "rotDeg": [
+            0.0,
+            0.0,
+            360.0
+          ],
+          "scale": [
+            0.30000001192092896,
+            2.0
+          ]
+        }
+      ],
+      "name": "ShapeTestAlpha",
+      "params": {
+        "blendMode": "Alpha",
+        "color": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "drawPass": [
+          "Default"
+        ],
+        "texture": "Shape/Cloud.png"
+      }
+    },
+    {
+      "keys": [
+        {
+          "alpha": 0.0,
+          "duration": 0.0,
+          "ease": "Linear",
+          "pos": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rotDeg": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "alpha": 1.0,
+          "duration": 0.5,
+          "ease": "InOutQuad",
+          "pos": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rotDeg": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "scale": [
+            2.0,
+            2.0
+          ]
+        },
+        {
+          "alpha": 0.0,
+          "duration": 1.5,
+          "ease": "OutQuad",
+          "pos": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rotDeg": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "scale": [
+            3.0,
+            3.0
+          ]
+        }
+      ],
+      "name": "ShapeTestAdd",
+      "params": {
+        "blendMode": "Add",
+        "color": [
+          0.8970588445663452,
+          0.8970588445663452,
+          0.8970588445663452,
+          1.0
+        ],
+        "drawPass": [
+          "Default"
+        ],
+        "texture": "Particle/ink_blob.png"
+      }
+    }
+  ]
+}

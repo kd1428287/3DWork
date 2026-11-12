@@ -7,6 +7,7 @@
 #include "PlayerMovementAnimationComponent.h"
 #include "PlayerFacingComponent.h"
 #include "PlayerCombatMovementComponent.h"
+#include "PlayerInkGaugeComponent.h"
 #include "../Common/WeaponSetComponent.h"
 #include "../../../Physics/Movement/TweenMoveComponent.h"
 #include "Application/Core/EventBus/Events/SceneEvents.h" // パスは配置に合わせて調整
@@ -66,7 +67,12 @@ void StateAttack::Update(PlayerStateContext* ctx, float deltaTime) {
 				data.moveData.engageDistance, data.moveData.stepDuration);
 		}
 		ctx->weaponSet->SetHitBoxEnabled(data.weaponSlots, true); // 攻撃判定が実際に発生する一瞬だけ有効化
-		ctx->weaponSet->SetTrailEmitting(data.weaponSlots, true); // 武器の軌跡エフェクトもHitBoxと同じ窓で記録開始
+
+		if (ctx->inkGauge->GetCurrent() > 1)	// 通常攻撃使用量　(= 1)
+		{
+			ctx->weaponSet->SetTrailEmitting(data.weaponSlots, true); // 武器の軌跡エフェクトもHitBoxと同じ窓で記録開始
+			ctx->inkGauge->AddValue(-1);
+		}
 
 		ctx->PlayAnimation(data.phaseData.active);
 		ctx->PlaySE(data_.swingSE); // 振りの音は判定発生に合わせる
@@ -189,14 +195,23 @@ bool StateEvade::IsInvincible(const PlayerStateContext* ctx) const {
 	return phase_ == CombatState::Evade;
 }
 
-
+// --- Guard State ---
 void StateGuard::SetUp(PlayerStateContext* ctx)
 {
-	parrySuccessSub_ = ctx->owner->GetLocalEventBus().SubscribeScoped<Events::ParrySucceeded>([this](const Events::ParrySucceeded& e) { });
+	//HitReactionSub_ = ctx->owner->GetLocalEventBus().SubscribeScoped<Events::HitReaction>(
+	//	[this,ctx](const Events::HitReaction& e) {
+	//		switch (e.type)
+	//		{
+	//		case Events::HitReaction::HitReactionType::Hit:
+	//		case Events::HitReaction::HitReactionType::Guard: GuardHit(ctx); break;
+	//		case Events::HitReaction::HitReactionType::Parry: ParrySuccess(ctx); break;
+	//		default:
+	//			break;
+	//		}
+	//	});
 
 }
 
-// --- Guard State ---
 void StateGuard::Enter(PlayerStateContext* ctx) {
 	elapsed_ = 0.0f;
 	hasEnteredLoop_ = false;
@@ -301,7 +316,7 @@ bool StateGuard::CanStartMove(const PlayerStateContext* ctx) const
 	return isReleasing_;
 }
 
-void StateGuard::NotifyParrySuccess(PlayerStateContext* ctx) {
+void StateGuard::ParrySuccess(PlayerStateContext* ctx) {
 	if (parrySucceeded_) return; // 同一パリィ猶予内での多重成立を防止
 	parrySucceeded_ = true;
 	parrySuccessElapsed_ = 0.0f;
@@ -309,9 +324,14 @@ void StateGuard::NotifyParrySuccess(PlayerStateContext* ctx) {
 	hasEnteredLoop_ = true;
 
 	ctx->PlayAnimation(data_.parry);
+
+	// HitReactionをイベント駆動にする前の簡易実装
+	Events::HitReaction e;
+	e.type = Events::HitReaction::HitReactionType::Parry;
+	ctx->owner->GetLocalEventBus().Publish(e);
 }
 
-void StateGuard::NotifyGuardHit(PlayerStateContext* ctx) {
+void StateGuard::GuardHit(PlayerStateContext* ctx) {
 	// パリィ成功演出中はそちらを優先し、上書きしない。
 	if (parrySucceeded_) return;
 
@@ -321,6 +341,11 @@ void StateGuard::NotifyGuardHit(PlayerStateContext* ctx) {
 	hasEnteredLoop_ = true;
 
 	ctx->PlayAnimation(data_.hit);
+
+	// HitReactionをイベント駆動にする前の簡易実装
+	Events::HitReaction e;
+	e.type = Events::HitReaction::HitReactionType::Guard;
+	ctx->owner->GetLocalEventBus().Publish(e);
 }
 
 void StateGuard::ResumeLoopAnimation(PlayerStateContext* ctx) {

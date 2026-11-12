@@ -52,6 +52,19 @@ namespace Events
 
 	struct ParrySucceeded : public Event {};
 
+	struct HitReaction : public Event
+	{
+		enum class HitReactionType
+		{
+			Hit = 0,
+			Guard,
+			Parry
+		};
+
+		HitReactionType type;
+
+	};
+
 	struct Syncronization : public Event
 	{
 		Handle<GameObject> attacker;

@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include <atomic>
 #include <mutex>
 #include <variant>
 #include <unordered_map>
@@ -7,8 +8,6 @@
 #include "Application/Core/EventBus/Events/ShapeEffectEvents.h"
 #include "ShapeEffectInstance.h"
 #include "../Common/KdAssetsTextureProvider.h"
-
-enum class ParticleDrawPass;
 
 // エフェクト名に対応する定義(見た目+動き)
 struct ShapeEffectDefinition
@@ -41,11 +40,15 @@ public:
 	ShapeEffectDispatcher(const ShapeEffectDispatcher&) = delete;
 	ShapeEffectDispatcher& operator=(const ShapeEffectDispatcher&) = delete;
 
-	bool Init(EventBus& bus);
+	// dataPathのJSONから定義を読み込む(無い・壊れている場合も、コードからのRegisterDefinitionだけで動ける)
+	bool Init(EventBus& bus, const std::string& dataPath = "Asset/Data/Game/shapeeffectmap.json");
 	void Release();
 
 	// Attachで使う名前の定義を登録する(同名は上書き)
 	void RegisterDefinition(const std::string& name, const ShapeEffectDefinition& def);
+
+	// pathと同じJSONを読み込んでいる全ShapeEffectDispatcherへ、再ロード要求を立てる(実処理は次回Update()冒頭)
+	static void NotifyDataSaved(const std::string& path);
 
 	// pendingの消化 → 全インスタンスの更新 → 終了したものの破棄
 	void Update(float deltaTime);
@@ -75,6 +78,9 @@ private:
 
 	void ProcessPendingEvents();
 
+	// JSONの定義を読み込んで登録する(同名は上書き。JSONから消えた定義は残る)
+	bool LoadData(const std::string& path);
+
 	struct Active
 	{
 		ShapeEffectInstance	instance;
@@ -90,4 +96,11 @@ private:
 
 	std::mutex					pendingMutex_;
 	std::vector<PendingEvent>	pendingEvents_;
+
+	std::string					dataPath_;
+	std::atomic<bool>			reloadRequested_ = false;
+
+	// 生存中の全インスタンス(NotifyDataSaved()用)
+	static std::vector<ShapeEffectDispatcher*>	s_instances;
+	static std::mutex							s_instancesMutex;
 };
