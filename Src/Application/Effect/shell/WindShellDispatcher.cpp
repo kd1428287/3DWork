@@ -3,6 +3,7 @@
 
 bool WindShellDispatcher::Init(EventBus& bus)
 {
+	if (!initialized_) { initialized_ = true; ++aliveCount_; }
 	subscriptions_.reserve(4);
 
 	subscriptions_.push_back(bus.SubscribeScoped<Events::WindShellAttach>(
@@ -19,6 +20,9 @@ bool WindShellDispatcher::Init(EventBus& bus)
 
 void WindShellDispatcher::Release()
 {
+	// 先に印を下ろす。以後ハンドルはバスへ発行しない
+	if (initialized_) { initialized_ = false; --aliveCount_; }
+
 	subscriptions_.clear();
 
 	presets_.clear();

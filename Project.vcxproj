@@ -333,6 +333,7 @@
     <ClInclude Include="Src\Application\Components\Graphics\Animation\TwoBoneIKComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Effect\FootDustComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Effect\SlashTrailComponent.h" />
+    <ClInclude Include="Src\Application\Components\Graphics\Effect\WindShellComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\AuraRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\GroundRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\ModelRenderComponent.h" />

@@ -50,6 +50,8 @@
 #include <fileSystem>
 #include <xinput.h>
 #include <numeric>
+#include <variant>
+
 
 //===============================================
 //

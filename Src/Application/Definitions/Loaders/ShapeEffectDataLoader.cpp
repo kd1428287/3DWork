@@ -31,6 +31,12 @@ namespace
 		return j.at(key).get<std::string>();
 	}
 
+	bool ReadBool(const Json& j, const char* key, bool defaultValue)
+	{
+		if (!j.contains(key) || !j.at(key).is_boolean()) { return defaultValue; }
+		return j.at(key).get<bool>();
+	}
+
 	Json Vec3ToJson(const Math::Vector3& v) { return Json::array({ v.x, v.y, v.z }); }
 
 	// ShapeEffectShaderが扱えるのはAlphaと加算のみ(それ以外の文字列は加算になる)
@@ -110,6 +116,9 @@ namespace
 			data.Params.BlendMode = BlendFromString(ReadString(p, "blendMode"));
 			data.Params.DrawPassFlags = DrawPassFlagsFromJson(p, data.Params.DrawPassFlags);
 			if (TryReadFloats(p, "color", f, 4)) { data.Params.Color = { f[0], f[1], f[2], f[3] }; }
+			data.Params.Billboard = BillboardModeFromName(ReadString(p, "billboard"));
+			data.Params.DepthOffset = ReadFloat(p, "depthOffset", data.Params.DepthOffset);
+			data.Params.DepthTest = ReadBool(p, "depthTest", data.Params.DepthTest);
 		}
 
 		if (j.contains("keys") && j.at("keys").is_array())
@@ -134,6 +143,9 @@ namespace
 				{ "blendMode", BlendToString(data.Params.BlendMode) },
 				{ "drawPass",  DrawPassFlagsToJson(data.Params.DrawPassFlags) },
 				{ "color",     Json::array({ data.Params.Color.x, data.Params.Color.y, data.Params.Color.z, data.Params.Color.w }) },
+				{ "billboard",   BillboardModeName(data.Params.Billboard) },
+				{ "depthOffset", data.Params.DepthOffset },
+				{ "depthTest",   data.Params.DepthTest },
 			} },
 			{ "keys", keys },
 		};

@@ -1,4 +1,4 @@
-﻿#include <algorithm>
+#include <algorithm>
 #include "EnemyAIController.h"
 #include "../Common/CharacterEvents.h"
 #include "Application/Core/EventBus/Events/AudioEvents.h"
@@ -203,6 +203,7 @@ void EnemyAIController::OnDied()
 	if (isDead_) return;
 	isDead_ = true;
 	StopTelegraphEffect();
+	SetWeaponWindEmitting(std::vector<std::string>(windSlots_), false);
 	despawnTimer_ = behavior_ ? behavior_->GetDespawnDelay(this) : 1.5f;
 
 	PlaySE(sound_.death);

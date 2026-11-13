@@ -1,12 +1,5 @@
 ﻿#pragma once
 
-#include <atomic>
-#include <mutex>
-#include <string>
-#include <unordered_map>
-#include <variant>
-#include <vector>
-
 #include "Application/Core/EventBus/Events/EffectEvents.h"	// EventBus / ScopedSubscriber
 #include "Application/Core/EventBus/Events/WindShellEvents.h"
 #include "Framework/Shader/GPUParticle/ParticleBuffer.h"
@@ -52,11 +45,17 @@ public:
 
 	void Draw(ParticleDrawPass pass);
 
+	// 破棄済みなら、ハンドルからのバス発行を止めるための印(終了時のフリーズ対策)
+	static bool IsAlive() { return aliveCount_.load() > 0; }
+
 private:
+
+	inline static std::atomic<int> aliveCount_{ 0 };
+	bool initialized_ = false;
 
 	struct PendingAttach { std::string InstanceKey; std::string PresetName; Math::Vector3 Position; Math::Vector3 Axis; };
 	struct PendingUpdate { std::string InstanceKey; Math::Vector3 Position; Math::Vector3 Axis; float Progress = 0.0f; };
-	struct PendingStop   { std::string InstanceKey; };
+	struct PendingStop { std::string InstanceKey; };
 	struct PendingDetach { std::string InstanceKey; };
 	using PendingEvent = std::variant<PendingAttach, PendingUpdate, PendingStop, PendingDetach>;
 
@@ -102,6 +101,7 @@ public:
 	// 既に動いていれば置き換える
 	void Start(EventBus& bus, const std::string& presetName, const Math::Vector3& pos, const Math::Vector3& axis)
 	{
+		if (!WindShellDispatcher::IsAlive()) { return; }
 		static std::atomic<uint32_t> s_counter{ 0 };
 
 		if (IsActive()) { Detach(); }
@@ -119,7 +119,7 @@ public:
 
 	void Update(const Math::Vector3& pos, const Math::Vector3& axis, float progress)
 	{
-		if (!IsActive()) { return; }
+		if (!IsActive() || !WindShellDispatcher::IsAlive()) { return; }
 
 		Events::WindShellUpdate e;
 		e.InstanceKey = key_;
@@ -133,6 +133,7 @@ public:
 	void Stop()
 	{
 		if (!IsActive()) { return; }
+		if (!WindShellDispatcher::IsAlive()) { bus_ = nullptr; return; }
 
 		Events::WindShellStop e;
 		e.InstanceKey = key_;
@@ -144,6 +145,7 @@ public:
 	void Detach()
 	{
 		if (!IsActive()) { return; }
+		if (!WindShellDispatcher::IsAlive()) { bus_ = nullptr; return; }
 
 		Events::WindShellDetach e;
 		e.InstanceKey = key_;
@@ -153,7 +155,7 @@ public:
 
 private:
 
-	EventBus*	bus_ = nullptr;
+	EventBus* bus_ = nullptr;
 	std::string	key_;
 };
 

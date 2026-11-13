@@ -28,6 +28,19 @@ namespace
 		}
 		return names;
 	}
+
+	// Comboへ渡すビルボード手法の名前表
+	const char* const* BillboardNames()
+	{
+		static const char* names[(size_t)ShapeBillboardMode::Count] = {};
+		static bool initialized = false;
+		if (!initialized)
+		{
+			for (size_t i = 0; i < (size_t)ShapeBillboardMode::Count; ++i) { names[i] = BillboardModeName((ShapeBillboardMode)i); }
+			initialized = true;
+		}
+		return names;
+	}
 }
 
 // ShapeEffectEditor専用ドックスペースの初期レイアウト
@@ -291,6 +304,18 @@ bool ShapeEffectEditor::DrawParams(ShapeEffectData& effect)
 	}
 
 	changed |= ImGui::ColorEdit4("Color", &params.Color.x);
+
+	int billboard = (int)params.Billboard;
+	if (ImGui::Combo("Billboard", &billboard, BillboardNames(), (int)ShapeBillboardMode::Count))
+	{
+		params.Billboard = (ShapeBillboardMode)billboard;
+		changed = true;
+	}
+	ImGui::TextDisabled("None=向き固定(基準点の回転に追従) / Full=常にカメラ正対(Rot Zのみ有効) / YAxis=Y軸回りだけカメラへ向く");
+
+	changed |= ImGui::DragFloat("Depth Offset", &params.DepthOffset, 0.01f, -10.0f, 10.0f);
+	changed |= ImGui::Checkbox("Depth Test", &params.DepthTest);
+	ImGui::TextDisabled("Depth Offset：+で手前へ(位置・大きさは変えず深度だけずらす) / Depth Test：オフで手前の物に隠されない");
 
 	return changed;
 }

@@ -2,6 +2,17 @@
 
 #include "../GPUParticle/ParticleBuffer.h"	// ParticleBlendMode を流用する為
 
+// 1枚のクアッドを描くための入力
+struct ShapeEffectDrawInfo
+{
+	std::shared_ptr<KdTexture>	Texture;
+	ParticleBlendMode			BlendMode = ParticleBlendMode::Alpha;
+	Math::Matrix				World;
+	Math::Vector4				Color = { 1, 1, 1, 1 };	// テクスチャへ乗算(aに動きのalphaを掛けた値)
+	float						DepthOffset = 0.0f;		// ビュー空間でカメラ方向へずらす量(+で手前)
+	bool						DepthTest = true;
+};
+
 //====================================================================
 //
 // 一枚テクスチャ(クアッド)エフェクト描画用シェーダー
@@ -23,10 +34,9 @@ public:
 	bool Init();
 	void Release();
 
-	// worldのローカルXY平面(1x1)にテクスチャを貼ったクアッドを1枚描く。colorはテクスチャへ乗算される
+	// info.Worldのローカル XY平面(1x1)にテクスチャを貼ったクアッドを1枚描く
 	//	Alphaはエフェクト層(Defaultパス)内での使用を想定。それ以外のブレンドは加算
-	void Draw(const std::shared_ptr<KdTexture>& texture, ParticleBlendMode blendMode,
-		const Math::Matrix& world, const Math::Vector4& color);
+	void Draw(const ShapeEffectDrawInfo& info);
 
 	bool IsInitialized() const { return m_initialized; }
 
@@ -42,6 +52,8 @@ private:
 	{
 		Math::Matrix	World;
 		Math::Vector4	Color = { 1, 1, 1, 1 };
+		float			DepthOffset = 0.0f;
+		float			_pad[3] = { 0, 0, 0 };
 	};
 	KdConstantBuffer<cbShape> m_cb;
 

@@ -576,6 +576,11 @@
       "type": "InkStyle"
     },
     {
+      "params": {
+        "chargeLine": 1.7999999523162842,
+        "gainOnParry": 10.0,
+        "regenPerSecond": 0.5
+      },
       "type": "PlayerInkGauge"
     }
   ],

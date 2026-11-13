@@ -50,10 +50,9 @@ void ShapeEffectShader::Release()
 }
 
 // クアッド1枚を描画
-void ShapeEffectShader::Draw(const std::shared_ptr<KdTexture>& texture, ParticleBlendMode blendMode,
-	const Math::Matrix& world, const Math::Vector4& color)
+void ShapeEffectShader::Draw(const ShapeEffectDrawInfo& info)
 {
-	if (!m_initialized || !texture) { return; }
+	if (!m_initialized || !info.Texture) { return; }
 
 	ID3D11DeviceContext* DevCon = KdDirect3D::Instance().WorkDevContext();
 
@@ -64,21 +63,22 @@ void ShapeEffectShader::Draw(const std::shared_ptr<KdTexture>& texture, Particle
 	DevCon->IASetInputLayout(nullptr);
 
 	cbShape& cb = m_cb.Work();
-	cb.World = world;
-	cb.Color = color;
+	cb.World = info.World;
+	cb.Color = info.Color;
+	cb.DepthOffset = info.DepthOffset;
 	m_cb.Write();
 	DevCon->VSSetConstantBuffers(kCBSlot, 1, m_cb.GetAddress());
 	DevCon->PSSetConstantBuffers(kCBSlot, 1, m_cb.GetAddress());
 
-	DevCon->PSSetShaderResources(0, 1, texture->WorkSRViewAddress());
+	DevCon->PSSetShaderResources(0, 1, info.Texture->WorkSRViewAddress());
 	shaderMgr.ChangeSamplerState(KdSamplerState::Linear_Clamp, 0);
 
 	// エフェクト層へ描く間は、加算も被覆率(A)を変えない専用ブレンドを使う(パーティクルと同じ)
 	const bool effectLayer = shaderMgr.m_postProcessShader.IsEffectLayerActive();
-	const bool isAlpha = (blendMode == ParticleBlendMode::Alpha);
+	const bool isAlpha = (info.BlendMode == ParticleBlendMode::Alpha);
 	KdBlendState blendState = isAlpha ? KdBlendState::Alpha : (effectLayer ? KdBlendState::EffectAdd : KdBlendState::Add);
 	shaderMgr.ChangeBlendState(blendState);
-	shaderMgr.ChangeDepthStencilState(KdDepthStencilState::ZWriteDisable);
+	shaderMgr.ChangeDepthStencilState(info.DepthTest ? KdDepthStencilState::ZWriteDisable : KdDepthStencilState::ZDisable);
 	shaderMgr.ChangeRasterizerState(KdRasterizerState::CullNone);
 
 	DevCon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);

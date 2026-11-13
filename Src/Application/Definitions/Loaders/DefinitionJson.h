@@ -68,7 +68,7 @@ COMPONENT_PARAMS_DEFINE_TYPE(ReactionEventConfig,
 	sePitchRandom, useReflectDirection, normalBlendRatio, cameraShakeIntensity, hitStopDurationSeconds,
 	recoilChain, recoilStrength)
 
-COMPONENT_PARAMS_DEFINE_TYPE(AttackVisualData, hit, block, parry, hitStopDelaySeconds)
+COMPONENT_PARAMS_DEFINE_TYPE(AttackVisualData, hit, block, parry, hitStopDelaySeconds, windPreset)
 
 COMPONENT_PARAMS_DEFINE_TYPE(AttackPhaseData, windup, active, recovery)
 

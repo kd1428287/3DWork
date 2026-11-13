@@ -50,7 +50,7 @@ void RegisterPlayerComponents(ComponentRegistry& registry)
 	registry.Add<PlayerInputComponent>("PlayerInput");
 	registry.Add<PlayerLockOnComponent>("PlayerLockOn");
 	registry.Add<PlayerFacingComponent>("PlayerFacing");
-	registry.Add<PlayerFacingComponent>("PlayerInkGauge");
+	registry.Add<PlayerInkGaugeComponent>("PlayerInkGauge");
 	registry.Add<PlayerMovementAnimationComponent>("PlayerMovementAnimation");
 	registry.Add<PlayerStatusController>("PlayerStatusController");
 	registry.AddWithParams<PlayerCombatMovementConfig>("PlayerCombatMovement", [](BuildContext& ctx, const PlayerCombatMovementConfig& config) {

@@ -27,6 +27,7 @@
 //   void PlayAnimation(const std::string&, bool, float, bool)
 //   void SetWeaponHitBoxEnabled(const std::vector<std::string>&, bool)
 //   void SetWeaponTrailEmitting(const std::vector<std::string>&, bool)
+//   void SetWeaponWindEmitting(const std::vector<std::string>&, bool, const std::string& preset)
 //   void ApplyAttackVisualData(const std::vector<std::string>&, const AttackVisualData&)
 //   void NotifyAttackCompleted()
 //   void SetVulnerable(bool)
@@ -142,6 +143,7 @@ public:
 				elapsed_ = 0.0f;
 				context->SetWeaponHitBoxEnabled(current_->attackData.weaponSlots, false); // 判定の発生窓を閉じる
 				context->SetWeaponTrailEmitting(current_->attackData.weaponSlots, false);
+				context->SetWeaponWindEmitting(current_->attackData.weaponSlots, false, "");
 				context->PlayAnimation(current_->attackData.phaseData.recovery);
 				context->SetVulnerable(true); // ここから隙(Recoveryフェーズ)
 			}
@@ -183,6 +185,11 @@ public:
 		if (phase_ == Phase::Active && lastContext_ != nullptr && current_ != nullptr) {
 			lastContext_->SetWeaponHitBoxEnabled(current_->attackData.weaponSlots, false);
 			lastContext_->SetWeaponTrailEmitting(current_->attackData.weaponSlots, false);
+		}
+
+		// 風はWindupから出すため、Windup/Active中の中断で止める。
+		if ((phase_ == Phase::Windup || phase_ == Phase::Active) && lastContext_ != nullptr && current_ != nullptr) {
+			lastContext_->SetWeaponWindEmitting(current_->attackData.weaponSlots, false, "");
 		}
 
 		// Recovery(隙)中だった場合、通常完了・中断のどちらの経路でも
@@ -234,6 +241,7 @@ private:
 			context->FaceHorizontalTarget(context->GetTargetPositionOrSelf());
 		}
 		context->PlayAnimation(def->attackData.phaseData.windup);
+		context->SetWeaponWindEmitting(def->attackData.weaponSlots, true, def->attackData.visualData.windPreset);
 	}
 
 	// Recoveryがキャンセル開始に達したら1回だけリンクを判定し、繋がれば次の段を始める。

@@ -23,6 +23,8 @@
 #include "../../../Physics/Collision/ColliderComponent.h"
 #include "../../../Graphics/Animation/FacingDirectionComponent.h"
 #include "../../../Graphics/Animation/ModelAnimatorComponent.h"
+#include "../../../Graphics/Effect/WindShellComponent.h"
+
 
 #include "Application/Core/EventBus/Events/CombatEvents.h"
 #include "Application/Core/EventBus/Events/DebugEvents.h"
@@ -369,6 +371,22 @@ public:
 		if (weaponSet_ != nullptr) weaponSet_->SetTrailEmitting(slots, emitting);
 	}
 
+	// 対象スロットの武器オブジェクトのWindShellComponentを再生/停止する。
+	// 開始はpresetが空なら何もしない。WindShellComponentの無い部位は無視する。
+	void SetWeaponWindEmitting(const std::vector<std::string>& slots, bool emitting, const std::string& preset = "") {
+		if (weaponSet_ == nullptr) return;
+		if (emitting && preset.empty()) return;
+		for (const std::string& slot : slots) {
+			WeaponComponent* weapon = weaponSet_->GetWeapon(slot);
+			if (weapon == nullptr) continue;
+			WindShellComponent* wind = weapon->GetOwner()->GetComponent<WindShellComponent>();
+			if (wind == nullptr) continue;
+			if (emitting) { wind->SetPreset(preset); wind->Play(); }
+			else { wind->Stop(); }
+		}
+		if (emitting) windSlots_ = slots; else windSlots_.clear();
+	}
+
 	// 攻撃の演出データ(SE/エフェクト等)を、対象スロットの武器へ渡す。
 	// 被弾側のHitReactionComponentが、ヒット時にこれを参照する。
 	void ApplyAttackVisualData(const std::vector<std::string>& slots, const AttackVisualData& visual) {
@@ -438,6 +456,9 @@ private:
 	std::vector<std::pair<std::string, Handle<WeaponComponent>>> pendingWeapons_;
 
 	std::vector<Handle<GameObject>> ownedObjects_;
+
+	// 風を再生中のスロット。死亡時の停止に使う。
+	std::vector<std::string> windSlots_;
 
 	Math::Vector3 desiredVelocity_{};
 	std::string currentAnimationName_;

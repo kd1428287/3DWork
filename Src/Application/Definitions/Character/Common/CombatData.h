@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include <string>
 #include "CharacterDefinitionCommon.h"
 
@@ -53,6 +53,9 @@ struct AttackVisualData
 	ReactionEventConfig parry;
 
 	float hitStopDelaySeconds = 0.0f;
+
+	// 攻撃部位にまとわせる風シェルのプリセット名。空なら風なし。
+	std::string windPreset = "";
 };
 
 // 攻撃フェーズ管理データ

@@ -52,6 +52,9 @@
         },
         {
           "type": "Weapon"
+        },
+        {
+          "type": "WindShell"
         }
       ],
       "name": "Main",
@@ -180,6 +183,9 @@
             "slot": "Off"
           },
           "type": "Weapon"
+        },
+        {
+          "type": "WindShell"
         }
       ],
       "name": "Off",
@@ -244,6 +250,9 @@
             "slot": "Foot"
           },
           "type": "Weapon"
+        },
+        {
+          "type": "WindShell"
         }
       ],
       "name": "Foot",

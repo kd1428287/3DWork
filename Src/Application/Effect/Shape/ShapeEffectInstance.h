@@ -8,12 +8,45 @@
 #include "Framework/Shader/GPUParticle/ParticleBuffer.h"	// ParticleBlendMode
 #include "Application/Definitions/Effect/EffectParams.h"	// ParticleDrawPass
 
+// ビルボード手法
+enum class ShapeBillboardMode
+{
+	None,	// 向きを固定(基準点の回転に追従する)
+	Full,	// 常にカメラへ正対する(Rot Zのロールだけ有効)
+	YAxis,	// Y軸回りだけカメラへ向く(立ったまま回り込む)
+	Count,	// 個数(名前表・エディタのコンボ用。末尾に保つ)
+};
+
+// JSON保存・エディタ表示用の名前
+inline const char* BillboardModeName(ShapeBillboardMode mode)
+{
+	static const char* const kNames[] = { "None", "Full", "YAxis" };
+	static_assert(sizeof(kNames) / sizeof(kNames[0]) == (size_t)ShapeBillboardMode::Count, "ShapeBillboardModeの名前表と個数を合わせる事");
+
+	const size_t i = (size_t)mode;
+	return (i < (size_t)ShapeBillboardMode::Count) ? kNames[i] : "None";
+}
+
+// 未知の名前はNoneになる
+inline ShapeBillboardMode BillboardModeFromName(const std::string& name)
+{
+	for (size_t i = 0; i < (size_t)ShapeBillboardMode::Count; ++i)
+	{
+		if (name == BillboardModeName((ShapeBillboardMode)i)) { return (ShapeBillboardMode)i; }
+	}
+	return ShapeBillboardMode::None;
+}
+
 struct ShapeEffectParams
 {
 	std::string			TexturePath;
 	ParticleBlendMode	BlendMode = ParticleBlendMode::Alpha;
 	ParticleDrawPass	DrawPassFlags = ParticleDrawPass::Default;	// 描画されるパス(ビットフラグ)
 	Math::Vector4		Color = { 1, 1, 1, 1 };	// テクスチャへ乗算(aは動きのalphaと掛け合わされる)
+
+	ShapeBillboardMode	Billboard = ShapeBillboardMode::None;
+	float				DepthOffset = 0.0f;		// カメラ方向への深度のずらし量(ワールド単位。+で手前。画面上の位置・大きさは変えない)
+	bool				DepthTest = true;		// falseなら手前の物に隠されず常に描く
 };
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////

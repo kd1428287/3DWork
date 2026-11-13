@@ -1072,8 +1072,8 @@
             ],
             "radialSpeedMax": 4.0,
             "radialSpeedMin": 1.0,
-            "sizeEndMax": 3.0,
-            "sizeEndMin": 3.0,
+            "sizeEndMax": 4.0,
+            "sizeEndMin": 4.0,
             "sizeMax": 1.0,
             "sizeMin": 1.0,
             "stretchScale": 0.15000000596046448
@@ -1124,8 +1124,8 @@
             ],
             "radialSpeedMax": 4.0,
             "radialSpeedMin": 1.0,
-            "sizeEndMax": 2.799999952316284,
-            "sizeEndMin": 2.799999952316284,
+            "sizeEndMax": 3.5999999046325684,
+            "sizeEndMin": 3.5999999046325684,
             "sizeMax": 0.10000000149011612,
             "sizeMin": 0.10000000149011612,
             "stretchScale": 0.15000000596046448
@@ -3182,6 +3182,112 @@
         1.0,
         1.0
       ]
+    },
+    {
+      "name": "Effect20",
+      "params": {
+        "blendMode": "Alpha",
+        "drawPass": [
+          "Default"
+        ],
+        "emitInterval": 0.0,
+        "emitMode": "Burst",
+        "gravity": [
+          0.0,
+          -0.5,
+          0.0
+        ],
+        "layers": [
+          {
+            "billboardMode": "Normal",
+            "colorMax": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "colorMin": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "colorStartMax": [
+              0.10000000149011612,
+              0.10000000149011612,
+              0.10000000149011612,
+              1.0
+            ],
+            "colorStartMin": [
+              0.10000000149011612,
+              0.10000000149011612,
+              0.10000000149011612,
+              1.0
+            ],
+            "convergeRadius": 5.0,
+            "convergeSpeed": 0.0,
+            "count": 30,
+            "dirScaleMax": 4.0,
+            "dirScaleMin": 1.0,
+            "distribution": "Directional",
+            "lifeMax": 0.800000011920929,
+            "lifeMin": 0.44999998807907104,
+            "offsetMax": [
+              1.0,
+              1.5,
+              1.0
+            ],
+            "offsetMin": [
+              1.0,
+              0.5,
+              1.0
+            ],
+            "radialSpeedMax": 4.0,
+            "radialSpeedMin": 1.0,
+            "sizeEndMax": 0.10000000149011612,
+            "sizeEndMin": 0.10000000149011612,
+            "sizeMax": 0.10000000149011612,
+            "sizeMin": 0.10000000149011612,
+            "stretchScale": 0.15000000596046448
+          }
+        ],
+        "maxParticleNum": 500,
+        "noise": {
+          "dissolveSoftness": 0.05000000074505806,
+          "dissolveStart": 0.5,
+          "edgeColor": [
+            1.0,
+            0.5,
+            0.10000000149011612,
+            1.0
+          ],
+          "edgeWidth": 0.10000000149011612,
+          "flags": [],
+          "maskPower": 1.0,
+          "noiseScale": 1.0,
+          "scroll": [
+            0.0,
+            0.0
+          ]
+        },
+        "noiseTexture": "",
+        "texture": "Particle/ink_blob.png"
+      },
+      "pos": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotate": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
     }
   ],
   "groups": {
@@ -3198,7 +3304,8 @@
     "ParryEffect": [
       "Flare",
       "Ring",
-      "ClashSparkHigh"
+      "ClashSparkHigh",
+      "InkClashSpark"
     ],
     "PreConverge": [
       "InkConverge",

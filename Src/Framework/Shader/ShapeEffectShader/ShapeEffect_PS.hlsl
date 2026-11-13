@@ -3,6 +3,8 @@ cbuffer cbShapeEffect : register(b5)
 {
 	row_major float4x4	g_mWorld;
 	float4				g_Color;
+	float				g_DepthOffset;
+	float3				g_pad;
 };
 
 Texture2D		g_tex : register(t0);
