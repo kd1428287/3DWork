@@ -82,6 +82,7 @@ private:
 
 	std::vector<std::string>		m_textureFileList;
 	bool							m_textureListLoaded = false;
+	bool							m_pickNoiseTexture = false;	// ピッカーの選択結果の割り当て先(false=Texture / true=Noise)
 
 	//=====================================================
 	// シングルトンパターン

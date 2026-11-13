@@ -14,7 +14,9 @@ cbuffer cbShapeEffect : register(b5)
 	row_major float4x4	g_mWorld;
 	float4				g_Color;
 	float				g_DepthOffset;	// ビュー空間でカメラ方向へずらす量(+で手前)
-	float3				g_pad;
+	float				g_Alpha;		// PSで使用
+	float				g_Time;			// PSで使用
+	float				g_pad;
 };
 
 struct VSOutput

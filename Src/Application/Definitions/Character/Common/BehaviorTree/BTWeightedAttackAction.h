@@ -1,24 +1,14 @@
-#pragma once
+﻿#pragma once
 #include <algorithm>
 #include <random>
 #include "IBTNode.h"
 #include "../../Enemy/EnemyAIData.h"
 
-// ============================================================
-// 攻撃行動の共通「実行」部品(「判断」層とは独立)。
-// どのプールから選ぶか(ChooseAttack/ChooseGapCloserAttack)はコンストラクタで
-// 注入し、重み付き抽選で1つ選んでWindup→Active→Recoveryで実行する。
+// 攻撃の実行部品(判断層とは独立)。
+// 技の選択元(ChooseAttack/ChooseGapCloserAttack等)をコンストラクタで注入し、
+// 選んだ技をWindup→Active→Recoveryの順に実行する。
 //
-// 【この部品を作った経緯・改善案2】
-// 旧EnemyActionAttack/WarrockActionAttackは、Windup/Active/Recoveryの
-// ステートマシンが一文字も変わらない完全なコピーだった。
-// 「Warrock固有にしたい」のはBuildTree()の構造(判断層)であって、
-// 「1回の攻撃をどう実行するか」という手続き(実行層)まで別物にする
-// 意図ではなかったため、実行層側だけをここへ切り出して共有する。
-//
-// Tには継承を要求しない(ダックタイピング)。以下のメンバ関数を
-// 持ってさえいれば、EnemyAIController/WarrockAIController/将来の
-// 敵種のいずれでもそのまま使い回せる:
+// Tに継承は不要。以下のメンバを持っていればよい(ダックタイピング):
 //   void StopMovement()
 //   Math::Vector3 GetTargetPositionOrSelf() const
 //   void FaceHorizontalTarget(const Math::Vector3&)
@@ -29,79 +19,37 @@
 //   void SetWeaponTrailEmitting(const std::vector<std::string>&, bool)
 //   void SetWeaponWindEmitting(const std::vector<std::string>&, bool, const std::string& preset)
 //   void ApplyAttackVisualData(const std::vector<std::string>&, const AttackVisualData&)
-//   void NotifyAttackCompleted()
+//   void NotifyAttackCompleted(float)
 //   void SetVulnerable(bool)
 //   void PlayTelegraphEffect(const EnemyAttackTelegraphData&, float convergeDuration)
 //   void FinishTelegraphEffect()
 //   void StopTelegraphEffect()
 //   void PlayAttackSwingSE()
+//   const EnemyAttackDefinition* ResolveComboNext(const EnemyAttackDefinition&)
 //
-// 【攻撃中の向き制御について】
-// 以前は攻撃開始の瞬間に一度だけ瞬時にターゲットへ正対していた。今は
-// EnemyAttackDefinition::facing(EnemyAttackFacingData)に従い、
-// Windup/Activeの間だけターゲットへ滑らかに向き直る(Recoveryでは追従しない)。
-// windupTurnSpeedが0以下の技は従来通り、開始時に一度だけ瞬時に正対して固定する。
-// 追従の解除は、フェーズが追従対象外へ移った時と、完了/中断(Reset())時に行う
-// (解除し忘れると移動方向への自動追従が効かなくなるため)。
+// 各フェーズの尺はattackData.phaseDataの値を使う。
+// Windupの長さは攻撃開始時に1回だけ、windupJitterRatio(0.2なら±20%)でゆらぎを付けて決める。
+// 向き: EnemyAttackDefinition::facingに従い、Windup/Activeの間だけターゲットへ滑らかに向き直る
+//       (Recoveryでは追従しない)。windupTurnSpeedが0以下の技は、開始時に一度だけ瞬時に正対する。
+//       追従の解除はフェーズ移行時とReset()で行う(解除し忘れると移動方向への自動追従が効かなくなる)。
+// 隙: SetVulnerable(true)はRecovery中だけ。完了・中断どちらでも抜ける時にfalseへ戻す。
+// インターバル: Recovery完了時にNotifyAttackCompleted()を呼ぶ。中断(Reset)時は呼ばない。
 //
-// 【SetVulnerable()について】
-// Recoveryフェーズ(攻撃の後隙)の間だけtrueにし、フェーズを抜けたら
-// (通常完了・中断のどちらでも)falseへ戻す。武器を持たない大型モンスター
-// のように「攻撃の隙以外は通常被弾をガード扱いしたい」敵種向けの
-// フックで、IsGuarding()の実体はT側(EnemyAIController等)に委ねる。
-//
-// 【IBTNode::Reset()の制約について】
-// IBTNode<T>::Reset()はcontext引数を受け取らない仕様のため、Active中
-// (HitBoxが有効な最中)に中断された場合にSetWeaponHitBoxEnabled(false)
-// で閉じたくてもcontrollerを直接参照できない。そのためTick()の冒頭で
-// 直前のcontextをlastContext_へキャッシュしておき、Reset()からは
-// それを使う回避策を取っている(旧EnemyActionAttack/WarrockActionAttack
-// と同じ回避策)。
-//
-// 【攻撃インターバルについて】
-// Recoveryフェーズが完了しSuccessを返す直前にcontext->NotifyAttackCompleted()
-// を呼び、次の攻撃までのインターバル(EnemyAIData::attackIntervalDuration)を
-// 開始させる。中断(Reset()経由)された場合はこの通知を行わない
-// (攻撃をやり切っていない以上、インターバルを課す理由が無いため)。
-//
-// 【フェーズ遷移が実データを読むようになった経緯(修正)】
-// 以前はWindup/Active/Recoveryの遷移条件が全て「elapsed_ >= 0」という
-// ハードコードのままだった(EnemyAttackDefinition::attackData.phaseData
-// 自体はWarrockAIData.h側で実際の秒数が設定済みだったが、この
-// Tick()側がまだそれを読んでいなかった)。elapsed_は0からdeltaTime分
-// しか進んでいない最初のTickで既に「0以上」を満たしてしまうため、
-// Windup→Active→Recoveryが実質同じフレームで連鎖的に完了し、
-// 「HitBoxが有効化された直後に無効化される」「アニメーションが
-// 最後まで再生される前に攻撃自体が終わる」といった不具合の原因に
-// なっていた。実際にphaseData.windup/active/recovery.targetDurationを
-// 読むよう修正した。
-//
-// 【予備動作時間のゆらぎについて】
-// EnemyAttackDefinition::windupJitterRatio(0.2なら±20%)に従い、攻撃開始時に
-// 1回だけWindupの長さを抽選してwindupDuration_へ保持する(Windupのみ対象)。
-// アニメーション自体の再生時間は変えないため、ゆらぎはWindup終了の
-// タイミングだけに効く。0なら従来通りの固定時間。
-//
-// 【今後の展望・改善案3】
-// もし「攻撃の形そのもの」(例: JumpAttackだけ移動を伴う突進にする等)
-// がWarrock固有に崩れてきたら、この共通化は足かせになる可能性がある。
-// その場合はこのテンプレート自体をWarrock用に複製するのではなく、
-// フェーズ遷移の前後にフックできるようテンプレートを拡張することを
-// 検討すること。
-// ============================================================
+// IBTNode::Reset()はcontextを受け取れないため、Tick()冒頭でlastContext_にキャッシュして
+// Reset()から使う(Active中の中断でHitBoxを閉じるために必要)。
+// 技の形がWarrock固有に崩れてきたら、複製せずフェーズ遷移前後のフックを足す形で拡張すること。
 template <typename T>
 class BTWeightedAttackAction : public IBTNode<T>
 {
 public:
-	// どのプールから選ぶか(ChooseAttack/ChooseGapCloserAttack等)を
-	// 呼び出し側が注入する。
+	// 技の選択元(ChooseAttack/ChooseGapCloserAttack等)
 	using ChooseFn = std::function<const EnemyAttackDefinition* (T*)>;
 
 	explicit BTWeightedAttackAction(ChooseFn chooseAttack) : chooseAttack_(std::move(chooseAttack)) {}
 
 	BTNodeStatus Tick(T* context, float deltaTime) override
 	{
-		lastContext_ = context; // Reset()からの後始末用にキャッシュ(クラスコメント参照)
+		lastContext_ = context;	// Reset()の後始末用にキャッシュ
 
 		if (phase_ == Phase::NotStarted) {
 			const EnemyAttackDefinition* picked = chooseAttack_(context);
@@ -114,7 +62,7 @@ public:
 		const AttackPhaseData& phaseData = current_->attackData.phaseData;
 		switch (phase_) {
 		case Phase::Windup:
-			// 判定発生のleadTime前に1回だけ予備動作エフェクトを出す
+			// 判定発生のleadTime前に、予備動作エフェクトを1回だけ出す
 			if (!telegraphFired_ && current_->telegraph.type != TelegraphType::None &&
 				elapsed_ >= windupDuration_ - current_->telegraph.leadTime) {
 				telegraphFired_ = true;
@@ -124,16 +72,13 @@ public:
 			if (elapsed_ >= windupDuration_) {
 				phase_ = Phase::Active;
 				elapsed_ = 0.0f;
-				// 攻撃判定が実際に発生する一瞬だけ有効化(Player同様
-				// AttackData::weaponSlotsで対象スロットを指定する。
-				// BTWeightedAttackAction冒頭コメントのダックタイピング
-				// 一覧を参照)。
-				context->FinishTelegraphEffect(); // 収束完了。判定発生へ
+				// 判定が発生する間だけHitBoxを有効にする(対象はAttackData::weaponSlots)
+				context->FinishTelegraphEffect();
 				context->ApplyAttackVisualData(current_->attackData.weaponSlots, current_->attackData.visualData);
 				context->SetWeaponHitBoxEnabled(current_->attackData.weaponSlots, true);
 				context->SetWeaponTrailEmitting(current_->attackData.weaponSlots, true);
 				context->PlayAnimation(current_->attackData.phaseData.active);
-				context->PlayAttackSwingSE(); // 振りの音は判定発生に合わせる
+				context->PlayAttackSwingSE();	// 振りの音は判定発生に合わせる
 			}
 			break;
 
@@ -141,20 +86,19 @@ public:
 			if (elapsed_ >= phaseData.active.duration) {
 				phase_ = Phase::Recovery;
 				elapsed_ = 0.0f;
-				context->SetWeaponHitBoxEnabled(current_->attackData.weaponSlots, false); // 判定の発生窓を閉じる
+				context->SetWeaponHitBoxEnabled(current_->attackData.weaponSlots, false);
 				context->SetWeaponTrailEmitting(current_->attackData.weaponSlots, false);
 				context->SetWeaponWindEmitting(current_->attackData.weaponSlots, false, "");
 				context->PlayAnimation(current_->attackData.phaseData.recovery);
-				context->SetVulnerable(true); // ここから隙(Recoveryフェーズ)
+				context->SetVulnerable(true);	// ここから隙
 			}
 			break;
 
 		case Phase::Recovery:
-			if (TryChainCombo(context)) break; // 次の段のWindupへ
+			if (TryChainCombo(context)) break;	// 次の段のWindupへ
 			if (elapsed_ >= phaseData.recovery.duration) {
-				// 攻撃1回分をやり切った時だけ、次の攻撃までのインターバルを
-				// 開始させる(クラス冒頭コメント参照)。
-				context->NotifyAttackCompleted(current_->intervalAfter); // コンボ最終段の技の値を使う
+				// やり切った時だけインターバルを開始する(コンボ最終段の値を使う)
+				context->NotifyAttackCompleted(current_->intervalAfter);
 				Reset();
 				return BTNodeStatus::Success;
 			}
@@ -164,9 +108,7 @@ public:
 			break;
 		}
 
-		// このTick終了時点のフェーズに応じて、ターゲットへの向き直りを更新する。
-		// (Recovery完了時は上のcaseでReset()してSuccessを返すため、ここへは来ない。
-		//  その場合の追従解除はReset()側が行う)
+		// 現在のフェーズに応じて向き直りを更新する(Recovery完了時は上でReset済みのためここへ来ない)
 		UpdateFacing(context);
 
 		return BTNodeStatus::Running;
@@ -174,32 +116,29 @@ public:
 
 	void Reset() override
 	{
-		// Windup中断時にエフェクトが残らないよう止める
+		// Windup中断時にエフェクトを残さない
 		if (telegraphFired_ && lastContext_ != nullptr) {
 			lastContext_->StopTelegraphEffect();
 		}
 		telegraphFired_ = false;
 
-		// Active中(HitBoxが有効な最中)に中断された場合は、有効なまま
-		// 残らないよう明示的に閉じておく(クラスコメント参照)。
+		// Active中の中断では、HitBoxを有効なまま残さない
 		if (phase_ == Phase::Active && lastContext_ != nullptr && current_ != nullptr) {
 			lastContext_->SetWeaponHitBoxEnabled(current_->attackData.weaponSlots, false);
 			lastContext_->SetWeaponTrailEmitting(current_->attackData.weaponSlots, false);
 		}
 
-		// 風はWindupから出すため、Windup/Active中の中断で止める。
+		// 風はWindupから出すため、Windup/Active中の中断で止める
 		if ((phase_ == Phase::Windup || phase_ == Phase::Active) && lastContext_ != nullptr && current_ != nullptr) {
 			lastContext_->SetWeaponWindEmitting(current_->attackData.weaponSlots, false, "");
 		}
 
-		// Recovery(隙)中だった場合、通常完了・中断のどちらの経路でも
-		// ここへ来るため、無防備状態を確実に解除する。
+		// 完了・中断のどちらでもここを通るため、隙の状態を確実に解除する
 		if (phase_ == Phase::Recovery && lastContext_ != nullptr) {
 			lastContext_->SetVulnerable(false);
 		}
 
-		// 向き直りの追従が残ったままだと、以降の移動方向への自動追従が
-		// 効かなくなるため、完了/中断のどちらでも必ず解除する。
+		// 向き直りの追従を必ず解除する
 		if (phase_ != Phase::NotStarted && lastContext_ != nullptr) {
 			lastContext_->StopFacingTarget();
 		}
@@ -210,8 +149,7 @@ public:
 	}
 
 private:
-	// 現在のフェーズに応じて、ターゲットへの向き直りを開始/更新/解除する。
-	// Windup/Activeのturn速度>0なら追従し、それ以外(0以下、Recovery)は解除する。
+	// Windup/Activeのturn速度が正なら追従し、それ以外(0以下、Recovery)は解除する
 	void UpdateFacing(T* context) const
 	{
 		float turnSpeed = 0.0f;
@@ -225,7 +163,8 @@ private:
 			context->StopFacingTarget();
 		}
 	}
-	// 技の開始(最初の技・コンボの次の段で共用)。Windupの初期化を行う。
+
+	// 技の開始(最初の技・コンボの次の段で共用)。Windupを初期化する
 	void StartAttack(T* context, const EnemyAttackDefinition* def)
 	{
 		current_ = def;
@@ -236,7 +175,7 @@ private:
 		windupDuration_ = def->attackData.phaseData.windup.duration;
 
 		context->StopMovement();
-		// 追従しない技(windupTurnSpeed<=0)だけ、ここで一度だけ瞬時に正対する。
+		// 追従しない技だけ、ここで一度瞬時に正対する
 		if (def->facing.windupTurnSpeed <= 0.0f) {
 			context->FaceHorizontalTarget(context->GetTargetPositionOrSelf());
 		}
@@ -244,7 +183,7 @@ private:
 		context->SetWeaponWindEmitting(def->attackData.weaponSlots, true, def->attackData.visualData.windPreset);
 	}
 
-	// Recoveryがキャンセル開始に達したら1回だけリンクを判定し、繋がれば次の段を始める。
+	// キャンセル開始に達したら1回だけリンクを判定し、繋がれば次の段を始める
 	bool TryChainCombo(T* context)
 	{
 		const AttackData& data = current_->attackData;
@@ -255,7 +194,7 @@ private:
 		const EnemyAttackDefinition* next = context->ResolveComboNext(*current_);
 		if (next == nullptr) return false;
 
-		context->SetVulnerable(false); // 中間段の隙は閉じる
+		context->SetVulnerable(false);	// 中間段の隙は閉じる
 		StartAttack(context, next);
 		return true;
 	}
@@ -263,13 +202,12 @@ private:
 	enum class Phase { NotStarted, Windup, Active, Recovery };
 	Phase phase_ = Phase::NotStarted;
 	float elapsed_ = 0.0f;
-	float windupDuration_ = 0.0f; // 今回の攻撃で抽選したWindupの長さ
-	bool telegraphFired_ = false; // 今回の攻撃で予備動作を出したか
-	bool comboChecked_ = false;   // 今回の段でコンボのリンク判定を済ませたか
+	float windupDuration_ = 0.0f;	// 今回抽選したWindupの長さ
+	bool telegraphFired_ = false;	// 今回予備動作を出したか
+	bool comboChecked_ = false;		// 今回の段でコンボ判定を済ませたか
 	const EnemyAttackDefinition* current_ = nullptr;
 
-	// Reset()がcontextを受け取れない制約への回避策(クラス冒頭コメント参照)。
-	T* lastContext_ = nullptr;
+	T* lastContext_ = nullptr;	// Reset()用のcontextキャッシュ
 
 	ChooseFn chooseAttack_;
 };

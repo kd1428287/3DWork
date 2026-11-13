@@ -102,6 +102,59 @@ namespace
 		};
 	}
 
+	// ノイズはeffectmap.jsonと同じ形式("flags"は"Mask"/"Dissolve"の文字列配列)
+	ParticleNoiseParams NoiseFromJson(const Json& j)
+	{
+		ParticleNoiseParams n;
+		float f[4] = {};
+
+		if (j.contains("flags") && j.at("flags").is_array())
+		{
+			for (const auto& entry : j.at("flags"))
+			{
+				if (!entry.is_string()) { continue; }
+
+				const std::string flag = entry.get<std::string>();
+				if (flag == "Mask") { n.flags |= ParticleNoiseFlag_Mask; }
+				else if (flag == "Dissolve") { n.flags |= ParticleNoiseFlag_Dissolve; }
+			}
+		}
+
+		n.noiseScale = ReadFloat(j, "noiseScale", n.noiseScale);
+		if (TryReadFloats(j, "scroll", f, 2)) { n.scroll = { f[0], f[1] }; }
+		n.maskPower = ReadFloat(j, "maskPower", n.maskPower);
+		n.dissolveStart = ReadFloat(j, "dissolveStart", n.dissolveStart);
+		n.dissolveSoftness = ReadFloat(j, "dissolveSoftness", n.dissolveSoftness);
+		n.edgeWidth = ReadFloat(j, "edgeWidth", n.edgeWidth);
+		if (TryReadFloats(j, "edgeColor", f, 4)) { n.edgeColor = { f[0], f[1], f[2], f[3] }; }
+
+		// 0除算・範囲外を避ける(EffectDataLoaderと同じ下限/上限)
+		n.noiseScale = std::max(n.noiseScale, 0.01f);
+		n.maskPower = std::max(n.maskPower, 0.01f);
+		n.dissolveStart = std::clamp(n.dissolveStart, 0.0f, 0.99f);
+		n.dissolveSoftness = std::max(n.dissolveSoftness, 0.001f);
+		n.edgeWidth = std::max(n.edgeWidth, 0.001f);
+		return n;
+	}
+
+	Json NoiseToJson(const ParticleNoiseParams& n)
+	{
+		Json flags = Json::array();
+		if (n.flags & ParticleNoiseFlag_Mask) { flags.push_back("Mask"); }
+		if (n.flags & ParticleNoiseFlag_Dissolve) { flags.push_back("Dissolve"); }
+
+		return Json{
+			{ "flags",            flags },
+			{ "noiseScale",       n.noiseScale },
+			{ "scroll",           Json::array({ n.scroll.x, n.scroll.y }) },
+			{ "maskPower",        n.maskPower },
+			{ "dissolveStart",    n.dissolveStart },
+			{ "dissolveSoftness", n.dissolveSoftness },
+			{ "edgeWidth",        n.edgeWidth },
+			{ "edgeColor",        Json::array({ n.edgeColor.x, n.edgeColor.y, n.edgeColor.z, n.edgeColor.w }) },
+		};
+	}
+
 	ShapeEffectData EntryFromJson(const Json& j)
 	{
 		ShapeEffectData data;
@@ -119,6 +172,8 @@ namespace
 			data.Params.Billboard = BillboardModeFromName(ReadString(p, "billboard"));
 			data.Params.DepthOffset = ReadFloat(p, "depthOffset", data.Params.DepthOffset);
 			data.Params.DepthTest = ReadBool(p, "depthTest", data.Params.DepthTest);
+			data.Params.NoiseTexturePath = ReadString(p, "noiseTexture");
+			if (p.contains("noise") && p.at("noise").is_object()) { data.Params.Noise = NoiseFromJson(p.at("noise")); }
 		}
 
 		if (j.contains("keys") && j.at("keys").is_array())
@@ -146,6 +201,8 @@ namespace
 				{ "billboard",   BillboardModeName(data.Params.Billboard) },
 				{ "depthOffset", data.Params.DepthOffset },
 				{ "depthTest",   data.Params.DepthTest },
+				{ "noiseTexture", data.Params.NoiseTexturePath },
+				{ "noise",        NoiseToJson(data.Params.Noise) },
 			} },
 			{ "keys", keys },
 		};

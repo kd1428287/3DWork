@@ -47,6 +47,9 @@ struct ShapeEffectParams
 	ShapeBillboardMode	Billboard = ShapeBillboardMode::None;
 	float				DepthOffset = 0.0f;		// カメラ方向への深度のずらし量(ワールド単位。+で手前。画面上の位置・大きさは変えない)
 	bool				DepthTest = true;		// falseなら手前の物に隠されず常に描く
+
+	std::string			NoiseTexturePath;		// ノイズ用テクスチャ(タイリング可能な画像のRチャンネル)
+	ParticleNoiseParams	Noise;					// flags=0ならノイズ無効。ScrollはUV/秒(パーティクルと違い寿命ではなく時間で流れる)
 };
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -81,5 +84,6 @@ private:
 	ShapeEffectParams				params_;
 	std::shared_ptr<IEffectMotion>	motion_;
 	std::shared_ptr<KdTexture>		texture_;
+	std::shared_ptr<KdTexture>		noiseTexture_;
 	float							time_ = 0.0f;
 };

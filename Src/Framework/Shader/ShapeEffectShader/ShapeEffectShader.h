@@ -8,9 +8,14 @@ struct ShapeEffectDrawInfo
 	std::shared_ptr<KdTexture>	Texture;
 	ParticleBlendMode			BlendMode = ParticleBlendMode::Alpha;
 	Math::Matrix				World;
-	Math::Vector4				Color = { 1, 1, 1, 1 };	// テクスチャへ乗算(aに動きのalphaを掛けた値)
+	Math::Vector4				Color = { 1, 1, 1, 1 };	// テクスチャへ乗算
+	float						Alpha = 1.0f;			// 動きのalpha。ディゾルブ有効時は線形フェードの代わりに消去の進行度(1=見える、0=消える)になる
+	float						Time = 0.0f;			// 経過秒。ノイズのスクロールに使う
 	float						DepthOffset = 0.0f;		// ビュー空間でカメラ方向へずらす量(+で手前)
 	bool						DepthTest = true;
+
+	ParticleNoiseParams			Noise;					// flags=0、またはNoiseTextureが無ければノイズ無効
+	std::shared_ptr<KdTexture>	NoiseTexture;
 };
 
 //====================================================================
@@ -53,9 +58,28 @@ private:
 		Math::Matrix	World;
 		Math::Vector4	Color = { 1, 1, 1, 1 };
 		float			DepthOffset = 0.0f;
-		float			_pad[3] = { 0, 0, 0 };
+		float			Alpha = 1.0f;
+		float			Time = 0.0f;
+		float			_pad = 0.0f;
 	};
 	KdConstantBuffer<cbShape> m_cb;
 
+	// ノイズ設定(PS用)。HLSL側cbParticleNoise(inc_GPUParticleNoise.hlsli)と一致させる事
+	struct cbNoise
+	{
+		UINT			NoiseFlags = 0;
+		float			NoiseScale = 1.0f;
+		Math::Vector2	NoiseScroll = { 0, 0 };
+
+		float			MaskPower = 1.0f;
+		float			DissolveStart = 0.5f;
+		float			DissolveSoftness = 0.05f;
+		float			EdgeWidth = 0.1f;
+
+		Math::Vector4	EdgeColor = { 1, 0.5f, 0.1f, 1 };
+	};
+	KdConstantBuffer<cbNoise> m_cbNoise;
+
 	static constexpr UINT kCBSlot = 5;
+	static constexpr UINT kNoiseCBSlot = 4;	// GPUParticleShaderと同じ(HLSL側 b4)
 };

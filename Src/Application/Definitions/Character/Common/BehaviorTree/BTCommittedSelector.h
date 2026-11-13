@@ -3,11 +3,8 @@
 #include <vector>
 #include "IBTNode.h"
 
-// ============================================================
 // Running中の子を最後まで固定して進めるSelector(攻撃のコミット用)。
-// 子がRunningを返したら、その子がRunning以外を返すまで他の子は評価しない。
-// 外側のreactive Selectorに中断された時はReset()で全子をリセットする。
-// ============================================================
+// 子がRunningの間は他の子を評価しない。外側のSelectorに中断された時はReset()で全子を戻す。
 template <typename T>
 class BTCommittedSelector : public IBTNode<T>
 {
@@ -41,5 +38,5 @@ public:
 
 private:
 	std::vector<std::unique_ptr<IBTNode<T>>> children_;
-	int runningIndex_ = -1; // Running中の子(無ければ-1)
+	int runningIndex_ = -1;	// Running中の子(無ければ-1)
 };

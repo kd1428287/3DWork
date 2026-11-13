@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "../GPUParticle/ParticleBuffer.h"	// ParticleBlendMode / ParticleNoiseParams を流用する為
 #include "PerlinNoiseGPU.h"

@@ -12,12 +12,6 @@ struct WindShellConfig {
 	bool autoPlay = false;
 };
 
-// ============================================================
-// WindShellComponent: 自オブジェクトの位置・向きで風シェルを発生させる。
-// ボーン追従の子オブジェクト(AttachToSocketComponent)に付ける。
-// ※PostUpdateの順序の都合で、AttachToSocketComponentより後にAddComponentする事。
-// ※GameObjectは型ごとに1つまでなので、拳や体ごとに別の子オブジェクトに付ける。
-// ============================================================
 class WindShellComponent : public ComponentBase {
 public:
 	enum class AxisMode {

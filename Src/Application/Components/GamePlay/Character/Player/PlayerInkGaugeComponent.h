@@ -8,6 +8,7 @@ struct InkGaugeConfig {
 	float regenPerSecond = 1.0f;  // 自然回復量/秒
 	float gainOnParry = 15.0f;    // パリィ成功時の加算量
 	float chargeLine = 0.8f;      // 必殺技が使える割合
+	float regenDelay = 1.0f;	  // 自然回復再開遅延
 };
 
 // プレイヤー専用の必殺技ゲージ。パリィと時間経過で溜まり、必殺技で消費する。
@@ -34,8 +35,15 @@ public:
 	}
 
 	void Update(float deltaTime) override {
-		if (current_ >= max_) return;
-		AddValue(regenPerSecond_ * deltaTime);
+		if (currentDelay_ > 0.0f)
+		{
+			currentDelay_ -= deltaTime;
+		}
+		else
+		{
+			if (current_ >= max_) return;
+			AddValue(regenPerSecond_ * deltaTime);
+		}
 	}
 
 	// 増減(負で減算)。値が変わった時だけ通知する。
@@ -51,6 +59,8 @@ public:
 		AddValue(-cost);
 		return true;
 	}
+
+	void StopRegen() { currentDelay_ = delaySeconds_; }
 
 	void Fill() { AddValue(max_); }
 	void Clear() { AddValue(-max_); }
@@ -81,6 +91,8 @@ private:
 	float regenPerSecond_ = Config{}.regenPerSecond;
 	float gainOnParry_ = Config{}.gainOnParry;
 	float chargeLine_ = Config{}.chargeLine;
+	float delaySeconds_ = Config{}.regenDelay;
+	float currentDelay_ = 0.0f;
 
 	ScopedSubscriber sub_;
 };

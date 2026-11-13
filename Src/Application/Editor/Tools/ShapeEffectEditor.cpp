@@ -317,6 +317,57 @@ bool ShapeEffectEditor::DrawParams(ShapeEffectData& effect)
 	changed |= ImGui::Checkbox("Depth Test", &params.DepthTest);
 	ImGui::TextDisabled("Depth Offset：+で手前へ(位置・大きさは変えず深度だけずらす) / Depth Test：オフで手前の物に隠されない");
 
+	ImGui::Separator();
+	ImGui::Text("Noise");
+	{
+		ParticleNoiseParams& noise = params.Noise;
+
+		bool useMask = (noise.flags & ParticleNoiseFlag_Mask) != 0;
+		bool useDissolve = (noise.flags & ParticleNoiseFlag_Dissolve) != 0;
+
+		bool flagsChanged = ImGui::Checkbox("Mask", &useMask);
+		ImGui::SameLine();
+		flagsChanged |= ImGui::Checkbox("Dissolve", &useDissolve);
+		if (flagsChanged)
+		{
+			noise.flags = (useMask ? static_cast<UINT>(ParticleNoiseFlag_Mask) : 0u)
+				| (useDissolve ? static_cast<UINT>(ParticleNoiseFlag_Dissolve) : 0u);
+			changed = true;
+		}
+
+		if (noise.flags != 0)
+		{
+			ImGui::Text("Noise Texture : %s", params.NoiseTexturePath.empty() ? "(None)" : params.NoiseTexturePath.c_str());
+			ImGui::SameLine();
+			if (ImGui::SmallButton("Clear##NoiseTex")) { params.NoiseTexturePath.clear(); changed = true; }
+
+			ImGui::TextDisabled("Texturesの「Target」をNoiseにして選択(タイリング可能な画像のRチャンネルを使用)");
+			if (params.NoiseTexturePath.empty())
+			{
+				ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.2f, 1.0f), "ノイズテクスチャ未設定のため、ノイズは適用されません");
+			}
+
+			changed |= ImGui::DragFloat("Noise Scale", &noise.noiseScale, 0.05f, 0.01f, 32.0f);
+			changed |= ImGui::DragFloat2("Noise Scroll", &noise.scroll.x, 0.01f, -10.0f, 10.0f);
+			ImGui::TextDisabled("Scroll：1秒あたりのノイズUV移動量(パーティクルと違い、寿命ではなく時間で流れる)");
+
+			if (useMask)
+			{
+				changed |= ImGui::SliderFloat("Mask Power", &noise.maskPower, 0.1f, 8.0f);
+			}
+
+			if (useDissolve)
+			{
+				changed |= ImGui::SliderFloat("Dissolve Start", &noise.dissolveStart, 0.0f, 0.99f);
+				changed |= ImGui::SliderFloat("Dissolve Softness", &noise.dissolveSoftness, 0.001f, 0.3f);
+				changed |= ImGui::SliderFloat("Edge Width", &noise.edgeWidth, 0.001f, 0.5f);
+				changed |= ImGui::ColorEdit3("Edge Color", &noise.edgeColor.x);
+				changed |= ImGui::DragFloat("Edge Intensity", &noise.edgeColor.w, 0.05f, 0.0f, 20.0f);
+				ImGui::TextDisabled("Dissolve有効時は線形フェードの代わりに、Keyのalphaが進行度になる(1=見える、0=ノイズ順に消える。Startより上は消え始めない)");
+			}
+		}
+	}
+
 	return changed;
 }
 
@@ -329,15 +380,23 @@ bool ShapeEffectEditor::DrawTexturePicker(ShapeEffectParams& params)
 	}
 
 	if (ImGui::Button("Refresh")) { RefreshTextureFileList(); }
+	ImGui::SameLine();
+	ImGui::Text("Target");
+	ImGui::SameLine();
+	if (ImGui::RadioButton("Texture", !m_pickNoiseTexture)) { m_pickNoiseTexture = false; }
+	ImGui::SameLine();
+	if (ImGui::RadioButton("Noise", m_pickNoiseTexture)) { m_pickNoiseTexture = true; }
+
+	std::string& target = m_pickNoiseTexture ? params.NoiseTexturePath : params.TexturePath;
 
 	bool changed = false;
 
 	ImGui::BeginChild("##ShapeTextureList", ImVec2(0, 120), true);
 	for (const std::string& path : m_textureFileList)
 	{
-		if (ImGui::Selectable(path.c_str(), params.TexturePath == path))
+		if (ImGui::Selectable(path.c_str(), target == path))
 		{
-			params.TexturePath = path;
+			target = path;
 			changed = true;
 		}
 	}

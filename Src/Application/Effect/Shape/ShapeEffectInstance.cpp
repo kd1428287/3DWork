@@ -50,10 +50,11 @@ void ShapeEffectInstance::Init(std::shared_ptr<IEffectMotion> motion, const Shap
 	time_ = 0.0f;
 
 	texture_.reset();
-	if (textureProvider && !params_.TexturePath.empty())
-	{
-		texture_ = textureProvider->GetTexture(params_.TexturePath);
-	}
+	noiseTexture_.reset();
+	if (!textureProvider) { return; }
+
+	if (!params_.TexturePath.empty()) { texture_ = textureProvider->GetTexture(params_.TexturePath); }
+	if (!params_.NoiseTexturePath.empty()) { noiseTexture_ = textureProvider->GetTexture(params_.NoiseTexturePath); }
 }
 
 void ShapeEffectInstance::Draw(const Math::Matrix& base) const
@@ -69,7 +70,10 @@ void ShapeEffectInstance::Draw(const Math::Matrix& base) const
 		? ComposeWorld(pose, base)
 		: ComposeBillboardWorld(pose, base, params_.Billboard);
 	info.Color = params_.Color;
-	info.Color.w *= pose.alpha;
+	info.Alpha = pose.alpha;
+	info.Time = time_;
+	info.Noise = params_.Noise;
+	info.NoiseTexture = noiseTexture_;
 	info.DepthOffset = params_.DepthOffset;
 	info.DepthTest = params_.DepthTest;
 
