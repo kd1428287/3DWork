@@ -9,11 +9,11 @@
 #include "ShapeEffectInstance.h"
 #include "../Common/KdAssetsTextureProvider.h"
 
-// エフェクト名に対応する定義(見た目+動き)
+// エフェクト名に対応する定義(素材+複数パーツ)
 struct ShapeEffectDefinition
 {
-	ShapeEffectParams				Params;
-	std::shared_ptr<IEffectMotion>	Motion;
+	ShapeEffectParams		Params;
+	std::vector<ShapePart>	Parts;
 };
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////

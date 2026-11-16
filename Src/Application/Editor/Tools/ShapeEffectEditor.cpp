@@ -29,6 +29,19 @@ namespace
 		return names;
 	}
 
+	// 新規パーツの既定キー(初期姿勢 → 0.5秒でフェードイン)
+	std::vector<EffectKey> DefaultKeys()
+	{
+		EffectKey initial;
+		initial.alpha = 0.0f;
+
+		EffectKey reach;
+		reach.ease = EaseType::OutQuad;
+		reach.duration = 0.5f;
+
+		return { initial, reach };
+	}
+
 	// Comboへ渡すビルボード手法の名前表
 	const char* const* BillboardNames()
 	{
@@ -114,23 +127,19 @@ void ShapeEffectEditor::Update()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void ShapeEffectEditor::RebuildPreview()
 {
-	m_motion.reset();
 	if (!HasSelection()) { return; }
 
 	const ShapeEffectData& effect = m_effects[m_selected];
 
-	m_motion = std::make_shared<KeyframeMotion>();
-	m_motion->keys = effect.Keys;
-
-	m_previewInstance.Init(m_motion, effect.Params, &m_textureProvider);
+	m_previewInstance.Init(effect.Params, effect.Parts, &m_textureProvider);
 	m_previewInstance.SetTime(m_time);
 }
 
 void ShapeEffectEditor::AdvancePreview(float deltaTime)
 {
-	if (!HasSelection() || !m_motion) { return; }
+	if (!HasSelection()) { return; }
 
-	const float duration = m_motion->GetDuration();
+	const float duration = m_previewInstance.GetDuration();
 
 	if (m_playing && duration > 0.0f)
 	{
@@ -156,7 +165,7 @@ void ShapeEffectEditor::RenderPreviewViewport()
 {
 	if (!m_preview.IsReady()) { return; }
 
-	const bool has = HasSelection() && m_motion;
+	const bool has = HasSelection();
 	const Math::Matrix base = GetPreviewBase();
 
 	// 本編のDispatcher::Draw()と同じく、DrawPassFlagsに含まれるパスでだけ描く
@@ -180,12 +189,12 @@ void ShapeEffectEditor::DrawPreviewWindow()
 		{
 			ImGui::SetCursorPos(ImVec2(10, 10));
 
-			if (!HasSelection() || !m_motion)
+			if (!HasSelection())
 			{
 				ImGui::TextDisabled("エフェクトが選択されていません");
 				return;
 			}
-			ImGui::Text("t = %.2f / %.2f s", m_time, m_motion->GetDuration());
+			ImGui::Text("t = %.2f / %.2f s", m_time, m_previewInstance.GetDuration());
 		});
 }
 
@@ -236,7 +245,7 @@ void ShapeEffectEditor::DrawInspectorWindow()
 	bool changed = DrawParams(effect);
 
 	ImGui::Separator();
-	changed |= DrawKeys(effect);
+	changed |= DrawParts(effect);
 
 	if (changed) { RebuildPreview(); }
 
@@ -305,17 +314,8 @@ bool ShapeEffectEditor::DrawParams(ShapeEffectData& effect)
 
 	changed |= ImGui::ColorEdit4("Color", &params.Color.x);
 
-	int billboard = (int)params.Billboard;
-	if (ImGui::Combo("Billboard", &billboard, BillboardNames(), (int)ShapeBillboardMode::Count))
-	{
-		params.Billboard = (ShapeBillboardMode)billboard;
-		changed = true;
-	}
-	ImGui::TextDisabled("None=向き固定(基準点の回転に追従) / Full=常にカメラ正対(Rot Zのみ有効) / YAxis=Y軸回りだけカメラへ向く");
-
-	changed |= ImGui::DragFloat("Depth Offset", &params.DepthOffset, 0.01f, -10.0f, 10.0f);
 	changed |= ImGui::Checkbox("Depth Test", &params.DepthTest);
-	ImGui::TextDisabled("Depth Offset：+で手前へ(位置・大きさは変えず深度だけずらす) / Depth Test：オフで手前の物に隠されない");
+	ImGui::TextDisabled("Depth Test：オフで手前の物に隠されず常に描く(Billboard/Depth Offsetは各Partで設定)");
 
 	ImGui::Separator();
 	ImGui::Text("Noise");
@@ -407,7 +407,7 @@ bool ShapeEffectEditor::DrawTexturePicker(ShapeEffectParams& params)
 
 void ShapeEffectEditor::DrawPlayback()
 {
-	const float duration = m_motion ? m_motion->GetDuration() : 0.0f;
+	const float duration = HasSelection() ? m_previewInstance.GetDuration() : 0.0f;
 
 	if (ImGui::Button(m_playing ? "Pause" : "Play"))
 	{
@@ -427,12 +427,102 @@ void ShapeEffectEditor::DrawPlayback()
 }
 
 // キー列。追加・削除・複製・並べ替えは、ループ後にまとめて適用する
-bool ShapeEffectEditor::DrawKeys(ShapeEffectData& effect)
+// パーツ一覧。追加・削除・複製・並べ替えは、ループ後にまとめて適用する
+bool ShapeEffectEditor::DrawParts(ShapeEffectData& effect)
 {
 	bool changed = false;
-	std::vector<EffectKey>& keys = effect.Keys;
+	std::vector<ShapePart>& parts = effect.Parts;
 
-	ImGui::Text("Keys (%d)  Total %.2f s", (int)keys.size(), m_motion ? m_motion->GetDuration() : 0.0f);
+	ImGui::Text("Parts (%d)  Total %.2f s", (int)parts.size(), m_previewInstance.GetDuration());
+	if (ImGui::Button("+ Add Part"))
+	{
+		ShapePart part;
+		part.Name = "Part" + std::to_string(parts.size());
+		part.Keys = DefaultKeys();
+		parts.push_back(std::move(part));
+		changed = true;
+	}
+
+	int removeIndex = -1;
+	int duplicateIndex = -1;
+	int moveIndex = -1;
+	int moveDir = 0;
+
+	for (int i = 0; i < (int)parts.size(); ++i)
+	{
+		ShapePart& part = parts[i];
+
+		ImGui::PushID(i);
+
+		// ###以降だけがIDになるので、名前を編集してもノードの開閉状態が変わらない
+		char label[96];
+		snprintf(label, sizeof(label), "Part %d : %s###part", i, part.Name.c_str());
+
+		if (ImGui::TreeNodeEx(label, ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			char nameBuf[64];
+			strcpy_s(nameBuf, part.Name.c_str());
+			if (ImGui::InputText("Name", nameBuf, sizeof(nameBuf))) { part.Name = nameBuf; }
+
+			changed |= ImGui::DragFloat("Delay", &part.Delay, 0.01f, 0.0f, 60.0f);
+
+			int billboard = (int)part.Billboard;
+			if (ImGui::Combo("Billboard", &billboard, BillboardNames(), (int)ShapeBillboardMode::Count))
+			{
+				part.Billboard = (ShapeBillboardMode)billboard;
+				changed = true;
+			}
+			ImGui::TextDisabled("None=向き固定(基準点の回転に追従) / Full=常にカメラ正対(Rot Zのみ有効) / YAxis=Y軸回りだけカメラへ向く");
+
+			changed |= ImGui::DragFloat("Depth Offset", &part.DepthOffset, 0.01f, -10.0f, 10.0f);
+			ImGui::TextDisabled("Depth Offset：+で手前へ(位置・大きさは変えず深度だけずらす)");
+
+			changed |= DrawKeys(part.Keys);
+
+			if (i > 0 && ImGui::Button("Up##part")) { moveIndex = i; moveDir = -1; }
+			if (i > 0) { ImGui::SameLine(); }
+			if (i < (int)parts.size() - 1 && ImGui::Button("Down##part")) { moveIndex = i; moveDir = 1; }
+			if (i < (int)parts.size() - 1) { ImGui::SameLine(); }
+			if (ImGui::Button("Duplicate##part")) { duplicateIndex = i; }
+			ImGui::SameLine();
+			if (ImGui::Button("Remove##part")) { removeIndex = i; }
+
+			ImGui::TreePop();
+		}
+
+		ImGui::PopID();
+	}
+
+	if (removeIndex >= 0)
+	{
+		parts.erase(parts.begin() + removeIndex);
+		changed = true;
+	}
+	else if (duplicateIndex >= 0)
+	{
+		ShapePart copy = parts[duplicateIndex];
+		copy.Name += "_Copy";
+		parts.insert(parts.begin() + duplicateIndex + 1, std::move(copy));
+		changed = true;
+	}
+	else if (moveIndex >= 0)
+	{
+		std::swap(parts[moveIndex], parts[moveIndex + moveDir]);
+		changed = true;
+	}
+
+	return changed;
+}
+
+// キー列。追加・削除・複製・並べ替えは、ループ後にまとめて適用する
+bool ShapeEffectEditor::DrawKeys(std::vector<EffectKey>& keys)
+{
+	bool changed = false;
+
+	float total = 0.0f;
+	for (size_t i = 1; i < keys.size(); ++i) { total += keys[i].duration; }
+
+	ImGui::Text("Keys (%d)  Total %.2f s", (int)keys.size(), total);
 	if (ImGui::Button("+ Add Key"))
 	{
 		EffectKey key = keys.empty() ? EffectKey{} : keys.back();
@@ -454,9 +544,10 @@ bool ShapeEffectEditor::DrawKeys(ShapeEffectData& effect)
 
 		ImGui::PushID(i);
 
+		// ###以降だけがIDになるので、Durationを編集してもノードの開閉状態が変わらない
 		char label[64];
-		if (i == 0) { snprintf(label, sizeof(label), "Key 0 (初期姿勢)##key"); }
-		else { snprintf(label, sizeof(label), "Key %d  (到達 %.2f s)##key", i, reachTime); }
+		if (i == 0) { snprintf(label, sizeof(label), "Key 0 (初期姿勢)###key"); }
+		else { snprintf(label, sizeof(label), "Key %d  (到達 %.2f s)###key", i, reachTime); }
 
 		if (ImGui::TreeNode(label))
 		{
@@ -550,14 +641,10 @@ void ShapeEffectEditor::AddEffect()
 	ShapeEffectData effect;
 	effect.Name = MakeUniqueName("ShapeEffect");
 
-	EffectKey initial;
-	initial.alpha = 0.0f;
-
-	EffectKey reach;
-	reach.ease = EaseType::OutQuad;
-	reach.duration = 0.5f;
-
-	effect.Keys = { initial, reach };
+	ShapePart part;
+	part.Name = "Part0";
+	part.Keys = DefaultKeys();
+	effect.Parts.push_back(std::move(part));
 
 	m_effects.push_back(std::move(effect));
 	SelectEffect((int)m_effects.size() - 1);
@@ -572,7 +659,7 @@ void ShapeEffectEditor::RemoveSelected()
 	const int next = m_effects.empty() ? -1 : std::min(m_selected, (int)m_effects.size() - 1);
 	m_selected = -1;
 	if (next >= 0) { SelectEffect(next); }
-	else { m_motion.reset(); m_playing = false; }
+	else { m_playing = false; }
 }
 
 void ShapeEffectEditor::CopySelected()
@@ -617,7 +704,6 @@ void ShapeEffectEditor::Load(const std::string& path)
 
 	m_effects = std::move(data.Effects);
 	m_selected = -1;
-	m_motion.reset();
 	m_playing = false;
 	m_time = 0.0f;
 

@@ -365,7 +365,7 @@ StateGuard::GuardPhase StateGuard::GetGuardPhase(const PlayerStateContext* ctx) 
 // --- Charge State ---
 void StateCharge::Enter(PlayerStateContext* ctx) {
 	elapsed_ = 0.0f;
-	ctx->PlayAnimation(data_.charge);
+	ctx->PlayAnimation(data_.anim);
 }
 
 void StateCharge::Update(PlayerStateContext* ctx, float deltaTime) {
@@ -377,7 +377,7 @@ void StateCharge::Update(PlayerStateContext* ctx, float deltaTime) {
 		return;
 	}
 
-	if (!ctx->input->GetIntent().ChargeHeld()) {
+	if (!ctx->input->GetIntent().ChargeHeld() || GetChargeRatio() >= 1.0f) {
 		Release(ctx); // 自身のStateから抜けるため、以後このStateには触れない
 	}
 }
@@ -389,7 +389,15 @@ void StateCharge::Release(PlayerStateContext* ctx) {
 	buffer.Clear(PlayerInputCommand::Guard);
 
 	PlayerAttackRequest request;
-	request.attackId = data_.id;
+	if (GetChargeRatio() >= 1.0f)
+	{
+		request.attackId = data_.successId;
+	}
+	else
+	{
+		request.attackId = data_.failedId;
+	}
+	
 	request.chargeRatio = GetChargeRatio();
 	if (!ctx->requester->RequestAttack(request)) {
 		ctx->requester->ChangeStateToNone(); // idが未設定/不明なら溜めを捨てる

@@ -29,7 +29,8 @@ void PlayerStatusController::Awake()
 	// Stateが前提とするコンポーネント。欠けていれば構成ミス。
 	assert(ctx_.animator && ctx_.combatMovement && ctx_.facing && ctx_.lockOn && ctx_.weaponSet && ctx_.attackSelector);
 	// チャージ後の攻撃idは、設定されているなら攻撃テーブルに存在すること。
-	assert(stateCharge_.GetData().id.empty() || ctx_.attackSelector->HasAttack(stateCharge_.GetData().id));
+	assert(stateCharge_.GetData().successId.empty() || ctx_.attackSelector->HasAttack(stateCharge_.GetData().successId));
+	assert(stateCharge_.GetData().failedId.empty() || ctx_.attackSelector->HasAttack(stateCharge_.GetData().failedId));
 
 	// 自分自身をIHitReactionQueryとして登録
 	if (HitReactionComponent* hitReaction = GetOwner()->GetComponent<HitReactionComponent>()) {

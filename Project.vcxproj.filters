@@ -1209,6 +1209,9 @@
     <ClInclude Include="Src\Application\Components\Graphics\Effect\WindShellComponent.h">
       <Filter>Src\Application\Components\Graphics\Effect</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\HitResolution.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">

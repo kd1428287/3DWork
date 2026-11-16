@@ -294,6 +294,7 @@
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\FootstepEventComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\HealthComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\HitReactionComponent.h" />
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\HitResolution.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\ISyncroAnimation.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\LifeComponent.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Common\PostureComponent.h" />

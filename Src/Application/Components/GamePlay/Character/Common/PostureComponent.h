@@ -19,7 +19,8 @@ public:
 		: ComponentBase(owner), max_(maxPosture), current_(0.0f) {
 	}
 
-	void SetConfig(const Config& config) {
+	void SetConfig(const Config& config) 
+	{
 		max_ = config.max;
 		lowerLimit_ = config.lowerLimit;
 		regenPerSecond_ = config.regenPerSecond;
@@ -39,11 +40,23 @@ public:
 		PublishChanged();
 	}
 
+	// ダメージ無しの怯みを実現するために amount < 0.0f
 	void AddPostureDamage(float amount) {
-		if (amount <= 0.0f) return;
-		current_ = std::min(max_, current_ + amount);
-		regenDelayTimer_ = regenDelaySeconds_;
+		if (amount < 0.0f) return;
+		current_ = std::min(max_, current_ + amount);	
+		DelayRegenPosture(regenDelaySeconds_);
 		PublishChanged();
+	}
+
+	void DelayRegenPosture(float amount)
+	{
+		if (!isEnabled_)isEnabled_ = true;
+		regenDelayTimer_ = amount;
+	}
+
+	void StopRegenPosture()
+	{
+		isEnabled_ = false;
 	}
 
 	// 最大まで溜まっているか(=崩し発生条件)。
@@ -74,6 +87,8 @@ private:
 
 	float max_;
 	float current_;
+
+	bool isEnabled_ = true;
 
 	// 回復できる下限
 	float lowerLimit_ = PostureConfig{}.lowerLimit;

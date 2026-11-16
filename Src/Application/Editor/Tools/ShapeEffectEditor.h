@@ -1,6 +1,5 @@
 ﻿#pragma once
 
-#include <imgui.h>
 #include "Application/Definitions/Loaders/ShapeEffectDataLoader.h"
 #include "../../Effect/Shape/ShapeEffectInstance.h"
 #include "../../Effect/Common/KdAssetsTextureProvider.h"
@@ -38,7 +37,8 @@ private:
 	void DrawPlaybackWindow();
 	bool DrawParams(ShapeEffectData& effect);
 	bool DrawTexturePicker(ShapeEffectParams& params);
-	bool DrawKeys(ShapeEffectData& effect);
+	bool DrawParts(ShapeEffectData& effect);
+	bool DrawKeys(std::vector<EffectKey>& keys);
 	void DrawPlayback();
 	void DrawPreviewWindow();
 
@@ -68,7 +68,6 @@ private:
 	int								m_selected = -1;
 
 	// プレビュー
-	std::shared_ptr<KeyframeMotion>	m_motion;
 	ShapeEffectInstance				m_previewInstance;
 	float							m_time = 0.0f;
 	bool							m_playing = false;

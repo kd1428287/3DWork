@@ -1,17 +1,14 @@
 ﻿#pragma once
 
-#include <string>
-#include <vector>
-
 #include "Application/Effect/Shape/ShapeEffectInstance.h"	// ShapeEffectParams
 #include "Application/Effect/Shape/ShapeEffectMotion.h"		// EffectKey
 
-// JSON上の1エフェクト定義(見た目+キー列)。EditorとDispatcherの共通の中間データ
+// JSON上の1エフェクト定義(素材+複数パーツ)。EditorとDispatcherの共通の中間データ
 struct ShapeEffectData
 {
 	std::string				Name;
 	ShapeEffectParams		Params;
-	std::vector<EffectKey>	Keys;
+	std::vector<ShapePart>	Parts;
 };
 
 struct ShapeEffectDataFile

@@ -371,8 +371,9 @@ struct ChargeData
 {
 	float maxChargeTime = 1.5f;  // この秒数で最大チャージ(以降は保持)
 
-	MotionClipData charge;  // 溜め中の構えアニメーション
-	std::string id;			// 溜め解放後の攻撃データid
+	MotionClipData anim;  // 溜め中の構えアニメーション
+	std::string successId;			// 溜め解放後の攻撃データid
+	std::string failedId;			// 溜めキャンセル時の攻撃データid
 
 	float GetChargeScale(float elapsed) const
 	{

@@ -76,12 +76,18 @@ bool ShapeEffectDispatcher::LoadData(const std::string& path)
 
 	for (const ShapeEffectData& effect : data.Effects)
 	{
-		auto motion = std::make_shared<KeyframeMotion>();
-		motion->keys = effect.Keys;
-
 		ShapeEffectDefinition def;
 		def.Params = effect.Params;
-		def.Motion = std::move(motion);
+		def.Parts = effect.Parts;
+
+		// 動きは定義ごとに1つ作って全インスタンスで共有する(Attachのたびにキー列をコピーしない)
+		for (ShapePart& part : def.Parts)
+		{
+			auto motion = std::make_shared<KeyframeMotion>();
+			motion->keys = std::move(part.Keys);
+			part.Keys.clear();
+			part.Motion = std::move(motion);
+		}
 		definitions_[effect.Name] = std::move(def);
 	}
 	return true;
@@ -119,7 +125,7 @@ void ShapeEffectDispatcher::ProcessPendingEvents()
 
 					// 同じキーが既にあれば置き換える
 					Active active;
-					active.instance.Init(def->second.Motion, def->second.Params, &textureProvider_);
+					active.instance.Init(def->second.Params, def->second.Parts, &textureProvider_);
 					active.base = e.Base;
 					active.maxDurationRemaining = (e.MaxDuration > 0.0f) ? e.MaxDuration : -1.0f;
 					active_[e.InstanceKey] = std::move(active);

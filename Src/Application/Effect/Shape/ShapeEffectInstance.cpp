@@ -43,11 +43,23 @@ namespace
 	}
 }
 
-void ShapeEffectInstance::Init(std::shared_ptr<IEffectMotion> motion, const ShapeEffectParams& params, ITextureProvider* textureProvider)
+void ShapeEffectInstance::Init(const ShapeEffectParams& params, const std::vector<ShapePart>& parts, ITextureProvider* textureProvider)
 {
-	motion_ = std::move(motion);
 	params_ = params;
+	parts_ = parts;
 	time_ = 0.0f;
+	duration_ = 0.0f;
+
+	for (ShapePart& part : parts_)
+	{
+		if (!part.Motion)
+		{
+			auto motion = std::make_shared<KeyframeMotion>();
+			motion->keys = part.Keys;
+			part.Motion = std::move(motion);
+		}
+		duration_ = std::max(duration_, part.Delay + part.Motion->GetDuration());
+	}
 
 	texture_.reset();
 	noiseTexture_.reset();
@@ -59,23 +71,32 @@ void ShapeEffectInstance::Init(std::shared_ptr<IEffectMotion> motion, const Shap
 
 void ShapeEffectInstance::Draw(const Math::Matrix& base) const
 {
-	if (!motion_ || !texture_) { return; }
+	if (!texture_) { return; }
 
-	const EffectPose pose = motion_->Evaluate(time_);
-
+	// 素材・描画ステートは全パーツ共通。パーツごとに変わるのは姿勢・ビルボード・深度オフセットだけ
 	ShapeEffectDrawInfo info;
 	info.Texture = texture_;
 	info.BlendMode = params_.BlendMode;
-	info.World = (params_.Billboard == ShapeBillboardMode::None)
-		? ComposeWorld(pose, base)
-		: ComposeBillboardWorld(pose, base, params_.Billboard);
 	info.Color = params_.Color;
-	info.Alpha = pose.alpha;
 	info.Time = time_;
 	info.Noise = params_.Noise;
 	info.NoiseTexture = noiseTexture_;
-	info.DepthOffset = params_.DepthOffset;
 	info.DepthTest = params_.DepthTest;
 
-	KdShaderManager::Instance().m_shapeEffectShader.Draw(info);
+	for (const ShapePart& part : parts_)
+	{
+		// 開始前のパーツは描かない(終了後は最終姿勢を保持する)
+		const float localTime = time_ - part.Delay;
+		if (localTime < 0.0f) { continue; }
+
+		const EffectPose pose = part.Motion->Evaluate(localTime);
+
+		info.World = (part.Billboard == ShapeBillboardMode::None)
+			? ComposeWorld(pose, base)
+			: ComposeBillboardWorld(pose, base, part.Billboard);
+		info.Alpha = pose.alpha;
+		info.DepthOffset = part.DepthOffset;
+
+		KdShaderManager::Instance().m_shapeEffectShader.Draw(info);
+	}
 }

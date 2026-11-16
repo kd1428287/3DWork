@@ -155,10 +155,51 @@ namespace
 		};
 	}
 
+	std::vector<EffectKey> KeysFromJson(const Json& j)
+	{
+		std::vector<EffectKey> keys;
+		if (!j.is_array()) { return keys; }
+
+		for (const auto& k : j)
+		{
+			if (k.is_object()) { keys.push_back(KeyFromJson(k)); }
+		}
+		return keys;
+	}
+
+	ShapePart PartFromJson(const Json& j)
+	{
+		ShapePart part;
+		part.Name = ReadString(j, "name");
+		part.Delay = std::max(0.0f, ReadFloat(j, "delay", part.Delay));
+		part.Billboard = BillboardModeFromName(ReadString(j, "billboard"));
+		part.DepthOffset = ReadFloat(j, "depthOffset", part.DepthOffset);
+		if (j.contains("keys")) { part.Keys = KeysFromJson(j.at("keys")); }
+		return part;
+	}
+
+	Json PartToJson(const ShapePart& part)
+	{
+		Json keys = Json::array();
+		for (const EffectKey& key : part.Keys) { keys.push_back(KeyToJson(key)); }
+
+		return Json{
+			{ "name",        part.Name },
+			{ "delay",       part.Delay },
+			{ "billboard",   BillboardModeName(part.Billboard) },
+			{ "depthOffset", part.DepthOffset },
+			{ "keys",        keys },
+		};
+	}
+
 	ShapeEffectData EntryFromJson(const Json& j)
 	{
 		ShapeEffectData data;
 		data.Name = ReadString(j, "name");
+
+		// 旧形式(params内のbillboard/depthOffsetと、トップレベルのkeys=1パーツのみ)の読み込み用
+		ShapeBillboardMode legacyBillboard = ShapeBillboardMode::None;
+		float legacyDepthOffset = 0.0f;
 
 		if (j.contains("params") && j.at("params").is_object())
 		{
@@ -169,42 +210,50 @@ namespace
 			data.Params.BlendMode = BlendFromString(ReadString(p, "blendMode"));
 			data.Params.DrawPassFlags = DrawPassFlagsFromJson(p, data.Params.DrawPassFlags);
 			if (TryReadFloats(p, "color", f, 4)) { data.Params.Color = { f[0], f[1], f[2], f[3] }; }
-			data.Params.Billboard = BillboardModeFromName(ReadString(p, "billboard"));
-			data.Params.DepthOffset = ReadFloat(p, "depthOffset", data.Params.DepthOffset);
 			data.Params.DepthTest = ReadBool(p, "depthTest", data.Params.DepthTest);
 			data.Params.NoiseTexturePath = ReadString(p, "noiseTexture");
 			if (p.contains("noise") && p.at("noise").is_object()) { data.Params.Noise = NoiseFromJson(p.at("noise")); }
+
+			legacyBillboard = BillboardModeFromName(ReadString(p, "billboard"));
+			legacyDepthOffset = ReadFloat(p, "depthOffset", 0.0f);
 		}
 
-		if (j.contains("keys") && j.at("keys").is_array())
+		if (j.contains("parts") && j.at("parts").is_array())
 		{
-			for (const auto& k : j.at("keys"))
+			for (const auto& p : j.at("parts"))
 			{
-				if (k.is_object()) { data.Keys.push_back(KeyFromJson(k)); }
+				if (p.is_object()) { data.Parts.push_back(PartFromJson(p)); }
 			}
+		}
+		else if (j.contains("keys"))
+		{
+			ShapePart part;
+			part.Name = "Part0";
+			part.Billboard = legacyBillboard;
+			part.DepthOffset = legacyDepthOffset;
+			part.Keys = KeysFromJson(j.at("keys"));
+			data.Parts.push_back(std::move(part));
 		}
 		return data;
 	}
 
 	Json EntryToJson(const ShapeEffectData& data)
 	{
-		Json keys = Json::array();
-		for (const EffectKey& key : data.Keys) { keys.push_back(KeyToJson(key)); }
+		Json parts = Json::array();
+		for (const ShapePart& part : data.Parts) { parts.push_back(PartToJson(part)); }
 
 		return Json{
 			{ "name", data.Name },
 			{ "params", {
-				{ "texture",   data.Params.TexturePath },
-				{ "blendMode", BlendToString(data.Params.BlendMode) },
-				{ "drawPass",  DrawPassFlagsToJson(data.Params.DrawPassFlags) },
-				{ "color",     Json::array({ data.Params.Color.x, data.Params.Color.y, data.Params.Color.z, data.Params.Color.w }) },
-				{ "billboard",   BillboardModeName(data.Params.Billboard) },
-				{ "depthOffset", data.Params.DepthOffset },
-				{ "depthTest",   data.Params.DepthTest },
+				{ "texture",      data.Params.TexturePath },
+				{ "blendMode",    BlendToString(data.Params.BlendMode) },
+				{ "drawPass",     DrawPassFlagsToJson(data.Params.DrawPassFlags) },
+				{ "color",        Json::array({ data.Params.Color.x, data.Params.Color.y, data.Params.Color.z, data.Params.Color.w }) },
+				{ "depthTest",    data.Params.DepthTest },
 				{ "noiseTexture", data.Params.NoiseTexturePath },
 				{ "noise",        NoiseToJson(data.Params.Noise) },
 			} },
-			{ "keys", keys },
+			{ "parts", parts },
 		};
 	}
 }

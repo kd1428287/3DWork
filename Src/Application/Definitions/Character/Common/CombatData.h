@@ -1,6 +1,16 @@
-#pragma once
+﻿#pragma once
 #include <string>
 #include "CharacterDefinitionCommon.h"
+
+
+struct AttackChargeData
+{
+	bool isEnabled = false;
+	float maxChargeTime = 1.0f;
+	MotionClipData clip;           // 溜め中の構え(segmentsのHOLDも使える)
+	float maxTime = 1.5f;          // 溜め時間
+	std::string failedAttackId;    // プレイヤー用: 完了前に離したとき出す技(通常攻撃)
+};
 
 // 被弾側も得るデータ構造体
 struct AttackDamageData
@@ -54,6 +64,8 @@ struct AttackVisualData
 
 	float hitStopDelaySeconds = 0.0f;
 
+	// 攻撃の軌跡トレイル名。空ならなし。
+	std::string trail = "";
 	// 攻撃部位にまとわせる風シェルのプリセット名。空なら風なし。
 	std::string windPreset = "";
 };
@@ -89,6 +101,7 @@ struct AttackCancelData
 // 攻撃行動全体のデータ構造体
 struct AttackData
 {
+	AttackChargeData chargeData;
 	AttackDamageData damageData;
 	AttackVisualData visualData;
 	AttackMoveData moveData;

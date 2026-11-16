@@ -446,18 +446,18 @@
     },
     {
       "params": {
-        "charge": {
-          "loop": {
-            "animationName": "SPAttack04_Root",
-            "blendDuration": 0.15,
-            "duration": -1.0,
-            "loop": true,
-            "useRootMotion": false
-          },
-          "maxChargeTime": 1.5,
-          "maxDamageScale": 2.0,
-          "minDamageScale": 1.0
-        },
+		"charge": {
+			"anim": {
+				"animationName": "SPAttack04_Root",
+				"blendDuration": 0.15,
+				"duration": 4.0,
+				"loop": false,
+				"useRootMotion": true
+			},
+			"maxChargeTime": 1.5,
+			"successId": "ChargeAttack",
+			"failedId": "Attack02_1"
+		},
         "evade": {
           "activeDuration": 0.35,
           "animationNameBackward": "Slide_B_Root",
