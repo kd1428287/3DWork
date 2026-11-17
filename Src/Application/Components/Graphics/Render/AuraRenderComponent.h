@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "../../Tags/IModelRenderSource.h"
 #include "../../Tags/IRenderable.h"
 
@@ -28,6 +28,7 @@ struct AuraConfig
 // 同一GameObjectのモデルを法線方向へ膨らませ、加算で重ねてオーラにする。
 // 見た目はkindで切り替える(リムライト型 / 輪郭に沿って立ち上る炎型)。
 // 加算の実行順が保証されるエフェクトパス(DrawEffect)で描く。
+// ステンシルでシルエット内を除外し、体の外側にだけ描く。
 // ============================================================
 class AuraRenderComponent : public ComponentBase, public IRenderable
 {
@@ -54,4 +55,6 @@ private:
 	std::shared_ptr<KdTexture> noiseTex_;
 
 	float time_ = 0.0f;	// ゲーム時間(ヒットストップ等に従う)
+
+	UINT stencilRef_ = 1;	// 個体ごとのステンシル値(1〜255)
 };

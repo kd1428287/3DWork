@@ -203,6 +203,7 @@ public:
 	void DrawBright() { ForEachTagged<IRenderable>(&IRenderable::DrawBright); }
 	void DrawSprite() { ForEachTagged<IRenderable>(&IRenderable::DrawSprite); }
 	void DrawDebug() { ForEachTagged<IRenderable>(&IRenderable::DrawDebug); }
+	void DrawCharaShadow() { ForEachTagged<IRenderable>(&IRenderable::DrawCharaShadow); }
 
 	// お試しの2つ目のタグ。GameObject内部のロジックは1行足すだけで済む。
 	//void PrintAllDebugInfo() { ForEachTagged<IDebugPrintable>(&IDebugPrintable::PrintDebugInfo); }

@@ -38,6 +38,8 @@ public:
 	void DrawSprite() override;
 	// デバッグ描画
 	void DrawDebug() override;
+	// キャラ影
+	void DrawCharaShadow() override;
 
 	// RenderLayer(ビットの組み合わせ。例: RenderLayer::DrawLit | RenderLayer::GenerateDepthMapFromLight)
 	void SetLayer(const uint8_t& layer) { layer_ = layer; }
@@ -54,5 +56,5 @@ private:
 	// 以後は毎フレーム参照するだけ(タグレジストリの再検索はしない)。
 	std::vector<IRenderStateModifier*> modifiers_;
 
-	uint8_t layer_ = RenderLayer::DrawLit | RenderLayer::GenerateDepthMapFromLight;
+	uint8_t layer_ = RenderLayer::DrawLit | RenderLayer::GenerateDepthMapFromLight | RenderLayer::DrawCharaShadow;
 };

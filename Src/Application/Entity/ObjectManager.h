@@ -110,6 +110,7 @@ public:
 	void DrawBright() { for (auto& obj : objects_) obj->DrawBright(); }
 	void DrawSprite() { for (auto& obj : objects_) obj->DrawSprite(); }
 	void DrawDebug() { for (auto& obj : objects_) obj->DrawDebug(); }
+	void DrawCharaShadow() { for (auto& obj : objects_) obj->DrawCharaShadow(); }
 
 	// 破棄予約されたGameObjectをまとめて削除し、続けて生き残った
 	// 各GameObjectのコンポーネント付け外し予約も反映する。

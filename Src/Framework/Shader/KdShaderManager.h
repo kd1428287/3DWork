@@ -33,6 +33,9 @@ enum class KdDepthStencilState
 	ZEnable,		// 手前の物に隠れる　○、自分の奥の物を隠す　○（基本の3D描画ステート
 	ZWriteDisable,	// 手前の物に隠れる　○、自分の奥の物を隠す　×
 	ZDisable,		// 手前の物に隠れる　×、自分の奥の物を隠す　×
+	StencilWrite,	// 深度テストのみ有効(書き込みなし)、描いた所のステンシルに ref を書く
+	StencilOutline,	// 深度テストのみ有効(書き込みなし)、ステンシルが ref と異なる所だけ描く
+	StencilOutlineZWrite,	// StencilOutline＋深度書き込みあり(DoF等のポストプロセスが深度を参照するため)
 	Max
 };
 
@@ -56,6 +59,7 @@ enum class KdBlendState
 	Subtract,				// 減算
 	PreMultipliedAlpha,		// 乗算済みアルファ
 	EffectAdd,				// エフェクト層用：加算(RGBのみ加算し、被覆率A(アルファ)は変えない)
+	NoColorWrite,			// 色を一切書き込まない(ステンシルのみ書く用)
 	Max
 };
 
@@ -176,7 +180,8 @@ public:
 	//
 	//==========================
 	// 深度情報をどのように扱うかを変更：変更したかどうかが返ってくる
-	void ChangeDepthStencilState(KdDepthStencilState stateId);
+	// stencilRef はステンシルの参照値(StencilWrite/StencilOutlineで使う)
+	void ChangeDepthStencilState(KdDepthStencilState stateId, UINT stencilRef = 0);
 	void UndoDepthStencilState();
 
 	// ポリゴンの面をどのように描画するのかを変更：変更したかどうかが返ってくる

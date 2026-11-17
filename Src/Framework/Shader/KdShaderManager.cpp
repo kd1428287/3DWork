@@ -58,6 +58,35 @@ void KdShaderManager::Init()
 	m_depthStencilStates[(int)KdDepthStencilState::ZWriteDisable] = KdDirect3D::Instance().CreateDepthStencilState(true, false);
 	m_depthStencilStates[(int)KdDepthStencilState::ZDisable] = KdDirect3D::Instance().CreateDepthStencilState(false, false);
 
+	// ステンシル利用ステート(輪郭線用)：深度は読み取りのみ
+	{
+		D3D11_DEPTH_STENCIL_DESC desc = {};
+		desc.DepthEnable = TRUE;
+		desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+		desc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
+		desc.StencilEnable = TRUE;
+		desc.StencilReadMask = 0xFF;
+		desc.StencilWriteMask = 0xFF;
+
+		// StencilWrite：常に通し、描いた所に ref を書く
+		desc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+		desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_REPLACE;
+		desc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+		desc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+		desc.BackFace = desc.FrontFace;
+		KdDirect3D::Instance().WorkDev()->CreateDepthStencilState(&desc, &m_depthStencilStates[(int)KdDepthStencilState::StencilWrite]);
+
+		// StencilOutline：ref と異なる所だけ描く(ステンシルは書き換えない)
+		desc.FrontFace.StencilFunc = D3D11_COMPARISON_NOT_EQUAL;
+		desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+		desc.BackFace = desc.FrontFace;
+		KdDirect3D::Instance().WorkDev()->CreateDepthStencilState(&desc, &m_depthStencilStates[(int)KdDepthStencilState::StencilOutline]);
+
+		// StencilOutlineZWrite：上記に深度書き込みを足す
+		desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+		KdDirect3D::Instance().WorkDev()->CreateDepthStencilState(&desc, &m_depthStencilStates[(int)KdDepthStencilState::StencilOutlineZWrite]);
+	}
+
 	// 初期深度ステートの設定
 	KdDirect3D::Instance().WorkDevContext()->OMSetDepthStencilState(m_depthStencilStates[(int)KdDepthStencilState::ZEnable], 0);
 
@@ -95,6 +124,19 @@ void KdShaderManager::Init()
 		rt.RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 
 		KdDirect3D::Instance().WorkDev()->CreateBlendState(&desc, &m_blendStates[(int)KdBlendState::EffectAdd]);
+	}
+
+	// 色を書き込まないブレンド(ステンシルのみ書く用)
+	{
+		D3D11_BLEND_DESC desc = {};
+		desc.IndependentBlendEnable = TRUE;
+		for (auto& rt : desc.RenderTarget)
+		{
+			rt.BlendEnable = FALSE;
+			rt.RenderTargetWriteMask = 0;
+		}
+
+		KdDirect3D::Instance().WorkDev()->CreateBlendState(&desc, &m_blendStates[(int)KdBlendState::NoColorWrite]);
 	}
 
 	// 初期ブレンドステートの設定
@@ -264,14 +306,16 @@ bool KdShaderManager::SetPSConstantBuffer(int startSlot, ID3D11Buffer* const* pS
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 深度ステンシルステートの変更（現行と同じステートの場合はキャンセル
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void KdShaderManager::ChangeDepthStencilState(KdDepthStencilState stateId)
+void KdShaderManager::ChangeDepthStencilState(KdDepthStencilState stateId, UINT stencilRef)
 {
 	ID3D11DepthStencilState* pNowDs = nullptr;
-	KdDirect3D::Instance().WorkDevContext()->OMGetDepthStencilState(&pNowDs, 0);
+	UINT nowRef = 0;
+	KdDirect3D::Instance().WorkDevContext()->OMGetDepthStencilState(&pNowDs, &nowRef);
 
-	if (pNowDs != m_depthStencilStates[(int)stateId])
+	// ステートが同じでも ref が違えば設定し直す
+	if (pNowDs != m_depthStencilStates[(int)stateId] || nowRef != stencilRef)
 	{
-		KdDirect3D::Instance().WorkDevContext()->OMSetDepthStencilState(m_depthStencilStates[(int)stateId], 0);
+		KdDirect3D::Instance().WorkDevContext()->OMSetDepthStencilState(m_depthStencilStates[(int)stateId], stencilRef);
 	}
 
 	m_ds_Undo.push(pNowDs);

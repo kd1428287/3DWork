@@ -3,6 +3,9 @@
 AuraRenderComponent::AuraRenderComponent(GameObject* owner)
 	: ComponentBase(owner)
 {
+	// 個体ごとに1〜255を割り当てる(隣接するキャラ同士で消し合わないように)
+	static UINT counter = 0;
+	stencilRef_ = (counter++ % 255) + 1;
 }
 
 // 同一GameObjectのTransformとモデル供給者を収集する(OutlineRenderComponentと同じ方式)
@@ -46,9 +49,28 @@ void AuraRenderComponent::DrawEffect()
 	const float baseY = world.Translation().y;	// 炎の根元は足元(オブジェクト原点)
 
 	shader.BeginAura();
+
+	// シルエットをステンシルに書く(色なし・膨らませない)
+	{
+		KdAuraStyle silhouette;
+		silhouette.Kind = (int)KdAuraKind::Rim;
+		silhouette.Intensity = 1.0f;
+		silhouette.Width = 0.0f;
+		silhouette.Rise = 0.0f;
+		silhouette.BaseY = baseY;
+
+		manager.ChangeBlendState(KdBlendState::NoColorWrite);
+		manager.ChangeDepthStencilState(KdDepthStencilState::StencilWrite, stencilRef_);
+		shader.SetAuraStyle(silhouette);
+		shader.DrawModel(*model, world);
+		manager.UndoDepthStencilState();
+		manager.UndoBlendState();
+	}
+
 	//manager.ChangeBlendState(effectLayer ? KdBlendState::EffectAdd : KdBlendState::Add);
 	manager.ChangeBlendState(KdBlendState::Alpha);
-	manager.ChangeDepthStencilState(KdDepthStencilState::ZWriteDisable);
+	// シルエットの外側だけに描く(深度は読み取りのみ)
+	manager.ChangeDepthStencilState(KdDepthStencilState::StencilOutline, stencilRef_);
 	const bool isInk = (config_.kind == KdAuraKind::Ink);
 
 	// 墨型は体の後ろに回り込む背面だけを描く

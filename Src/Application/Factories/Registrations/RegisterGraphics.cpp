@@ -62,6 +62,7 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 	NLOHMANN_JSON_SERIALIZE_ENUM(KdAuraKind, {
 		{ KdAuraKind::Rim, "Rim" },
 		{ KdAuraKind::Flame, "Flame" },
+		{ KdAuraKind::Ink, "Ink" },
 		})
 
 		NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(KdInkStyle,

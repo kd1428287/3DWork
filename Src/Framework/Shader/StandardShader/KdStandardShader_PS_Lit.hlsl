@@ -13,6 +13,7 @@ Texture2D g_normalTex : register(t3);		// 法線マップ
 Texture2D g_dirShadowMap : register(t10);	// 平行光シャドウマップ
 Texture2D g_dissolveTex : register(t11);	// ディゾルブマップ
 Texture2D g_environmentTex : register(t12); // 反射景マップ
+Texture2D g_charaShadowMap : register(t13);	// キャラクター専用シャドウマップ
 
 // サンプラ
 SamplerState g_ss : register(s0);				// 通常のテクスチャ描画用
@@ -30,6 +31,9 @@ float BlinnPhong(float3 lightDir, float3 vCam, float3 normal, float specPower)
 
 // 水墨調パラメータ(輪郭線の墨色。濃淡の白黒変換は撤去し、色そのものは残す)
 static const float3 kInkColor = float3(0.04, 0.04, 0.05);	// 濃墨(輪郭線に使用)
+
+// 屋根などの影の中でキャラクターの影が落ちた所をどれだけ暗くするか(0～1)
+static const float kCharaShadowStrength = 0.6;
 
 //================================
 // ピクセルシェーダ
@@ -115,6 +119,7 @@ float4 main(VSOutputLit InLit, out float4 outVelocity : SV_Target2) : SV_Target0
 	// シャドウマッピング(影判定)
 	//-------------------------------
 	float shadow = 1;
+	float charaVisible = 1;	// キャラクターの影に隠れていない割合
 
 	// ピクセルの3D座標から、DepthMapFromLight空間へ変換
 	float4 liPos = mul(float4(In.wPos, 1), g_DL_mLightVP);
@@ -143,7 +148,21 @@ float4 main(VSOutputLit InLit, out float4 outVelocity : SV_Target2) : SV_Target0
 				shadow += g_dirShadowMap.SampleCmpLevelZero(g_ssCmp, uv + float2(x * tw, y * th), z);
 			}
 		}
-		shadow *= 0.11;
+		shadow /= 9.0;
+
+		// 他の影の中だけ、キャラクター専用マップでも同じ判定をする
+		if (shadow < 0.99)
+		{
+			charaVisible = 0;
+			for (int cy = -1; cy <= 1; cy++)
+			{
+				for (int cx = -1; cx <= 1; cx++)
+				{
+					charaVisible += g_charaShadowMap.SampleCmpLevelZero(g_ssCmp, uv + float2(cx * tw, cy * th), z);
+				}
+			}
+			charaVisible /= 9.0;
+		}
 	}
 		
 	//-------------------------
@@ -232,6 +251,9 @@ float4 main(VSOutputLit InLit, out float4 outVelocity : SV_Target2) : SV_Target0
 	}
 
 	outColor += g_AmbientLight.rgb * baseColor.rgb * baseColor.a;
+
+	// 他の影の中(shadow=0)でキャラクターの影に入った所を追加で暗くする
+	outColor *= lerp(1.0, 1.0 - kCharaShadowStrength, (1.0 - charaVisible) * (1.0 - shadow));
 	
 	// 自己発光色の適応
 	if (g_OnlyEmissie)

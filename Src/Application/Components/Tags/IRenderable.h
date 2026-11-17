@@ -13,6 +13,7 @@ namespace RenderLayer
 	constexpr uint8_t DrawBright				= 1u << 5; 
 	constexpr uint8_t DrawSprite				= 1u << 6; 
 	constexpr uint8_t DrawDebug					= 1u << 7; 
+	constexpr uint8_t DrawCharaShadow			= 1u << 8; 
 }
 
 class IRenderable {
@@ -34,4 +35,6 @@ public:
 	virtual void DrawSprite() {}
 	// デバッグ描画
 	virtual void DrawDebug() {}
+	// キャラ影
+	virtual void DrawCharaShadow() {}
 };

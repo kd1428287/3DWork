@@ -65,6 +65,11 @@ void ModelRenderComponent::DrawDebug()
 	if (layer_ & RenderLayer::DrawDebug) { DrawModel(); }
 }
 
+void ModelRenderComponent::DrawCharaShadow()
+{
+	if (layer_ & RenderLayer::DrawCharaShadow) { DrawModel(); }
+}
+
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 実際の描画本体：
 //  1. モデル供給者からモデルを取得(未設定・未準備なら何もしない)

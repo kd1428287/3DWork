@@ -123,9 +123,9 @@
         },
         {
           "params": {
-            "preset": "Dark"
+            "width": 0.019999999552965164
           },
-          "type": "InkStyle"
+          "type": "Outline"
         }
       ],
       "name": "mask"
@@ -144,7 +144,7 @@
     },
     {
       "params": {
-        "width": 0.02
+        "width": 0.03999999910593033
       },
       "type": "Outline"
     },
@@ -580,7 +580,7 @@
     },
     {
       "params": {
-        "preset": "Dark"
+        "preset": "Bright"
       },
       "type": "InkStyle"
     },

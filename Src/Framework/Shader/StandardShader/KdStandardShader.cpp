@@ -45,6 +45,9 @@ void KdStandardShader::BeginLit()
 	// 通常テクスチャ用サンプラーのセット
 	KdShaderManager::Instance().ChangeSamplerState(KdSamplerState::Anisotropic_Wrap, 0);
 
+	// キャラクター専用シャドウマップのテクスチャをセット
+	KdDirect3D::Instance().WorkDevContext()->PSSetShaderResources(kCharaShadowSlot, 1, m_charaDepthMapRTPack.m_RTTexture->WorkSRViewAddress());
+
 	// 影ぼかし用の比較機能付きサンプラーのセット
 	KdShaderManager::Instance().ChangeSamplerState(KdSamplerState::Linear_Clamp_Cmp, 1);
 }
@@ -60,6 +63,7 @@ void KdStandardShader::EndLit()
 
 	ID3D11ShaderResourceView* pNullSRV = nullptr;
 	KdDirect3D::Instance().WorkDevContext()->PSSetShaderResources(10, 1, &pNullSRV);
+	KdDirect3D::Instance().WorkDevContext()->PSSetShaderResources(kCharaShadowSlot, 1, &pNullSRV);
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -136,6 +140,22 @@ void KdStandardShader::EndAura()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void KdStandardShader::BeginGenerateDepthMapFromLight()
 {
+	BeginDepthPass(m_depthMapFromLightRTPack);
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// キャラクター専用の深度マップへの描画開始(シェーダーは通常の深度描画と共通)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void KdStandardShader::BeginGenerateCharaDepthMapFromLight()
+{
+	BeginDepthPass(m_charaDepthMapRTPack);
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 光からの深度描画の共通処理
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void KdStandardShader::BeginDepthPass(KdRenderTargetPack& rtPack)
+{
 	if (KdShaderManager::Instance().SetVertexShader(m_VS_GenDepthFromLight))
 	{
 		KdShaderManager::Instance().SetInputLayout(m_inputLayout);
@@ -152,8 +172,8 @@ void KdStandardShader::BeginGenerateDepthMapFromLight()
 		KdShaderManager::Instance().SetPSConstantBuffer(0, m_cb0_Obj.GetAddress());
 	}
 
-	m_depthMapFromLightRTPack.ClearTexture(kRedColor);
-	m_depthMapFromLightRTChanger.ChangeRenderTarget(m_depthMapFromLightRTPack);
+	rtPack.ClearTexture(kRedColor);
+	m_depthMapFromLightRTChanger.ChangeRenderTarget(rtPack);
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -162,6 +182,11 @@ void KdStandardShader::BeginGenerateDepthMapFromLight()
 // レンダーターゲットを元に戻す
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void KdStandardShader::EndGenerateDepthMapFromLight()
+{
+	m_depthMapFromLightRTChanger.UndoRenderTarget();
+}
+
+void KdStandardShader::EndGenerateCharaDepthMapFromLight()
 {
 	m_depthMapFromLightRTChanger.UndoRenderTarget();
 }
@@ -671,6 +696,9 @@ bool KdStandardShader::Init()
 
 	m_depthMapFromLightRTPack.CreateRenderTarget(1024, 1024, true, DXGI_FORMAT_R32_FLOAT);
 	m_depthMapFromLightRTPack.ClearTexture(kRedColor);
+
+	m_charaDepthMapRTPack.CreateRenderTarget(1024, 1024, true, DXGI_FORMAT_R32_FLOAT);
+	m_charaDepthMapRTPack.ClearTexture(kRedColor);
 
 	SetDissolveTexture(*KdAssets::Instance().m_textures.GetData("Asset/Textures/System/WhiteNoise.png"));
 

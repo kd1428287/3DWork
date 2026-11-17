@@ -24,7 +24,7 @@ public:
 
 	void SetConfig(const Config& config) { width_ = config.width; }
 
-	// 陰影ありパスで、前面カリングの輪郭描画を行う
+	// 陰影ありパスで、ステンシルでシルエット内を除外した輪郭描画を行う
 	void DrawLit() override;
 
 private:
@@ -32,4 +32,6 @@ private:
 	IModelRenderSource* modelSource_ = nullptr;
 
 	float width_ = 0.02f;
+
+	UINT stencilRef_ = 1;	// 個体ごとのステンシル値(1〜255)
 };

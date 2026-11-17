@@ -299,7 +299,7 @@
     },
     {
       "params": {
-        "width": 0.05000000074505806
+        "width": 0.10000000149011612
       },
       "type": "Outline"
     },
@@ -455,7 +455,7 @@
     },
     {
       "params": {
-        "max": 1000.0
+        "max": 200.0
       },
       "type": "Health"
     },
@@ -551,9 +551,9 @@
     {
       "params": {
         "color": [
-          1.5,
-          0.3499999940395355,
-          0.05000000074505806
+          0.10000000149011612,
+          0.10000000149011612,
+          0.10000000149011612
         ],
         "coreColor": [
           2.5,
@@ -563,16 +563,22 @@
         "fresnelPower": 1.5,
         "height": 2.0,
         "intensity": 1.0,
-        "kind": "Flame",
+        "kind": "Ink",
         "layers": 2,
-        "noiseScale": 0.800000011920929,
-        "noiseTexturePath": "Asset/Textures/System/WhiteNoise.png",
+        "noiseScale": 1.2000000476837158,
+        "noiseTexturePath": "Asset/Textures/Game/Effect/Noise/ink_noise.png",
         "rise": 0.25,
-        "scrollSpeed": 0.6000000238418579,
-        "softness": 0.15000000596046448,
-        "width": 0.07999999821186066
+        "scrollSpeed": 0.4000000059604645,
+        "softness": 1.0,
+        "width": 0.15000000596046448
       },
       "type": "Aura"
+    },
+    {
+      "params": {
+        "preset": "Bright"
+      },
+      "type": "InkStyle"
     }
   ],
   "name": "enemy_warrock",

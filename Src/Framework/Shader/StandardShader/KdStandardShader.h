@@ -52,6 +52,7 @@ enum class KdAuraKind
 {
 	Rim,	// 輪郭が光るリムライト型
 	Flame,	// 輪郭に沿って立ち上る炎型
+	Ink,
 };
 
 // オーラの設定(Intensity=0なら実質描画されない)。HLSL側cbObjectの並びと一致させること
@@ -168,6 +169,9 @@ public:
 	// オーラ描画用のテクスチャ/サンプラーのスロット(HLSL側PS_Auraと一致させること)
 	static const int kAuraNoiseSlot = 12;
 	static const int kAuraSamplerSlot = 2;
+
+	// キャラクター専用シャドウマップのスロット(HLSL側PS_Litのt13と一致させること)
+	static const int kCharaShadowSlot = 13;
 
 
 
@@ -318,6 +322,10 @@ public:
 	void BeginGenerateDepthMapFromLight();
 	void EndGenerateDepthMapFromLight();
 
+	// キャラクターだけを描く専用の深度マップ(屋根の影の中でも影を出す用)。通常の深度描画の後に行う
+	void BeginGenerateCharaDepthMapFromLight();
+	void EndGenerateCharaDepthMapFromLight();
+
 	//================================================
 	// 描画関数
 	//================================================
@@ -427,7 +435,11 @@ private:
 	KdConstantBuffer<cbPrevBone>	m_cb6_PrevBone;			// 速度バッファ用(前フレームのボーン)
 
 	KdRenderTargetPack	m_depthMapFromLightRTPack;
+	KdRenderTargetPack	m_charaDepthMapRTPack;		// キャラクター専用の光からの深度
 	KdRenderTargetChanger m_depthMapFromLightRTChanger;
+
+	// 光からの深度描画の共通処理(書き込み先のRTだけが違う)
+	void BeginDepthPass(KdRenderTargetPack& rtPack);
 
 	// 速度バッファ用の履歴(モデルワーク単位)
 	struct MotionHistory

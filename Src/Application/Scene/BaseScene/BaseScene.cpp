@@ -62,6 +62,15 @@ void BaseScene::Draw()
 	KdShaderManager::Instance().m_StandardShader.EndGenerateDepthMapFromLight();
 
 	// ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
+	// 影の中でも描画される影を書きたいオブジェクトをBeginとEndの間にまとめてDrawする
+	KdShaderManager::Instance().m_StandardShader.BeginGenerateCharaDepthMapFromLight();
+	{
+		objManager_->DrawCharaShadow();
+	}
+	KdShaderManager::Instance().m_StandardShader.EndGenerateCharaDepthMapFromLight();
+
+
+	// ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
 	// 陰影のないオブジェクト(背景など)はBeginとEndの間にまとめてDrawする
 	KdShaderManager::Instance().m_StandardShader.BeginUnLit();
 	{
