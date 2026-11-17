@@ -95,6 +95,12 @@
       "components": [
         {
           "params": {
+            "model": "Asset/Models/Character/Masks/DemonMask.gltf"
+          },
+          "type": "ModelRender"
+        },
+        {
+          "params": {
             "childBone": "Nose",
             "parentBone": "mask",
             "position": [
@@ -103,18 +109,23 @@
               0.0
             ],
             "rotationEulerDeg": [
-              0,
-              180,
-              -90
+              0.0,
+              90.0,
+              0.0
+            ],
+            "scale": [
+              0.3499999940395355,
+              0.3499999940395355,
+              0.3499999940395355
             ]
           },
           "type": "AttachBoneToBone"
         },
         {
           "params": {
-            "model": "Asset/Models/Character/Masks/DemonMask.gltf"
+            "preset": "Dark"
           },
-          "type": "ModelRender"
+          "type": "InkStyle"
         }
       ],
       "name": "mask"
@@ -127,7 +138,7 @@
     {
       "params": {
         "animations": "Asset/Animations/Character",
-        "model": "Asset/Models/Character/Kachujin/kachujin.gltf"
+        "model": "Asset/Models/Character/kachujin.gltf"
       },
       "type": "ModelRender"
     },
@@ -446,18 +457,9 @@
     },
     {
       "params": {
-		"charge": {
-			"anim": {
-				"animationName": "SPAttack04_Root",
-				"blendDuration": 0.15,
-				"duration": 4.0,
-				"loop": false,
-				"useRootMotion": true
-			},
-			"maxChargeTime": 1.5,
-			"successId": "ChargeAttack",
-			"failedId": "Attack02_1"
-		},
+        "charge": {
+          "id": "ChargeAttack"
+        },
         "evade": {
           "activeDuration": 0.35,
           "animationNameBackward": "Slide_B_Root",
@@ -540,6 +542,13 @@
       "type": "PlayerStatusController"
     },
     {
+      "params": {
+        "offset": [
+          0.0,
+          2.200000047683716,
+          0.0
+        ]
+      },
       "type": "CameraTarget"
     },
     {

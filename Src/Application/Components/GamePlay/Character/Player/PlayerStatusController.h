@@ -1,4 +1,4 @@
-// PlayerStatusController.h
+﻿// PlayerStatusController.h
 #pragma once
 #include "Application/Definitions/Character/Player/PlayerCombatTypes.h"
 #include "../../../Tags/IHitReactionQuery.h"
@@ -71,7 +71,7 @@ public:
 	bool IsEvading() const { return GetCombatState() == CombatState::Evade || GetCombatState() == CombatState::EvadeRecovery; }
 	bool IsStaggered() const { return GetCombatState() == CombatState::StaggerSmall || GetCombatState() == CombatState::StaggerLarge; }
 	bool IsGuarding() const override { return GetCombatState() == CombatState::Guard; }
-	bool IsCharging() const { return GetCombatState() == CombatState::Charge; }
+	bool IsCharging() const { return GetCombatState() == CombatState::AttackCharge; }
 	bool IsDead() const { return GetCombatState() == CombatState::Dead; }
 
 	bool IsInJustEvadeWindow() const { return stateMachine_.Current()->IsInJustEvadeWindow(&ctx_); }

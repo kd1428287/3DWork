@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "StandardShader/KdStandardShader.h"
 #include "PostProcessShader/KdPostProcessShader.h"
@@ -225,7 +225,7 @@ public:
 	bool IsPixelArtStyle() const { return m_pixelArtStyle; }
 
 	// Perlin順列テーブルのtレジスタ番号(PerlinNoise.hlsliのPERLIN_PERM_SLOTと一致させる)
-	static constexpr UINT PerlinPermSlot = 10;
+	static constexpr UINT PerlinPermSlot = 32;	// 影マップ(t10)等と被らない番号
 
 	const PerlinNoiseGPU& GetPerlinNoiseGPU() const { return m_perlinNoiseGPU; }
 

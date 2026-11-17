@@ -49,11 +49,15 @@ void AuraRenderComponent::DrawEffect()
 	//manager.ChangeBlendState(effectLayer ? KdBlendState::EffectAdd : KdBlendState::Add);
 	manager.ChangeBlendState(KdBlendState::Alpha);
 	manager.ChangeDepthStencilState(KdDepthStencilState::ZWriteDisable);
-	manager.ChangeRasterizerState(KdRasterizerState::CullBack);
+	const bool isInk = (config_.kind == KdAuraKind::Ink);
+
+	// 墨型は体の後ろに回り込む背面だけを描く
+	//manager.ChangeRasterizerState(isInk ? KdRasterizerState::CullFront : KdRasterizerState::CullBack);
+	manager.ChangeRasterizerState(KdRasterizerState::CullFront);
 
 	if (noiseTex_) { shader.SetAuraNoiseTexture(*noiseTex_); }
 
-	const bool isFlame = (config_.kind == KdAuraKind::Flame);
+	const bool lifts = (config_.kind != KdAuraKind::Rim);
 
 	for (int i = 0; i < config_.layers; ++i)
 	{
@@ -67,12 +71,13 @@ void AuraRenderComponent::DrawEffect()
 		style.NoiseScale = config_.noiseScale * (1.0f + 0.5f * i);
 		style.ScrollSpeed = config_.scrollSpeed;
 		style.Time = time_ + 1.7f * i;	// 層ごとにゆらぎをずらす
-		style.Rise = isFlame ? config_.rise * (1.0f + 0.5f * i) : 0.0f;	// リム型は持ち上げない
+		style.Rise = lifts ? config_.rise * (1.0f + 0.5f * i) : 0.0f;	// リム型は持ち上げない
 		style.BaseY = baseY;
 		style.Height = config_.height;
 		style.Softness = config_.softness;
 
 		// 描画後に自動で初期値へ戻るので、層ごとに設定し直す
+		if (isInk) { shader.SetInkStyle(KdInkStyle::FromPreset(config_.inkPreset)); }
 		shader.SetAuraStyle(style);
 		shader.DrawModel(*model, world);
 	}

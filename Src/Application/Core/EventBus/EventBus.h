@@ -12,7 +12,6 @@
 using SubscriptionId = uint64_t;
 class Event;
 
-// forward declaration
 class ScopedSubscriber;
 
 // std::enable_shared_from_this を継承して weak_ptr を取得可能にする

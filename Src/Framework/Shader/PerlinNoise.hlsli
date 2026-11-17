@@ -4,7 +4,7 @@
 // PerlinNoise.h(CPU版)と同じ順列テーブル・同じ式。CPU側のPerlinNoiseGPUがテーブルを転送する。
 // スロットはエンジンで未使用のtレジスタに合わせて変更すること(使うステージ側でも同じ番号でバインド)。
 #ifndef PERLIN_PERM_SLOT
-#define PERLIN_PERM_SLOT t10
+#define PERLIN_PERM_SLOT t32	// 影マップ(t10)・ディゾルブ(t11)・環境/オーラ(t12)と被らない番号
 #endif
 
 StructuredBuffer<uint> g_perlinPerm : register(PERLIN_PERM_SLOT);

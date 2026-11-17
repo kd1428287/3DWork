@@ -20,7 +20,7 @@ COMPONENT_PARAMS_DEFINE_TYPE(StaggerPhaseData,
 
 COMPONENT_PARAMS_DEFINE_TYPE(StaggerData, staggerSmall, staggerLarge)
 
-COMPONENT_PARAMS_DEFINE_TYPE(ChargeData, anim, maxChargeTime, successId, failedId)
+COMPONENT_PARAMS_DEFINE_TYPE(ChargeData,id)
 
 COMPONENT_PARAMS_DEFINE_TYPE(MovementPhaseClips,
 	startAnimationName, startDuration, loopAnimationName, endAnimationName, endDuration)

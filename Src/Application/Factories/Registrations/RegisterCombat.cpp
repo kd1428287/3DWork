@@ -65,9 +65,10 @@ namespace
 		std::string   parentBone;
 		std::string   childBone;
 		Math::Vector3 position = { 0.0f, 0.0f, 0.0f };
+		Math::Vector3 scale = { 1.0f, 1.0f, 1.0f };
 		Math::Vector3 rotationEulerDeg = { 0.0f, 0.0f, 0.0f };
 	};
-	COMPONENT_PARAMS_DEFINE_TYPE(AttachBoneToBoneParams, parentBone, childBone, position, rotationEulerDeg)
+	COMPONENT_PARAMS_DEFINE_TYPE(AttachBoneToBoneParams, parentBone, childBone, position, scale, rotationEulerDeg)
 
 		struct TwoBoneIKParams
 	{
@@ -112,6 +113,8 @@ namespace
 
 		GameObject* socket = CreateBoneSocket(ctx.objectManager, parentSkeleton, p.parentBone);
 		Handle<TransformComponent> attachPoint(socket->GetComponent<BoneSocketComponent>());
+
+		ctx.self.GetComponent<TransformComponent>()->SetScale(p.scale);
 
 		auto* attach = ctx.Add<AttachBoneToBoneComponent>(attachPoint, p.childBone);
 		attach->SetLocalRotation(Math::Quaternion::CreateFromYawPitchRoll(

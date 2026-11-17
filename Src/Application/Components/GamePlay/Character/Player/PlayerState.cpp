@@ -40,11 +40,17 @@ void StateAttack::Enter(PlayerStateContext* ctx) {
 
 	const AttackData& data = ctx->attackSelector->GetCurrentAttackData();
 	auto damageData = data.damageData;
-	damageData.damage *= damageScale_; // チャージ倍率(通常攻撃は1.0)
 	ctx->weaponSet->SetAttackDamageData(data.weaponSlots, damageData);
 	// 演出データ(SE/エフェクト等)も対象スロットの武器へ渡す。
 	for (const std::string& slot : data.weaponSlots) {
 		if (WeaponComponent* weapon = ctx->weaponSet->GetWeapon(slot)) weapon->SetAttackVisualData(data.visualData);
+	}
+
+	// 溜めが有効な技はAttackChargeから始め、Windupは溜め解放後(BeginWindup)に始める
+	if (data.chargeData.isEnabled) {
+		phase_ = CombatState::AttackCharge;
+		ctx->PlayAnimation(data.chargeData.clip);
+		return;
 	}
 
 	ctx->PlayAnimation(data.phaseData.windup);
@@ -53,6 +59,11 @@ void StateAttack::Enter(PlayerStateContext* ctx) {
 void StateAttack::Update(PlayerStateContext* ctx, float deltaTime) {
 	elapsed_ += deltaTime;
 	const AttackData& data = ctx->attackSelector->GetCurrentAttackData();
+
+	if (phase_ == CombatState::AttackCharge) {
+		UpdateCharge(ctx, data);
+		return;
+	}
 
 	if (phase_ == CombatState::AttackWindup && elapsed_ >= data.phaseData.windup.duration) {
 		phase_ = CombatState::AttackActive;
@@ -92,6 +103,45 @@ void StateAttack::Update(PlayerStateContext* ctx, float deltaTime) {
 	}
 }
 
+void StateAttack::UpdateCharge(PlayerStateContext* ctx, const AttackData& data) {
+	const AttackChargeData& charge = data.chargeData;
+
+	// 入力ロック中は発射せず溜めを捨てる(StateChargeと同じ)。
+	if (ctx->input == nullptr || ctx->input->IsInputLocked()) {
+		ctx->requester->ChangeStateToNone();
+		return;
+	}
+
+	// 溜め完了(溜め率1.0かmaxTime到達)までは、入力を保持している間だけ溜める。
+	const bool completed = elapsed_ >= charge.maxTime;
+	if (!completed && ctx->input->GetIntent().ChargeHeld()) return;
+
+	// 溜め中に押された入力が、後続の攻撃から連鎖しないよう捨てる。
+	auto& buffer = ctx->input->GetBuffer();
+	buffer.Clear(PlayerInputCommand::Attack);
+	buffer.Clear(PlayerInputCommand::Guard);
+
+	if (completed) {
+		BeginWindup(ctx, data);
+		return;
+	}
+
+	// 完了前に離した場合は失敗技へ。遷移後はこのStateの状態に触れない。
+	PlayerAttackRequest request;
+	request.attackId = charge.failedAttackId;
+	if (!ctx->requester->RequestAttack(request)) {
+		ctx->requester->ChangeStateToNone();
+	}
+}
+
+void StateAttack::BeginWindup(PlayerStateContext* ctx, const AttackData& data) {
+	phase_ = CombatState::AttackWindup;
+	elapsed_ = 0.0f;
+
+	ctx->facing->FaceAttackTarget(); // 溜め中に動いた対象へ向き直す
+	ctx->PlayAnimation(data.phaseData.windup);
+}
+
 void StateAttack::Exit(PlayerStateContext* ctx) {
 	// 強制中断された場合のガード
 	ctx->combatMovement->CancelStepMove();
@@ -104,6 +154,7 @@ void StateAttack::Exit(PlayerStateContext* ctx) {
 }
 
 bool StateAttack::CanStartEvade(const PlayerStateContext* ctx) const {
+	if (phase_ == CombatState::AttackCharge) return true; // 溜め中は回避でキャンセルできる(StateChargeと同じ)
 	if (phase_ == CombatState::AttackRecovery) {
 		return elapsed_ >= ctx->attackSelector->GetCurrentAttackData().cancelData.recoveryEvadeCancelStart;
 	}
@@ -364,46 +415,12 @@ StateGuard::GuardPhase StateGuard::GetGuardPhase(const PlayerStateContext* ctx) 
 
 // --- Charge State ---
 void StateCharge::Enter(PlayerStateContext* ctx) {
-	elapsed_ = 0.0f;
-	ctx->PlayAnimation(data_.anim);
-}
-
-void StateCharge::Update(PlayerStateContext* ctx, float deltaTime) {
-	elapsed_ += deltaTime; // 溜め率は最大到達後も保持される(ChargeData::GetChargeScale)
-
-	// 入力ロック中は発射せず溜めを捨てる(ロックでintentが空になり「離した」扱いになるため)。
-	if (ctx->input == nullptr || ctx->input->IsInputLocked()) {
-		ctx->requester->ChangeStateToNone();
-		return;
-	}
-
-	if (!ctx->input->GetIntent().ChargeHeld() || GetChargeRatio() >= 1.0f) {
-		Release(ctx); // 自身のStateから抜けるため、以後このStateには触れない
-	}
-}
-
-void StateCharge::Release(PlayerStateContext* ctx) {
-	// 溜め中に押された入力が、発射した攻撃の後隙から連鎖しないよう捨てる。
-	auto& buffer = ctx->input->GetBuffer();
-	buffer.Clear(PlayerInputCommand::Attack);
-	buffer.Clear(PlayerInputCommand::Guard);
-
 	PlayerAttackRequest request;
-	if (GetChargeRatio() >= 1.0f)
-	{
-		request.attackId = data_.successId;
-	}
-	else
-	{
-		request.attackId = data_.failedId;
-	}
-	
-	request.chargeRatio = GetChargeRatio();
+	request.attackId = data_.id;
 	if (!ctx->requester->RequestAttack(request)) {
 		ctx->requester->ChangeStateToNone(); // idが未設定/不明なら溜めを捨てる
 	}
 }
-
 
 // --- Stagger State ---
 void StateStagger::Enter(PlayerStateContext* ctx) {

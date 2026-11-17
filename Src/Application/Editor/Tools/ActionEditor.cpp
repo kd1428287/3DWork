@@ -1,4 +1,4 @@
-#include "Application/main.h"
+﻿#include "Application/main.h"
 
 #include "ActionEditor.h"
 #include "Application/Definitions/Character/Enemy/EnemyDefinitionJson.h"
@@ -15,8 +15,12 @@ namespace
 {
 	constexpr float kSimStep = 1.0f / 60.0f;	// プレビューのシミュレーション刻み(秒の編集スナップも兼ねる)
 
-	const char* const kPhaseNames[3] = { "Windup", "Active", "Recovery" };
-	const ImU32 kPhaseColors[3] = { IM_COL32(70, 110, 200, 255), IM_COL32(200, 70, 70, 255), IM_COL32(80, 170, 100, 255) };
+	// フェーズ番号は時間順。Chargeは AttackData::charge.isEnabled のときだけ長さを持つ(無効なら0秒扱い)
+	constexpr int kPhaseCount = 4;
+	constexpr int kPhaseCharge = 0;
+	constexpr int kPhaseActive = 2;
+	const char* const kPhaseNames[kPhaseCount] = { "Charge", "Windup", "Active", "Recovery" };
+	const ImU32 kPhaseColors[kPhaseCount] = { IM_COL32(170, 110, 200, 255), IM_COL32(70, 110, 200, 255), IM_COL32(200, 70, 70, 255), IM_COL32(80, 170, 100, 255) };
 	const char* const kTelegraphNames[3] = { "None", "Normal", "Danger" };
 	const char* const kEaseNames[4] = { "Linear", "EaseIn", "EaseOut", "EaseInOut" };
 
@@ -40,31 +44,40 @@ namespace
 		ImGui::DockBuilderFinish(dockspaceId);
 	}
 
-	MotionClipData& PhaseClip(AttackPhaseData& p, int i)
+	MotionClipData& PhaseClip(AttackData& a, int i)
 	{
-		return (i == 0) ? p.windup : (i == 1) ? p.active : p.recovery;
+		AttackPhaseData& p = a.phaseData;
+		return (i == 0) ? a.chargeData.clip : (i == 1) ? p.windup : (i == 2) ? p.active : p.recovery;
 	}
 
-	const MotionClipData& PhaseClip(const AttackPhaseData& p, int i)
+	const MotionClipData& PhaseClip(const AttackData& a, int i)
 	{
-		return (i == 0) ? p.windup : (i == 1) ? p.active : p.recovery;
+		const AttackPhaseData& p = a.phaseData;
+		return (i == 0) ? a.chargeData.clip : (i == 1) ? p.windup : (i == 2) ? p.active : p.recovery;
 	}
 
-	float PhaseTotalTime(const AttackPhaseData& p)
+	// タイムライン上の長さ(秒)。無効なChargeは0
+	float PhaseDuration(const AttackData& a, int i)
+	{
+		if (i == kPhaseCharge && !a.chargeData.isEnabled) { return 0.0f; }
+		return std::max(PhaseClip(a, i).duration, 0.0f);
+	}
+
+	float PhaseTotalTime(const AttackData& a)
 	{
 		float total = 0.0f;
-		for (int i = 0; i < 3; ++i) { total += std::max(PhaseClip(p, i).duration, 0.0f); }
+		for (int i = 0; i < kPhaseCount; ++i) { total += PhaseDuration(a, i); }
 		return total;
 	}
 
 	// 時刻tが属するフェーズと、そのフェーズ開始からの経過秒
-	int PhaseIndexAt(const AttackPhaseData& p, float t, float& local)
+	int PhaseIndexAt(const AttackData& a, float t, float& local)
 	{
 		float acc = 0.0f;
-		for (int i = 0; i < 3; ++i)
+		for (int i = 0; i < kPhaseCount; ++i)
 		{
-			const float d = std::max(PhaseClip(p, i).duration, 0.0f);
-			if (t < acc + d || i == 2)
+			const float d = PhaseDuration(a, i);
+			if (t < acc + d || i == kPhaseCount - 1)
 			{
 				local = t - acc;
 				return i;
@@ -187,7 +200,7 @@ void ActionEditor::Update()
 	{
 		if (AttackData* ad = CurrentAttackData())
 		{
-			const float total = PhaseTotalTime(ad->phaseData);
+			const float total = PhaseTotalTime(*ad);
 			m_time += io.DeltaTime;
 			if (m_time >= total)
 			{
@@ -710,17 +723,64 @@ void ActionEditor::DrawInspector()
 
 	if (ImGui::CollapsingHeader("Phases", ImGuiTreeNodeFlags_DefaultOpen))
 	{
-		for (int i = 0; i < 3; ++i)
+		for (int i = 0; i < kPhaseCount; ++i)
 		{
-			MotionClipData& clip = PhaseClip(d.phaseData, i);
+			MotionClipData& clip = PhaseClip(d, i);
 			float curLocal = 0.0f;
-			const int curIdx = PhaseIndexAt(d.phaseData, m_time, curLocal);
+			const int curIdx = PhaseIndexAt(d, m_time, curLocal);
 
 			ImGui::PushID(i);
 			const bool open = ImGui::CollapsingHeader(kPhaseNames[i], ImGuiTreeNodeFlags_DefaultOpen);
 			if (ImGui::IsItemClicked()) { m_selectedPhase = i; }
 
-			if (open)
+			if (open && i == kPhaseCharge)
+			{
+				const ImVec4 warnCol(1.0f, 0.8f, 0.2f, 1.0f);
+				AttackChargeData& ch = d.chargeData;
+
+				checkbox("isEnabled", ch.isEnabled);
+				if (ch.isEnabled)
+				{
+					dragFloat("maxChargeTime (溜め完了までの秒)", ch.maxChargeTime, 0.01f, 0.0f, 20.0f);
+					dragFloat("maxTime (溜めの上限秒)", ch.maxTime, 0.01f, 0.0f, 20.0f);
+
+					if (ch.maxTime < ch.maxChargeTime)
+					{
+						ImGui::TextColored(warnCol, "maxTime < maxChargeTime: 溜め完了前に自動解放されます");
+					}
+
+					if (pl != nullptr)
+					{
+						// 溜め完了前に離したときに出す技(プレイヤーのみ)
+						const std::vector<std::string> ids = CollectAttackIds();
+						if (ImGui::BeginCombo("failedAttackId", ch.failedAttackId.empty() ? "(未選択)" : ch.failedAttackId.c_str()))
+						{
+							for (const std::string& n : ids)
+							{
+								if (ImGui::Selectable(n.c_str(), n == ch.failedAttackId))
+								{
+									PushUndo();
+									ch.failedAttackId = n;
+									MarkEdited();
+								}
+							}
+							ImGui::EndCombo();
+						}
+						if (ch.failedAttackId.empty()) { ImGui::TextColored(warnCol, "failedAttackIdが未選択です(早離しで何も出ません)"); }
+						else if (std::find(ids.begin(), ids.end(), ch.failedAttackId) == ids.end())
+						{
+							ImGui::TextColored(warnCol, "failedAttackId '%s' がありません(Saveできません)", ch.failedAttackId.c_str());
+						}
+					}
+					else
+					{
+						ImGui::TextColored(warnCol, "敵のChargeは実行側(BTWeightedAttackAction)が未対応です。ゲーム内では再生されません");
+					}
+				}
+			}
+
+			// 無効なChargeはクリップを編集しない
+			if (open && !(i == kPhaseCharge && !d.chargeData.isEnabled))
 			{
 				inputText("animation", clip.animationName);
 
@@ -899,7 +959,7 @@ void ActionEditor::DrawTimeline()
 		return;
 	}
 
-	const float total = PhaseTotalTime(ad->phaseData);
+	const float total = PhaseTotalTime(*ad);
 
 	if (ImGui::Button(m_playing ? "Pause" : "Play"))
 	{
@@ -1079,6 +1139,7 @@ void ActionEditor::DrawSegments(MotionClipData& clip, float markerSec)
 void ActionEditor::DrawGameTimeStrip(AttackData& ad, const EnemyAttackDefinition* enemy)
 {
 	AttackPhaseData& ph = ad.phaseData;
+	const float chargeLen = PhaseDuration(ad, kPhaseCharge);	// Windup開始までのオフセット
 
 	// プレイヤー用: Recovery内のキャンセル受付開始(M=移動 / E=回避 / A=攻撃)
 	struct CancelMarker { const char* initial; const char* name; float* value; ImU32 color; };
@@ -1090,7 +1151,7 @@ void ActionEditor::DrawGameTimeStrip(AttackData& ad, const EnemyAttackDefinition
 	ImDrawList* dl = ImGui::GetWindowDrawList();
 	ImGuiIO& io = ImGui::GetIO();
 
-	const float total = PhaseTotalTime(ph);
+	const float total = PhaseTotalTime(ad);
 	const float width = std::max(ImGui::GetContentRegionAvail().x - 8.0f, 100.0f);
 	constexpr float kHeight = 44.0f;
 	const ImVec2 origin = ImGui::GetCursorScreenPos();
@@ -1107,7 +1168,7 @@ void ActionEditor::DrawGameTimeStrip(AttackData& ad, const EnemyAttackDefinition
 	if (ImGui::IsItemClicked())
 	{
 		float local = 0.0f;
-		m_selectedPhase = PhaseIndexAt(ph, std::max(mouseSec, 0.0f), local);
+		m_selectedPhase = PhaseIndexAt(ad, std::max(mouseSec, 0.0f), local);
 	}
 	if (ImGui::IsItemActive())
 	{
@@ -1126,9 +1187,11 @@ void ActionEditor::DrawGameTimeStrip(AttackData& ad, const EnemyAttackDefinition
 
 	// フェーズ帯
 	float acc = 0.0f;
-	for (int i = 0; i < 3; ++i)
+	for (int i = 0; i < kPhaseCount; ++i)
 	{
-		const MotionClipData& clip = PhaseClip(ph, i);
+		if (i == kPhaseCharge && !ad.chargeData.isEnabled) { continue; }
+
+		const MotionClipData& clip = PhaseClip(ad, i);
 		const float dur = std::max(clip.duration, 0.0f);
 		const ImVec2 p0(origin.x + acc * pxPerSec, origin.y);
 		const ImVec2 p1(origin.x + (acc + dur) * pxPerSec, origin.y + kHeight);
@@ -1170,13 +1233,21 @@ void ActionEditor::DrawGameTimeStrip(AttackData& ad, const EnemyAttackDefinition
 		dl->AddText(ImVec2(p0.x + 4.0f, p0.y + 3.0f), IM_COL32(255, 255, 255, 255), text);
 		dl->PopClipRect();
 
+		// Charge帯: 溜め完了(maxChargeTime)の位置
+		if (i == kPhaseCharge && ad.chargeData.maxChargeTime < dur)
+		{
+			const float fx = p0.x + ad.chargeData.maxChargeTime * pxPerSec;
+			dl->AddLine(ImVec2(fx, p0.y), ImVec2(fx, p1.y), IM_COL32(255, 255, 255, 200), 2.0f);
+			dl->AddText(ImVec2(fx + 2.0f, p0.y + kHeight - 15.0f), IM_COL32(255, 255, 255, 220), "full");
+		}
+
 		acc += dur;
 	}
 
 	// 予備動作エフェクトの発生位置(Windup終了のleadTime前)
 	if (enemy != nullptr && enemy->telegraph.type != TelegraphType::None)
 	{
-		const float tt = std::max(ph.windup.duration - enemy->telegraph.leadTime, 0.0f);
+		const float tt = chargeLen + std::max(ph.windup.duration - enemy->telegraph.leadTime, 0.0f);
 		const float x = origin.x + tt * pxPerSec;
 		dl->AddLine(ImVec2(x, origin.y - 6.0f), ImVec2(x, origin.y + kHeight), IM_COL32(255, 220, 60, 255), 2.0f);
 		dl->AddText(ImVec2(x + 3.0f, origin.y - 18.0f), IM_COL32(255, 220, 60, 255), "Telegraph");
@@ -1185,7 +1256,7 @@ void ActionEditor::DrawGameTimeStrip(AttackData& ad, const EnemyAttackDefinition
 	// コンボ判定のタイミング(Recovery内のlinkStart)
 	if (enemy != nullptr && !enemy->comboLinks.empty())
 	{
-		const float ct = std::max(ph.windup.duration, 0.0f) + std::max(ph.active.duration, 0.0f)
+		const float ct = chargeLen + std::max(ph.windup.duration, 0.0f) + std::max(ph.active.duration, 0.0f)
 			+ std::min(ad.cancelData.recoveryAttackCancelStart, std::max(ph.recovery.duration, 0.0f));
 		const float x = origin.x + ct * pxPerSec;
 		dl->AddLine(ImVec2(x, origin.y - 6.0f), ImVec2(x, origin.y + kHeight), IM_COL32(120, 200, 255, 255), 2.0f);
@@ -1195,7 +1266,7 @@ void ActionEditor::DrawGameTimeStrip(AttackData& ad, const EnemyAttackDefinition
 	// プレイヤー: コンボ受付窓(Recovery終了後)とキャンセルマーカー
 	if (enemy == nullptr)
 	{
-		const float recStart = std::max(ph.windup.duration, 0.0f) + std::max(ph.active.duration, 0.0f);
+		const float recStart = chargeLen + std::max(ph.windup.duration, 0.0f) + std::max(ph.active.duration, 0.0f);
 		const float recDur = std::max(ph.recovery.duration, 0.0f);
 
 		if (tail > 0.0f)
@@ -1219,9 +1290,11 @@ void ActionEditor::DrawGameTimeStrip(AttackData& ad, const EnemyAttackDefinition
 
 	// 各フェーズ終端のドラッグでdurationを変える(秒は1/60刻み)
 	acc = 0.0f;
-	for (int i = 0; i < 3; ++i)
+	for (int i = 0; i < kPhaseCount; ++i)
 	{
-		MotionClipData& clip = PhaseClip(ph, i);
+		if (i == kPhaseCharge && !ad.chargeData.isEnabled) { continue; }
+
+		MotionClipData& clip = PhaseClip(ad, i);
 		const float start = acc;
 		acc += std::max(clip.duration, 0.0f);
 
@@ -1243,7 +1316,7 @@ void ActionEditor::DrawGameTimeStrip(AttackData& ad, const EnemyAttackDefinition
 	// プレイヤー: キャンセルマーカーのドラッグ(Recovery開始からの秒。1/60刻み)
 	if (enemy == nullptr)
 	{
-		const float recStart = std::max(ph.windup.duration, 0.0f) + std::max(ph.active.duration, 0.0f);
+		const float recStart = chargeLen + std::max(ph.windup.duration, 0.0f) + std::max(ph.active.duration, 0.0f);
 		const float recDur = std::max(ph.recovery.duration, 0.0f);
 
 		for (int i = 0; i < 3; ++i)
@@ -1277,8 +1350,9 @@ void ActionEditor::DrawGameTimeStrip(AttackData& ad, const EnemyAttackDefinition
 
 void ActionEditor::DrawClipStrip(AttackData& ad)
 {
-	AttackPhaseData& ph = ad.phaseData;
-	MotionClipData& target = PhaseClip(ph, m_selectedPhase);
+	// 無効なChargeを選択中のままなら、Windupを表示する
+	if (m_selectedPhase == kPhaseCharge && !ad.chargeData.isEnabled) { m_selectedPhase = 1; }
+	MotionClipData& target = PhaseClip(ad, m_selectedPhase);
 
 	const auto anim = m_model.IsEnable() ? m_model.GetAnimation(target.animationName) : nullptr;
 	if (!anim)
@@ -1301,9 +1375,10 @@ void ActionEditor::DrawClipStrip(AttackData& ad)
 	dl->AddRectFilled(origin, ImVec2(origin.x + width, origin.y + kHeight), IM_COL32(40, 40, 40, 255));
 
 	// 同じクリップを使うフェーズの範囲を塗る
-	for (int i = 0; i < 3; ++i)
+	for (int i = 0; i < kPhaseCount; ++i)
 	{
-		const MotionClipData& c = PhaseClip(ph, i);
+		if (i == kPhaseCharge && !ad.chargeData.isEnabled) { continue; }
+		const MotionClipData& c = PhaseClip(ad, i);
 		if (c.animationName != target.animationName) { continue; }
 
 		const float x0 = origin.x + c.startFrame * pxPerFrame;
@@ -1322,9 +1397,10 @@ void ActionEditor::DrawClipStrip(AttackData& ad)
 			}
 			handles.push_back({ { p }, frame });
 		};
-	for (int i = 0; i < 3; ++i)
+	for (int i = 0; i < kPhaseCount; ++i)
 	{
-		MotionClipData& c = PhaseClip(ph, i);
+		if (i == kPhaseCharge && !ad.chargeData.isEnabled) { continue; }
+		MotionClipData& c = PhaseClip(ad, i);
 		if (c.animationName != target.animationName) { continue; }
 
 		addHandle(&c.startFrame, c.startFrame);
@@ -1360,8 +1436,8 @@ void ActionEditor::DrawClipStrip(AttackData& ad)
 
 	// 現在時刻のクリップ位置
 	float local = 0.0f;
-	const int idx = PhaseIndexAt(ph, m_time, local);
-	const MotionClipData& cur = PhaseClip(ph, idx);
+	const int idx = PhaseIndexAt(ad, m_time, local);
+	const MotionClipData& cur = PhaseClip(ad, idx);
 	if (cur.animationName == target.animationName && cur.duration > 0.0f)
 	{
 		const float endF = (float)ClipEndFrame(cur, totalFrames);
@@ -1386,10 +1462,9 @@ void ActionEditor::DrawPreviewWindow()
 			const AttackData* ad = CurrentAttackData();
 			if (ad == nullptr) { return; }
 
-			const AttackPhaseData& ph = ad->phaseData;
 			float local = 0.0f;
-			const int idx = PhaseIndexAt(ph, m_time, local);
-			const MotionClipData& clip = PhaseClip(ph, idx);
+			const int idx = PhaseIndexAt(*ad, m_time, local);
+			const MotionClipData& clip = PhaseClip(*ad, idx);
 
 			float frame = (float)clip.startFrame;
 			if (const auto anim = m_model.IsEnable() ? m_model.GetAnimation(clip.animationName) : nullptr)
@@ -1446,9 +1521,8 @@ void ActionEditor::EvaluatePose()
 	const AttackData* ad = CurrentAttackData();
 	if (ad == nullptr || !m_model.IsEnable()) { return; }
 
-	const AttackPhaseData& ph = ad->phaseData;
 	float local = 0.0f;
-	m_phaseAtTime = PhaseIndexAt(ph, m_time, local);
+	m_phaseAtTime = PhaseIndexAt(*ad, m_time, local);
 
 	KdAnimator animator;
 	RootMotionExtractor rootMotion;
@@ -1457,9 +1531,11 @@ void ActionEditor::EvaluatePose()
 	float remaining = m_time;
 	std::string prevAnim;
 
-	for (int i = 0; i < 3; ++i)
+	for (int i = 0; i < kPhaseCount; ++i)
 	{
-		const MotionClipData& clip = PhaseClip(ph, i);
+		if (i == kPhaseCharge && !ad->chargeData.isEnabled) { continue; }
+
+		const MotionClipData& clip = PhaseClip(*ad, i);
 		const float duration = std::max(clip.duration, kSimStep);
 
 		if (const auto anim = m_model.GetAnimation(clip.animationName))
@@ -1500,7 +1576,7 @@ void ActionEditor::DrawHitboxWires()
 	const AttackData* ad = CurrentAttackData();
 	if (ad == nullptr || !m_model.IsEnable()) { return; }
 
-	const bool isActive = (m_phaseAtTime == 1);
+	const bool isActive = (m_phaseAtTime == kPhaseActive);
 	if (!isActive && !m_showInactiveHitbox) { return; }
 
 	const Math::Color col = isActive ? kRedColor : Math::Color(0.5f, 0.5f, 0.5f, 1.0f);
@@ -1739,9 +1815,9 @@ void ActionEditor::CollectAnimNames()
 		{
 			for (const EnemyAttackDefinition& a : vec)
 			{
-				for (int i = 0; i < 3; ++i)
+				for (int i = 0; i < kPhaseCount; ++i)
 				{
-					const std::string& n = PhaseClip(a.attackData.phaseData, i).animationName;
+					const std::string& n = PhaseClip(a.attackData, i).animationName;
 					if (!n.empty() && std::find(m_animNames.begin(), m_animNames.end(), n) == m_animNames.end())
 					{
 						m_animNames.push_back(n);
@@ -1754,9 +1830,9 @@ void ActionEditor::CollectAnimNames()
 
 	for (const PlayerAttackDefinition& a : m_playerTable.attacks)
 	{
-		for (int i = 0; i < 3; ++i)
+		for (int i = 0; i < kPhaseCount; ++i)
 		{
-			const std::string& n = PhaseClip(a.attack.phaseData, i).animationName;
+			const std::string& n = PhaseClip(a.attack, i).animationName;
 			if (!n.empty() && std::find(m_animNames.begin(), m_animNames.end(), n) == m_animNames.end())
 			{
 				m_animNames.push_back(n);

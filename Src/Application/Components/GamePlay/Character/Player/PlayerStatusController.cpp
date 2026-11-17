@@ -27,10 +27,7 @@ void PlayerStatusController::Awake()
 	health_ = GetOwner()->GetComponent<HealthComponent>();
 
 	// Stateが前提とするコンポーネント。欠けていれば構成ミス。
-	assert(ctx_.animator && ctx_.combatMovement && ctx_.facing && ctx_.lockOn && ctx_.weaponSet && ctx_.attackSelector);
-	// チャージ後の攻撃idは、設定されているなら攻撃テーブルに存在すること。
-	assert(stateCharge_.GetData().successId.empty() || ctx_.attackSelector->HasAttack(stateCharge_.GetData().successId));
-	assert(stateCharge_.GetData().failedId.empty() || ctx_.attackSelector->HasAttack(stateCharge_.GetData().failedId));
+	assert(ctx_.animator && ctx_.combatMovement && ctx_.facing && ctx_.lockOn && ctx_.weaponSet && ctx_.attackSelector);	
 
 	// 自分自身をIHitReactionQueryとして登録
 	if (HitReactionComponent* hitReaction = GetOwner()->GetComponent<HitReactionComponent>()) {
@@ -99,7 +96,6 @@ bool PlayerStatusController::TryStartAttack()
 	if (!CanStartAttack()) return false;
 	if (ctx_.attackSelector == nullptr || !ctx_.attackSelector->TryResolveNext(ActionCommand::Attack)) return false;
 
-	stateAttack_.Setup(1.0f);
 	ForceTransitionTo(&stateAttack_);
 	return true;
 }
@@ -108,7 +104,6 @@ bool PlayerStatusController::RequestAttack(const PlayerAttackRequest& request)
 {
 	if (ctx_.attackSelector == nullptr || !ctx_.attackSelector->TryResolveById(request.attackId)) return false;
 
-	stateAttack_.Setup(request.damageScale, request.chargeRatio);
 	ForceTransitionTo(&stateAttack_);
 	return true;
 }
@@ -132,6 +127,14 @@ bool PlayerStatusController::TryStartGuard()
 bool PlayerStatusController::TryStartCharge()
 {
 	if (!CanStartAttack() || !CanStartGuard()) return false;
+
+	// 溜めが有効な技はStateAttackのAttackChargeで処理する。無効な技は従来のStateChargeへ(互換)。
+	/*if (ctx_.attackSelector != nullptr && ctx_.attackSelector->TryResolveNext(ActionCommand::ChargeAttack)
+		&& ctx_.attackSelector->GetCurrentAttackData().chargeData.isEnabled) {
+		ForceTransitionTo(&stateAttack_);
+		return true;
+	}*/
+
 	ForceTransitionTo(&stateCharge_);
 	return true;
 }

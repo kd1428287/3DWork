@@ -547,6 +547,32 @@
         }
       },
       "type": "EnemyAIController"
+    },
+    {
+      "params": {
+        "color": [
+          1.5,
+          0.3499999940395355,
+          0.05000000074505806
+        ],
+        "coreColor": [
+          2.5,
+          1.600000023841858,
+          0.5
+        ],
+        "fresnelPower": 1.5,
+        "height": 2.0,
+        "intensity": 1.0,
+        "kind": "Flame",
+        "layers": 2,
+        "noiseScale": 0.800000011920929,
+        "noiseTexturePath": "Asset/Textures/System/WhiteNoise.png",
+        "rise": 0.25,
+        "scrollSpeed": 0.6000000238418579,
+        "softness": 0.15000000596046448,
+        "width": 0.07999999821186066
+      },
+      "type": "Aura"
     }
   ],
   "name": "enemy_warrock",

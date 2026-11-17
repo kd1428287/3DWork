@@ -1,12 +1,14 @@
-﻿#pragma once
+#pragma once
 #include "../../Tags/IModelRenderSource.h"
 #include "../../Tags/IRenderable.h"
 
 // Prefab/JSONから受け取る設定(paramsのキー名はメンバ名と同じ)
 // ・kind=Rimでは coreColor/rise/height/softness は使われない
+// ・kind=Inkでは color/coreColor/height は使われず、色はinkPresetのKdInkStyleで決まる
 struct AuraConfig
 {
-	KdAuraKind		kind = KdAuraKind::Flame;			// Rim:リムライト型 / Flame:炎型
+	KdAuraKind		kind = KdAuraKind::Flame;			// Rim:リムライト型 / Flame:炎型 / Ink:墨型(背面描画)
+	KdInkPreset		inkPreset = KdInkPreset::Dark;		// 墨型の濃淡変換(Dark:黒主体 / Bright:白主体)
 
 	Math::Vector3	color = { 1.5f, 0.35f, 0.05f };		// 縁の色(HDR)
 	Math::Vector3	coreColor = { 2.5f, 1.6f, 0.5f };	// 炎の芯の色(HDR)

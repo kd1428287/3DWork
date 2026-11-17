@@ -107,7 +107,7 @@ private:
 	// 選択
 	Pool	m_pool = Pool::Attacks;
 	int		m_index = -1;
-	int		m_selectedPhase = 0;	// クリップストリップに表示するフェーズ
+	int		m_selectedPhase = 1;	// クリップストリップに表示するフェーズ(0=Charge 1=Windup 2=Active 3=Recovery)
 
 	std::vector<Snapshot>	m_undoStack;
 	std::vector<Snapshot>	m_redoStack;
@@ -145,4 +145,4 @@ public:
 		static ActionEditor instance;
 		return instance;
 	}
-};
+};

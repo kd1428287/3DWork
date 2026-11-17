@@ -19,6 +19,7 @@ enum class MovementState
 enum class CombatState
 {
 	None = 0,
+	AttackCharge,
 	AttackWindup,
 	AttackActive,
 	AttackRecovery,
@@ -27,7 +28,6 @@ enum class CombatState
 	Guard,
 	StaggerSmall,
 	StaggerLarge,
-	Charge,
 	Dead,
 };
 
@@ -369,16 +369,7 @@ struct StaggerData
 // --- チャージ攻撃の溜めデータ ----------------------------------------
 struct ChargeData
 {
-	float maxChargeTime = 1.5f;  // この秒数で最大チャージ(以降は保持)
-
-	MotionClipData anim;  // 溜め中の構えアニメーション
-	std::string successId;			// 溜め解放後の攻撃データid
-	std::string failedId;			// 溜めキャンセル時の攻撃データid
-
-	float GetChargeScale(float elapsed) const
-	{
-		return  (maxChargeTime > 0.0f) ? std::clamp(elapsed / maxChargeTime, 0.0f, 1.0f) : 1.0f;
-	}
+	std::string id = "";	//　チャージ攻撃のid
 };
 
 // --- 攻撃State共通の設定(技ごとのAttackDataとは別) ---

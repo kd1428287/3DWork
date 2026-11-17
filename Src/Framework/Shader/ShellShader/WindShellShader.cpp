@@ -165,7 +165,7 @@ void WindShellShader::Draw(const WindShellParams& params, ParticleBlendMode blen
 	// 消去ノイズ(PSのb4/t2/s1)
 	shaderMgr.m_slashTrailShader.BindNoise(noise, noiseTexture);
 
-	// 順列テーブル(VSのt10)。直前のバインドを退避する
+	// 順列テーブル(VSのPerlinPermSlot)。直前のバインドを退避する
 	ID3D11ShaderResourceView* prevPerm = nullptr;
 	DevCon->VSGetShaderResources(KdShaderManager::PerlinPermSlot, 1, &prevPerm);
 	perlin.BindVS(DevCon, KdShaderManager::PerlinPermSlot);

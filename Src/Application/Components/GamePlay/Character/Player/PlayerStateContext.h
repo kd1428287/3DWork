@@ -16,8 +16,6 @@ class PlayerInkGaugeComponent;
 struct PlayerAttackRequest
 {
 	std::string attackId;
-	float damageScale = 1.0f;
-	float chargeRatio = 0.0f; // チャージ攻撃の溜め率(0〜1)。通常は0
 };
 
 // Stateからの状態遷移要求の受け口(PlayerStatusControllerが実装する)。

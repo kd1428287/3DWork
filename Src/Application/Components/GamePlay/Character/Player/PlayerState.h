@@ -80,10 +80,6 @@ public:
 
 class StateAttack : public DataState<AttackStateData> {
 public:
-	// 次のEnter()で掛けるダメージ倍率と、チャージ攻撃の溜め率(通常攻撃は0)。
-	void Setup(float damageScale, float chargeRatio = 0.0f) { damageScale_ = damageScale; chargeRatio_ = chargeRatio; }
-	float GetChargeRatio() const { return chargeRatio_; }
-
 	void Enter(PlayerStateContext* ctx) override;
 	void Update(PlayerStateContext* ctx, float deltaTime) override;
 	void Exit(PlayerStateContext* ctx) override;
@@ -99,10 +95,12 @@ public:
 	bool CanStartMove(const PlayerStateContext* ctx) const override;
 
 private:
+	// AttackChargeの更新。入力の離しで溜め完了ならWindupへ、早離しなら失敗技へ遷移する。
+	void UpdateCharge(PlayerStateContext* ctx, const AttackData& data);
+	void BeginWindup(PlayerStateContext* ctx, const AttackData& data);
+
 	CombatState phase_ = CombatState::AttackWindup;
 	float elapsed_ = 0.0f;
-	float damageScale_ = 1.0f;
-	float chargeRatio_ = 0.0f;
 
 	// ルートモーション踏み込みの距離スケールをクランプする範囲。
 	// 敵が遠すぎる/近すぎる場合に不自然な速度で動くのを防ぐ安全弁で、
@@ -205,26 +203,13 @@ private:
 };
 
 
-// Attack+Guard同時押し中の溜め状態。どちらかを離すとdata_.idの攻撃へ遷移する。
+// Attack+Guard同時押し中
 class StateCharge : public DataState<ChargeData> {
 public:
 	void Enter(PlayerStateContext* ctx) override;
-	void Update(PlayerStateContext* ctx, float deltaTime) override;
 
-	CombatState GetDetailedState() const override { return CombatState::Charge; }
-	float GetElapsed() const override { return elapsed_; }
-
-	// 現在の溜め率(0〜1)。エフェクトやUIからも参照できる。
-	float GetChargeRatio() const { return data_.GetChargeScale(elapsed_); }
-
-	// 溜め中は回避でキャンセルできる。
-	bool CanStartEvade(const PlayerStateContext* ctx) const override { return true; }
-
-private:
-	// 溜めを解放し、チャージ後の攻撃へ遷移する。遷移できなければNoneへ戻る。
-	void Release(PlayerStateContext* ctx);
-
-	float elapsed_ = 0.0f;
+	CombatState GetDetailedState() const override { return CombatState::AttackCharge; }
+	float GetElapsed() const override { return 0; }
 };
 
 
