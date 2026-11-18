@@ -6,9 +6,8 @@
 struct AttackChargeData
 {
 	bool isEnabled = false;
-	float maxChargeTime = 1.0f;
+	float chargeTime = 1.0f;
 	MotionClipData clip;           // 溜め中の構え(segmentsのHOLDも使える)
-	float maxTime = 1.5f;          // 溜め時間
 	std::string failedAttackId;    // プレイヤー用: 完了前に離したとき出す技(通常攻撃)
 };
 

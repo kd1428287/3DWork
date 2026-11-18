@@ -35,6 +35,13 @@ COMPONENT_PARAMS_DEFINE_TYPE(BoneOffsetConfig, chains)
 // 接続を伴う型のparams。ODR違反を避けるため、マクロも含めて無名名前空間に入れる。
 namespace
 {
+	struct HPParams
+	{
+		float maxHealth = 100.0f;
+		int maxLife = 1;
+	};
+	COMPONENT_PARAMS_DEFINE_TYPE(HPParams, maxHealth,maxLife)
+
 	// 武器(攻撃部位)を登録するスロット名。未指定ならPlayer同様"Main"扱い
 	// (既存Prefabは変更不要)。敵が複数の攻撃部位を持つ場合に指定する。
 	struct WeaponParams
@@ -144,8 +151,10 @@ void RegisterCombatComponents(ComponentRegistry& registry)
 	registry.Add<HitReactionComponent>("HitReaction");
 	registry.Add<WeaponSetComponent>("WeaponSet");
 	registry.Add<PostureComponent>("Posture");
-	registry.Add<HealthComponent>("Health");
-	registry.Add<LifeComponent>("Life");
+	registry.AddWithParams<HPParams>("HP", [](BuildContext& ctx, const HPParams& p) {
+		ctx.Add<HealthComponent>(p.maxHealth);
+		ctx.Add<LifeComponent>(p.maxLife);
+		});
 	registry.Add<BoneOffsetComponent>("BoneOffset");
 
 	// --- 武器・ソケット ---

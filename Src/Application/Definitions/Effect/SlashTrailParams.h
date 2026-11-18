@@ -130,13 +130,13 @@ struct SlashTrailCoreParams
 // トレイル1本ぶんの定義(データ駆動で読み書きする単位)
 struct SlashTrailParams
 {
-	SlashTrailRecordParams	Record;
-	SlashTrailStrokeParams	Stroke;
-	SlashTrailWidthParams	Width;
-	SlashTrailSplineParams	Spline;
+	SlashTrailRecordParams		Record;
+	SlashTrailStrokeParams		Stroke;
+	SlashTrailWidthParams		Width;
+	SlashTrailSplineParams		Spline;
 	SlashTrailDissolveParams	Dissolve;
-	SlashTrailInkParams		Ink;
-	SlashTrailCoreParams	Core;
+	SlashTrailInkParams			Ink;
+	SlashTrailCoreParams		Core;
 
 	// Asset/Textures/Game/Effect/からの相対パス(パーティクルのTexturePathと同じ規約)。墨・芯で共用
 	std::string	TexturePath = "Trail/Trail2_.png";

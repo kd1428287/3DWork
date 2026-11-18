@@ -51,7 +51,7 @@ public:
 	void DelayRegenPosture(float amount)
 	{
 		if (!isEnabled_)isEnabled_ = true;
-		regenDelayTimer_ = amount;
+		regenDelayTimer_ = std::max(amount, regenDelaySeconds_);
 	}
 
 	void StopRegenPosture()

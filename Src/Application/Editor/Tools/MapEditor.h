@@ -5,6 +5,8 @@
 #include "../ThirdParty/ImGuizmo.h"
 #include "Application/Definitions/Map/MapData.h"
 #include "../Common/EditorPreviewViewport.h"
+#include "../Common/UndoHistory.h"
+#include "../Common/FileWatcher.h"
 #include "../Common/ComponentInspector.h"
 #include "Application/Components/Graphics/Render/WireFrameComponent.h"
 
@@ -144,10 +146,8 @@ private:
 		ObjectId				selectedId = kInvalidObjectId;
 	};
 
-	static constexpr size_t kMaxUndoDepth = 50;
-
-	std::vector<UndoState>	m_undoStack;
-	std::vector<UndoState>	m_redoStack;
+	UndoHistory<UndoState>	m_history;
+	bool					m_dirty = false;	// 未保存の編集あり
 
 	// ドラッグ系操作(ギズモ・Inspectorのスライダー)が「今まさに操作中」かどうかの前フレーム値。
 	// 操作開始の一瞬だけPushUndo()するために使う(毎フレーム積むと1ドラッグで大量の履歴になる為)
@@ -196,9 +196,7 @@ private:
 	static constexpr const char* kAssetsFilePath = "Asset/Models/";
 
 	// ホットリロード関連
-	bool		m_autoReload = true;	// trueなら外部変更を自動検知
-	float		m_reloadCheckTimer = 0.0f;	// ポーリング間隔調整用
-	FILETIME	m_lastWriteTime = {};		// 最後に確認したファイル更新日時
+	FileWatcher	m_watcher;
 
 	// Inspectorでの回転表示用キャッシュ(Euler角・度)。
 	// data.rotationはQuaternionで保存されるが、人間がドラッグ編集するにはEuler角の方が

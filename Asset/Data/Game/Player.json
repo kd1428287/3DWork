@@ -20,24 +20,39 @@
         },
         {
           "params": {
-            "model": "Asset/Models/Character/Ninja/Tachi.gltf"
+            "layer": [
+              "GenerateDepthMapFromLight",
+              "DrawLit",
+              "DrawCharaShadow"
+            ],
+            "skeleton": {
+              "model": "Asset/Models/Character/Ninja/Tachi.gltf"
+            }
           },
           "type": "ModelRender"
         },
         {
           "params": {
+            "bodyShapeName": "",
             "ignoreParent": true,
             "shapes": [
               {
+                "capsuleEnd": [
+                  0.0,
+                  1.0,
+                  0.0
+                ],
                 "categoryMask": [
                   "HitBox"
                 ],
+                "collideMask": [],
                 "enabled": false,
                 "halfExtents": [
-                  0.3,
-                  0.3,
-                  1.0
+                  0.30000001192092896,
+                  0.30000001192092896,
+                  2.035597085952759
                 ],
+                "isStatic": false,
                 "isTrigger": true,
                 "name": "HitBox",
                 "offset": [
@@ -45,7 +60,10 @@
                   0.0,
                   0.75
                 ],
-                "shape": "Box"
+                "radius": 0.5,
+                "shape": "Box",
+                "useDefaultCollideMask": true,
+                "wantsStayEvent": false
               }
             ],
             "wireFrame": false
@@ -95,7 +113,14 @@
       "components": [
         {
           "params": {
-            "model": "Asset/Models/Character/Masks/DemonMask.gltf"
+            "layer": [
+              "DrawLit",
+              "GenerateDepthMapFromLight",
+              "DrawCharaShadow"
+            ],
+            "skeleton": {
+              "model": "Asset/Models/Character/Masks/DemonMask.gltf"
+            }
           },
           "type": "ModelRender"
         },
@@ -137,8 +162,15 @@
     },
     {
       "params": {
-        "animations": "Asset/Animations/Character",
-        "model": "Asset/Models/Character/kachujin.gltf"
+        "layer": [
+          "GenerateDepthMapFromLight",
+          "DrawLit",
+          "DrawCharaShadow"
+        ],
+        "skeleton": {
+          "animations": "Asset/Animations/Character",
+          "model": "Asset/Models/Character/kachujin.gltf"
+        }
       },
       "type": "ModelRender"
     },
@@ -425,12 +457,6 @@
       "type": "Posture"
     },
     {
-      "params": {
-        "max": 100.0
-      },
-      "type": "Health"
-    },
-    {
       "type": "PlayerLockOn"
     },
     {
@@ -591,6 +617,13 @@
         "regenPerSecond": 0.5
       },
       "type": "PlayerInkGauge"
+    },
+    {
+      "params": {
+        "maxHealth": 100.0,
+        "maxLife": 1
+      },
+      "type": "HP"
     }
   ],
   "name": "player",

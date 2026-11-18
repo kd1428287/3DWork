@@ -5,7 +5,8 @@
 #include "PlayerFacingComponent.h"
 #include "PlayerCombatMovementComponent.h"
 
-#include "../Common/HealthComponent.h" // パスはプロジェクトの配置に合わせて調整
+#include "../Common/HealthComponent.h" 
+#include "../Common/PostureComponent.h" 
 #include "../Common/HitReactionComponent.h"
 #include "../../../Physics/Collision/ColliderComponent.h"
 #include "PlayerInkGaugeComponent.h"
@@ -23,11 +24,12 @@ void PlayerStatusController::Awake()
 	ctx_.facing = GetOwner()->GetComponent<PlayerFacingComponent>();
 	ctx_.combatMovement = GetOwner()->GetComponent<PlayerCombatMovementComponent>();
 	ctx_.inkGauge = GetOwner()->GetComponent<PlayerInkGaugeComponent>();
+	ctx_.posture = GetOwner()->GetComponent<PostureComponent>();
 	ctx_.requester = this;
 	health_ = GetOwner()->GetComponent<HealthComponent>();
 
 	// Stateが前提とするコンポーネント。欠けていれば構成ミス。
-	assert(ctx_.animator && ctx_.combatMovement && ctx_.facing && ctx_.lockOn && ctx_.weaponSet && ctx_.attackSelector);	
+	assert(ctx_.animator && ctx_.combatMovement && ctx_.facing && ctx_.lockOn && ctx_.weaponSet && ctx_.attackSelector);
 
 	// 自分自身をIHitReactionQueryとして登録
 	if (HitReactionComponent* hitReaction = GetOwner()->GetComponent<HitReactionComponent>()) {
@@ -128,14 +130,10 @@ bool PlayerStatusController::TryStartCharge()
 {
 	if (!CanStartAttack() || !CanStartGuard()) return false;
 
-	// 溜めが有効な技はStateAttackのAttackChargeで処理する。無効な技は従来のStateChargeへ(互換)。
-	/*if (ctx_.attackSelector != nullptr && ctx_.attackSelector->TryResolveNext(ActionCommand::ChargeAttack)
-		&& ctx_.attackSelector->GetCurrentAttackData().chargeData.isEnabled) {
-		ForceTransitionTo(&stateAttack_);
-		return true;
-	}*/
+	// チャージ技はコマンドChargeAttackで解決する。溜めはStateAttackのAttackChargeが担当。
+	if (ctx_.attackSelector == nullptr || !ctx_.attackSelector->TryResolveNext(ActionCommand::ChargeAttack)) return false;
 
-	ForceTransitionTo(&stateCharge_);
+	ForceTransitionTo(&stateAttack_);
 	return true;
 }
 

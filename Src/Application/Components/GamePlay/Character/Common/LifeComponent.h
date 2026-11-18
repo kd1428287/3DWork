@@ -6,15 +6,17 @@ struct LifeConfig
 	int max = 1;
 };
 
+// 残機を管理するコンポーネント。Healthとセットで使う前提。
+// current_は今の1人を含む残り人数(1なら復活なし)。
 class LifeComponent : public ComponentBase {
 public:
-	explicit LifeComponent(GameObject* owner, int maxLife = 1) : 
-		ComponentBase(owner), max_(maxLife) , current_(maxLife) {};
+	explicit LifeComponent(GameObject* owner, int maxLife = 1) :
+		ComponentBase(owner), max_(maxLife), current_(maxLife) {}
 
 	void Awake() override
 	{
 		sub_ = GetOwner()->GetLocalEventBus().SubscribeScoped<Events::Down>(
-			[this](const Events::Down& e) { Resurrect(); }
+			[this](const Events::Down&) { OnDown(); }
 		);
 	}
 
@@ -22,22 +24,28 @@ public:
 	int GetCurrent() const { return current_; }
 
 private:
-	void Resurrect()
+	// HP0になった時:残機があれば復活、無ければ最終死亡。
+	void OnDown()
 	{
 		auto& bus = GetOwner()->GetLocalEventBus();
 
-		if (max_ > 1) {
-			max_--;
+		if (current_ > 1) {
+			--current_;
 			bus.Publish(Events::Resurrect());
+			return;
 		}
-		else {
-			max_ = 0;
-			bus.Publish(Events::Died());
-		}
+
+		current_ = 0;
+
+		// 最終死亡はsource付きでシーンとローカルの両方へ通知する。
+		Events::Died e;
+		e.source = Handle<GameObject>(GetOwner());
+		GetOwner()->GetSceneEventBus().Publish(e);
+		bus.Publish(e);
 	}
 
 	int max_ = 1;
 	int current_ = 1;
-	
+
 	ScopedSubscriber sub_;
 };

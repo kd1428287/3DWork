@@ -60,11 +60,13 @@ void EditorHost::SetEnabled(bool enabled)
 	KdInputManager::Instance().SetAxisConfineToWindowCenter("Look", !enabled_);
 	Application::Instance().ShowCursolEnable(enabled_);
 
-	if (!enabled_) { Reload(); }
+	// 閉じた時、編集中に保存されたデータがある場合のみシーンを再読み込みする
+	if (!enabled_ && sceneDirty_) { Reload(); }
 }
 
 void EditorHost::Reload()
 {
+	sceneDirty_ = false;
 	GLOBALEVENT->Publish(Events::ReloadingScene());
 }
 
@@ -167,4 +169,4 @@ void EditorHost::Release()
 	KdDebugGUI::Instance().GuiRelease();
 }
 
-#endif // KD_EDITOR_ENABLED
+#endif // EDITOR_ENABLED

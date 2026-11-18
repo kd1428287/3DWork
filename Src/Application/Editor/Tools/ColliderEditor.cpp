@@ -3,7 +3,8 @@
 #include "ColliderEditor.h"
 #include "MapEditor.h"
 #include "Application/Definitions/Physics/ColliderCategoryNames.h"
-#include "Application/Core/EventBus/Events/SceneEvents.h"
+#include "../EditorHost.h"
+#include "../Common/EditorUtil.h"
 
 #include "imgui_internal.h"
 
@@ -303,8 +304,7 @@ void ColliderEditor::DrawInspector()
 			m_params = ColliderParams();
 			m_selectedShape = -1;
 			m_hasCollider = true;
-			m_undoStack.clear();
-			m_redoStack.clear();
+			m_history.Clear();
 			WriteBack();
 		}
 		ImGui::End();
@@ -312,11 +312,11 @@ void ColliderEditor::DrawInspector()
 	}
 
 	// ---- Undo / Redo / 表示 ----
-	ImGui::BeginDisabled(m_undoStack.empty());
+	ImGui::BeginDisabled(!m_history.CanUndo());
 	if (ImGui::Button("Undo (Ctrl+Z)")) { Undo(); }
 	ImGui::EndDisabled();
 	ImGui::SameLine();
-	ImGui::BeginDisabled(m_redoStack.empty());
+	ImGui::BeginDisabled(!m_history.CanRedo());
 	if (ImGui::Button("Redo (Ctrl+Y)")) { Redo(); }
 	ImGui::EndDisabled();
 
@@ -914,8 +914,8 @@ void ColliderEditor::SavePrefab()
 	m_prefabDirty = false;
 	KdDebugGUI::Instance().AddLog("ColliderEditor: 保存しました %s\n", m_prefabPathBuf);
 
-	// 現在のシーンを再生成させる
-	GLOBALEVENT->Publish(Events::ReloadingScene());
+	// シーンの再読み込みはエディタを閉じた時に行う
+	EditorHost::Instance().MarkSceneDirty();
 }
 
 void ColliderEditor::CollectPrefabNodes(nlohmann::ordered_json& node, const std::string& prefix, int parent)
@@ -1025,8 +1025,7 @@ void ColliderEditor::ClearTarget()
 	m_targetWorld = Math::Matrix::Identity;
 	m_params = ColliderParams();
 	m_selectedShape = -1;
-	m_undoStack.clear();
-	m_redoStack.clear();
+	m_history.Clear();
 }
 
 void ColliderEditor::ReadParams(const nlohmann::json& paramsJson)
@@ -1085,8 +1084,7 @@ void ColliderEditor::SelectPrefabNode(int index)
 		m_ancestors.push_back(std::move(a));
 	}
 
-	m_undoStack.clear();
-	m_redoStack.clear();
+	m_history.Clear();
 	m_selectedShape = m_params.shapes.empty() ? -1 : 0;
 	m_previewTarget = ComputeFocus();
 	m_preview.ResetPan();
@@ -1113,8 +1111,7 @@ void ColliderEditor::SelectMapObject(ObjectId id)
 	if (!sameTarget)
 	{
 		// 別のオブジェクトへ切り替わった時だけ、履歴と注視点を作り直す
-		m_undoStack.clear();
-		m_redoStack.clear();
+		m_history.Clear();
 		m_selectedShape = m_params.shapes.empty() ? -1 : 0;
 		m_previewTarget = ComputeFocus();
 		m_preview.ResetPan();
@@ -1174,18 +1171,12 @@ void ColliderEditor::WriteBack()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void ColliderEditor::PushUndo()
 {
-	m_undoStack.push_back(m_params);
-	if (m_undoStack.size() > kMaxUndoDepth) { m_undoStack.erase(m_undoStack.begin()); }
-	m_redoStack.clear();
+	m_history.Push(m_params);
 }
 
 void ColliderEditor::Undo()
 {
-	if (m_undoStack.empty()) return;
-
-	m_redoStack.push_back(m_params);
-	m_params = std::move(m_undoStack.back());
-	m_undoStack.pop_back();
+	if (!m_history.Undo(m_params)) return;
 
 	ClampSelection();
 	WriteBack();
@@ -1193,11 +1184,7 @@ void ColliderEditor::Undo()
 
 void ColliderEditor::Redo()
 {
-	if (m_redoStack.empty()) return;
-
-	m_undoStack.push_back(m_params);
-	m_params = std::move(m_redoStack.back());
-	m_redoStack.pop_back();
+	if (!m_history.Redo(m_params)) return;
 
 	ClampSelection();
 	WriteBack();
@@ -1211,17 +1198,9 @@ void ColliderEditor::ClampSelection()
 
 std::string ColliderEditor::MakeUniqueName(const std::string& base) const
 {
-	auto exists = [this](const std::string& n)
+	return EditorUtil::MakeUniqueName(base, [this](const std::string& n)
 		{
 			for (auto& s : m_params.shapes) { if (s.name == n) return true; }
 			return false;
-		};
-
-	if (!exists(base)) return base;
-
-	for (int i = 2;; ++i)
-	{
-		std::string candidate = base + std::to_string(i);
-		if (!exists(candidate)) return candidate;
-	}
+		});
 }

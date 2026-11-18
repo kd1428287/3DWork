@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "nlohmann/json.hpp"
 #include "Application/Definitions/Loaders/EnemyAttackTableLoader.h"
@@ -6,6 +6,7 @@
 #include "Application/Definitions/Physics/ColliderParams.h"
 #include "Application/Components/Graphics/Animation/RootMotionExtractor.h"
 #include "../Common/EditorPreviewViewport.h"
+#include "../Common/UndoHistory.h"
 #include "Application/Components/Graphics/Render/WireFrameComponent.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -87,8 +88,6 @@ private:
 	void EvaluatePose();
 	void DrawHitboxWires();
 
-	static constexpr size_t kMaxUndoDepth = 50;
-
 	// 読み込み状態
 	char			m_prefabPathBuf[260] = "Asset/Data/Prefab/Warrock.json";	// ※実際の置き場所に合わせる
 	bool			m_loaded = false;
@@ -109,8 +108,7 @@ private:
 	int		m_index = -1;
 	int		m_selectedPhase = 1;	// クリップストリップに表示するフェーズ(0=Charge 1=Windup 2=Active 3=Recovery)
 
-	std::vector<Snapshot>	m_undoStack;
-	std::vector<Snapshot>	m_redoStack;
+	UndoHistory<Snapshot>	m_history;
 
 	// 再生
 	float	m_time = 0.0f;
@@ -145,4 +143,4 @@ public:
 		static ActionEditor instance;
 		return instance;
 	}
-};
+};

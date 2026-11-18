@@ -2,7 +2,7 @@
 
 #include "CharacterEditor.h"
 #include "../Common/ComponentInspector.h"
-#include "Application/Core/EventBus/Events/SceneEvents.h"
+#include "../EditorHost.h"
 
 #include "imgui_internal.h"
 
@@ -71,45 +71,27 @@ CharacterNode* CharacterEditor::FindParent(NodeId id)
 //=====================================================
 void CharacterEditor::PushUndo()
 {
-	UndoState s;
-	s.root = m_file.root;
-	s.selectedId = m_selectedId;
-	m_undoStack.push_back(std::move(s));
-	if (m_undoStack.size() > kMaxUndoDepth) { m_undoStack.erase(m_undoStack.begin()); }
-
-	m_redoStack.clear();
+	m_history.Push({ m_file.root, m_selectedId });
 	m_dirty = true;
 }
 
 void CharacterEditor::Undo()
 {
-	if (m_undoStack.empty()) return;
+	UndoState cur{ m_file.root, m_selectedId };
+	if (!m_history.Undo(cur)) return;
 
-	UndoState cur;
-	cur.root = m_file.root;
-	cur.selectedId = m_selectedId;
-	m_redoStack.push_back(std::move(cur));
-
-	UndoState prev = std::move(m_undoStack.back());
-	m_undoStack.pop_back();
-	m_file.root = std::move(prev.root);
-	m_selectedId = prev.selectedId;
+	m_file.root = std::move(cur.root);
+	m_selectedId = cur.selectedId;
 	m_dirty = true;
 }
 
 void CharacterEditor::Redo()
 {
-	if (m_redoStack.empty()) return;
+	UndoState cur{ m_file.root, m_selectedId };
+	if (!m_history.Redo(cur)) return;
 
-	UndoState cur;
-	cur.root = m_file.root;
-	cur.selectedId = m_selectedId;
-	m_undoStack.push_back(std::move(cur));
-
-	UndoState next = std::move(m_redoStack.back());
-	m_redoStack.pop_back();
-	m_file.root = std::move(next.root);
-	m_selectedId = next.selectedId;
+	m_file.root = std::move(cur.root);
+	m_selectedId = cur.selectedId;
 	m_dirty = true;
 }
 
@@ -125,7 +107,8 @@ void CharacterEditor::Update()
 		const ImGuiIO& io = ImGui::GetIO();
 		if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Z, false))
 		{
-			if (io.KeyShift) { Redo(); } else { Undo(); }
+			if (io.KeyShift) { Redo(); }
+			else { Undo(); }
 		}
 		if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Y, false)) { Redo(); }
 		if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_S, false)) { Save(m_filePathBuf); }
@@ -174,15 +157,13 @@ void CharacterEditor::DrawMainMenu()
 	ImGui::SameLine();
 	if (ImGui::Button("New")) { RequestNew(); }
 	ImGui::SameLine();
-	ImGui::Checkbox("Auto Reload", &m_autoReload);
-	ImGui::SameLine();
-	ImGui::Checkbox("Reload Scene On Save", &m_reloadSceneOnSave);
+	ImGui::Checkbox("Auto Reload", &m_watcher.autoReload);
 
-	ImGui::BeginDisabled(m_undoStack.empty());
+	ImGui::BeginDisabled(!m_history.CanUndo());
 	if (ImGui::Button("Undo (Ctrl+Z)")) { Undo(); }
 	ImGui::EndDisabled();
 	ImGui::SameLine();
-	ImGui::BeginDisabled(m_redoStack.empty());
+	ImGui::BeginDisabled(!m_history.CanRedo());
 	if (ImGui::Button("Redo (Ctrl+Y)")) { Redo(); }
 	ImGui::EndDisabled();
 	ImGui::SameLine();
@@ -199,10 +180,11 @@ void CharacterEditor::DrawMainMenu()
 		ImGui::Text("未保存の変更があります。破棄して続行しますか？");
 
 		auto proceed = [this]()
-		{
-			if (m_pendingIsNew) { NewFile(); } else { OpenFile(m_pendingPath); }
-			ImGui::CloseCurrentPopup();
-		};
+			{
+				if (m_pendingIsNew) { NewFile(); }
+				else { OpenFile(m_pendingPath); }
+				ImGui::CloseCurrentPopup();
+			};
 
 		if (ImGui::Button("Save & Continue"))
 		{
@@ -517,12 +499,10 @@ void CharacterEditor::OpenFile(const std::string& path)
 	strncpy_s(m_filePathBuf, path.c_str(), _TRUNCATE);
 
 	m_selectedId = FindNode(keep) ? keep : m_file.root.id;
-	m_undoStack.clear();
-	m_redoStack.clear();
+	m_history.Clear();
 	m_dirty = false;
 
-	FILETIME writeTime;
-	if (JsonLoader::GetLastWriteTime(path, writeTime)) { m_lastWriteTime = writeTime; }
+	m_watcher.Sync(path);
 
 	KdDebugGUI::Instance().AddLog("CharacterEditor: 読み込みました %s\n", path.c_str());
 }
@@ -536,10 +516,9 @@ void CharacterEditor::NewFile()
 	strncpy_s(m_filePathBuf, "Asset/Data/Game/NewCharacter.json", _TRUNCATE);
 
 	m_selectedId = m_file.root.id;
-	m_undoStack.clear();
-	m_redoStack.clear();
+	m_history.Clear();
 	m_dirty = false;
-	m_lastWriteTime = {};
+	m_watcher.Reset();
 }
 
 void CharacterEditor::Save(const std::string& path)
@@ -551,36 +530,20 @@ void CharacterEditor::Save(const std::string& path)
 	}
 
 	// 自分の保存を外部変更と誤検知しない
-	FILETIME writeTime;
-	if (JsonLoader::GetLastWriteTime(path, writeTime)) { m_lastWriteTime = writeTime; }
+	m_watcher.Sync(path);
 
 	m_dirty = false;
 	m_listLoaded = false;	// 新規ファイルを一覧へ反映する
 
 	KdDebugGUI::Instance().AddLog("CharacterEditor: 保存しました %s\n", path.c_str());
 
-	if (m_reloadSceneOnSave) { GLOBALEVENT->Publish(Events::ReloadingScene()); }
+	// シーンの再読み込みはエディタを閉じた時に行う
+	EditorHost::Instance().MarkSceneDirty();
 }
 
 void CharacterEditor::CheckHotReload()
 {
-	if (!m_autoReload) return;
-
-	m_reloadCheckTimer += Application::Instance().GetDeltaTime();
-	if (m_reloadCheckTimer < 0.5f) return;
-	m_reloadCheckTimer = 0.0f;
-
-	FILETIME writeTime;
-	if (!JsonLoader::GetLastWriteTime(m_filePathBuf, writeTime)) return;
-
-	if (m_lastWriteTime.dwLowDateTime == 0 && m_lastWriteTime.dwHighDateTime == 0)
-	{
-		m_lastWriteTime = writeTime;
-		return;
-	}
-	if (CompareFileTime(&writeTime, &m_lastWriteTime) == 0) return;
-
-	m_lastWriteTime = writeTime;
+	if (!m_watcher.Poll(m_filePathBuf, Application::Instance().GetDeltaTime())) return;
 
 	// 編集中の内容を黙って上書きしない
 	if (m_dirty)

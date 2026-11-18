@@ -2,7 +2,8 @@
 
 #include "ActionEditor.h"
 #include "Application/Definitions/Character/Enemy/EnemyDefinitionJson.h"
-#include "Application/Core/EventBus/Events/SceneEvents.h"
+#include "../EditorHost.h"
+#include "../Common/EditorUtil.h"
 
 #include "imgui_internal.h"
 
@@ -192,7 +193,11 @@ void ActionEditor::Update()
 
 	if (wasFocused && !io.WantTextInput && io.KeyCtrl)
 	{
-		if (ImGui::IsKeyPressed(ImGuiKey_Z, false)) { Undo(); }
+		if (ImGui::IsKeyPressed(ImGuiKey_Z, false))
+		{
+			if (io.KeyShift) { Redo(); }
+			else { Undo(); }
+		}
 		if (ImGui::IsKeyPressed(ImGuiKey_Y, false)) { Redo(); }
 	}
 
@@ -258,12 +263,12 @@ void ActionEditor::DrawTargets()
 	ImGui::EndDisabled();
 
 	ImGui::SameLine();
-	ImGui::BeginDisabled(m_undoStack.empty());
+	ImGui::BeginDisabled(!m_history.CanUndo());
 	if (ImGui::Button("Undo")) { Undo(); }
 	ImGui::EndDisabled();
 
 	ImGui::SameLine();
-	ImGui::BeginDisabled(m_redoStack.empty());
+	ImGui::BeginDisabled(!m_history.CanRedo());
 	if (ImGui::Button("Redo")) { Redo(); }
 	ImGui::EndDisabled();
 
@@ -741,13 +746,7 @@ void ActionEditor::DrawInspector()
 				checkbox("isEnabled", ch.isEnabled);
 				if (ch.isEnabled)
 				{
-					dragFloat("maxChargeTime (溜め完了までの秒)", ch.maxChargeTime, 0.01f, 0.0f, 20.0f);
-					dragFloat("maxTime (溜めの上限秒)", ch.maxTime, 0.01f, 0.0f, 20.0f);
-
-					if (ch.maxTime < ch.maxChargeTime)
-					{
-						ImGui::TextColored(warnCol, "maxTime < maxChargeTime: 溜め完了前に自動解放されます");
-					}
+					dragFloat("chargeTime (溜め完了までの秒)", ch.chargeTime, 0.01f, 0.0f, 20.0f);
 
 					if (pl != nullptr)
 					{
@@ -1233,13 +1232,13 @@ void ActionEditor::DrawGameTimeStrip(AttackData& ad, const EnemyAttackDefinition
 		dl->AddText(ImVec2(p0.x + 4.0f, p0.y + 3.0f), IM_COL32(255, 255, 255, 255), text);
 		dl->PopClipRect();
 
-		// Charge帯: 溜め完了(maxChargeTime)の位置
-		if (i == kPhaseCharge && ad.chargeData.maxChargeTime < dur)
-		{
-			const float fx = p0.x + ad.chargeData.maxChargeTime * pxPerSec;
-			dl->AddLine(ImVec2(fx, p0.y), ImVec2(fx, p1.y), IM_COL32(255, 255, 255, 200), 2.0f);
-			dl->AddText(ImVec2(fx + 2.0f, p0.y + kHeight - 15.0f), IM_COL32(255, 255, 255, 220), "full");
-		}
+		//// Charge帯: 溜め完了(maxChargeTime)の位置
+		//if (i == kPhaseCharge && ad.chargeData.maxChargeTime < dur)
+		//{
+		//	const float fx = p0.x + ad.chargeData.maxChargeTime * pxPerSec;
+		//	dl->AddLine(ImVec2(fx, p0.y), ImVec2(fx, p1.y), IM_COL32(255, 255, 255, 200), 2.0f);
+		//	dl->AddText(ImVec2(fx + 2.0f, p0.y + kHeight - 15.0f), IM_COL32(255, 255, 255, 220), "full");
+		//}
 
 		acc += dur;
 	}
@@ -1653,8 +1652,14 @@ bool ActionEditor::LoadPrefab(const std::string& path)
 	{
 		if (mr->contains("params"))
 		{
-			modelPath = (*mr)["params"].value("model", std::string());
-			animDir = (*mr)["params"].value("animations", std::string());
+			const auto& params = (*mr)["params"];
+			// skeleton オブジェクトが存在するか確認して直接取得する
+			if (params.contains("skeleton"))
+			{
+				const auto& skeleton = params["skeleton"];
+				modelPath = skeleton.value("model", std::string());
+				animDir = skeleton.value("animations", std::string());
+			}
 		}
 	}
 
@@ -1761,8 +1766,7 @@ bool ActionEditor::LoadPrefab(const std::string& path)
 	}
 
 	m_previewTarget = Math::Vector3(0.0f, 0.8f * m_rootScale.y, 0.0f);
-	m_undoStack.clear();
-	m_redoStack.clear();
+	m_history.Clear();
 	m_dirty = false;
 	m_loaded = true;
 
@@ -1802,8 +1806,8 @@ void ActionEditor::Save()
 	m_dirty = false;
 	KdDebugGUI::Instance().AddLog("ActionEditor: 保存しました %s\n", m_tablePath.c_str());
 
-	// 現在のシーンを再生成させる(ColliderEditorと同じ)
-	GLOBALEVENT->Publish(Events::ReloadingScene());
+	// シーンの再読み込みはエディタを閉じた時に行う
+	EditorHost::Instance().MarkSceneDirty();
 }
 
 // テーブル内で使われているクリップ名を、重複なしで集める(Inspectorの選択候補)
@@ -1889,29 +1893,17 @@ const ActionEditor::SlotInfo* ActionEditor::FindSlot(const std::string& slot) co
 
 std::string ActionEditor::MakeUniqueName(const std::string& base) const
 {
-	auto exists = [&](const std::string& n)
+	return EditorUtil::MakeUniqueName(base, [this](const std::string& n)
 		{
 			for (const EnemyAttackDefinition& a : m_table.attacks) { if (a.name == n) return true; }
 			for (const EnemyAttackDefinition& a : m_table.gapCloserAttacks) { if (a.name == n) return true; }
 			return false;
-		};
-
-	if (!exists(base)) { return base; }
-	for (int i = 2;; ++i)
-	{
-		const std::string n = base + std::to_string(i);
-		if (!exists(n)) { return n; }
-	}
+		});
 }
 
 std::string ActionEditor::MakeUniqueId(const std::string& base) const
 {
-	if (CountAttackId(base) == 0) { return base; }
-	for (int i = 2;; ++i)
-	{
-		const std::string n = base + std::to_string(i);
-		if (CountAttackId(n) == 0) { return n; }
-	}
+	return EditorUtil::MakeUniqueName(base, [this](const std::string& n) { return CountAttackId(n) > 0; });
 }
 
 int ActionEditor::CountAttackId(const std::string& id) const
@@ -1975,19 +1967,15 @@ void ActionEditor::MarkEdited()
 
 void ActionEditor::PushUndo()
 {
-	m_undoStack.push_back({ m_table, m_playerTable });
-	if (m_undoStack.size() > kMaxUndoDepth) { m_undoStack.erase(m_undoStack.begin()); }
-	m_redoStack.clear();
+	m_history.Push({ m_table, m_playerTable });
 }
 
 void ActionEditor::Undo()
 {
-	if (m_undoStack.empty()) { return; }
-
-	m_redoStack.push_back({ m_table, m_playerTable });
-	m_table = std::move(m_undoStack.back().enemy);
-	m_playerTable = std::move(m_undoStack.back().player);
-	m_undoStack.pop_back();
+	Snapshot s{ m_table, m_playerTable };
+	if (!m_history.Undo(s)) { return; }
+	m_table = std::move(s.enemy);
+	m_playerTable = std::move(s.player);
 
 	ClampSelection();
 	MarkEdited();
@@ -1995,12 +1983,10 @@ void ActionEditor::Undo()
 
 void ActionEditor::Redo()
 {
-	if (m_redoStack.empty()) { return; }
-
-	m_undoStack.push_back({ m_table, m_playerTable });
-	m_table = std::move(m_redoStack.back().enemy);
-	m_playerTable = std::move(m_redoStack.back().player);
-	m_redoStack.pop_back();
+	Snapshot s{ m_table, m_playerTable };
+	if (!m_history.Redo(s)) { return; }
+	m_table = std::move(s.enemy);
+	m_playerTable = std::move(s.player);
 
 	ClampSelection();
 	MarkEdited();

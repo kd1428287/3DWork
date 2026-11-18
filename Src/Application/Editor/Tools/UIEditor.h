@@ -6,6 +6,8 @@
 #include <unordered_map>
 #include "Application/Definitions/UI/UIData.h"
 #include "../Common/ComponentInspector.h"
+#include "../Common/UndoHistory.h"
+#include "../Common/FileWatcher.h"
 
 class KdFontSprite;
 
@@ -98,10 +100,7 @@ private:
 		UIId					selectedId = kInvalidUIId;
 	};
 
-	static constexpr size_t kMaxUndoDepth = 50;
-
-	std::vector<UndoState>	m_undoStack;
-	std::vector<UndoState>	m_redoStack;
+	UndoHistory<UndoState>	m_history;
 
 	void PushUndo();
 	void Undo();
@@ -203,9 +202,7 @@ private:
 	DirectX::SimpleMath::Vector2	m_dragStartSize = { 0.0f, 0.0f };
 
 	// ホットリロード
-	bool		m_autoReload = true;
-	float		m_reloadCheckTimer = 0.0f;
-	FILETIME	m_lastWriteTime = {};
+	FileWatcher	m_watcher;
 
 	//=====================================================
 	// シングルトンパターン

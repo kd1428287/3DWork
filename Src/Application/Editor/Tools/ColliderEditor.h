@@ -5,6 +5,7 @@
 #include "Application/Definitions/Physics/ColliderParams.h"
 #include "../ThirdParty/ImGuizmo.h"
 #include "../Common/EditorPreviewViewport.h"
+#include "../Common/UndoHistory.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // コライダー調整エディタ
@@ -91,8 +92,6 @@ private:
 	Math::Vector3 ComputeFocus() const;
 	void DrawShapeWires();
 
-	static constexpr size_t kMaxUndoDepth = 50;
-
 	Source	m_source = Source::Prefab;
 	bool	m_focused = false;
 
@@ -115,8 +114,7 @@ private:
 	int				m_selectedShape = -1;
 	int				m_addType = 1;	// 追加時の形状(0:Sphere 1:Capsule 2:Box)
 
-	std::vector<ColliderParams>	m_undoStack;
-	std::vector<ColliderParams>	m_redoStack;
+	UndoHistory<ColliderParams>	m_history;
 
 	// プレビュー
 	EditorPreviewViewport	m_preview;

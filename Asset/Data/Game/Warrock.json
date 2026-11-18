@@ -292,8 +292,15 @@
   "components": [
     {
       "params": {
-        "animations": "Asset/Animations/Character/Warrock",
-        "model": "Asset/Models/Character/Warrock/Warrock.gltf"
+        "layer": [
+          "GenerateDepthMapFromLight",
+          "DrawLit",
+          "DrawCharaShadow"
+        ],
+        "skeleton": {
+          "animations": "Asset/Animations/Character/Warrock",
+          "model": "Asset/Models/Character/Warrock/Warrock.gltf"
+        }
       },
       "type": "ModelRender"
     },
@@ -455,12 +462,6 @@
     },
     {
       "params": {
-        "max": 200.0
-      },
-      "type": "Health"
-    },
-    {
-      "params": {
         "hitStopDelaySeconds": 0.0,
         "largeStaggerDuration": 0.6
       },
@@ -551,14 +552,14 @@
     {
       "params": {
         "color": [
+          0.11999999731779099,
+          0.11999999731779099,
+          0.11999999731779099
+        ],
+        "coreColor": [
           0.10000000149011612,
           0.10000000149011612,
           0.10000000149011612
-        ],
-        "coreColor": [
-          2.5,
-          1.600000023841858,
-          0.5
         ],
         "fresnelPower": 1.5,
         "height": 2.0,
@@ -579,6 +580,13 @@
         "preset": "Bright"
       },
       "type": "InkStyle"
+    },
+    {
+      "params": {
+        "maxHealth": 500.0,
+        "maxLife": 2
+      },
+      "type": "HP"
     }
   ],
   "name": "enemy_warrock",

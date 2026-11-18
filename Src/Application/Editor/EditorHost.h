@@ -30,6 +30,11 @@ public:
 	bool IsEnabled() const { return enabled_; }
 	void ToggleEnabled() {  SetEnabled(!IsEnabled()); }
 
+	// シーン再読み込み(ダーティ方式)
+	//	・シーンに影響するデータを保存したエディタは、MarkSceneDirty()を呼ぶだけでよい。
+	//	  実際の再読み込みは、エディタを閉じた時(SetEnabled(false))に1回だけ行われる。
+	//	・Reload()は即時に再読み込みし、ダーティ状態もクリアする
+	void MarkSceneDirty() { sceneDirty_ = true; }
 	void Reload();
 
 	// アプリケーション初期化時に一度だけ呼ぶ(内部でKdDebugGUI::GuiInitを呼ぶ)
@@ -53,7 +58,7 @@ private:
 	EditorHost() {}
 
 	bool enabled_ = false;
-	bool isDirty_ = false;
+	bool sceneDirty_ = false;	// エディタ内でシーンに影響するデータが保存された(閉じる時に再読み込みする)
 };
 
 #else
@@ -70,6 +75,9 @@ public:
 	void SetEnabled(bool) {}
 	bool IsEnabled() const { return false; }
 	void ToggleEnabled() {}
+
+	void MarkSceneDirty() {}
+	void Reload() {}
 
 	void Init(int, int) {}
 	// 何もしない = デバイス初期化時点の既定レンダーターゲット(バックバッファ)へそのまま描画される想定

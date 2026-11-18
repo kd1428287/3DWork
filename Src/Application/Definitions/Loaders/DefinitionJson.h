@@ -60,6 +60,10 @@ COMPONENT_PARAMS_DEFINE_TYPE(MotionSegment, from, to, weight, ease)
 COMPONENT_PARAMS_DEFINE_TYPE(MotionClipData,
 	animationName, loop, duration, useRootMotion, blendDuration, startFrame, endFrame, isForce, segments)
 
+COMPONENT_PARAMS_DEFINE_TYPE(AttackChargeData,
+	isEnabled, chargeTime, clip, failedAttackId)
+
+
 COMPONENT_PARAMS_DEFINE_TYPE(AttackDamageData,
 	damage, postureDamage, guardDamageRatio, guardPostureDamageRatio, parryPostureDamage, isParryable, isReboundable)
 
@@ -79,4 +83,4 @@ COMPONENT_PARAMS_DEFINE_TYPE(AttackCancelData,
 	recoveryMoveCancelStart, recoveryEvadeCancelStart, recoveryAttackCancelStart, comboWindowAfterRecovery)
 
 COMPONENT_PARAMS_DEFINE_TYPE(AttackData,
-	damageData, visualData, moveData, phaseData, cancelData, weaponSlots)
+	chargeData, damageData, visualData, moveData, phaseData, cancelData, weaponSlots)

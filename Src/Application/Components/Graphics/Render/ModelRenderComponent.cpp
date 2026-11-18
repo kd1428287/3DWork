@@ -32,42 +32,42 @@ void ModelRenderComponent::Awake()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void ModelRenderComponent::GenerateDepthMapFromLight()
 {
-	if (layer_ & RenderLayer::GenerateDepthMapFromLight) { DrawModel(); }
+	if (HasFlag(layer_, RenderLayer::GenerateDepthMapFromLight)) { DrawModel(); }
 }
 
 void ModelRenderComponent::DrawUnLit()
 {
-	if (layer_ & RenderLayer::DrawUnLit) { DrawModel(); }
+	if (HasFlag(layer_, RenderLayer::DrawUnLit)){ DrawModel(); }
 }
 
 void ModelRenderComponent::DrawLit()
 {
-	if (layer_ & RenderLayer::DrawLit) { DrawModel(); }
+	if (HasFlag(layer_, RenderLayer::DrawLit)) { DrawModel(); }
 }
 
 void ModelRenderComponent::DrawEffect()
 {
-	if (layer_ & RenderLayer::DrawEffect) { DrawModel(); }
+	if (HasFlag(layer_, RenderLayer::DrawEffect)) { DrawModel(); }
 }
 
 void ModelRenderComponent::DrawBright()
 {
-	if (layer_ & RenderLayer::DrawBright) { DrawModel(); }
+	if (HasFlag(layer_, RenderLayer::DrawBright)) { DrawModel(); }
 }
 
 void ModelRenderComponent::DrawSprite()
 {
-	if (layer_ & RenderLayer::DrawSprite) { DrawModel(); }
+	if (HasFlag(layer_, RenderLayer::DrawSprite)) { DrawModel(); }
 }
 
 void ModelRenderComponent::DrawDebug()
 {
-	if (layer_ & RenderLayer::DrawDebug) { DrawModel(); }
+	if (HasFlag(layer_, RenderLayer::DrawDebug)) { DrawModel(); }
 }
 
 void ModelRenderComponent::DrawCharaShadow()
 {
-	if (layer_ & RenderLayer::DrawCharaShadow) { DrawModel(); }
+	if (HasFlag(layer_, RenderLayer::DrawCharaShadow)) { DrawModel(); }
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////

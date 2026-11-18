@@ -1,6 +1,7 @@
 ﻿#include "Application/main.h"
 
 #include "ShapeEffectEditor.h"
+#include "../Common/EditorUtil.h"
 #include "../../Effect/Shape/ShapeEffectDispatcher.h"
 
 #include "imgui_internal.h"
@@ -613,19 +614,11 @@ bool ShapeEffectEditor::IsNameDuplicated(const std::string& name) const
 
 std::string ShapeEffectEditor::MakeUniqueName(const std::string& base) const
 {
-	auto exists = [this](const std::string& name)
+	return EditorUtil::MakeUniqueName(base, [this](const std::string& name)
 		{
 			for (const ShapeEffectData& e : m_effects) { if (e.Name == name) { return true; } }
 			return false;
-		};
-
-	if (!exists(base)) { return base; }
-
-	for (int i = 1; ; ++i)
-	{
-		const std::string name = base + std::to_string(i);
-		if (!exists(name)) { return name; }
-	}
+		});
 }
 
 void ShapeEffectEditor::SelectEffect(int index)
@@ -712,23 +705,5 @@ void ShapeEffectEditor::Load(const std::string& path)
 
 void ShapeEffectEditor::RefreshTextureFileList()
 {
-	m_textureFileList.clear();
-
-	namespace fs = std::filesystem;
-
-	if (!fs::exists(kTextureAssetRoot)) { return; }
-
-	static const std::vector<std::string> kExtensions = { ".png", ".dds", ".jpg", ".jpeg", ".tga" };
-
-	for (auto& entry : fs::recursive_directory_iterator(kTextureAssetRoot))
-	{
-		if (!entry.is_regular_file()) { continue; }
-
-		std::string ext = entry.path().extension().string();
-		for (auto& c : ext) { c = (char)tolower(c); }
-
-		if (std::find(kExtensions.begin(), kExtensions.end(), ext) == kExtensions.end()) { continue; }
-
-		m_textureFileList.push_back(fs::relative(entry.path(), kTextureAssetRoot).generic_string());
-	}
+	m_textureFileList = EditorUtil::ScanTextureFiles(kTextureAssetRoot);
 }

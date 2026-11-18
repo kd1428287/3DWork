@@ -3,6 +3,8 @@
 #include "MapEditor.h"
 #include "ColliderEditor.h"
 #include "../Common/EditorViewport.h"
+#include "../Common/EditorUtil.h"
+#include "../EditorHost.h"
 #include "Application/Factories/ComponentRegistry.h"
 #include "Application/Definitions/Physics/ColliderParams.h"
 
@@ -11,7 +13,6 @@
 #include "imgui_internal.h"
 
 #include <filesystem>
-#include <commdlg.h>	
 #pragma comment(lib, "comdlg32.lib")
 #include "nlohmann/json.hpp"
 
@@ -85,49 +86,28 @@ const MapObject* MapEditor::FindObject(ObjectId id) const
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void MapEditor::PushUndo()
 {
-	UndoState state;
-	state.objects = m_objects;	// MapObjectはKdModelWork(shared_ptr経由)を持つのでコピーは軽量
-	state.selectedId = m_selectedId;
-
-	m_undoStack.push_back(std::move(state));
-	if (m_undoStack.size() > kMaxUndoDepth)
-	{
-		m_undoStack.erase(m_undoStack.begin());
-	}
-
-	m_redoStack.clear();
+	m_history.Push({ m_objects, m_selectedId });	// MapObjectはKdModelWork(shared_ptr経由)を持つのでコピーは軽量
+	m_dirty = true;
 }
 
 void MapEditor::Undo()
 {
-	if (m_undoStack.empty()) return;
+	UndoState cur{ m_objects, m_selectedId };
+	if (!m_history.Undo(cur)) return;
 
-	UndoState redoState;
-	redoState.objects = m_objects;
-	redoState.selectedId = m_selectedId;
-	m_redoStack.push_back(std::move(redoState));
-
-	UndoState prev = std::move(m_undoStack.back());
-	m_undoStack.pop_back();
-
-	m_objects = std::move(prev.objects);
-	m_selectedId = prev.selectedId;	// 安定IDなので、Undo後もindexズレを気にせず正しいオブジェクトを指す
+	m_objects = std::move(cur.objects);
+	m_selectedId = cur.selectedId;	// 安定IDなので、Undo後もindexズレを気にせず正しいオブジェクトを指す
+	m_dirty = true;
 }
 
 void MapEditor::Redo()
 {
-	if (m_redoStack.empty()) return;
+	UndoState cur{ m_objects, m_selectedId };
+	if (!m_history.Redo(cur)) return;
 
-	UndoState undoState;
-	undoState.objects = m_objects;
-	undoState.selectedId = m_selectedId;
-	m_undoStack.push_back(std::move(undoState));
-
-	UndoState next = std::move(m_redoStack.back());
-	m_redoStack.pop_back();
-
-	m_objects = std::move(next.objects);
-	m_selectedId = next.selectedId;
+	m_objects = std::move(cur.objects);
+	m_selectedId = cur.selectedId;
+	m_dirty = true;
 }
 
 void MapEditor::Update()
@@ -198,21 +178,23 @@ void MapEditor::DrawMainMenu()
 	ImGui::SameLine();
 	if (ImGui::Button("Load")) { Load(m_filePathBuf); }
 	ImGui::SameLine();
-	ImGui::Checkbox("Auto Reload", &m_autoReload);
+	ImGui::Checkbox("Auto Reload", &m_watcher.autoReload);
 
 	ImGui::Separator();
 
-	ImGui::BeginDisabled(m_undoStack.empty());
+	ImGui::BeginDisabled(!m_history.CanUndo());
 	if (ImGui::Button("Undo (Ctrl+Z)")) { Undo(); }
 	ImGui::EndDisabled();
 
 	ImGui::SameLine();
 
-	ImGui::BeginDisabled(m_redoStack.empty());
+	ImGui::BeginDisabled(!m_history.CanRedo());
 	if (ImGui::Button("Redo (Ctrl+Y)")) { Redo(); }
 	ImGui::EndDisabled();
 
 	ImGui::Text("Objects : %d", (int)m_objects.size());
+
+	if (m_dirty) { ImGui::TextColored(ImVec4(1, 0.8f, 0.2f, 1), "* 未保存の変更あり"); }
 
 	ImGui::End();
 }
@@ -289,7 +271,7 @@ void MapEditor::DrawInspector()
 	// 値がガタつくことがある為)
 	if (m_inspectorEulerForId != obj.data.id)
 	{
-		
+
 		Math::Vector3 eulerRad = obj.data.rotation.ToEuler();
 		m_inspectorEulerDeg = {
 			DirectX::XMConvertToDegrees(eulerRad.x),
@@ -542,39 +524,10 @@ void MapEditor::SaveModelRegistry(const std::string& path)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void MapEditor::AddModelViaFileDialog()
 {
-	namespace fs = std::filesystem;
-
-	fs::path savedCurrentDir = fs::current_path();
-
-	char fileBuf[MAX_PATH] = {};
-
-	OPENFILENAMEA ofn = {};
-	ofn.lStructSize = sizeof(ofn);
-	ofn.hwndOwner = Application::Instance().GetWindowHandle();
-	ofn.lpstrFilter = "Model Files (*.gltf;*.glb)\0*.gltf;*.glb\0All Files (*.*)\0*.*\0";
-	ofn.lpstrFile = fileBuf;
-	ofn.nMaxFile = sizeof(fileBuf);
-	ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
-
-	bool result = GetOpenFileNameA(&ofn);
-
-	fs::current_path(savedCurrentDir);
-
-	if (!result)
+	std::string relativePath;
+	if (!EditorUtil::PickFileRelative(L"Model Files (*.gltf;*.glb)\0*.gltf;*.glb\0All Files (*.*)\0*.*\0", kAssetsFilePath, relativePath))
 	{
 		return;
-	}
-
-	std::string relativePath;
-	try
-	{
-		fs::path full = fs::absolute(fileBuf);
-		fs::path base = fs::absolute(kAssetsFilePath);
-		relativePath = fs::relative(full, base).generic_string();
-	}
-	catch (...)
-	{
-		relativePath = fileBuf;
 	}
 
 	for (auto& p : m_modelFileList)
@@ -777,15 +730,14 @@ void MapEditor::Save(const std::string& path)
 		return;
 	}
 
-	// 自分で保存した直後のタイムスタンプを覚えておき、
-	// 直後のCheckHotReload()で「外部変更」と誤検知して再ロードしないようにする
-	FILETIME writeTime;
-	if (JsonLoader::GetLastWriteTime(path, writeTime))
-	{
-		m_lastWriteTime = writeTime;
-	}
+	// 自分の保存を外部変更と誤検知して再ロードしないようにする
+	m_watcher.Sync(path);
+	m_dirty = false;
 
 	KdDebugGUI::Instance().AddLog("MapEditor: 保存しました %s\n", path.c_str());
+
+	// シーンの再読み込みはエディタを閉じた時に行う
+	EditorHost::Instance().MarkSceneDirty();
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -793,34 +745,16 @@ void MapEditor::Save(const std::string& path)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void MapEditor::CheckHotReload()
 {
-	if (!m_autoReload) return;
+	if (!m_watcher.Poll(m_filePathBuf, Application::Instance().GetDeltaTime())) return;
 
-	m_reloadCheckTimer += Application::Instance().GetDeltaTime();
-	if (m_reloadCheckTimer < 0.5f) return;
-	m_reloadCheckTimer = 0.0f;
-
-	FILETIME writeTime;
-	if (!JsonLoader::GetLastWriteTime(m_filePathBuf, writeTime))
+	// 編集中の内容を黙って上書きしない
+	if (m_dirty)
 	{
+		KdDebugGUI::Instance().AddLog("MapEditor: 外部変更を検知しましたが未保存の編集があるため再読込しません\n");
 		return;
 	}
-
-	if (m_lastWriteTime.dwLowDateTime == 0 && m_lastWriteTime.dwHighDateTime == 0)
-	{
-		m_lastWriteTime = writeTime;
-		return;
-	}
-
-	if (CompareFileTime(&writeTime, &m_lastWriteTime) == 0)
-	{
-		return;
-	}
-
-	m_lastWriteTime = writeTime;
 
 	// 選択状態は安定IDで保持しているので、Load()後もm_selectedIdをそのまま使い回せる
-	// (同じIDのオブジェクトが引き続き存在すれば選択状態は自然に復元される。
-	//  以前はvector indexで持っていたため、ここで明示的に退避/復元する必要があった)
 	Load(m_filePathBuf);
 
 	KdDebugGUI::Instance().AddLog("MapEditor: 外部変更を検知し自動リロードしました (%s)\n", m_filePathBuf);
@@ -854,8 +788,9 @@ void MapEditor::Load(const std::string& path)
 	// 同じIDのオブジェクトがまだ存在すれば選択状態を維持する(無ければ自然に非選択になる)
 	m_selectedId = FindObject(keepSelectedId) ? keepSelectedId : kInvalidObjectId;
 
-	m_undoStack.clear();
-	m_redoStack.clear();
+	m_history.Clear();
+	m_dirty = false;
+	m_watcher.Sync(path);
 
 	KdDebugGUI::Instance().AddLog("MapEditor: 読み込みました %s\n", path.c_str());
 }

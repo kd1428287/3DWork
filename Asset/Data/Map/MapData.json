@@ -65,8 +65,10 @@
       "components": [
         {
           "params": {
-            "animations": "",
-            "model": "Asset/Models/Terrains/Stage/Stage.gltf"
+            "skeleton": {
+              "animations": "",
+              "model": "Asset/Models/Terrains/Stage/Stage.gltf"
+            }
           },
           "type": "ModelRender"
         },
@@ -97,7 +99,7 @@
                 "name": "shape0",
                 "offset": [
                   0.04999999329447746,
-                  0.0,
+                  -0.006000000052154064,
                   0.04999999329447746
                 ],
                 "radius": 0.5,

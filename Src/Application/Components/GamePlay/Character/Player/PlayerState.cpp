@@ -33,7 +33,6 @@ void StateAttack::Enter(PlayerStateContext* ctx) {
 	phase_ = CombatState::AttackWindup;
 	elapsed_ = 0.0f;
 
-
 	// ロック中ならロック対象へ、未ロックなら画面中心に最も近い敵へ正対する。
 	ctx->facing->FaceAttackTarget();
 	//ctx->combatMovement->SetMovementEnabled(false);
@@ -45,6 +44,9 @@ void StateAttack::Enter(PlayerStateContext* ctx) {
 	for (const std::string& slot : data.weaponSlots) {
 		if (WeaponComponent* weapon = ctx->weaponSet->GetWeapon(slot)) weapon->SetAttackVisualData(data.visualData);
 	}
+
+	// 体幹値回復ストップ
+	ctx->RegenStop();
 
 	// 溜めが有効な技はAttackChargeから始め、Windupは溜め解放後(BeginWindup)に始める
 	if (data.chargeData.isEnabled) {
@@ -113,7 +115,7 @@ void StateAttack::UpdateCharge(PlayerStateContext* ctx, const AttackData& data) 
 	}
 
 	// 溜め完了(溜め率1.0かmaxTime到達)までは、入力を保持している間だけ溜める。
-	const bool completed = elapsed_ >= charge.maxTime;
+	const bool completed = elapsed_ >= charge.chargeTime;
 	if (!completed && ctx->input->GetIntent().ChargeHeld()) return;
 
 	// 溜め中に押された入力が、後続の攻撃から連鎖しないよう捨てる。
@@ -151,6 +153,9 @@ void StateAttack::Exit(PlayerStateContext* ctx) {
 	const AttackData& data = ctx->attackSelector->GetCurrentAttackData();
 	ctx->weaponSet->SetHitBoxEnabled(data.weaponSlots, false);
 	ctx->weaponSet->SetTrailEmitting(data.weaponSlots, false);
+
+	// 体幹値回復再開
+	ctx->SetRegenDelay(0.0f);
 }
 
 bool StateAttack::CanStartEvade(const PlayerStateContext* ctx) const {
@@ -279,10 +284,16 @@ void StateGuard::Enter(PlayerStateContext* ctx) {
 	// 構え動作を単発再生する
 	ctx->PlayAnimation(data_.start);
 	ctx->PlaySE(data_.raiseSE);
+
+	// 体幹値回復ストップ
+	ctx->RegenStop();
 }
 
 void StateGuard::Exit(PlayerStateContext* ctx) {
 	ctx->combatMovement->ClearRootMotionWarp();
+
+	// 体幹値回復再開
+	ctx->SetRegenDelay(0.0f);
 }
 
 void StateGuard::Update(PlayerStateContext* ctx, float deltaTime) {
@@ -415,11 +426,11 @@ StateGuard::GuardPhase StateGuard::GetGuardPhase(const PlayerStateContext* ctx) 
 
 // --- Charge State ---
 void StateCharge::Enter(PlayerStateContext* ctx) {
-	PlayerAttackRequest request;
-	request.attackId = data_.id;
-	if (!ctx->requester->RequestAttack(request)) {
-		ctx->requester->ChangeStateToNone(); // idが未設定/不明なら溜めを捨てる
-	}
+	//PlayerAttackRequest request;
+	//request.attackId = data_.id;
+	//if (!ctx->requester->RequestAttack(request)) {
+	//	ctx->requester->ChangeStateToNone(); // idが未設定/不明なら溜めを捨てる
+	//}
 }
 
 // --- Stagger State ---

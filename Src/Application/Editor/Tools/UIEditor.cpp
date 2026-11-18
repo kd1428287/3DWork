@@ -1,7 +1,9 @@
-#include "Application/main.h"
+﻿#include "Application/main.h"
 
 #include "UIEditor.h"
 #include "Application/Factories/ComponentRegistry.h"
+#include "../Common/EditorUtil.h"
+#include "../EditorHost.h"
 
 #include "imgui_internal.h"
 
@@ -10,7 +12,6 @@
 #include <cstring>
 #include <cwctype>
 #include <filesystem>
-#include <commdlg.h>
 #pragma comment(lib, "comdlg32.lib")
 
 // プレビューRTの最大サイズ(これを超える基準解像度は実描画しない)
@@ -52,23 +53,8 @@ static void SetupUIDockLayout(ImGuiID dockspaceId, const ImVec2& size)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 文字コード変換。エディタ内・JSON・ImGuiはUTF-8で持ち、既存ローダーに渡す時だけ変換する
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-static std::wstring Utf8ToWide(const std::string& s)
-{
-	if (s.empty()) return std::wstring();
-	const int n = MultiByteToWideChar(CP_UTF8, 0, s.c_str(), (int)s.size(), nullptr, 0);
-	std::wstring w(n, L'\0');
-	MultiByteToWideChar(CP_UTF8, 0, s.c_str(), (int)s.size(), &w[0], n);
-	return w;
-}
-
-static std::string WideToUtf8(const std::wstring& w)
-{
-	if (w.empty()) return std::string();
-	const int n = WideCharToMultiByte(CP_UTF8, 0, w.c_str(), (int)w.size(), nullptr, 0, nullptr, nullptr);
-	std::string s(n, '\0');
-	WideCharToMultiByte(CP_UTF8, 0, w.c_str(), (int)w.size(), &s[0], n, nullptr, nullptr);
-	return s;
-}
+using EditorUtil::Utf8ToWide;
+using EditorUtil::WideToUtf8;
 
 static std::string Utf8ToCodepage(const std::string& utf8, UINT codepage)
 {
@@ -267,50 +253,26 @@ bool UIEditor::GetElementRect(const UIElement& e, UIRect& out)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void UIEditor::PushUndo()
 {
-	UndoState state;
-	state.elements = m_elements;
-	state.selectedId = m_selectedId;
-
-	m_undoStack.push_back(std::move(state));
-	if (m_undoStack.size() > kMaxUndoDepth)
-	{
-		m_undoStack.erase(m_undoStack.begin());
-	}
-
-	m_redoStack.clear();
+	m_history.Push({ m_elements, m_selectedId });
 }
 
 void UIEditor::Undo()
 {
-	if (m_undoStack.empty()) return;
+	UndoState cur{ m_elements, m_selectedId };
+	if (!m_history.Undo(cur)) return;
 
-	UndoState redoState;
-	redoState.elements = m_elements;
-	redoState.selectedId = m_selectedId;
-	m_redoStack.push_back(std::move(redoState));
-
-	UndoState prev = std::move(m_undoStack.back());
-	m_undoStack.pop_back();
-
-	m_elements = std::move(prev.elements);
-	m_selectedId = prev.selectedId;
+	m_elements = std::move(cur.elements);
+	m_selectedId = cur.selectedId;
 	m_dragMode = DragMode::None;
 }
 
 void UIEditor::Redo()
 {
-	if (m_redoStack.empty()) return;
+	UndoState cur{ m_elements, m_selectedId };
+	if (!m_history.Redo(cur)) return;
 
-	UndoState undoState;
-	undoState.elements = m_elements;
-	undoState.selectedId = m_selectedId;
-	m_undoStack.push_back(std::move(undoState));
-
-	UndoState next = std::move(m_redoStack.back());
-	m_redoStack.pop_back();
-
-	m_elements = std::move(next.elements);
-	m_selectedId = next.selectedId;
+	m_elements = std::move(cur.elements);
+	m_selectedId = cur.selectedId;
 	m_dragMode = DragMode::None;
 }
 
@@ -558,14 +520,14 @@ void UIEditor::DrawMainMenu()
 	ImGui::EndDisabled();
 	ImGui::EndDisabled();
 	ImGui::SameLine();
-	ImGui::Checkbox("Auto Reload", &m_autoReload);
+	ImGui::Checkbox("Auto Reload", &m_watcher.autoReload);
 
 	ImGui::SameLine();
-	ImGui::BeginDisabled(m_undoStack.empty());
+	ImGui::BeginDisabled(!m_history.CanUndo());
 	if (ImGui::Button("Undo")) { Undo(); }
 	ImGui::EndDisabled();
 	ImGui::SameLine();
-	ImGui::BeginDisabled(m_redoStack.empty());
+	ImGui::BeginDisabled(!m_history.CanRedo());
 	if (ImGui::Button("Redo")) { Redo(); }
 	ImGui::EndDisabled();
 
@@ -1124,13 +1086,15 @@ bool UIEditor::Save(const std::string& path)
 	}
 
 	// 自分の保存を外部変更と誤検知して再ロードしないよう、更新日時を覚えておく
-	FILETIME writeTime;
-	if (JsonLoader::GetLastWriteTime(path, writeTime)) { m_lastWriteTime = writeTime; }
+	m_watcher.Sync(path);
 
 	m_fileMissing = false;
 	MarkClean();
 
 	KdDebugGUI::Instance().AddLog("UIEditor: 保存しました %s\n", path.c_str());
+
+	// シーンの再読み込みはエディタを閉じた時に行う
+	EditorHost::Instance().MarkSceneDirty();
 	return true;
 }
 
@@ -1150,14 +1114,12 @@ bool UIEditor::Load(const std::string& path)
 	m_nextId = file.nextId;
 	m_selectedId = FindElement(keepSelectedId) ? keepSelectedId : kInvalidUIId;
 
-	m_undoStack.clear();
-	m_redoStack.clear();
+	m_history.Clear();
 	m_dragMode = DragMode::None;
 	m_texCache.clear();
 	m_textCache.clear();
 
-	FILETIME writeTime;
-	if (JsonLoader::GetLastWriteTime(path, writeTime)) { m_lastWriteTime = writeTime; }
+	m_watcher.Sync(path);
 
 	MarkClean();
 
@@ -1165,24 +1127,21 @@ bool UIEditor::Load(const std::string& path)
 	return true;
 }
 
-// 外部でJSONが更新されたら自動で再読み込みする(編集中の未保存の変更は破棄される)
+// 外部でJSONが更新されたら自動で再読み込みする(未保存の変更がある間は再読み込みしない)
 void UIEditor::CheckHotReload()
 {
-	if (!m_autoReload || m_currentScreen < 0) return;
-
-	m_reloadCheckTimer += Application::Instance().GetDeltaTime();
-	if (m_reloadCheckTimer < 0.5f) return;
-	m_reloadCheckTimer = 0.0f;
+	if (m_currentScreen < 0) return;
 
 	const std::string path = CurrentPath();
+	if (!m_watcher.Poll(path, Application::Instance().GetDeltaTime())) return;
 
-	FILETIME writeTime;
-	if (!JsonLoader::GetLastWriteTime(path, writeTime)) return;
+	// 編集中の内容を黙って上書きしない
+	if (IsDirty())
+	{
+		KdDebugGUI::Instance().AddLog("UIEditor: 外部変更を検知しましたが未保存の編集があるため再読込しません\n");
+		return;
+	}
 
-	if (CompareFileTime(&writeTime, &m_lastWriteTime) == 0) return;
-
-	// 読み込み失敗時に毎回リトライしてログが溢れないよう、先に更新しておく
-	m_lastWriteTime = writeTime;
 	Load(path);
 }
 
@@ -1213,12 +1172,11 @@ void UIEditor::ResetToEmpty()
 	m_nextId = 1;
 	m_selectedId = kInvalidUIId;
 
-	m_undoStack.clear();
-	m_redoStack.clear();
+	m_history.Clear();
 	m_dragMode = DragMode::None;
 	m_texCache.clear();
 	m_textCache.clear();
-	m_lastWriteTime = {};
+	m_watcher.Reset();
 
 	MarkClean();
 }
@@ -1740,37 +1698,10 @@ bool UIEditor::AddRegisteredTexture(const std::string& relPath)
 // Windowsのファイル選択ダイアログで画像を1つ登録する
 void UIEditor::AddTextureViaFileDialog()
 {
-	namespace fs = std::filesystem;
-
-	fs::path savedCurrentDir = fs::current_path();
-
-	// 日本語パスを正しく受け取るためワイド版を使う
-	wchar_t fileBuf[MAX_PATH] = {};
-
-	OPENFILENAMEW ofn = {};
-	ofn.lStructSize = sizeof(ofn);
-	ofn.hwndOwner = Application::Instance().GetWindowHandle();
-	ofn.lpstrFilter = L"Image Files (*.png;*.jpg;*.jpeg;*.dds;*.tga)\0*.png;*.jpg;*.jpeg;*.dds;*.tga\0All Files (*.*)\0*.*\0";
-	ofn.lpstrFile = fileBuf;
-	ofn.nMaxFile = MAX_PATH;
-	ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
-
-	const bool result = GetOpenFileNameW(&ofn);
-
-	fs::current_path(savedCurrentDir);
-
-	if (!result) return;
-
-	// kTextureRootからの相対パスにする(取れない場合は渡されたパスのまま)
 	std::string relativePath;
-	try
+	if (!EditorUtil::PickFileRelative(L"Image Files (*.png;*.jpg;*.jpeg;*.dds;*.tga)\0*.png;*.jpg;*.jpeg;*.dds;*.tga\0All Files (*.*)\0*.*\0", kTextureRoot, relativePath))
 	{
-		const fs::path rel = fs::relative(fs::absolute(fs::path(fileBuf)), fs::absolute(fs::path(kTextureRoot)));
-		relativePath = WideToUtf8((rel.empty() ? fs::path(fileBuf) : rel).generic_wstring());
-	}
-	catch (...)
-	{
-		relativePath = WideToUtf8(fileBuf);
+		return;
 	}
 
 	if (AddRegisteredTexture(relativePath)) { SaveTextureRegistry(m_registryPathBuf); }
@@ -1784,27 +1715,16 @@ void UIEditor::AddTextureViaFileDialog()
 // kTextureRoot以下の画像をまとめて登録する
 void UIEditor::ScanTextureFolder()
 {
-	namespace fs = std::filesystem;
-
-	if (!fs::exists(kTextureRoot))
+	if (!std::filesystem::exists(kTextureRoot))
 	{
 		KdDebugGUI::Instance().AddLog("UIEditor: フォルダがありません %s\n", kTextureRoot.c_str());
 		return;
 	}
 
-	static const std::vector<std::wstring> kExtensions = { L".png", L".dds", L".jpg", L".jpeg", L".tga" };
-
 	int added = 0;
-	for (auto& entry : fs::recursive_directory_iterator(kTextureRoot))
+	for (const std::string& rel : EditorUtil::ScanTextureFiles(kTextureRoot))
 	{
-		if (!entry.is_regular_file()) continue;
-
-		std::wstring ext = entry.path().extension().wstring();
-		for (auto& c : ext) c = (wchar_t)std::towlower(c);
-
-		if (std::find(kExtensions.begin(), kExtensions.end(), ext) == kExtensions.end()) continue;
-
-		if (AddRegisteredTexture(WideToUtf8(fs::relative(entry.path(), kTextureRoot).generic_wstring()))) { ++added; }
+		if (AddRegisteredTexture(rel)) { ++added; }
 	}
 
 	if (added > 0)

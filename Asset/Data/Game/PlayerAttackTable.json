@@ -4,6 +4,22 @@
     {
       "id": "Attack02_1",
       "attack": {
+        "chargeData": {
+          "isEnabled": false,
+          "chargeTime": 1.0,
+          "clip": {
+            "animationName": "",
+            "loop": false,
+            "duration": -1.0,
+            "useRootMotion": false,
+            "blendDuration": 0.5,
+            "startFrame": 0,
+            "endFrame": 0,
+            "isForce": true,
+            "segments": []
+          },
+          "failedAttackId": ""
+        },
         "damageData": {
           "damage": 10.0,
           "postureDamage": 15.0,
@@ -130,6 +146,22 @@
     {
       "id": "Attack02_2",
       "attack": {
+        "chargeData": {
+          "isEnabled": false,
+          "chargeTime": 1.0,
+          "clip": {
+            "animationName": "",
+            "loop": false,
+            "duration": -1.0,
+            "useRootMotion": false,
+            "blendDuration": 0.5,
+            "startFrame": 0,
+            "endFrame": 0,
+            "isForce": true,
+            "segments": []
+          },
+          "failedAttackId": ""
+        },
         "damageData": {
           "damage": 10.0,
           "postureDamage": 15.0,
@@ -256,6 +288,22 @@
     {
       "id": "Attack02_3",
       "attack": {
+        "chargeData": {
+          "isEnabled": false,
+          "chargeTime": 1.0,
+          "clip": {
+            "animationName": "",
+            "loop": false,
+            "duration": -1.0,
+            "useRootMotion": false,
+            "blendDuration": 0.5,
+            "startFrame": 0,
+            "endFrame": 0,
+            "isForce": true,
+            "segments": []
+          },
+          "failedAttackId": ""
+        },
         "damageData": {
           "damage": 12.0,
           "postureDamage": 18.0,
@@ -382,6 +430,22 @@
     {
       "id": "Attack02_4",
       "attack": {
+        "chargeData": {
+          "isEnabled": false,
+          "chargeTime": 1.0,
+          "clip": {
+            "animationName": "",
+            "loop": false,
+            "duration": -1.0,
+            "useRootMotion": false,
+            "blendDuration": 0.5,
+            "startFrame": 0,
+            "endFrame": 0,
+            "isForce": true,
+            "segments": []
+          },
+          "failedAttackId": ""
+        },
         "damageData": {
           "damage": 12.0,
           "postureDamage": 18.0,
@@ -508,6 +572,22 @@
     {
       "id": "Attack02_5",
       "attack": {
+        "chargeData": {
+          "isEnabled": false,
+          "chargeTime": 1.0,
+          "clip": {
+            "animationName": "",
+            "loop": false,
+            "duration": -1.0,
+            "useRootMotion": false,
+            "blendDuration": 0.5,
+            "startFrame": 0,
+            "endFrame": 0,
+            "isForce": true,
+            "segments": []
+          },
+          "failedAttackId": ""
+        },
         "damageData": {
           "damage": 14.0,
           "postureDamage": 20.0,
@@ -634,11 +714,34 @@
     {
       "id": "ChargeAttack",
       "attack": {
+        "chargeData": {
+          "isEnabled": true,
+          "chargeTime": 1.5,
+          "clip": {
+            "animationName": "SPAttack04_Root",
+            "loop": false,
+            "duration": 1.5,
+            "useRootMotion": true,
+            "blendDuration": 0.5,
+            "startFrame": 0,
+            "endFrame": 120,
+            "isForce": true,
+            "segments": [
+              {
+                "from": 0.0,
+                "to": 1.0,
+                "weight": 1.0,
+                "ease": "EaseInOut"
+              }
+            ]
+          },
+          "failedAttackId": "Attack02_2"
+        },
         "damageData": {
-          "damage": 25.0,
-          "postureDamage": 30.0,
-          "guardDamageRatio": 0.10000000149011612,
-          "guardPostureDamageRatio": 0.10000000149011612,
+          "damage": 55.0,
+          "postureDamage": 60.0,
+          "guardDamageRatio": 0.5,
+          "guardPostureDamageRatio": 0.5,
           "parryPostureDamage": 60.0,
           "isParryable": true,
           "isReboundable": true
@@ -754,6 +857,22 @@
     {
       "id": "Attack02_6",
       "attack": {
+        "chargeData": {
+          "isEnabled": false,
+          "chargeTime": 1.0,
+          "clip": {
+            "animationName": "",
+            "loop": false,
+            "duration": -1.0,
+            "useRootMotion": false,
+            "blendDuration": 0.5,
+            "startFrame": 0,
+            "endFrame": 0,
+            "isForce": true,
+            "segments": []
+          },
+          "failedAttackId": ""
+        },
         "damageData": {
           "damage": 20.0,
           "postureDamage": 25.0,

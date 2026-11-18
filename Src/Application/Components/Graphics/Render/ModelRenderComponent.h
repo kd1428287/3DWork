@@ -42,7 +42,7 @@ public:
 	void DrawCharaShadow() override;
 
 	// RenderLayer(ビットの組み合わせ。例: RenderLayer::DrawLit | RenderLayer::GenerateDepthMapFromLight)
-	void SetLayer(const uint8_t& layer) { layer_ = layer; }
+	void SetLayer(const RenderLayer& layer) { layer_ = layer; }
 
 private:
 	// 実際の描画本体：dispatch(各DrawXxx)からのみ呼ばれる。
@@ -56,5 +56,5 @@ private:
 	// 以後は毎フレーム参照するだけ(タグレジストリの再検索はしない)。
 	std::vector<IRenderStateModifier*> modifiers_;
 
-	uint8_t layer_ = RenderLayer::DrawLit | RenderLayer::GenerateDepthMapFromLight | RenderLayer::DrawCharaShadow;
+	RenderLayer layer_ = RenderLayer::DrawLit | RenderLayer::GenerateDepthMapFromLight | RenderLayer::DrawCharaShadow;
 };

@@ -5,6 +5,7 @@
 #include "Application/Factories/Registrations/RegistrationHelpers.h"
 #include "Application/Definitions/Loaders/ComponentParamsOrderedJson.h"
 #include "Application/Definitions/Loaders/DefinitionJson.h"
+#include "Application/Definitions/Prefab/BitFlags.h"
 
 #include "Application/Components/Core/BoneSocketComponent.h"
 
@@ -28,6 +29,21 @@
 
 using namespace Registration;
 
+template <>
+struct EnumFlagStringMap<RenderLayer> {
+	static constexpr std::pair<const char*, RenderLayer> entries[] = {
+		{ "PreDraw", RenderLayer::PreDraw },
+		{ "GenerateDepthMapFromLight", RenderLayer::GenerateDepthMapFromLight },
+		{ "DrawUnLit", RenderLayer::DrawUnLit },
+		{ "DrawLit", RenderLayer::DrawLit },
+		{ "DrawEffect", RenderLayer::DrawEffect },
+		{ "DrawBright", RenderLayer::DrawBright },
+		{ "DrawSprite", RenderLayer::DrawSprite },
+		{ "DrawDebug", RenderLayer::DrawDebug },
+		{ "DrawCharaShadow", RenderLayer::DrawCharaShadow },
+	};
+};
+
 // ConfigのJSON変換。キー名はメンバ名と同じで、未指定のキーは初期値になる(マクロの説明はComponentParamsOrderedJson.h)。
 
 // 未知の軸名は先頭のYになる。
@@ -37,52 +53,64 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 	{ RootMotionAxis::Z, "Z" },
 	})
 
-	// FootSide: JSONでは"Left"/"Right"の文字列で指定する。未知の値はLeftになる。
-	NLOHMANN_JSON_SERIALIZE_ENUM(FootSide, {
-		{ FootSide::Left, "Left" },
-		{ FootSide::Right, "Right" },
-		})
+// FootSide: JSONでは"Left"/"Right"の文字列で指定する。未知の値はLeftになる。
+NLOHMANN_JSON_SERIALIZE_ENUM(FootSide, {
+	{ FootSide::Left, "Left" },
+	{ FootSide::Right, "Right" },
+	})
 
-		// KdRasterizerState: JSONではenum名の文字列で指定する。未知の値はCullNoneになる。
-	NLOHMANN_JSON_SERIALIZE_ENUM(KdRasterizerState, {
-		{ KdRasterizerState::CullNone, "CullNone" },
-		{ KdRasterizerState::CullFront, "CullFront" },
-		{ KdRasterizerState::CullBack, "CullBack" },
-		{ KdRasterizerState::WireFrame, "WireFrame" },
-		})
+	// KdRasterizerState: JSONではenum名の文字列で指定する。未知の値はCullNoneになる。
+NLOHMANN_JSON_SERIALIZE_ENUM(KdRasterizerState, {
+	{ KdRasterizerState::CullNone, "CullNone" },
+	{ KdRasterizerState::CullFront, "CullFront" },
+	{ KdRasterizerState::CullBack, "CullBack" },
+	{ KdRasterizerState::WireFrame, "WireFrame" },
+	})
 
-		// KdInkPreset: JSONではプリセット名の文字列で指定する。未知の値はNoneになる。
-	NLOHMANN_JSON_SERIALIZE_ENUM(KdInkPreset, {
-		{ KdInkPreset::None, "None" },
-		{ KdInkPreset::Bright, "Bright" },
-		{ KdInkPreset::Dark, "Dark" },
-		})
+	// KdInkPreset: JSONではプリセット名の文字列で指定する。未知の値はNoneになる。
+NLOHMANN_JSON_SERIALIZE_ENUM(KdInkPreset, {
+	{ KdInkPreset::None, "None" },
+	{ KdInkPreset::Bright, "Bright" },
+	{ KdInkPreset::Dark, "Dark" },
+	})
 
-		// KdAuraKind: JSONでは"Rim"/"Flame"の文字列で指定する。未知の値はRimになる。
-	NLOHMANN_JSON_SERIALIZE_ENUM(KdAuraKind, {
-		{ KdAuraKind::Rim, "Rim" },
-		{ KdAuraKind::Flame, "Flame" },
-		{ KdAuraKind::Ink, "Ink" },
-		})
+	// KdAuraKind: JSONでは"Rim"/"Flame"の文字列で指定する。未知の値はRimになる。
+NLOHMANN_JSON_SERIALIZE_ENUM(KdAuraKind, {
+	{ KdAuraKind::Rim, "Rim" },
+	{ KdAuraKind::Flame, "Flame" },
+	{ KdAuraKind::Ink, "Ink" },
+	})
 
-		NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(KdInkStyle,
-			Black, Amount, Paper, Bias, Contrast, Steps, LumaScale, NoiseAmount, NoiseScale)
+NLOHMANN_JSON_SERIALIZE_ENUM(RenderLayer, {
+	{ RenderLayer::PreDraw, "PreDraw" },
+	{ RenderLayer::GenerateDepthMapFromLight, "GenerateDepthMapFromLight" },
+	{ RenderLayer::DrawUnLit, "DrawUnLit" },
+	{ RenderLayer::DrawLit, "DrawLit" },
+	{ RenderLayer::DrawEffect, "DrawEffect" },
+	{ RenderLayer::DrawBright, "DrawBright" },
+	{ RenderLayer::DrawSprite, "DrawSprite" },
+	{ RenderLayer::DrawDebug, "DrawDebug" },
+	{ RenderLayer::DrawCharaShadow, "DrawCharaShadow" },
+	})
 
-	COMPONENT_PARAMS_DEFINE_TYPE(SkeletonConfig, model, animations)
-	COMPONENT_PARAMS_DEFINE_TYPE(RootMotionConfig,
-		boneName, unitScale, forwardAxis, forwardSign, rightAxis, rightSign, extractRotation, yawSign)
-	COMPONENT_PARAMS_DEFINE_TYPE(ModelAnimatorConfig, fps, speedScale, blendDuration, rootMotion)
-	COMPONENT_PARAMS_DEFINE_TYPE(FollowCameraConfig, offset, followPosition, followRotation)
-	COMPONENT_PARAMS_DEFINE_TYPE(CameraTargetConfig, offset)
-	COMPONENT_PARAMS_DEFINE_TYPE(SlashTrailConfig, trailName, base, tip, emitOnStart)
-	COMPONENT_PARAMS_DEFINE_TYPE(OutlineConfig, width)
-	COMPONENT_PARAMS_DEFINE_TYPE(AuraConfig,
-		kind, color, coreColor, intensity, width, rise, height, softness,
-		fresnelPower, noiseScale, scrollSpeed, layers, noiseTexturePath)
-	COMPONENT_PARAMS_DEFINE_TYPE(FacingDirectionConfig, rotationSpeed, moveThreshold)
-	COMPONENT_PARAMS_DEFINE_TYPE(WindShellConfig,
-		preset, localAxis, axisOffset, useVelocity, speedThreshold, axisFollow, autoPlay)
-	COMPONENT_PARAMS_DEFINE_TYPE(FootstepTrigger, phase, foot)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(KdInkStyle,
+	Black, Amount, Paper, Bias, Contrast, Steps, LumaScale, NoiseAmount, NoiseScale)
+
+COMPONENT_PARAMS_DEFINE_TYPE(SkeletonConfig, model, animations)
+COMPONENT_PARAMS_DEFINE_TYPE(RootMotionConfig,
+	boneName, unitScale, forwardAxis, forwardSign, rightAxis, rightSign, extractRotation, yawSign)
+COMPONENT_PARAMS_DEFINE_TYPE(ModelAnimatorConfig, fps, speedScale, blendDuration, rootMotion)
+COMPONENT_PARAMS_DEFINE_TYPE(FollowCameraConfig, offset, followPosition, followRotation)
+COMPONENT_PARAMS_DEFINE_TYPE(CameraTargetConfig, offset)
+COMPONENT_PARAMS_DEFINE_TYPE(SlashTrailConfig, trailName, base, tip, emitOnStart)
+COMPONENT_PARAMS_DEFINE_TYPE(OutlineConfig, width)
+COMPONENT_PARAMS_DEFINE_TYPE(AuraConfig,
+	kind, color, coreColor, intensity, width, rise, height, softness,
+	fresnelPower, noiseScale, scrollSpeed, layers, noiseTexturePath)
+COMPONENT_PARAMS_DEFINE_TYPE(FacingDirectionConfig, rotationSpeed, moveThreshold)
+COMPONENT_PARAMS_DEFINE_TYPE(WindShellConfig,
+	preset, localAxis, axisOffset, useVelocity, speedThreshold, axisFollow, autoPlay)
+COMPONENT_PARAMS_DEFINE_TYPE(FootstepTrigger, phase, foot)
 
 	// 接続を伴う型のparams。ODR違反を避けるため、マクロも含めて無名名前空間に入れる。
 	namespace
@@ -94,25 +122,25 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 	};
 	COMPONENT_PARAMS_DEFINE_TYPE(RasterizerStateParams, state)
 
-		// 墨の濃淡変換のMod。JSONではプリセット名("Bright"/"Dark")を指定する。
-		struct InkStyleParams
+	// 墨の濃淡変換のMod。JSONではプリセット名("Bright"/"Dark")を指定する。
+	struct InkStyleParams
 	{
 		KdInkPreset preset = KdInkPreset::None;
 	};
 	COMPONENT_PARAMS_DEFINE_TYPE(InkStyleParams, preset)
 
-		// 1クリップ分の接地phase定義。clipはアニメーションクリップ名
-		// (ModelAnimatorComponentが再生する名前と一致させる)。
-		struct FootstepClipParams
+	// 1クリップ分の接地phase定義。clipはアニメーションクリップ名
+	// (ModelAnimatorComponentが再生する名前と一致させる)。
+	struct FootstepClipParams
 	{
 		std::string clip;
 		std::vector<FootstepTrigger> triggers;
 	};
 	COMPONENT_PARAMS_DEFINE_TYPE(FootstepClipParams, clip, triggers)
 
-		// 足音ダスト用のパラメータ。左右の足ボーンにBoneSocketComponentを生成し、
-		// FootstepEventComponent(接地検知)とFootDustComponent(エフェクト発行)を組み立てる。
-		struct FootDustParams
+	// 足音ダスト用のパラメータ。左右の足ボーンにBoneSocketComponentを生成し、
+	// FootstepEventComponent(接地検知)とFootDustComponent(エフェクト発行)を組み立てる。
+	struct FootDustParams
 	{
 		std::string leftFootBone = "mixamorig:LeftFoot";
 		std::string rightFootBone = "mixamorig:RightFoot";
@@ -121,9 +149,22 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 	};
 	COMPONENT_PARAMS_DEFINE_TYPE(FootDustParams, leftFootBone, rightFootBone, effectId, clips)
 
-		// 左右の足ボーンにBoneSocketComponentを生成し、FootstepEventComponent(クリップごとの
-		// 接地phase監視)とFootDustComponent(GenericEffectSpawnEvent発行)を組み立てる。
-		void BuildFootDust(BuildContext& ctx, const FootDustParams& p)
+		struct ModelRenderConfig
+	{
+		SkeletonConfig skeleton;
+		BitFlags<RenderLayer> layer = []() {
+			BitFlags<RenderLayer> f;
+			f.add(RenderLayer::DrawLit);
+			f.add(RenderLayer::GenerateDepthMapFromLight);
+			//f.add(RenderLayer::DrawCharaShadow);
+			return f;
+			}(); 
+	};
+	COMPONENT_PARAMS_DEFINE_TYPE(ModelRenderConfig, skeleton, layer)
+
+	// 左右の足ボーンにBoneSocketComponentを生成し、FootstepEventComponent(クリップごとの
+	// 接地phase監視)とFootDustComponent(GenericEffectSpawnEvent発行)を組み立てる。
+	void BuildFootDust(BuildContext& ctx, const FootDustParams& p)
 	{
 		SkeletonComponent* skeleton = RequireSkeleton(&ctx.self, "FootDust");
 
@@ -145,10 +186,10 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 
 void RegisterGraphicsComponents(ComponentRegistry& registry)
 {
-	registry.AddWithParams<SkeletonConfig>("ModelRender", [](BuildContext& ctx, const SkeletonConfig& config) {
+	registry.AddWithParams<ModelRenderConfig>("ModelRender", [](BuildContext& ctx, const ModelRenderConfig& config) {
 		auto* skeleton = ctx.Add<SkeletonComponent>();
-		skeleton->SetConfig(config);
-		ctx.Add<ModelRenderComponent>();
+		skeleton->SetConfig(config.skeleton);
+		ctx.Add<ModelRenderComponent>()->SetLayer(static_cast<RenderLayer>(config.layer.raw()));
 		});
 	registry.AddWithParams<ModelAnimatorConfig>("ModelAnimator", [](BuildContext& ctx, const ModelAnimatorConfig& config) {
 		// ルートモーションの移動量をモデルの拡大率(水平)に合わせる。

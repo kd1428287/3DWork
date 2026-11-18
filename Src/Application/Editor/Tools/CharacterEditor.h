@@ -1,6 +1,8 @@
 ﻿#pragma once
 
 #include "Application/Definitions/Character/Common/CharacterData.h"
+#include "../Common/UndoHistory.h"
+#include "../Common/FileWatcher.h"
 
 // キャラクター(Prefab JSON)エディタ。MapEditorと同じくKdDebugGUI::GuiProcess()内からUpdate()を呼ぶ
 class CharacterEditor
@@ -45,9 +47,7 @@ private:
 		CharacterNode	root;
 		NodeId			selectedId = kInvalidNodeId;
 	};
-	static constexpr size_t kMaxUndoDepth = 50;
-	std::vector<UndoState>	m_undoStack;
-	std::vector<UndoState>	m_redoStack;
+	UndoHistory<UndoState>	m_history;
 	void PushUndo();	// 変更を加える直前に呼ぶ
 	void Undo();
 	void Redo();
@@ -74,11 +74,7 @@ private:
 	NodeId	m_pendingMoveDst = kInvalidNodeId;
 
 	// ホットリロード
-	bool		m_autoReload = true;
-	float		m_reloadCheckTimer = 0.0f;
-	FILETIME	m_lastWriteTime = {};
-
-	bool	m_reloadSceneOnSave = true;
+	FileWatcher	m_watcher;
 
 	bool	m_focused = false;		// 前フレーム確定値
 	bool	m_focusedNow = false;	// 今フレーム集計中

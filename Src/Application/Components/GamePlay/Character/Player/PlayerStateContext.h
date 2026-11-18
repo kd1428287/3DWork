@@ -11,6 +11,7 @@ class PlayerAttackSelector;
 class PlayerFacingComponent;
 class PlayerCombatMovementComponent;
 class PlayerInkGaugeComponent;
+class PostureComponent;
 
 // 攻撃idを直接指定して攻撃へ遷移する要求(チャージ攻撃など)。
 struct PlayerAttackRequest
@@ -44,6 +45,7 @@ struct PlayerStateContext
 	PlayerCombatMovementComponent* combatMovement = nullptr;
 	IPlayerStateRequester* requester = nullptr;
 	PlayerInkGaugeComponent* inkGauge = nullptr;
+	PostureComponent* posture = nullptr;
 
 	MovementState movementState = MovementState::Stand;
 
@@ -66,4 +68,7 @@ struct PlayerStateContext
 		float engageDistance, float duration);
 	void RequestRootMotionWarpTowardsTarget(float expectedDistance, float engageDistance,
 		float minScale, float maxScale);
+
+	void RegenStop();
+	void SetRegenDelay(float amount);
 };

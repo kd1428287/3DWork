@@ -448,8 +448,11 @@
     <ClInclude Include="Src\Application\Definitions\UI\UIData.h" />
     <ClInclude Include="Src\Application\Editor\Common\ComponentInspector.h" />
     <ClInclude Include="Src\Application\Editor\Common\EditorPreviewViewport.h" />
+    <ClInclude Include="Src\Application\Editor\Common\EditorUtil.h" />
     <ClInclude Include="Src\Application\Editor\Common\EditorViewport.h" />
+    <ClInclude Include="Src\Application\Editor\Common\FileWatcher.h" />
     <ClInclude Include="Src\Application\Editor\Common\KdPreviewPostProcess.h" />
+    <ClInclude Include="Src\Application\Editor\Common\UndoHistory.h" />
     <ClInclude Include="Src\Application\Editor\EditorHost.h" />
     <ClInclude Include="Src\Application\Editor\ThirdParty\imgui-node-editor\crude_json.h" />
     <ClInclude Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_bezier_math.h" />
@@ -619,7 +622,9 @@
     <ClCompile Include="Src\Application\Definitions\UI\UIData.cpp" />
     <ClCompile Include="Src\Application\Editor\Common\ComponentInspector.cpp" />
     <ClCompile Include="Src\Application\Editor\Common\EditorPreviewViewport.cpp" />
+    <ClCompile Include="Src\Application\Editor\Common\EditorUtil.cpp" />
     <ClCompile Include="Src\Application\Editor\Common\EditorViewport.cpp" />
+    <ClCompile Include="Src\Application\Editor\Common\FileWatcher.cpp" />
     <ClCompile Include="Src\Application\Editor\Common\KdPreviewPostProcess.cpp" />
     <ClCompile Include="Src\Application\Editor\EditorHost.cpp" />
     <ClCompile Include="Src\Application\Editor\ThirdParty\imgui-node-editor\crude_json.cpp" />

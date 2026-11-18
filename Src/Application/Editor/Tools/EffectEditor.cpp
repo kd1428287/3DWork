@@ -2,6 +2,7 @@
 
 #include "EffectEditor.h"
 #include "../Common/EditorViewport.h"
+#include "../Common/EditorUtil.h"
 #include "Application/Definitions/Loaders/EffectDataLoader.h"
 #include "../../Effect/Particle/EffectDispatcher.h"
 
@@ -140,6 +141,10 @@ void EffectEditor::Update()
 	}
 	ImGui::End();
 
+	// ウィジェット編集はImGui側のフラグで検知する(同フレームで他エディタが先に編集していた場合は対象外)
+	ImGuiContext& g = *ImGui::GetCurrentContext();
+	const bool editedBefore = g.ActiveIdHasBeenEditedThisFrame;
+
 	DrawMainMenu();
 	DrawHierarchy();
 	DrawGroupsPanel();
@@ -147,6 +152,8 @@ void EffectEditor::Update()
 	DrawTexturePicker();
 	DrawPreviewWindow();
 	DrawGizmo();
+
+	if (!editedBefore && g.ActiveIdHasBeenEditedThisFrame) { MarkEdited(); }
 }
 
 // プレビュー中のGPUパーティクルを描画する
@@ -248,7 +255,7 @@ void EffectEditor::DrawMainMenu()
 	ImGui::SameLine();
 	if (ImGui::Button("Load")) { Load(m_filePathBuf); }
 	ImGui::SameLine();
-	ImGui::Checkbox("Auto Reload", &m_autoReload);
+	ImGui::Checkbox("Auto Reload", &m_watcher.autoReload);
 
 	ImGui::Separator();
 
@@ -257,6 +264,8 @@ void EffectEditor::DrawMainMenu()
 	if (ImGui::Button("Stop All")) { StopAllPreview(); }
 
 	ImGui::Text("Effects : %d", (int)m_objects.size());
+
+	if (m_dirty) { ImGui::TextColored(ImVec4(1, 0.8f, 0.2f, 1), "* 未保存の変更あり"); }
 
 	ImGui::End();
 }
@@ -427,7 +436,7 @@ void EffectEditor::DrawInspector()
 		{
 			ImGui::Text("Noise Texture : %s", params.NoiseTexturePath.empty() ? "(None)" : params.NoiseTexturePath.c_str());
 			ImGui::SameLine();
-			if (ImGui::SmallButton("Clear##NoiseTex")) { params.NoiseTexturePath.clear(); }
+			if (ImGui::SmallButton("Clear##NoiseTex")) { params.NoiseTexturePath.clear(); MarkEdited(); }
 
 			ImGui::TextDisabled("Effect Assetsの「Target」をNoiseにして選択(タイリング可能な画像のRチャンネルを使用)");
 			if (params.NoiseTexturePath.empty())
@@ -472,11 +481,13 @@ void EffectEditor::DrawInspector()
 	if (deleteIndex >= 0)
 	{
 		params.Layers.erase(params.Layers.begin() + deleteIndex);
+		MarkEdited();
 	}
 
 	if (ImGui::Button("+ Add Layer"))
 	{
 		params.Layers.push_back(GPUParticleLayer{});
+		MarkEdited();
 	}
 
 	ImGui::Separator();
@@ -682,6 +693,7 @@ void EffectEditor::DrawGizmo()
 	if (ImGuizmo::IsUsing())
 	{
 		ImGuizmo::DecomposeMatrixToComponents(matrix, &obj.pos.x, &obj.rotate.x, &obj.scale.x);
+		MarkEdited();
 	}
 }
 
@@ -731,6 +743,7 @@ void EffectEditor::DrawTexturePicker()
 		if (ImGui::Selectable(path.c_str(), isSelected))
 		{
 			targetPath = path;
+			MarkEdited();
 
 			// Auto Preview有効時は選択した瞬間にその場で再生し、見た目をすぐ確認できるようにする
 			// (previewInstance側のテクスチャ再解決はPlayPreview()内のReconfigure()が行う)
@@ -784,28 +797,7 @@ void EffectEditor::DrawColorRangeGradient(const ParticleAppearance& a, ImVec2 si
 
 void EffectEditor::RefreshTextureFileList()
 {
-	m_textureFileList.clear();
-
-	namespace fs = std::filesystem;
-
-	const std::string root = kTextureAssetRoot;
-
-	if (!fs::exists(root)) return;
-
-	static const std::vector<std::string> kExtensions = { ".png", ".dds", ".jpg", ".jpeg", ".tga" };
-
-	for (auto& entry : fs::recursive_directory_iterator(root))
-	{
-		if (!entry.is_regular_file()) continue;
-
-		std::string ext = entry.path().extension().string();
-		for (auto& c : ext) c = (char)tolower(c);
-
-		if (std::find(kExtensions.begin(), kExtensions.end(), ext) == kExtensions.end()) continue;
-
-		std::string relativePath = fs::relative(entry.path(), root).generic_string();
-		m_textureFileList.push_back(relativePath);
-	}
+	m_textureFileList = EditorUtil::ScanTextureFiles(kTextureAssetRoot);
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -828,6 +820,7 @@ void EffectEditor::DrawGroupsPanel()
 		{
 			m_groups[groupName] = {};
 			newGroupNameBuf[0] = '\0';
+			MarkEdited();
 		}
 	}
 
@@ -907,6 +900,7 @@ void EffectEditor::DrawGroupsPanel()
 			if (removeMemberIndex >= 0)
 			{
 				members.erase(members.begin() + removeMemberIndex);
+				MarkEdited();
 			}
 
 			// 既存のm_objectsから、まだこのグループに入っていないものだけを選択肢として出す
@@ -920,6 +914,7 @@ void EffectEditor::DrawGroupsPanel()
 					if (ImGui::Selectable(obj.name.c_str()))
 					{
 						members.push_back(obj.name);
+						MarkEdited();
 					}
 				}
 				ImGui::EndCombo();
@@ -932,6 +927,7 @@ void EffectEditor::DrawGroupsPanel()
 	if (!groupToRemove.empty())
 	{
 		m_groups.erase(groupToRemove);
+		MarkEdited();
 	}
 
 	ImGui::End();
@@ -1037,6 +1033,7 @@ void EffectEditor::AddObject()
 	obj.name = "Effect" + std::to_string(m_objects.size());
 	m_objects.push_back(std::move(obj));	// EffectObjectはEffectInstanceを持つ為コピー不可、moveする
 	m_selected = (int)m_objects.size() - 1;
+	MarkEdited();
 }
 
 void EffectEditor::RemoveSelected()
@@ -1046,6 +1043,7 @@ void EffectEditor::RemoveSelected()
 	StopPreview(m_objects[m_selected]);
 	m_objects.erase(m_objects.begin() + m_selected);
 	m_selected = -1;
+	MarkEdited();
 }
 
 void EffectEditor::CopySelected()
@@ -1056,6 +1054,7 @@ void EffectEditor::CopySelected()
 	obj.params = m_objects[m_selected].params;
 	m_objects.push_back(std::move(obj));
 	m_selected = (int)m_objects.size() - 1;
+	MarkEdited();
 }
 
 
@@ -1090,11 +1089,8 @@ void EffectEditor::Save(const std::string& path)
 	// エディタでの変更を即座にゲーム側(実行中のプレイ)へ反映する
 	EffectDispatcher::NotifyDataSaved(path);
 
-	FILETIME writeTime;
-	if (JsonLoader::GetLastWriteTime(path, writeTime))
-	{
-		m_lastWriteTime = writeTime;
-	}
+	m_watcher.Sync(path);
+	m_dirty = false;
 
 	KdDebugGUI::Instance().AddLog("EffectEditor: 保存しました %s\n", path.c_str());
 }
@@ -1131,35 +1127,21 @@ void EffectEditor::Load(const std::string& path)
 	if (data.LiquidInk) { EffectDataLoader::ApplyLiquidInk(*data.LiquidInk); }
 
 	m_selected = -1;
+	m_dirty = false;
+	m_watcher.Sync(path);
 	KdDebugGUI::Instance().AddLog("EffectEditor: 読み込みました %s\n", path.c_str());
 }
 
 void EffectEditor::CheckHotReload()
 {
-	if (!m_autoReload) return;
+	if (!m_watcher.Poll(m_filePathBuf, Application::Instance().GetDeltaTime())) { return; }
 
-	m_reloadCheckTimer += Application::Instance().GetDeltaTime();
-	if (m_reloadCheckTimer < 0.5f) return;
-	m_reloadCheckTimer = 0.0f;
-
-	FILETIME writeTime;
-	if (!JsonLoader::GetLastWriteTime(m_filePathBuf, writeTime))
+	// 編集中の内容を黙って上書きしない
+	if (m_dirty)
 	{
+		KdDebugGUI::Instance().AddLog("EffectEditor: 外部変更を検知しましたが未保存の編集があるため再読込しません\n");
 		return;
 	}
-
-	if (m_lastWriteTime.dwLowDateTime == 0 && m_lastWriteTime.dwHighDateTime == 0)
-	{
-		m_lastWriteTime = writeTime;
-		return;
-	}
-
-	if (CompareFileTime(&writeTime, &m_lastWriteTime) == 0)
-	{
-		return;
-	}
-
-	m_lastWriteTime = writeTime;
 
 	int keepSelected = m_selected;
 

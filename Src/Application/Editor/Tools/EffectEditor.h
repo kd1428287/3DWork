@@ -5,6 +5,7 @@
 #include "../../Effect/Particle/EffectInstance.h"
 #include "../../Effect/Common/KdAssetsTextureProvider.h"
 #include "../Common/EditorPreviewViewport.h"
+#include "../Common/FileWatcher.h"
 #include <imgui.h>
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -130,6 +131,9 @@ private:
 	// マップデータ(JSON)の外部変更を検知して自動リロードする
 	void CheckHotReload();
 
+	// 編集があったことを記録する(未保存の間はホットリロードで上書きしない)
+	void MarkEdited() { m_dirty = true; }
+
 	// テクスチャ用アセットディレクトリ以下を走査して画像ファイル一覧を更新する
 	void RefreshTextureFileList();
 
@@ -176,9 +180,8 @@ private:
 	bool						m_pickNoiseTexture = false;	// Assetsでの選択結果の割り当て先(false=パーティクル用 / true=ノイズ用)
 
 	// ホットリロード関連
-	bool		m_autoReload = true;
-	float		m_reloadCheckTimer = 0.0f;
-	FILETIME	m_lastWriteTime = {};
+	FileWatcher	m_watcher;
+	bool		m_dirty = false;	// 未保存の編集あり
 
 	//=====================================================
 	// Effect Preview 専用ビューポート

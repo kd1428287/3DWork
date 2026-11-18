@@ -1,4 +1,4 @@
-// PlayerStateContext.cpp
+﻿// PlayerStateContext.cpp
 #include "PlayerStateContext.h"
 
 #include "PlayerFacingComponent.h"
@@ -6,6 +6,7 @@
 #include "PlayerLockOnComponent.h"
 #include "../../../Graphics/Animation/ModelAnimatorComponent.h"
 #include "Application/Core/EventBus/Events/AudioEvents.h"
+#include "../Common/PostureComponent.h"
 
 bool PlayerStateContext::IsLockedOn() const
 {
@@ -55,4 +56,14 @@ void PlayerStateContext::RequestRootMotionWarpTowardsTarget(float expectedDistan
 
 	GameObject* target = (facing != nullptr) ? facing->GetCurrentAttackTarget() : nullptr;
 	combatMovement->RequestRootMotionWarpTowardsTarget(target, expectedDistance, engageDistance, minScale, maxScale);
+}
+
+void PlayerStateContext::RegenStop()
+{
+	posture->StopRegenPosture();
+}
+
+void PlayerStateContext::SetRegenDelay(float amount)
+{
+	posture->DelayRegenPosture(amount);
 }
