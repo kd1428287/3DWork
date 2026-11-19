@@ -2,7 +2,6 @@
 #include <string>
 #include "CharacterDefinitionCommon.h"
 
-
 struct AttackChargeData
 {
 	bool isEnabled = false;
@@ -64,7 +63,8 @@ struct AttackVisualData
 	float hitStopDelaySeconds = 0.0f;
 
 	// 攻撃の軌跡トレイル名。空ならなし。
-	std::string trail = "";
+	std::string trailName;   // 軌跡の見た目定義名(空なら軌跡なし)
+	std::string trailShape;  // 部位側に登録したbase/tipのキー(空/未登録ならDefault)
 	// 攻撃部位にまとわせる風シェルのプリセット名。空なら風なし。
 	std::string windPreset = "";
 };

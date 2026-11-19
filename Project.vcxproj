@@ -432,6 +432,7 @@
     <ClInclude Include="Src\Application\Definitions\Loaders\MapLoader.h" />
     <ClInclude Include="Src\Application\Definitions\Loaders\PlayerAttackTableLoader.h" />
     <ClInclude Include="Src\Application\Definitions\Loaders\ShapeEffectDataLoader.h" />
+    <ClInclude Include="Src\Application\Definitions\Loaders\SlashTrailDataLoader.h" />
     <ClInclude Include="Src\Application\Definitions\Loaders\UILoader.h" />
     <ClInclude Include="Src\Application\Definitions\Map\MapData.h" />
     <ClInclude Include="Src\Application\Definitions\Map\SpawnMarker.h" />
@@ -444,6 +445,7 @@
     <ClInclude Include="Src\Application\Definitions\Prefab\BitFlags.h" />
     <ClInclude Include="Src\Application\Definitions\Prefab\ComponentRegister.h" />
     <ClInclude Include="Src\Application\Definitions\Prefab\Prefab.h" />
+    <ClInclude Include="Src\Application\Definitions\Prefab\PrefabIO.h" />
     <ClInclude Include="Src\Application\Definitions\UI\GaugeBarStyle.h" />
     <ClInclude Include="Src\Application\Definitions\UI\UIData.h" />
     <ClInclude Include="Src\Application\Editor\Common\ComponentInspector.h" />
@@ -452,6 +454,7 @@
     <ClInclude Include="Src\Application\Editor\Common\EditorViewport.h" />
     <ClInclude Include="Src\Application\Editor\Common\FileWatcher.h" />
     <ClInclude Include="Src\Application\Editor\Common\KdPreviewPostProcess.h" />
+    <ClInclude Include="Src\Application\Editor\Common\PrefabJson.h" />
     <ClInclude Include="Src\Application\Editor\Common\UndoHistory.h" />
     <ClInclude Include="Src\Application\Editor\EditorHost.h" />
     <ClInclude Include="Src\Application\Editor\ThirdParty\imgui-node-editor\crude_json.h" />
@@ -463,12 +466,14 @@
     <ClInclude Include="Src\Application\Editor\ThirdParty\ImGuizmo.h" />
     <ClInclude Include="Src\Application\Editor\Tools\ActionEditor.h" />
     <ClInclude Include="Src\Application\Editor\Tools\BTEditor.h" />
+    <ClInclude Include="Src\Application\Editor\Tools\CharacterDocument.h" />
     <ClInclude Include="Src\Application\Editor\Tools\CharacterEditor.h" />
     <ClInclude Include="Src\Application\Editor\Tools\ColliderEditor.h" />
     <ClInclude Include="Src\Application\Editor\Tools\EffectEditor.h" />
     <ClInclude Include="Src\Application\Editor\Tools\MapEditor.h" />
     <ClInclude Include="Src\Application\Editor\Tools\ShaderTuningEditor.h" />
     <ClInclude Include="Src\Application\Editor\Tools\ShapeEffectEditor.h" />
+    <ClInclude Include="Src\Application\Editor\Tools\SlashTrailEditor.h" />
     <ClInclude Include="Src\Application\Editor\Tools\UIEditor.h" />
     <ClInclude Include="Src\Application\Effect\Common\ITextureProvider.h" />
     <ClInclude Include="Src\Application\Effect\Common\KdAssetsTextureProvider.h" />
@@ -520,6 +525,7 @@
     <ClInclude Include="Src\Application\Systems\GamePlay\RethalSynchronizationSystem.h" />
     <ClInclude Include="Src\Application\Systems\GamePlay\TimeScaleSystem.h" />
     <ClInclude Include="Src\Application\Systems\InputSystem.h" />
+    <ClInclude Include="Src\Application\Systems\LoadList.h" />
     <ClInclude Include="Src\Application\Systems\SelectableManager.h" />
     <ClInclude Include="Src\Application\Systems\SystemManager.h" />
     <ClInclude Include="Src\Framework\Audio\KdSoundDef.h" />
@@ -617,8 +623,10 @@
     <ClCompile Include="Src\Application\Definitions\Loaders\MapLoader.cpp" />
     <ClCompile Include="Src\Application\Definitions\Loaders\PlayerAttackTableLoader.cpp" />
     <ClCompile Include="Src\Application\Definitions\Loaders\ShapeEffectDataLoader.cpp" />
+    <ClCompile Include="Src\Application\Definitions\Loaders\SlashTrailDataLoader.cpp" />
     <ClCompile Include="Src\Application\Definitions\Loaders\UILoader.cpp" />
     <ClCompile Include="Src\Application\Definitions\Map\MapData.cpp" />
+    <ClCompile Include="Src\Application\Definitions\Prefab\PrefabIO.cpp" />
     <ClCompile Include="Src\Application\Definitions\UI\UIData.cpp" />
     <ClCompile Include="Src\Application\Editor\Common\ComponentInspector.cpp" />
     <ClCompile Include="Src\Application\Editor\Common\EditorPreviewViewport.cpp" />
@@ -626,6 +634,7 @@
     <ClCompile Include="Src\Application\Editor\Common\EditorViewport.cpp" />
     <ClCompile Include="Src\Application\Editor\Common\FileWatcher.cpp" />
     <ClCompile Include="Src\Application\Editor\Common\KdPreviewPostProcess.cpp" />
+    <ClCompile Include="Src\Application\Editor\Common\PrefabJson.cpp" />
     <ClCompile Include="Src\Application\Editor\EditorHost.cpp" />
     <ClCompile Include="Src\Application\Editor\ThirdParty\imgui-node-editor\crude_json.cpp" />
     <ClCompile Include="Src\Application\Editor\ThirdParty\imgui-node-editor\imgui_canvas.cpp" />
@@ -634,12 +643,14 @@
     <ClCompile Include="Src\Application\Editor\ThirdParty\ImGuizmo.cpp" />
     <ClCompile Include="Src\Application\Editor\Tools\ActionEditor.cpp" />
     <ClCompile Include="Src\Application\Editor\Tools\BTEditor.cpp" />
+    <ClCompile Include="Src\Application\Editor\Tools\CharacterDocument.cpp" />
     <ClCompile Include="Src\Application\Editor\Tools\CharacterEditor.cpp" />
     <ClCompile Include="Src\Application\Editor\Tools\ColliderEditor.cpp" />
     <ClCompile Include="Src\Application\Editor\Tools\EffectEditor.cpp" />
     <ClCompile Include="Src\Application\Editor\Tools\MapEditor.cpp" />
     <ClCompile Include="Src\Application\Editor\Tools\ShaderTuningEditor.cpp" />
     <ClCompile Include="Src\Application\Editor\Tools\ShapeEffectEditor.cpp" />
+    <ClCompile Include="Src\Application\Editor\Tools\SlashTrailEditor.cpp" />
     <ClCompile Include="Src\Application\Editor\Tools\UIEditor.cpp" />
     <ClCompile Include="Src\Application\Effect\Common\KdAssetsTextureProvider.cpp" />
     <ClCompile Include="Src\Application\Effect\Particle\EffectDispatcher.cpp" />

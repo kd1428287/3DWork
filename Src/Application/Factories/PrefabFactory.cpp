@@ -1,11 +1,8 @@
 ﻿#include "PrefabFactory.h"
 #include "ComponentRegistry.h"
 
-#include "Application/Definitions/Loaders/DefinitionJson.h"
+#include "Application/Definitions/Prefab/PrefabIO.h"
 #include "Application/Components/Core/TransformComponent.h"
-
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(PrefabDefinition,
-	name, pos, rotation, scale, components, children)
 
 namespace
 {
@@ -59,15 +56,5 @@ bool PrefabFactory::AddComponents(ObjectManager& objectManager, GameObject& obj,
 
 bool PrefabFactory::LoadFromFile(const std::string& path, PrefabDefinition& out)
 {
-	nlohmann::json root;
-	if (!JsonLoader::Load(path, root)) return false;
-
-	try {
-		out = root.get<PrefabDefinition>();
-		return true;
-	}
-	catch (const std::exception& e) {
-		OutputDebugStringA(("PrefabFactory: " + path + ": " + e.what() + "\n").c_str());
-		return false;
-	}
+	return LoadPrefabFile(path, out);
 }

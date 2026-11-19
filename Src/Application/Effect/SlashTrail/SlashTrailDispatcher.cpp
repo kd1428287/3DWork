@@ -1,17 +1,64 @@
 ﻿#include "Application/main.h"
 #include "SlashTrailDispatcher.h"
+#include "Application/Definitions/Loaders/SlashTrailDataLoader.h"
 
-bool SlashTrailDispatcher::Init()
+#include <algorithm>
+
+std::vector<SlashTrailDispatcher*> SlashTrailDispatcher::s_instances;
+std::mutex SlashTrailDispatcher::s_instancesMutex;
+
+// 初期化：JSONから定義を読み込み、再ロード通知の宛先に登録する
+bool SlashTrailDispatcher::Init(const std::string& dataPath)
 {
+	dataPath_ = dataPath;
+
+	LoadData();
+
+	std::lock_guard<std::mutex> lock(s_instancesMutex);
+	if (std::find(s_instances.begin(), s_instances.end(), this) == s_instances.end())
+	{
+		s_instances.push_back(this);
+	}
+
 	return true;
 }
 
 // 解放：定義とスロットを全て破棄する
 void SlashTrailDispatcher::Release()
 {
+	{
+		std::lock_guard<std::mutex> lock(s_instancesMutex);
+		s_instances.erase(std::remove(s_instances.begin(), s_instances.end(), this), s_instances.end());
+	}
+
 	slots_.clear();
 	definitions_.clear();
 	nameToDef_.clear();
+}
+
+// JSONの各トレイルを定義として登録する(既存は同名で上書きされ、IDとスロットは維持される)
+bool SlashTrailDispatcher::LoadData()
+{
+	SlashTrailDataFile data;
+	if (!SlashTrailDataLoader::Load(dataPath_, data)) { return false; }
+
+	for (const auto& def : data.Trails) { RegisterDefinition(def.Name, def.Params); }
+
+	return true;
+}
+
+// 同じJSONを読んでいる全Dispatcherへ再ロード要求を立てる
+void SlashTrailDispatcher::NotifyDataSaved(const std::string& path)
+{
+	std::lock_guard<std::mutex> lock(s_instancesMutex);
+
+	for (SlashTrailDispatcher* dispatcher : s_instances)
+	{
+		if (dispatcher->dataPath_ == path)
+		{
+			dispatcher->reloadRequested_.store(true, std::memory_order_release);
+		}
+	}
 }
 
 // トレイル定義の登録：同名なら上書きして、同じIDを返す
@@ -130,9 +177,11 @@ void SlashTrailDispatcher::Finish(SlashTrailHandle handle, const SlashTrailRecor
 	slot->instance.Finish(recorder);
 }
 
-// 毎フレーム更新：頂点更新→消え切ったスロットの回収
+// 毎フレーム更新：再ロード→頂点更新→消え切ったスロットの回収
 void SlashTrailDispatcher::Update(float deltaTime)
 {
+	if (reloadRequested_.exchange(false, std::memory_order_acq_rel)) { LoadData(); }
+
 	for (Slot& slot : slots_)
 	{
 		if (!slot.inUse) { continue; }

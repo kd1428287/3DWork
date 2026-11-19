@@ -1,10 +1,11 @@
-﻿#include "Application/main.h"
+#include "Application/main.h"
 
 #include "ColliderEditor.h"
 #include "MapEditor.h"
 #include "Application/Definitions/Physics/ColliderCategoryNames.h"
 #include "../EditorHost.h"
 #include "../Common/EditorUtil.h"
+#include "../Common/PrefabJson.h"
 
 #include "imgui_internal.h"
 
@@ -36,16 +37,7 @@ namespace
 	}
 
 	// ordered_jsonのGameObject定義から、指定typeのコンポーネントを探す
-	nlohmann::ordered_json* FindComponent(nlohmann::ordered_json& node, const char* type)
-	{
-		if (!node.contains("components") || !node["components"].is_array()) return nullptr;
-
-		for (auto& c : node["components"])
-		{
-			if (c.value("type", std::string()) == type) return &c;
-		}
-		return nullptr;
-	}
+	using PrefabJson::FindComponent;
 
 	MapObject* FindMapObject(ObjectId id)
 	{
@@ -60,18 +52,11 @@ namespace
 
 	ComponentEntry* FindMapComponent(MapObject& obj, const char* type)
 	{
-		for (auto& c : obj.data.components)
-		{
-			if (c.type == type) return &c;
-		}
-		return nullptr;
+		return obj.data.FindComponent(type);
 	}
 
 	// ordered_json → json(nlohmann::json専用のfrom_jsonを使うための変換)
-	nlohmann::json ToJson(const nlohmann::ordered_json& j)
-	{
-		return nlohmann::json::parse(j.dump());
-	}
+	using PrefabJson::ToJson;
 
 	// ノードのローカル行列(scale/rotation/pos)。無いキーは単位。scaleOnlyならスケールだけ
 	//	rotationは長さ4ならQuaternion(x,y,z,w)、長さ3ならEuler角(度)として読む
@@ -106,24 +91,9 @@ namespace
 	}
 
 	// ノードのModelRenderコンポーネントのmodelパス(無ければ空)
-	std::string ReadModelPath(nlohmann::ordered_json& node)
-	{
-		if (nlohmann::ordered_json* mr = FindComponent(node, "ModelRender"))
-		{
-			if (mr->contains("params")) { return (*mr)["params"].value("model", std::string()); }
-		}
-		return std::string();
-	}
+	using PrefabJson::ReadModelPath;
 
-	Math::Vector3 ReadNodeScale(const nlohmann::ordered_json& node)
-	{
-		try
-		{
-			if (node.contains("scale")) { return ToJson(node["scale"]).get<Math::Vector3>(); }
-		}
-		catch (const nlohmann::json::exception&) {}
-		return Math::Vector3(1, 1, 1);
-	}
+	using PrefabJson::ReadScale;
 
 	// ボーン名 → モデル空間でのボーン行列(KdModelWorkのノード行列)。
 	//	※実行時のSkeletonComponent::TryGetBoneWorldMatrix()の取り方に合わせること
@@ -960,52 +930,21 @@ Math::Matrix ColliderEditor::ComputeNodeWorld(int index)
 bool ColliderEditor::TryComputeBoneAttachedWorld(int parentIndex, const Math::Matrix& parentWorld,
 	const nlohmann::ordered_json& node, const nlohmann::ordered_json& attach, Math::Matrix& out)
 {
-	const nlohmann::json params = attach.contains("params") ? ToJson(attach["params"]) : nlohmann::json::object();
-
-	const std::string bone = params.value("bone", std::string());
-	if (bone.empty()) return false;
+	const PrefabJson::AttachToBone attachParams = PrefabJson::ReadAttachToBone(attach);
+	if (attachParams.bone.empty()) return false;
 
 	nlohmann::ordered_json& parentNode = *m_prefabNodes[parentIndex].node;
 
 	// ボーンは親のモデル(スケルトン)から取る
 	KdModelWork parentModel = LoadModelWork(ReadModelPath(parentNode));
 	Math::Matrix boneInModel;
-	if (!TryGetBoneModelMatrix(parentModel, bone, boneInModel))
+	if (!TryGetBoneModelMatrix(parentModel, attachParams.bone, boneInModel))
 	{
-		KdDebugGUI::Instance().AddLog("ColliderEditor: ボーン取得失敗 %s (親モデルを確認してください)\n", bone.c_str());
+		KdDebugGUI::Instance().AddLog("ColliderEditor: ボーン取得失敗 %s (親モデルを確認してください)\n", attachParams.bone.c_str());
 		return false;
 	}
 
-	Math::Vector3 boneScale, bonePos;
-	Math::Quaternion boneRot;
-	Math::Matrix boneWorld = boneInModel * parentWorld;
-	if (!boneWorld.Decompose(boneScale, boneRot, bonePos)) return false;
-
-	// AttachToBoneのparams(position / rotationEulerDeg)
-	Math::Vector3 attachPos(0, 0, 0);
-	Math::Quaternion attachRot = Math::Quaternion::Identity;
-	try
-	{
-		if (params.contains("position")) { attachPos = params["position"].get<Math::Vector3>(); }
-		if (params.contains("rotationEulerDeg") && params["rotationEulerDeg"].is_array() && params["rotationEulerDeg"].size() >= 3)
-		{
-			const auto& e = params["rotationEulerDeg"];
-			attachRot = Math::Quaternion::CreateFromYawPitchRoll(
-				DirectX::XMConvertToRadians(e[1].get<float>()),
-				DirectX::XMConvertToRadians(e[0].get<float>()),
-				DirectX::XMConvertToRadians(e[2].get<float>()));
-		}
-	}
-	catch (const nlohmann::json::exception&) {}
-
-	const Math::Vector3 ownerScale = ReadNodeScale(parentNode);
-	const Math::Vector3 selfScale = ReadNodeScale(node) * ownerScale;
-	const Math::Vector3 rotatedOffset = Math::Vector3::Transform(attachPos * ownerScale, boneRot);
-
-	out = Math::Matrix::CreateScale(selfScale)
-		* Math::Matrix::CreateFromQuaternion(attachRot * boneRot)
-		* Math::Matrix::CreateTranslation(bonePos + rotatedOffset);
-	return true;
+	return PrefabJson::ComputeBoneAttachedWorld(attachParams, ReadScale(node), ReadScale(parentNode), boneInModel * parentWorld, out);
 }
 
 nlohmann::ordered_json* ColliderEditor::CurrentPrefabNode()

@@ -33,21 +33,12 @@ namespace
 
 	nlohmann::json ElementToJson(const UIElement& e)
 	{
-		nlohmann::json comps = nlohmann::json::array();
-		for (auto& c : e.components)
-		{
-			comps.push_back({
-				{ "type",   c.type },
-				{ "params", c.params }
-				});
-		}
-
 		return {
 			{ "id",         e.id },
 			{ "parent",     e.parentId },
 			{ "name",       e.name },
 			{ "visible",    e.visible },
-			{ "components", comps }
+			{ "components", WriteComponents(e.components) }
 		};
 	}
 
@@ -62,19 +53,7 @@ namespace
 			out.name = j.value("name", std::string());
 			out.visible = j.value("visible", true);
 
-			out.components.clear();
-			if (j.contains("components") && j["components"].is_array())
-			{
-				for (auto& jc : j["components"])
-				{
-					ComponentEntry c;
-					c.type = jc.value("type", std::string());
-					if (c.type.empty()) continue;	// typeの無いエントリは無視
-
-					c.params = (jc.contains("params") && jc["params"].is_object()) ? jc["params"] : nlohmann::json::object();
-					out.components.push_back(std::move(c));
-				}
-			}
+			out.components = j.contains("components") ? ReadComponents(j["components"]) : std::vector<ComponentEntry>();
 		}
 		catch (const nlohmann::json::exception&)
 		{

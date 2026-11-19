@@ -102,7 +102,8 @@ COMPONENT_PARAMS_DEFINE_TYPE(RootMotionConfig,
 COMPONENT_PARAMS_DEFINE_TYPE(ModelAnimatorConfig, fps, speedScale, blendDuration, rootMotion)
 COMPONENT_PARAMS_DEFINE_TYPE(FollowCameraConfig, offset, followPosition, followRotation)
 COMPONENT_PARAMS_DEFINE_TYPE(CameraTargetConfig, offset)
-COMPONENT_PARAMS_DEFINE_TYPE(SlashTrailConfig, trailName, base, tip, emitOnStart)
+COMPONENT_PARAMS_DEFINE_TYPE(SlashTrailShape, base, tip)
+COMPONENT_PARAMS_DEFINE_TYPE(SlashTrailConfig, trailName, emitOnStart, shapes)
 COMPONENT_PARAMS_DEFINE_TYPE(OutlineConfig, width)
 COMPONENT_PARAMS_DEFINE_TYPE(AuraConfig,
 	kind, color, coreColor, intensity, width, rise, height, softness,
@@ -206,7 +207,14 @@ void RegisterGraphicsComponents(ComponentRegistry& registry)
 		scaled.offset *= ctx.OwnerScale();
 		ctx.Add<CameraTargetComponent>()->SetConfig(scaled);
 		});
-	registry.Add<SlashTrailComponent>("SlashTrail");
+	registry.AddWithParams<SlashTrailConfig>("SlashTrail", [](BuildContext& ctx, const SlashTrailConfig& p) {
+		SlashTrailConfig config = p;
+		SlashTrailShape shape;
+		shape.base = { 0,0,0 };
+		shape.tip = { 1,1,1 };
+		config.shapes.insert({ "Default",shape });
+		ctx.Add<SlashTrailComponent>()->SetConfig(config);
+		});
 	registry.Add<OutlineRenderComponent>("Outline");
 	registry.Add<AuraRenderComponent>("Aura");
 	registry.AddWithParams<RasterizerStateParams>("RasterizerState", [](BuildContext& ctx, const RasterizerStateParams& p) {

@@ -84,18 +84,34 @@
         },
         {
           "params": {
-            "base": [
-              0.0,
-              0.0,
-              1.0
-            ],
             "emitOnStart": false,
             "key": "Sword_Player",
-            "tip": [
-              0.0,
-              0.0,
-              2.0
-            ],
+            "shapes": {
+              "Default": {
+                "base": [
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "tip": [
+                  0.0,
+                  0.0,
+                  2.0
+                ]
+              },
+              "Wide": {
+                "base": [
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "tip": [
+                  0.0,
+                  0.0,
+                  3.0
+                ]
+              }
+            },
             "trailName": "Sword"
           },
           "type": "SlashTrail"
@@ -107,7 +123,23 @@
           "type": "Weapon"
         }
       ],
-      "name": "weapon"
+      "name": "weapon",
+      "pos": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
     },
     {
       "components": [
@@ -153,7 +185,23 @@
           "type": "Outline"
         }
       ],
-      "name": "mask"
+      "name": "mask",
+      "pos": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
     }
   ],
   "components": [
@@ -169,7 +217,7 @@
         ],
         "skeleton": {
           "animations": "Asset/Animations/Character",
-          "model": "Asset/Models/Character/kachujin.gltf"
+          "model": "Asset/Models/Character/Kachujin/kachujin.gltf"
         }
       },
       "type": "ModelRender"
@@ -627,9 +675,20 @@
     }
   ],
   "name": "player",
-  "positon": [
-    0,
-    20,
-    0
+  "pos": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "rotation": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+  ],
+  "scale": [
+    1.0,
+    1.0,
+    1.0
   ]
 }

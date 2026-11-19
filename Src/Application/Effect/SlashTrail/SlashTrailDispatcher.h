@@ -1,6 +1,8 @@
-﻿#pragma once
+#pragma once
 
+#include <atomic>
 #include <cstdint>
+#include <mutex>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -23,13 +25,19 @@ struct SlashTrailHandle
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // トレイル(斬撃の軌跡)の描画スロット管理とフェードアウト
 // ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
-// 記録はComponent側のSlashTrailRecorderが行い、ここは「定義の登録」「描画スロットの貸し出し」
+// 記録はComponent側のSlashTrailRecorderが行い、ここは「定義の読み込み・登録」「描画スロットの貸し出し」
 // 「経路を受け取って頂点生成・描画」「消え切ったスロットの回収」だけを担当する(イベントは使わない)。
-// 定義が同じスロットは頂点バッファごと使い回す。Update()/Draw()は同一スレッドから呼ぶこと。
+// 定義はInit()でJSONから読み込む。定義が同じスロットは頂点バッファごと使い回す。
+// Update()/Draw()は同一スレッドから呼ぶこと。
+//
+// 【ホットリロード】
+//   NotifyDataSaved(path)が再ロード要求を立て、実際の読み込みは次回Update()冒頭で行う。
+//   既存の定義は同名で上書きされ(IDは不変)、使用中のスロットは終了までそのまま描画される。
+//   ファイルから消えた定義は残る(発行済みのIDを無効にしない為)。
 //
 // 【使い方】
-//   dispatcher.Init();
-//   SlashTrailDefId id = dispatcher.RegisterDefinition("PlayerSwordTrail", params);
+//   dispatcher.Init("Asset/Data/Game/slashtrail.json");
+//   SlashTrailDefId id = dispatcher.FindDefinition("PlayerSwordTrail");
 //   SlashTrailHandle h = dispatcher.Acquire(id);       // 記録開始時
 //   dispatcher.SubmitLive(h, recorder);                // 記録中、毎フレーム
 //   dispatcher.Finish(h, recorder);                    // 記録終了時(以後は自動で消えて回収される)
@@ -47,10 +55,16 @@ public:
 	SlashTrailDispatcher(const SlashTrailDispatcher&) = delete;
 	SlashTrailDispatcher& operator=(const SlashTrailDispatcher&) = delete;
 
-	bool Init();
+	// JSONから定義を読み込む(ファイルが無くても成功扱い。コードからのRegisterDefinition()も併用できる)
+	bool Init(const std::string& dataPath = "Asset/Data/Game/slashtrail.json");
 
 	// 定義・スロットを全て破棄する(発行済みのハンドルは全て無効になる)
 	void Release();
+
+	const std::string& GetDataPath() const { return dataPath_; }
+
+	// pathと同じJSONを読み込んでいる全Dispatcherへ再ロード要求を立てる(実際の読み込みは次回Update())
+	static void NotifyDataSaved(const std::string& path);
 
 	// ----- 定義 -----
 
@@ -76,7 +90,7 @@ public:
 
 	// ----- 毎フレーム -----
 
-	// 全スロットの頂点更新→消え切ったスロットの回収
+	// 再ロード要求の消化→全スロットの頂点更新→消え切ったスロットの回収
 	void Update(float deltaTime);
 
 	// DrawPassFlagsにpassが含まれるトレイルだけを描画する
@@ -105,6 +119,9 @@ private:
 
 	void ReleaseSlot(Slot& slot);
 
+	// dataPath_のJSONを読み、各定義をRegisterDefinition()する
+	bool LoadData();
+
 	std::vector<Definition>							definitions_;
 	std::unordered_map<std::string, SlashTrailDefId>	nameToDef_;
 
@@ -112,4 +129,13 @@ private:
 
 	// パラメータのTexturePathからテクスチャを解決する(EffectDispatcherと同じ)
 	KdAssetsTextureProvider textureProvider_;
+
+	std::string dataPath_;
+
+	// NotifyDataSaved()が立てるだけの再ロード要求。実処理はUpdate()冒頭で行う
+	std::atomic<bool> reloadRequested_ = false;
+
+	// 生存中の全Dispatcher(NotifyDataSaved()用)
+	static std::vector<SlashTrailDispatcher*> s_instances;
+	static std::mutex s_instancesMutex;
 };

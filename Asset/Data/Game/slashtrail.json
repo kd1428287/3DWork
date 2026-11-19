@@ -1,0 +1,220 @@
+{
+    "Trails": [
+        {
+            "Name": "InkTrail_1",
+            "Params": {
+                "Record": {
+                    "MinSampleDistance": 0.019999999552965164,
+                    "MaxSamples": 192,
+                    "MaxRecordingTime": 10.0,
+                    "SpeedSmoothingTime": 0.05000000074505806
+                },
+                "Stroke": {
+                    "Length": 8.0,
+                    "HeadTaperLength": 0.6000000238418579
+                },
+                "Width": {
+                    "SpeedReference": 12.0,
+                    "MinScale": 0.3499999940395355,
+                    "MaxScale": 3.5999999046325684
+                },
+                "Spline": {
+                    "Enabled": true,
+                    "Subdivisions": 16,
+                    "MaxPoints": 768
+                },
+                "Dissolve": {
+                    "Time": 0.75,
+                    "NoiseTexturePath": "Noise/ink_noise.png",
+                    "NoiseScaleU": 0.30000001192092896,
+                    "NoiseScaleV": 3.0,
+                    "ScrollU": 0.0,
+                    "ScrollV": 0.0,
+                    "Softness": 0.10000000149011612,
+                    "EdgeWidth": 0.05000000074505806,
+                    "EdgeColor": [
+                        1.0,
+                        0.5,
+                        0.10000000149011612
+                    ],
+                    "EdgeIntensity": 0.0
+                },
+                "Ink": {
+                    "ColdColor": [
+                        0.0010000000474974513,
+                        0.0010000000474974513,
+                        0.0010000000474974513
+                    ],
+                    "HotColor": [
+                        0.0010000000474974513,
+                        0.0010000000474974513,
+                        0.0010000000474974513
+                    ],
+                    "BlendMode": "Alpha",
+                    "DrawPassFlags": [
+                        "Default"
+                    ]
+                },
+                "Core": {
+                    "Enabled": true,
+                    "WidthScale": 0.30000001192092896,
+                    "Color": [
+                        0.20000000298023224,
+                        0.0,
+                        0.0
+                    ],
+                    "TailAlpha": 0.0,
+                    "BlendMode": "Alpha",
+                    "DrawPassFlags": [
+                        "Default"
+                    ]
+                },
+                "TexturePath": "Trail/ink_line_.png"
+            }
+        },
+        {
+            "Name": "InkTrail_2",
+            "Params": {
+                "Record": {
+                    "MinSampleDistance": 0.019999999552965164,
+                    "MaxSamples": 192,
+                    "MaxRecordingTime": 10.0,
+                    "SpeedSmoothingTime": 0.05000000074505806
+                },
+                "Stroke": {
+                    "Length": 22.0,
+                    "HeadTaperLength": 0.6000000238418579
+                },
+                "Width": {
+                    "SpeedReference": 35.0,
+                    "MinScale": 0.3499999940395355,
+                    "MaxScale": 3.5999999046325684
+                },
+                "Spline": {
+                    "Enabled": true,
+                    "Subdivisions": 32,
+                    "MaxPoints": 768
+                },
+                "Dissolve": {
+                    "Time": 1.2000000476837158,
+                    "NoiseTexturePath": "Noise/ink_noise.png",
+                    "NoiseScaleU": 0.30000001192092896,
+                    "NoiseScaleV": 3.0,
+                    "ScrollU": 0.0,
+                    "ScrollV": 0.0,
+                    "Softness": 0.10000000149011612,
+                    "EdgeWidth": 0.05000000074505806,
+                    "EdgeColor": [
+                        1.0,
+                        0.5,
+                        0.10000000149011612
+                    ],
+                    "EdgeIntensity": 0.0
+                },
+                "Ink": {
+                    "ColdColor": [
+                        0.0010000000474974513,
+                        0.0010000000474974513,
+                        0.0010000000474974513
+                    ],
+                    "HotColor": [
+                        0.0010000000474974513,
+                        0.0010000000474974513,
+                        0.0010000000474974513
+                    ],
+                    "BlendMode": "Alpha",
+                    "DrawPassFlags": [
+                        "Default"
+                    ]
+                },
+                "Core": {
+                    "Enabled": true,
+                    "WidthScale": 0.30000001192092896,
+                    "Color": [
+                        0.20000000298023224,
+                        0.0,
+                        0.0
+                    ],
+                    "TailAlpha": 0.0,
+                    "BlendMode": "Alpha",
+                    "DrawPassFlags": [
+                        "Default"
+                    ]
+                },
+                "TexturePath": "Trail/Trail2_.png"
+            }
+        },
+        {
+            "Name": "InkTrail_3",
+            "Params": {
+                "Record": {
+                    "MinSampleDistance": 0.019999999552965164,
+                    "MaxSamples": 192,
+                    "MaxRecordingTime": 10.0,
+                    "SpeedSmoothingTime": 0.05000000074505806
+                },
+                "Stroke": {
+                    "Length": 3.0,
+                    "HeadTaperLength": 0.6000000238418579
+                },
+                "Width": {
+                    "SpeedReference": 12.0,
+                    "MinScale": 0.3499999940395355,
+                    "MaxScale": 3.5999999046325684
+                },
+                "Spline": {
+                    "Enabled": true,
+                    "Subdivisions": 16,
+                    "MaxPoints": 768
+                },
+                "Dissolve": {
+                    "Time": 0.75,
+                    "NoiseTexturePath": "Noise/ink_noise.png",
+                    "NoiseScaleU": 0.30000001192092896,
+                    "NoiseScaleV": 3.0,
+                    "ScrollU": 0.0,
+                    "ScrollV": 0.0,
+                    "Softness": 0.10000000149011612,
+                    "EdgeWidth": 0.05000000074505806,
+                    "EdgeColor": [
+                        1.0,
+                        0.5,
+                        0.10000000149011612
+                    ],
+                    "EdgeIntensity": 0.0
+                },
+                "Ink": {
+                    "ColdColor": [
+                        0.0010000000474974513,
+                        0.0010000000474974513,
+                        0.0010000000474974513
+                    ],
+                    "HotColor": [
+                        0.0010000000474974513,
+                        0.0010000000474974513,
+                        0.0010000000474974513
+                    ],
+                    "BlendMode": "Alpha",
+                    "DrawPassFlags": [
+                        "Default"
+                    ]
+                },
+                "Core": {
+                    "Enabled": true,
+                    "WidthScale": 0.30000001192092896,
+                    "Color": [
+                        0.20000000298023224,
+                        0.0,
+                        0.0
+                    ],
+                    "TailAlpha": 0.0,
+                    "BlendMode": "Alpha",
+                    "DrawPassFlags": [
+                        "Default"
+                    ]
+                },
+                "TexturePath": "Trail/ink_line_.png"
+            }
+        }
+    ]
+}

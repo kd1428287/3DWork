@@ -11,15 +11,6 @@ GroundRenderComponent::GroundRenderComponent(GameObject* owner)
 
 void GroundRenderComponent::DrawLit()
 {
-	// カメラ位置は
-	// 
-	// 
-	// 
-	// 
-	// 
-	// 
-	// 
-	// のカメラ定数バッファから取得
 	const Math::Vector3 camPos = KdShaderManager::Instance().GetCameraCB().CamPos;
 
 	KdShaderManager::Instance().m_StandardShader.DrawGround(material_, camPos, halfSize_, tileSize_);

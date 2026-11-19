@@ -1,95 +1,83 @@
 #include "Application/main.h"
 
 #include "CharacterData.h"
+#include "Application/Definitions/Prefab/PrefabIO.h"
 
 namespace
 {
-	// JSON→ノード。IDは深さ優先の出現順で採番する(同じ構造なら再読込でも同じIDになる)
-	void ParseNode(const nlohmann::json& j, CharacterNode& node, NodeId& nextId)
+	// Prefab→ノード。IDは深さ優先の出現順で採番する(同じ構造なら再読込でも同じIDになる)
+	void FromPrefab(const PrefabDefinition& def, CharacterNode& node, NodeId& nextId)
 	{
 		node.id = nextId++;
-		node.name = j.value("name", std::string());
-		node.extra = nlohmann::json::object();
+		node.name = def.name;
+		node.pos = def.pos;
+		node.rotation = def.rotation;
+		node.scale = def.scale;
+		node.components = def.components;
 
-		for (auto it = j.begin(); it != j.end(); ++it)
+		node.children.reserve(def.children.size());
+		for (const PrefabDefinition& c : def.children)
 		{
-			const std::string& key = it.key();
-			if (key == "name" || key == "components" || key == "children") continue;
-			node.extra[key] = it.value();
-		}
-
-		if (j.contains("components") && j["components"].is_array())
-		{
-			for (const auto& c : j["components"])
-			{
-				ComponentEntry e;
-				e.type = c.value("type", std::string());
-				e.params = c.contains("params") ? c["params"] : nlohmann::json::object();
-				node.components.push_back(std::move(e));
-			}
-		}
-
-		if (j.contains("children") && j["children"].is_array())
-		{
-			for (const auto& c : j["children"])
-			{
-				CharacterNode child;
-				ParseNode(c, child, nextId);
-				node.children.push_back(std::move(child));
-			}
+			CharacterNode child;
+			FromPrefab(c, child, nextId);
+			node.children.push_back(std::move(child));
 		}
 	}
 
-	nlohmann::json NodeToJson(const CharacterNode& node)
+	PrefabDefinition ToPrefab(const CharacterNode& node)
 	{
-		nlohmann::json j = node.extra.is_object() ? node.extra : nlohmann::json::object();
-		j["name"] = node.name;
+		PrefabDefinition def;
+		def.name = node.name;
+		def.pos = node.pos;
+		def.rotation = node.rotation;
+		def.scale = node.scale;
+		def.components = node.components;
 
-		nlohmann::json comps = nlohmann::json::array();
-		for (const auto& c : node.components)
-		{
-			nlohmann::json e;
-			e["type"] = c.type;
-			// paramsが空のコンポーネントは {"type":"X"} だけにして差分を小さく保つ
-			if (!c.params.is_null() && !(c.params.is_object() && c.params.empty()))
-			{
-				e["params"] = c.params;
-			}
-			comps.push_back(std::move(e));
-		}
-		j["components"] = std::move(comps);
-
-		if (!node.children.empty())
-		{
-			nlohmann::json kids = nlohmann::json::array();
-			for (const auto& c : node.children) { kids.push_back(NodeToJson(c)); }
-			j["children"] = std::move(kids);
-		}
-		return j;
+		def.children.reserve(node.children.size());
+		for (const CharacterNode& c : node.children) { def.children.push_back(ToPrefab(c)); }
+		return def;
 	}
 }
 
 bool LoadCharacterFile(const std::string& path, CharacterFile& out)
 {
-	nlohmann::json j;
-	if (!JsonLoader::Load(path, j) || !j.is_object()) return false;
+	PrefabDefinition def;
+	if (!LoadPrefabFile(path, def)) return false;
 
-	try
-	{
-		CharacterFile f;
-		ParseNode(j, f.root, f.nextId);
-		out = std::move(f);
-		return true;
-	}
-	catch (const nlohmann::json::exception&)
-	{
-		return false;
-	}
+	CharacterFile f;
+	FromPrefab(def, f.root, f.nextId);
+	out = std::move(f);
+	return true;
 }
 
 bool SaveCharacterFile(const std::string& path, const CharacterFile& file)
 {
-	return JsonLoader::Save(path, NodeToJson(file.root));
+	return SavePrefabFile(path, ToPrefab(file.root));
+}
+
+nlohmann::json CharacterFileToJson(const CharacterFile& file)
+{
+	return PrefabToJson(ToPrefab(file.root));
+}
+
+CharacterNode* FindNodeById(CharacterNode& root, NodeId id)
+{
+	if (root.id == id) return &root;
+	for (auto& c : root.children)
+	{
+		if (CharacterNode* r = FindNodeById(c, id)) return r;
+	}
+	return nullptr;
+}
+
+CharacterNode* FindParentOf(CharacterNode& root, NodeId id)
+{
+	for (auto& c : root.children)
+	{
+		if (c.id == id) return &root;
+		if (CharacterNode* r = FindParentOf(c, id)) return r;
+	}
+	return nullptr;
 }
 
 void ReassignNodeIds(CharacterNode& node, NodeId& nextId)

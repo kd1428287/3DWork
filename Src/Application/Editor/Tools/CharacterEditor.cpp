@@ -1,8 +1,7 @@
-﻿#include "Application/main.h"
+#include "Application/main.h"
 
 #include "CharacterEditor.h"
 #include "../Common/ComponentInspector.h"
-#include "../EditorHost.h"
 
 #include "imgui_internal.h"
 
@@ -32,89 +31,24 @@ static void SetupCharacterDockLayout(ImGuiID dockspaceId, const ImVec2& size)
 }
 
 //=====================================================
-// ノード検索(再帰)
-//=====================================================
-static CharacterNode* FindNodeIn(CharacterNode& n, NodeId id)
-{
-	if (n.id == id) return &n;
-	for (auto& c : n.children)
-	{
-		if (CharacterNode* r = FindNodeIn(c, id)) return r;
-	}
-	return nullptr;
-}
-
-static CharacterNode* FindParentIn(CharacterNode& n, NodeId id)
-{
-	for (auto& c : n.children)
-	{
-		if (c.id == id) return &n;
-		if (CharacterNode* r = FindParentIn(c, id)) return r;
-	}
-	return nullptr;
-}
-
-CharacterNode* CharacterEditor::FindNode(NodeId id)
-{
-	if (id == kInvalidNodeId) return nullptr;
-	return FindNodeIn(m_file.root, id);
-}
-
-CharacterNode* CharacterEditor::FindParent(NodeId id)
-{
-	if (id == kInvalidNodeId) return nullptr;
-	return FindParentIn(m_file.root, id);
-}
-
-//=====================================================
-// Undo / Redo
-//=====================================================
-void CharacterEditor::PushUndo()
-{
-	m_history.Push({ m_file.root, m_selectedId });
-	m_dirty = true;
-}
-
-void CharacterEditor::Undo()
-{
-	UndoState cur{ m_file.root, m_selectedId };
-	if (!m_history.Undo(cur)) return;
-
-	m_file.root = std::move(cur.root);
-	m_selectedId = cur.selectedId;
-	m_dirty = true;
-}
-
-void CharacterEditor::Redo()
-{
-	UndoState cur{ m_file.root, m_selectedId };
-	if (!m_history.Redo(cur)) return;
-
-	m_file.root = std::move(cur.root);
-	m_selectedId = cur.selectedId;
-	m_dirty = true;
-}
-
-//=====================================================
 // 毎フレーム更新
 //=====================================================
 void CharacterEditor::Update()
 {
 	m_focusedNow = false;
 
+	m_doc.Tick(Application::Instance().GetDeltaTime());
+
 	if (m_focused && !ImGui::GetIO().WantTextInput)
 	{
 		const ImGuiIO& io = ImGui::GetIO();
 		if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Z, false))
 		{
-			if (io.KeyShift) { Redo(); }
-			else { Undo(); }
+			if (io.KeyShift) { Redo(); } else { Undo(); }
 		}
 		if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Y, false)) { Redo(); }
 		if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_S, false)) { Save(m_filePathBuf); }
 	}
-
-	CheckHotReload();
 
 	ImGuiViewport* mainViewport = ImGui::GetMainViewport();
 	ImGui::SetNextWindowPos(
@@ -149,6 +83,11 @@ void CharacterEditor::DrawMainMenu()
 	ImGui::Begin("Character Editor");
 	m_focusedNow |= ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
 
+	if (m_doc.Path() != m_lastDocPath)
+	{
+		m_lastDocPath = m_doc.Path();
+		strncpy_s(m_filePathBuf, m_lastDocPath.c_str(), _TRUNCATE);
+	}
 	ImGui::InputText("Path", m_filePathBuf, sizeof(m_filePathBuf));
 
 	if (ImGui::Button("Save (Ctrl+S)")) { Save(m_filePathBuf); }
@@ -157,17 +96,17 @@ void CharacterEditor::DrawMainMenu()
 	ImGui::SameLine();
 	if (ImGui::Button("New")) { RequestNew(); }
 	ImGui::SameLine();
-	ImGui::Checkbox("Auto Reload", &m_watcher.autoReload);
+	ImGui::Checkbox("Auto Reload", &m_doc.Watcher().autoReload);
 
-	ImGui::BeginDisabled(!m_history.CanUndo());
+	ImGui::BeginDisabled(!m_doc.CanUndo());
 	if (ImGui::Button("Undo (Ctrl+Z)")) { Undo(); }
 	ImGui::EndDisabled();
 	ImGui::SameLine();
-	ImGui::BeginDisabled(!m_history.CanRedo());
+	ImGui::BeginDisabled(!m_doc.CanRedo());
 	if (ImGui::Button("Redo (Ctrl+Y)")) { Redo(); }
 	ImGui::EndDisabled();
 	ImGui::SameLine();
-	if (m_dirty) { ImGui::TextColored(ImVec4(1, 0.8f, 0.2f, 1), "* 未保存の変更あり"); }
+	if (m_doc.IsDirty()) { ImGui::TextColored(ImVec4(1, 0.8f, 0.2f, 1), "* 未保存の変更あり"); }
 
 	// 未保存変更の確認
 	if (m_openPopupRequested)
@@ -180,11 +119,10 @@ void CharacterEditor::DrawMainMenu()
 		ImGui::Text("未保存の変更があります。破棄して続行しますか？");
 
 		auto proceed = [this]()
-			{
-				if (m_pendingIsNew) { NewFile(); }
-				else { OpenFile(m_pendingPath); }
-				ImGui::CloseCurrentPopup();
-			};
+		{
+			if (m_pendingIsNew) { NewFile(); } else { OpenFile(m_pendingPath); }
+			ImGui::CloseCurrentPopup();
+		};
 
 		if (ImGui::Button("Save & Continue"))
 		{
@@ -242,7 +180,7 @@ void CharacterEditor::DrawCharacterList()
 
 	for (const ListEntry& e : m_list)
 	{
-		const bool isCurrent = (e.path == m_filePathBuf);
+		const bool isCurrent = (e.path == m_doc.Path());
 		if (ImGui::Selectable(e.name.c_str(), isCurrent)) { RequestOpen(e.path); }
 	}
 
@@ -257,15 +195,15 @@ void CharacterEditor::DrawNodeTree(CharacterNode& node)
 	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth
 		| ImGuiTreeNodeFlags_DefaultOpen;
 	if (node.children.empty()) { flags |= ImGuiTreeNodeFlags_Leaf; }
-	if (node.id == m_selectedId) { flags |= ImGuiTreeNodeFlags_Selected; }
+	if (node.id == m_doc.SelectedId()) { flags |= ImGuiTreeNodeFlags_Selected; }
 
 	const std::string label = node.name + "##" + std::to_string(node.id);
 	const bool open = ImGui::TreeNodeEx(label.c_str(), flags);
 
-	if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) { m_selectedId = node.id; }
+	if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) { m_doc.SetSelected(node.id); }
 
 	// ルート以外はドラッグで親を付け替えられる
-	if (node.id != m_file.root.id && ImGui::BeginDragDropSource())
+	if (node.id != m_doc.File().root.id && ImGui::BeginDragDropSource())
 	{
 		ImGui::SetDragDropPayload("CHAR_NODE", &node.id, sizeof(NodeId));
 		ImGui::TextUnformatted(node.name.c_str());
@@ -293,7 +231,7 @@ void CharacterEditor::DrawHierarchy()
 	ImGui::Begin("Char Hierarchy");
 	m_focusedNow |= ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
 
-	const bool isRoot = (m_selectedId == m_file.root.id);
+	const bool isRoot = (m_doc.SelectedId() == m_doc.File().root.id);
 
 	if (ImGui::Button("+ Child")) { AddChild(); }
 	ImGui::SameLine();
@@ -309,7 +247,7 @@ void CharacterEditor::DrawHierarchy()
 
 	ImGui::Separator();
 
-	DrawNodeTree(m_file.root);
+	DrawNodeTree(m_doc.File().root);
 
 	// 描画中は構造を変えず、ここでまとめて反映する
 	if (m_pendingMoveSrc != kInvalidNodeId)
@@ -343,14 +281,12 @@ void CharacterEditor::DrawInspector()
 	if (ImGui::IsItemActivated()) { PushUndo(); }
 	if (ImGui::IsItemEdited()) { node->name = nameBuf; }
 
-	// name/components/children以外のキー(保存時にそのまま書き戻される)
-	if (node->extra.is_object() && !node->extra.empty())
+	if (ImGui::TreeNode("Transform (read only)"))
 	{
-		if (ImGui::TreeNode("Extra Fields (read only)"))
-		{
-			ImGui::TextWrapped("%s", node->extra.dump(2).c_str());
-			ImGui::TreePop();
-		}
+		ImGui::Text("pos      : %.3f, %.3f, %.3f", node->pos.x, node->pos.y, node->pos.z);
+		ImGui::Text("rotation : %.3f, %.3f, %.3f, %.3f", node->rotation.x, node->rotation.y, node->rotation.z, node->rotation.w);
+		ImGui::Text("scale    : %.3f, %.3f, %.3f", node->scale.x, node->scale.y, node->scale.z);
+		ImGui::TreePop();
 	}
 
 	ImGui::Separator();
@@ -368,66 +304,68 @@ void CharacterEditor::DrawInspector()
 void CharacterEditor::AddChild()
 {
 	CharacterNode* parent = FindSelected();
-	if (!parent) { parent = &m_file.root; }
+	if (!parent) { parent = &m_doc.File().root; }
 
 	PushUndo();
 
 	CharacterNode child;
-	child.id = m_file.nextId++;
+	child.id = m_doc.File().nextId++;
 	child.name = "Child" + std::to_string(child.id);
 	const NodeId newId = child.id;
 	parent->children.push_back(std::move(child));
-	m_selectedId = newId;
+	m_doc.SetSelected(newId);
 }
 
 void CharacterEditor::RemoveSelected()
 {
-	if (m_selectedId == m_file.root.id) return;
+	if (m_doc.SelectedId() == m_doc.File().root.id) return;
 
-	CharacterNode* parent = FindParent(m_selectedId);
+	CharacterNode* parent = m_doc.FindParent(m_doc.SelectedId());
 	if (!parent) return;
 
 	PushUndo();
 
-	const NodeId id = m_selectedId;
+	const NodeId id = m_doc.SelectedId();
 	parent->children.erase(
 		std::remove_if(parent->children.begin(), parent->children.end(),
 			[id](const CharacterNode& c) { return c.id == id; }),
 		parent->children.end());
 
-	m_selectedId = kInvalidNodeId;
+	m_doc.SetSelected(kInvalidNodeId);
 }
 
 void CharacterEditor::DuplicateSelected()
 {
-	if (m_selectedId == m_file.root.id) return;
+	const NodeId selected = m_doc.SelectedId();
+	if (selected == m_doc.File().root.id) return;
 
 	CharacterNode* src = FindSelected();
-	CharacterNode* parent = FindParent(m_selectedId);
+	CharacterNode* parent = m_doc.FindParent(selected);
 	if (!src || !parent) return;
 
 	PushUndo();
 
 	CharacterNode copy = *src;
 	copy.name += "_copy";
-	ReassignNodeIds(copy, m_file.nextId);
+	ReassignNodeIds(copy, m_doc.File().nextId);
 	const NodeId newId = copy.id;
 
 	// insertで参照が無効になるので、位置を先に求めてから挿入する
 	auto it = std::find_if(parent->children.begin(), parent->children.end(),
-		[this](const CharacterNode& c) { return c.id == m_selectedId; });
+		[selected](const CharacterNode& c) { return c.id == selected; });
 	parent->children.insert(it + 1, std::move(copy));
-	m_selectedId = newId;
+	m_doc.SetSelected(newId);
 }
 
 void CharacterEditor::MoveSelected(int delta)
 {
-	CharacterNode* parent = FindParent(m_selectedId);
+	const NodeId selected = m_doc.SelectedId();
+	CharacterNode* parent = m_doc.FindParent(selected);
 	if (!parent) return;
 
 	auto& v = parent->children;
 	auto it = std::find_if(v.begin(), v.end(),
-		[this](const CharacterNode& c) { return c.id == m_selectedId; });
+		[selected](const CharacterNode& c) { return c.id == selected; });
 	if (it == v.end()) return;
 
 	const int idx = (int)(it - v.begin());
@@ -441,12 +379,12 @@ void CharacterEditor::MoveSelected(int delta)
 // srcをnewParentの末尾の子へ付け替える(自分自身/自分の子孫への移動は無視)
 void CharacterEditor::MoveNode(NodeId src, NodeId newParent)
 {
-	if (src == m_file.root.id || src == newParent) return;
+	if (src == m_doc.File().root.id || src == newParent) return;
 
-	CharacterNode* s = FindNode(src);
-	CharacterNode* oldParent = FindParent(src);
+	CharacterNode* s = m_doc.FindNode(src);
+	CharacterNode* oldParent = m_doc.FindParent(src);
 	if (!s || !oldParent) return;
-	if (FindNodeIn(*s, newParent)) return;	// 子孫への移動は循環になる
+	if (FindNodeById(*s, newParent)) return;	// 子孫への移動は循環になる
 
 	PushUndo();
 
@@ -457,18 +395,18 @@ void CharacterEditor::MoveNode(NodeId src, NodeId newParent)
 		oldParent->children.end());
 
 	// erase後は参照が無効なので、親を探し直す
-	if (CharacterNode* np = FindNode(newParent))
+	if (CharacterNode* np = m_doc.FindNode(newParent))
 	{
 		np->children.push_back(std::move(moved));
 	}
 }
 
 //=====================================================
-// ファイル操作
+// ファイル操作(実体は共有のCharacterDocument)
 //=====================================================
 void CharacterEditor::RequestOpen(const std::string& path)
 {
-	if (!m_dirty) { OpenFile(path); return; }
+	if (!m_doc.IsDirtyNow()) { OpenFile(path); return; }
 
 	m_pendingPath = path;
 	m_pendingIsNew = false;
@@ -477,7 +415,7 @@ void CharacterEditor::RequestOpen(const std::string& path)
 
 void CharacterEditor::RequestNew()
 {
-	if (!m_dirty) { NewFile(); return; }
+	if (!m_doc.IsDirtyNow()) { NewFile(); return; }
 
 	m_pendingIsNew = true;
 	m_openPopupRequested = true;
@@ -485,83 +423,21 @@ void CharacterEditor::RequestNew()
 
 void CharacterEditor::OpenFile(const std::string& path)
 {
-	CharacterFile f;
-	if (!LoadCharacterFile(path, f))
-	{
-		KdDebugGUI::Instance().AddLog("CharacterEditor: 読み込み失敗 %s\n", path.c_str());
-		return;
-	}
-
-	// IDは出現順採番なので、構造が同じ再読込なら選択中IDもそのまま有効
-	const NodeId keep = m_selectedId;
-
-	m_file = std::move(f);
-	strncpy_s(m_filePathBuf, path.c_str(), _TRUNCATE);
-
-	m_selectedId = FindNode(keep) ? keep : m_file.root.id;
-	m_history.Clear();
-	m_dirty = false;
-
-	m_watcher.Sync(path);
-
-	KdDebugGUI::Instance().AddLog("CharacterEditor: 読み込みました %s\n", path.c_str());
+	m_doc.Open(path);
 }
 
 void CharacterEditor::NewFile()
 {
-	m_file = CharacterFile();
-	m_file.root.id = m_file.nextId++;
-	m_file.root.name = "NewCharacter";
-
-	strncpy_s(m_filePathBuf, "Asset/Data/Game/NewCharacter.json", _TRUNCATE);
-
-	m_selectedId = m_file.root.id;
-	m_history.Clear();
-	m_dirty = false;
-	m_watcher.Reset();
+	m_doc.New();
 }
 
 void CharacterEditor::Save(const std::string& path)
 {
-	if (!SaveCharacterFile(path, m_file))
-	{
-		KdDebugGUI::Instance().AddLog("CharacterEditor: 保存に失敗 %s\n", path.c_str());
-		return;
-	}
+	if (!m_doc.SaveAs(path)) return;
 
-	// 自分の保存を外部変更と誤検知しない
-	m_watcher.Sync(path);
-
-	m_dirty = false;
 	m_listLoaded = false;	// 新規ファイルを一覧へ反映する
-
-	KdDebugGUI::Instance().AddLog("CharacterEditor: 保存しました %s\n", path.c_str());
-
-	// シーンの再読み込みはエディタを閉じた時に行う
-	EditorHost::Instance().MarkSceneDirty();
 }
 
-void CharacterEditor::CheckHotReload()
-{
-	if (!m_watcher.Poll(m_filePathBuf, Application::Instance().GetDeltaTime())) return;
-
-	// 編集中の内容を黙って上書きしない
-	if (m_dirty)
-	{
-		KdDebugGUI::Instance().AddLog("CharacterEditor: 外部変更を検知しましたが未保存の編集があるため再読込しません\n");
-		return;
-	}
-
-	OpenFile(m_filePathBuf);
-}
-
-//=====================================================
-// コンストラクタ:起動時に既定のキャラクターを読み込む
-//=====================================================
 CharacterEditor::CharacterEditor()
 {
-	// 読込失敗時でも空のルートが残るよう、先にNewFile()してから既定パスを開く
-	const std::string defaultPath = m_filePathBuf;
-	NewFile();
-	OpenFile(defaultPath);
 }

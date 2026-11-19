@@ -30,17 +30,6 @@ struct UIElement : PrefabDefinition	// name・componentsはPrefabDefinition側�
 		rotation = Math::Quaternion::Identity;
 		scale = Math::Vector3::One;
 	}
-
-	ComponentEntry* Find(const std::string& type)
-	{
-		for (auto& c : components) { if (c.type == type) return &c; }
-		return nullptr;
-	}
-	const ComponentEntry* Find(const std::string& type) const
-	{
-		for (auto& c : components) { if (c.type == type) return &c; }
-		return nullptr;
-	}
 };
 
 // 1画面分(HUD・タイトル・メニューなど)。画面ごとに1つのJSONファイルにする
@@ -101,7 +90,7 @@ struct UIRect
 // UITransformコンポーネントが無ければfalse
 inline bool ReadUILayout(const UIElement& e, UILayout& out)
 {
-	const ComponentEntry* c = e.Find("UITransform");
+	const ComponentEntry* c = e.FindComponent("UITransform");
 	if (!c || !c->params.is_object()) return false;
 
 	const nlohmann::json& p = c->params;
@@ -117,7 +106,7 @@ inline bool ReadUILayout(const UIElement& e, UILayout& out)
 // positionとsizeだけを書き戻す(他のキーは触らない)
 inline void WriteUILayout(UIElement& e, const UILayout& l)
 {
-	ComponentEntry* c = e.Find("UITransform");
+	ComponentEntry* c = e.FindComponent("UITransform");
 	if (!c) return;
 	if (!c->params.is_object()) c->params = nlohmann::json::object();
 

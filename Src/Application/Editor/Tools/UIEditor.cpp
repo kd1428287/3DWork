@@ -1,4 +1,4 @@
-﻿#include "Application/main.h"
+#include "Application/main.h"
 
 #include "UIEditor.h"
 #include "Application/Factories/ComponentRegistry.h"
@@ -212,7 +212,7 @@ DirectX::SimpleMath::Vector2 UIEditor::GetIntrinsicSize(const UIElement& e)
 	if (!ReadUILayout(e, l)) return DirectX::SimpleMath::Vector2(0.0f, 0.0f);
 
 	// 文字: 文字ブロックの大きさ(TextComponent::DrawSpriteと同じ計算)
-	if (const ComponentEntry* t = e.Find("Text"))
+	if (const ComponentEntry* t = e.FindComponent("Text"))
 	{
 		const TextBlock* tb = GetTextBlock(t->params.value("fontNo", 0), t->params.value("antiAliasing", 3),
 			t->params.value("text", std::string()));
@@ -224,7 +224,7 @@ DirectX::SimpleMath::Vector2 UIEditor::GetIntrinsicSize(const UIElement& e)
 	}
 
 	// 画像: テクスチャの大きさ
-	if (const ComponentEntry* i = e.Find("UIImage"))
+	if (const ComponentEntry* i = e.FindComponent("UIImage"))
 	{
 		if (const std::shared_ptr<KdTexture> tex = GetTexture(i->params.value("texture", std::string())))
 		{
@@ -372,7 +372,7 @@ void UIEditor::RenderPreviewViewport()
 	// UIImageComponent::DrawSprite()と同じ
 	auto drawImage = [&](const UIElement& e, const UILayout& l)
 		{
-			const ComponentEntry* c = e.Find("UIImage");
+			const ComponentEntry* c = e.FindComponent("UIImage");
 			if (!c) return;
 
 			const std::shared_ptr<KdTexture> tex = GetTexture(c->params.value("texture", std::string()));
@@ -404,7 +404,7 @@ void UIEditor::RenderPreviewViewport()
 	// TextComponent::DrawSprite()と同じ
 	auto drawText = [&](const UIElement& e, const UILayout& l)
 		{
-			const ComponentEntry* t = e.Find("Text");
+			const ComponentEntry* t = e.FindComponent("Text");
 			if (!t) return;
 
 			const TextBlock* tb = GetTextBlock(t->params.value("fontNo", 0), t->params.value("antiAliasing", 3),
@@ -918,7 +918,7 @@ void UIEditor::DrawCanvas()
 		ImVec2 p0, p1;
 		if (!e || !elementRect(*e, p0, p1)) continue;
 
-		const bool selectable = e->Find("Selectable") != nullptr;
+		const bool selectable = e->FindComponent("Selectable") != nullptr;
 		dl->AddRect(p0, p1, selectable ? IM_COL32(80, 200, 255, 110) : IM_COL32(255, 255, 255, 40));
 	}
 
@@ -1569,7 +1569,7 @@ void UIEditor::DrawAssetPicker()
 	if (sel)
 	{
 		std::string current;
-		if (const ComponentEntry* img = sel->Find("UIImage")) { current = img->params.value("texture", std::string()); }
+		if (const ComponentEntry* img = sel->FindComponent("UIImage")) { current = img->params.value("texture", std::string()); }
 
 		ImGui::Text("Current : %s", current.empty() ? "(None)" : current.c_str());
 
@@ -1591,7 +1591,7 @@ void UIEditor::DrawAssetPicker()
 			if (ImGui::SmallButton("Clear"))
 			{
 				PushUndo();
-				sel->Find("UIImage")->params["texture"] = "";
+				sel->FindComponent("UIImage")->params["texture"] = "";
 			}
 		}
 	}
@@ -1631,7 +1631,7 @@ void UIEditor::DrawAssetPicker()
 				{
 					PushUndo();
 
-					ComponentEntry* image = sel->Find("UIImage");
+					ComponentEntry* image = sel->FindComponent("UIImage");
 					if (!image)
 					{
 						sel->components.push_back(MakeEntry("UIImage"));
@@ -1755,7 +1755,7 @@ void UIEditor::AddImageFromTexture(const std::string& fullPath, const DirectX::S
 	UIElement* e = FindSelected();
 	if (!e) return;
 
-	if (ComponentEntry* image = e->Find("UIImage")) { image->params["texture"] = fullPath; }
+	if (ComponentEntry* image = e->FindComponent("UIImage")) { image->params["texture"] = fullPath; }
 
 	UILayout l;
 	if (!ReadUILayout(*e, l)) return;

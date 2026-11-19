@@ -63,7 +63,6 @@ COMPONENT_PARAMS_DEFINE_TYPE(MotionClipData,
 COMPONENT_PARAMS_DEFINE_TYPE(AttackChargeData,
 	isEnabled, chargeTime, clip, failedAttackId)
 
-
 COMPONENT_PARAMS_DEFINE_TYPE(AttackDamageData,
 	damage, postureDamage, guardDamageRatio, guardPostureDamageRatio, parryPostureDamage, isParryable, isReboundable)
 
@@ -72,7 +71,7 @@ COMPONENT_PARAMS_DEFINE_TYPE(ReactionEventConfig,
 	sePitchRandom, useReflectDirection, normalBlendRatio, cameraShakeIntensity, hitStopDurationSeconds,
 	recoilChain, recoilStrength)
 
-COMPONENT_PARAMS_DEFINE_TYPE(AttackVisualData, hit, block, parry, hitStopDelaySeconds, trail, windPreset)
+COMPONENT_PARAMS_DEFINE_TYPE(AttackVisualData, hit, block, parry, hitStopDelaySeconds, trailName, trailShape, windPreset)
 
 COMPONENT_PARAMS_DEFINE_TYPE(AttackPhaseData, windup, active, recovery)
 

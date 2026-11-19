@@ -1221,6 +1221,24 @@
     <ClInclude Include="Src\Application\Editor\Common\UndoHistory.h">
       <Filter>Src\Application\Editor\Common</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Editor\Tools\CharacterDocument.h">
+      <Filter>Src\Application\Editor\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Editor\Common\PrefabJson.h">
+      <Filter>Src\Application\Editor\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Prefab\PrefabIO.h">
+      <Filter>Src\Application\Definitions\Prefab</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Loaders\SlashTrailDataLoader.h">
+      <Filter>Src\Application\Definitions\Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Editor\Tools\SlashTrailEditor.h">
+      <Filter>Src\Application\Editor\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Systems\LoadList.h">
+      <Filter>Src\Application\Systems</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -1666,6 +1684,21 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Editor\Common\FileWatcher.cpp">
       <Filter>Src\Application\Editor\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Editor\Tools\CharacterDocument.cpp">
+      <Filter>Src\Application\Editor\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Editor\Common\PrefabJson.cpp">
+      <Filter>Src\Application\Editor\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Definitions\Prefab\PrefabIO.cpp">
+      <Filter>Src\Application\Definitions\Prefab</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Definitions\Loaders\SlashTrailDataLoader.cpp">
+      <Filter>Src\Application\Definitions\Loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Editor\Tools\SlashTrailEditor.cpp">
+      <Filter>Src\Application\Editor\Tools</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

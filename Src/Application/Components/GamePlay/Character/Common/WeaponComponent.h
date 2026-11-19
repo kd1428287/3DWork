@@ -62,13 +62,18 @@ public:
 		}
 	}
 
-	// 武器の軌跡エフェクトの発生/停止。Trailを持たない部位(拳・足等)では
-	// trail_がnullptrのまま何もしない。
+	// 軌跡の発生/停止。名前(trailName/trailShape)は現在のAttackVisualDataから引く。
+	// Trailを持たない部位(拳・足等)ではtrail_がnullptrのまま何もしない。
 	void SetTrailEmitting(bool emitting)
 	{
 		if (trail_ == nullptr) return;
-		if (emitting) trail_->StartEmit();
-		else trail_->StopEmit();
+		if (emitting) {
+			const AttackVisualData& visual = attackSource_->GetAttackVisualData();
+			trail_->StartEmitAll(visual.trailName, visual.trailShape);
+		}
+		else {
+			trail_->StopEmitAll();
+		}
 	}
 
 	void SetAttackDamageData(AttackDamageData info) { attackSource_->SetAttackDamageData(info); }

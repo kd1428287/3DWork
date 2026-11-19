@@ -1,8 +1,6 @@
-﻿#pragma once
+#pragma once
 
-#include "Application/Definitions/Character/Common/CharacterData.h"
-#include "../Common/UndoHistory.h"
-#include "../Common/FileWatcher.h"
+#include "CharacterDocument.h"
 
 // キャラクター(Prefab JSON)エディタ。MapEditorと同じくKdDebugGUI::GuiProcess()内からUpdate()を呼ぶ
 class CharacterEditor
@@ -28,35 +26,26 @@ private:
 	void OpenFile(const std::string& path);
 	void NewFile();
 	void Save(const std::string& path);
-	void CheckHotReload();
 	void RefreshList();
 
-	// ノード操作(Idで探す)
-	CharacterNode* FindNode(NodeId id);
-	CharacterNode* FindParent(NodeId id);
-	CharacterNode* FindSelected() { return FindNode(m_selectedId); }
+	// ノード操作(Idで探す)。データは共有のCharacterDocumentが持つ
+	CharacterNode* FindSelected() { return m_doc.Selected(); }
 	void AddChild();
 	void RemoveSelected();
 	void DuplicateSelected();
 	void MoveSelected(int delta);
 	void MoveNode(NodeId src, NodeId newParent);
 
-	// Undo/Redo(ツリー全体のスナップショット方式)
-	struct UndoState
-	{
-		CharacterNode	root;
-		NodeId			selectedId = kInvalidNodeId;
-	};
-	UndoHistory<UndoState>	m_history;
-	void PushUndo();	// 変更を加える直前に呼ぶ
-	void Undo();
-	void Redo();
+	// Undo/Redoは共有ドキュメントが持つ
+	void PushUndo() { m_doc.PushUndo(); }	// 変更を加える直前に呼ぶ
+	void Undo() { m_doc.Undo(); }
+	void Redo() { m_doc.Redo(); }
 
-	CharacterFile	m_file;
-	NodeId			m_selectedId = kInvalidNodeId;
-	bool			m_dirty = false;
+	CharacterDocument&	m_doc = CharacterDocument::Instance();
 
-	char	m_filePathBuf[260] = "Asset/Data/Game/Player.json";
+	// Path欄の編集用バッファ。ドキュメント側のパスが変わった時だけ上書きする
+	char		m_filePathBuf[260] = "";
+	std::string	m_lastDocPath;
 
 	// キャラクター一覧(フォルダ走査)
 	struct ListEntry { std::string name; std::string path; };
@@ -72,9 +61,6 @@ private:
 	// ツリーのドラッグ&ドロップ(描画後にまとめて反映する)
 	NodeId	m_pendingMoveSrc = kInvalidNodeId;
 	NodeId	m_pendingMoveDst = kInvalidNodeId;
-
-	// ホットリロード
-	FileWatcher	m_watcher;
 
 	bool	m_focused = false;		// 前フレーム確定値
 	bool	m_focusedNow = false;	// 今フレーム集計中

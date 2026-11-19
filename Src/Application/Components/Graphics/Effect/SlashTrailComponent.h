@@ -1,15 +1,23 @@
 ﻿#pragma once
 #include <string>
 #include <vector>
+#include <unordered_map>
+#include <cassert>
 #include "Application/Effect/SlashTrail/SlashTrailDispatcher.h"	// ※実際のパスに合わせて修正
 
-// 初期設定(Prefab/JSONから渡す値)。base/tipはローカル座標。emitOnStartがtrueならAwakeで発光を開始する。
+// 軌跡の根元(base)と先端(tip)。部位のローカル座標。
+struct SlashTrailShape
+{
+	Math::Vector3 base = { 0.0f, 0.0f, 0.0f };
+	Math::Vector3 tip = { 0.0f, 0.0f, 0.0f };
+};
+
+// 初期設定(Prefab/JSONから渡す値)。形状は"Default"を必ず含めること(キー未指定/emitOnStartで使う)。
 struct SlashTrailConfig
 {
 	std::string   trailName;
-	Math::Vector3 base = { 0.0f, 0.0f, 0.0f };
-	Math::Vector3 tip = { 0.0f, 0.0f, 0.0f };
 	bool          emitOnStart = false;
+	std::unordered_map<std::string, SlashTrailShape> shapes; // 攻撃から名前で選ぶ形状
 };
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -20,8 +28,9 @@ struct SlashTrailConfig
 // 記録終了(StopEmit/最大記録時間)で経路を確定してDispatcherへ渡せば、Component破棄後もフェードアウトが続く。
 //
 // 【使い方】
-//   AddRibbon(config);  StartEmit(i);  ...  StopEmit(i);
-//   従来のSetConfig/SetBaseTip/StartEmit/StopEmit(引数なし)はリボン0が対象。
+//   攻撃ごと : StartEmitAll(trailName, shapeKey);  ...  StopEmitAll();
+//   リボン指定: AddRibbon(config);  StartEmit(i);  ...  StopEmit(i);
+//   引数なしのStartEmit/StopEmitはリボン0が対象。
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 class SlashTrailComponent : public ComponentBase {
 public:
@@ -37,23 +46,28 @@ public:
 	// 破棄時は発光中のリボンを確定させ、描画側でフェードアウトさせる(Dispatcherが先に破棄されないこと)
 	~SlashTrailComponent() override { StopEmitAll(); }
 
-	// Prefab読み込み用：リボンを1本だけに作り直す
+	// Prefab読み込み用：リボンとシェイプ表を作り直す(リボンは1本になる)
 	void SetConfig(const Config& config)
 	{
 		StopEmitAll();
 		ribbons_.clear();
+		shapes_.clear();
 		AddRibbon(config);
+		assert(shapes_.count(kDefaultShape) && "SlashTrailComponent: Defaultシェイプが未登録");
 	}
 
-	// リボンを追加して、そのインデックスを返す
+	// シェイプを登録(同じキーは上書き)
+	void RegisterShape(const std::string& key, const SlashTrailShape& shape) { shapes_[key] = shape; }
+
+	// リボンを追加して、そのインデックスを返す。config.shapesは既存キーを上書きせず追加する
 	size_t AddRibbon(const Config& config)
 	{
 		Ribbon ribbon;
 		ribbon.trailName = config.trailName;
-		ribbon.base = config.base;
-		ribbon.tip = config.tip;
 		ribbon.emitOnStart = config.emitOnStart;
 		ribbons_.push_back(std::move(ribbon));
+
+		shapes_.insert(config.shapes.begin(), config.shapes.end());
 		return ribbons_.size() - 1;
 	}
 
@@ -63,9 +77,13 @@ public:
 	{
 		transform_ = GetOwner()->GetComponent<TransformComponent>();
 
+		// 常時発光のリボンはDefaultシェイプで開始する
+		const SlashTrailShape* defaultShape = FindShape("");
 		for (size_t i = 0; i < ribbons_.size(); ++i)
 		{
-			if (ribbons_[i].emitOnStart) StartEmit(i);
+			if (!ribbons_[i].emitOnStart) continue;
+			ApplyShape(ribbons_[i], defaultShape);
+			StartEmit(i);
 		}
 	}
 
@@ -100,12 +118,12 @@ public:
 		}
 	}
 
-	// ----- リボン0向け(従来API) -----
-	void SetBaseTip(Math::Vector3 base, Math::Vector3 tip) { SetBaseTip(0, base, tip); }
+	// ----- リボン0向け -----
 	void StartEmit() { StartEmit(0); }
 	void StopEmit() { StopEmit(0); }
 
 	// ----- リボン指定 -----
+	// base/tipの直接指定(デバッグ調整用)。通常はシェイプのキーで指定する
 	void SetBaseTip(size_t index, Math::Vector3 base, Math::Vector3 tip)
 	{
 		if (index >= ribbons_.size()) return;
@@ -113,6 +131,7 @@ public:
 		ribbons_[index].tip = tip;
 	}
 
+	// 現在のtrailName/base/tipで発光を開始する
 	void StartEmit(size_t index)
 	{
 		if (index >= ribbons_.size()) return;
@@ -144,10 +163,29 @@ public:
 		FinishRibbon(ribbons_[index]);
 	}
 
-	void StartEmitAll() { for (size_t i = 0; i < ribbons_.size(); ++i) StartEmit(i); }
 	void StopEmitAll() { for (size_t i = 0; i < ribbons_.size(); ++i) StopEmit(i); }
 
+	// ----- 攻撃ごと(キー指定) -----
+	// trailNameが空なら軌跡なし。shapeKeyが空/未登録ならDefaultを使う。発光中のリボンは触らない。
+	void StartEmitAll(const std::string& trailName, const std::string& shapeKey)
+	{
+		if (trailName.empty()) return;
+
+		const SlashTrailShape* shape = FindShape(shapeKey);
+		for (size_t i = 0; i < ribbons_.size(); ++i)
+		{
+			Ribbon& ribbon = ribbons_[i];
+			if (ribbon.emitting) continue;
+
+			ribbon.trailName = trailName;
+			ApplyShape(ribbon, shape);
+			StartEmit(i);
+		}
+	}
+
 private:
+	static constexpr const char* kDefaultShape = "Default";
+
 	// リボン1本ぶんの設定・記録・描画スロット
 	struct Ribbon
 	{
@@ -171,6 +209,26 @@ private:
 		ribbon.emitting = false;
 	}
 
+	// 空キーはDefault。非空で未登録のキーはタイポとみなしてassertし、Releaseでは黙ってDefaultへ落とす
+	const SlashTrailShape* FindShape(const std::string& key) const
+	{
+		auto it = shapes_.find(key.empty() ? kDefaultShape : key);
+		if (it == shapes_.end())
+		{
+			assert(key.empty() && "SlashTrailComponent: 未登録のtrailShapeキー");
+			it = shapes_.find(kDefaultShape);
+		}
+		return (it != shapes_.end()) ? &it->second : nullptr;
+	}
+
+	// シェイプのbase/tipをリボンへ反映する(nullptrなら何もしない)
+	static void ApplyShape(Ribbon& ribbon, const SlashTrailShape* shape)
+	{
+		if (shape == nullptr) return;
+		ribbon.base = shape->base;
+		ribbon.tip = shape->tip;
+	}
+
 	// Dispatcherの取得先はここだけ(Contextへの持たせ方に合わせて書き換える)
 	void ResolveDispatcher()
 	{
@@ -182,4 +240,5 @@ private:
 	SlashTrailDispatcher* dispatcher_ = nullptr;
 
 	std::vector<Ribbon>   ribbons_;
+	std::unordered_map<std::string, SlashTrailShape> shapes_;
 };

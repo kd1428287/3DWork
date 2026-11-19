@@ -14,6 +14,7 @@
 #include "Tools/ColliderEditor.h"
 #include "Tools/ActionEditor.h"
 #include "Tools/CharacterEditor.h"
+#include "Tools/SlashTrailEditor.h"
 
 #include "Application/Core/EventBus/Events/SceneEvents.h"
 
@@ -102,6 +103,8 @@ void EditorHost::RenderPreviewViewports()
 	// アクション調整プレビュー
 	ActionEditor::Instance().RenderPreviewViewport();
 
+	//SlashTrailEditor::Instance().RenderPreviewViewport();
+
 	KdShaderManager::Instance().UndoRasterizerState();
 }
 
@@ -154,6 +157,8 @@ void EditorHost::Draw()
 		ActionEditor::Instance().Update();
 
 		CharacterEditor::Instance().Update();
+
+		//SlashTrailEditor::Instance().Update();
 	}
 
 	// ここより上にImGuiの描画はする事(EndFrame内でImGui::Render()を呼ぶため)

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 // ※ ImGui / DirectXTK(SimpleMath) は既存のPCH等で読み込まれている前提です。
 //    ImGuizmo は本ファイルでのみ使うため明示的にインクルードします。
@@ -28,15 +28,13 @@ struct MapObject
 	// 指定した種類のコンポーネントを持っているか
 	bool HasComponent(const std::string& type) const
 	{
-		for (auto& c : data.components) { if (c.type == type) return true; }
-		return false;
+		return data.FindComponent(type) != nullptr;
 	}
 
 	// 指定した種類のコンポーネントを返す(無ければnullptr)
 	const ComponentEntry* FindComponent(const std::string& type) const
 	{
-		for (auto& c : data.components) { if (c.type == type) return &c; }
-		return nullptr;
+		return data.FindComponent(type);
 	}
 
 	// data.components内の"ModelRender"コンポーネントのmodelパラメータを見て、
@@ -44,15 +42,8 @@ struct MapObject
 	// コンポーネントの追加/削除/パラメータ編集のたびに呼び出すこと
 	void SyncPreviewModel()
 	{
-		std::string path;
-		for (auto& c : data.components)
-		{
-			if (c.type == "ModelRender")
-			{
-				path = c.params.value("model", std::string());
-				break;
-			}
-		}
+		const ComponentEntry* modelRender = data.FindComponent("ModelRender");
+		const std::string path = modelRender ? modelRender->params.value("model", std::string()) : std::string();
 
 		if (path.empty())
 		{
@@ -146,7 +137,7 @@ private:
 		ObjectId				selectedId = kInvalidObjectId;
 	};
 
-	UndoHistory<UndoState>	m_history;
+		UndoHistory<UndoState>	m_history;
 	bool					m_dirty = false;	// 未保存の編集あり
 
 	// ドラッグ系操作(ギズモ・Inspectorのスライダー)が「今まさに操作中」かどうかの前フレーム値。

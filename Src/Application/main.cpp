@@ -5,6 +5,7 @@
 #include "Systems/SelectableManager.h"
 
 #include "Editor/EditorHost.h"
+#include "Systems/LoadList.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // エントリーポイント
@@ -391,6 +392,32 @@ bool Application::Init(int w, int h)
 	// 3. マネージャーにデバイスを登録
 	// ※内部で unique_ptr に変換されて管理されます
 	KdInputManager::Instance().AddDevice("Keyboard", keyboardDevice);
+
+	// ========
+
+	LoadList list; // シーン切替で解放させたくない場合は Application のメンバにするのが安全
+
+	// 1. フォルダ単位で一括登録（拡張子は小文字指定、除外フォルダも指定可能）
+	list.AddFolder(AssetType::Texture, "Asset/Textures", { ".png", ".jpg", ".tga", ".dds" }, { "Debug" });
+	list.AddFolder(AssetType::Model, "Asset/Models", { ".gltf", ".glb" });
+	list.AddFolder(AssetType::Animation, "Asset/Animations", { ".gltf", ".glb" });
+
+	// 2. 個別ファイルの追加（同じ種別・正規化後パスは自動で重複除外される）
+	// list.AddFile(AssetType::Texture, "Asset/Textures/UI/Logo.png");
+
+	// 3. 一括同期ロード
+	list.LoadAll();
+
+	// 4. 失敗ログの確認
+	for (const auto& failedPath : list.GetFailed())
+	{
+		OutputDebugStringA(("[LoadList][Failed] " + failedPath + "\n").c_str());
+	}
+
+	// m_holders を維持したい場合はメンバ変数 m_loadList にムーブ保持する
+	// m_startupLoadList = std::move(list);
+
+	// ========
 
 	return true;
 }
