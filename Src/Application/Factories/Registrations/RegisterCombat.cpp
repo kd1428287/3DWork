@@ -3,8 +3,9 @@
 #include "Application/Factories/ComponentRegistry.h"
 #include "Application/Factories/Registrations/RegisterFunctions.h"
 #include "Application/Factories/Registrations/RegistrationHelpers.h"
-#include "Application/Definitions/Loaders/ComponentParamsOrderedJson.h"
+#include "Application/Definitions/Json/KdJson.h"
 #include "Application/Definitions/Loaders/DefinitionJson.h"
+#include "Application/Factories/Json/CombatConfigJson.h"
 #include "Application/Definitions/Character/Common/CharacterCollisionDefaults.h"
 
 #include "Application/Components/Core/TransformComponent.h"
@@ -24,13 +25,6 @@
 #include "Application/Components/GamePlay/Character/Common/WeaponSetComponent.h"
 
 using namespace Registration;
-
-COMPONENT_PARAMS_DEFINE_TYPE(PostureConfig, max, lowerLimit, regenPerSecond, regenDelaySeconds)
-COMPONENT_PARAMS_DEFINE_TYPE(HealthConfig, max)
-COMPONENT_PARAMS_DEFINE_TYPE(LifeConfig, max)
-COMPONENT_PARAMS_DEFINE_TYPE(BoneOffsetChainConfig, name, bones, weights, impulse, stiffness, damping, maxAngle,
-	blendInSeconds, holdSeconds, releaseSeconds)
-COMPONENT_PARAMS_DEFINE_TYPE(BoneOffsetConfig, chains)
 
 // 接続を伴う型のparams。ODR違反を避けるため、マクロも含めて無名名前空間に入れる。
 namespace

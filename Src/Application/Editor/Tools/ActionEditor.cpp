@@ -2,6 +2,8 @@
 
 #include "ActionEditor.h"
 #include "Application/Definitions/Character/Enemy/EnemyDefinitionJson.h"
+#include "Application/Definitions/Physics/ColliderParamsJson.h"
+
 #include "../EditorHost.h"
 #include "../Common/EditorUtil.h"
 

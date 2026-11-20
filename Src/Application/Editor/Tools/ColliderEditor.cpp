@@ -1,8 +1,10 @@
-#include "Application/main.h"
+﻿#include "Application/main.h"
 
 #include "ColliderEditor.h"
 #include "MapEditor.h"
 #include "Application/Definitions/Physics/ColliderCategoryNames.h"
+#include "Application/Definitions/Json/CoreJson.h"
+#include "Application/Definitions/Physics/ColliderParamsJson.h"
 #include "../EditorHost.h"
 #include "../Common/EditorUtil.h"
 #include "../Common/PrefabJson.h"

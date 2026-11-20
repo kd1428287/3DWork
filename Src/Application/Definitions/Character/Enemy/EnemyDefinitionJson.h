@@ -1,8 +1,8 @@
 ﻿#pragma once
 
 #include "EnemyAIData.h"
-#include "../../Loaders/DefinitionJson.h" // Math::Vector3 / MotionClipData / AttackData のJSON変換
-#include "Application/Definitions/Loaders/ComponentParamsOrderedJson.h"
+#include "Application/Definitions/Loaders/DefinitionJson.h" // Math::Vector3 / MotionClipData / AttackData のJSON変換
+#include "Application/Definitions/Json/KdJson.h"
 
 // ============================================================
 // EnemyAIData(Enemy1体分の挙動パラメータ)のJSON変換。
@@ -11,7 +11,7 @@
 // 変換済みのため、ここではEnemyAIData固有の型だけを定義する。
 // フィールド追加時はEnemyAIData.h側とこのファイル両方に足すこと。
 //
-// COMPONENT_PARAMS_DEFINE_TYPEの説明・理由はComponentParamsOrderedJson.hのコメントを参照。
+// COMPONENT_PARAMS_DEFINE_TYPEの説明・理由はKdJson.hのコメントを参照。
 // ============================================================
 
 // 未知の名前は先頭(None)になる。

@@ -103,7 +103,7 @@ void EditorHost::RenderPreviewViewports()
 	// アクション調整プレビュー
 	ActionEditor::Instance().RenderPreviewViewport();
 
-	//SlashTrailEditor::Instance().RenderPreviewViewport();
+	SlashTrailEditor::Instance().RenderPreviewViewport();
 
 	KdShaderManager::Instance().UndoRasterizerState();
 }
@@ -158,7 +158,7 @@ void EditorHost::Draw()
 
 		CharacterEditor::Instance().Update();
 
-		//SlashTrailEditor::Instance().Update();
+		SlashTrailEditor::Instance().Update();
 	}
 
 	// ここより上にImGuiの描画はする事(EndFrame内でImGui::Render()を呼ぶため)

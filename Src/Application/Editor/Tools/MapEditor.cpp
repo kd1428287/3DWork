@@ -6,7 +6,7 @@
 #include "../Common/EditorUtil.h"
 #include "../EditorHost.h"
 #include "Application/Factories/ComponentRegistry.h"
-#include "Application/Definitions/Physics/ColliderParams.h"
+#include "Application/Definitions/Physics/ColliderParamsJson.h"
 
 #include "Application/Core/EventBus/Events/SceneEvents.h"
 

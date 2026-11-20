@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <functional>
 #include <memory>
@@ -73,6 +73,9 @@ private:
 	ScopedSubscriber sceneChangeSub_;
 	ScopedSubscriber reloadSceneSub_;
 	ScopedSubscriber transitionCoveredSub_;
+
+	static constexpr const float kMaxDeltaTime = 1.0f / 20.0f;
+	float deltaTime_ = 0.0f;
 
 private:
 

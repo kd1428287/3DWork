@@ -25,12 +25,12 @@
                 },
                 "Dissolve": {
                     "Time": 0.75,
-                    "NoiseTexturePath": "Noise/ink_noise.png",
+                    "NoiseTexturePath": "Noise/ink_noise__.png",
                     "NoiseScaleU": 0.30000001192092896,
                     "NoiseScaleV": 3.0,
                     "ScrollU": 0.0,
                     "ScrollV": 0.0,
-                    "Softness": 0.10000000149011612,
+                    "Softness": 1.0,
                     "EdgeWidth": 0.05000000074505806,
                     "EdgeColor": [
                         1.0,
@@ -82,7 +82,7 @@
                     "SpeedSmoothingTime": 0.05000000074505806
                 },
                 "Stroke": {
-                    "Length": 22.0,
+                    "Length": 25.0,
                     "HeadTaperLength": 0.6000000238418579
                 },
                 "Width": {

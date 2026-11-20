@@ -3,8 +3,9 @@
 #include "Application/Factories/ComponentRegistry.h"
 #include "Application/Factories/Registrations/RegisterFunctions.h"
 #include "Application/Factories/Registrations/RegistrationHelpers.h"
-#include "Application/Definitions/Loaders/ComponentParamsOrderedJson.h"
+#include "Application/Definitions/Json/KdJson.h"
 #include "Application/Definitions/Loaders/DefinitionJson.h"
+#include "Application/Factories/Json/UIConfigJson.h"
 
 // UI(配置フォルダは実際の場所に合わせて調整)
 #include "Application/Components/Graphics/UI/Gauge/PlayerHudGaugeComponent.h"
@@ -17,19 +18,6 @@
 #include "Application/Components/Graphics/UI/Button/SelectableComponent.h"
 
 using namespace Registration;
-
-// UITransformComponent::Space: JSONでは"Screen"/"World"で指定する。未知の値はScreenになる。
-NLOHMANN_JSON_SERIALIZE_ENUM(UITransformComponent::Space, {
-	{ UITransformComponent::Space::Screen, "Screen" },
-	{ UITransformComponent::Space::World, "World" },
-	})
-
-	// TextComponent::Align: JSONでは"Left"/"Center"/"Right"で指定する。未知の値はLeftになる。
-	NLOHMANN_JSON_SERIALIZE_ENUM(TextComponent::Align, {
-		{ TextComponent::Align::Left, "Left" },
-		{ TextComponent::Align::Center, "Center" },
-		{ TextComponent::Align::Right, "Right" },
-		})
 
 		// 接続を伴う型のparams。ODR違反を避けるため、マクロも含めて無名名前空間に入れる。
 	namespace

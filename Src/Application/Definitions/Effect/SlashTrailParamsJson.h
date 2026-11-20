@@ -1,8 +1,7 @@
 ﻿#pragma once
 
 #include "nlohmann/json.hpp"
-#include "Application/Definitions/Loaders/ComponentParamsOrderedJson.h"
-#include "DefinitionJson.h"	// Vector3の[x,y,z]変換を使う為
+#include "Application/Definitions/Json/KdJson.h"
 #include "../Effect/SlashTrailParams.h"
 
 // SlashTrailParamsのJSON変換(DefinitionJson.hと同じ流儀)。フィールド追加時はstructと下の列挙の両方に足す。

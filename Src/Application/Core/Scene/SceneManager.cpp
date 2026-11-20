@@ -1,4 +1,4 @@
-#include "SceneManager.h"
+﻿#include "SceneManager.h"
 #include "Application/main.h"
 
 #include "Application/Scene/BaseScene/BaseScene.h"
@@ -82,14 +82,16 @@ void SceneManager::Update()
 	// シーン切替はフレーム先頭でのみ行う
 	ApplyPendingTransition();
 
+	deltaTime_ = std::min(Application::Instance().GetDeltaTime(), kMaxDeltaTime);
+
 	if (!currentScene_) return;
-	currentScene_->Update(Application::Instance().GetDeltaTime());
+	currentScene_->Update(deltaTime_);
 }
 
 void SceneManager::PreDraw()
 {
 	if (!currentScene_) return;
-	currentScene_->PreDraw(Application::Instance().GetDeltaTime());
+	currentScene_->PreDraw(deltaTime_);
 }
 
 void SceneManager::Draw()

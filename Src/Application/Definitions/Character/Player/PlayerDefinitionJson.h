@@ -1,11 +1,11 @@
 ﻿#pragma once
 
-#include "../../Loaders/DefinitionJson.h"
-#include "Application/Definitions/Loaders/ComponentParamsOrderedJson.h"
+#include "Application/Definitions/Loaders/DefinitionJson.h"
+#include "Application/Definitions/Json/KdJson.h"
 #include "Application/Definitions/Character/Player/PlayerCombatBehaviorDefinition.h"
 
 // Player専用型のJSON変換(共有型はDefinitionJson.h)。
-// COMPONENT_PARAMS_DEFINE_TYPEの説明・理由はComponentParamsOrderedJson.hのコメントを参照。
+// COMPONENT_PARAMS_DEFINE_TYPEの説明・理由はKdJson.hのコメントを参照。
 COMPONENT_PARAMS_DEFINE_TYPE(EvadeData,
 	activeDuration, recoveryDuration, justWindowStart, justWindowEnd, evadeDistance, useRootMotion,
 	animationNameForward, animationNameBackward, animationNameLeft, animationNameRight)

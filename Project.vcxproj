@@ -412,6 +412,7 @@
     <ClInclude Include="Src\Application\Definitions\Character\Common\CharacterDefinitionCommon.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\CombatData.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\FootstepTypes.h" />
+    <ClInclude Include="Src\Application\Definitions\Character\Common\FootstepTypesJson.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Common\StateMachine\StateMachine.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Enemy\EnemyAIData.h" />
     <ClInclude Include="Src\Application\Definitions\Character\Enemy\EnemyDefinitionJson.h" />
@@ -424,6 +425,8 @@
     <ClInclude Include="Src\Application\Definitions\Effect\SlashTrailParams.h" />
     <ClInclude Include="Src\Application\Definitions\Effect\SlashTrailParamsJson.h" />
     <ClInclude Include="Src\Application\Definitions\Effect\WindShellPreset.h" />
+    <ClInclude Include="Src\Application\Definitions\Json\CoreJson.h" />
+    <ClInclude Include="Src\Application\Definitions\Json\KdJson.h" />
     <ClInclude Include="Src\Application\Definitions\Loaders\ComponentParamsOrderedJson.h" />
     <ClInclude Include="Src\Application\Definitions\Loaders\DefinitionJson.h" />
     <ClInclude Include="Src\Application\Definitions\Loaders\EffectDataLoader.h" />
@@ -436,10 +439,12 @@
     <ClInclude Include="Src\Application\Definitions\Loaders\UILoader.h" />
     <ClInclude Include="Src\Application\Definitions\Map\MapData.h" />
     <ClInclude Include="Src\Application\Definitions\Map\SpawnMarker.h" />
+    <ClInclude Include="Src\Application\Definitions\Map\SpawnMarkerJson.h" />
     <ClInclude Include="Src\Application\Definitions\Physics\ColliderCategory.h" />
     <ClInclude Include="Src\Application\Definitions\Physics\ColliderCategoryNames.h" />
     <ClInclude Include="Src\Application\Definitions\Physics\ColliderLayerMatrix.h" />
     <ClInclude Include="Src\Application\Definitions\Physics\ColliderParams.h" />
+    <ClInclude Include="Src\Application\Definitions\Physics\ColliderParamsJson.h" />
     <ClInclude Include="Src\Application\Definitions\Physics\ModelCollisionMeshBuilder.h" />
     <ClInclude Include="Src\Application\Definitions\Physics\TriangleMeshData.h" />
     <ClInclude Include="Src\Application\Definitions\Prefab\BitFlags.h" />
@@ -502,6 +507,11 @@
     <ClInclude Include="Src\Application\Factories\GamePlay\Character\EnemyFactory.h" />
     <ClInclude Include="Src\Application\Factories\GamePlay\Character\PlayerFactory.h" />
     <ClInclude Include="Src\Application\Factories\GamePlay\Map\TerrainFactory.h" />
+    <ClInclude Include="Src\Application\Factories\Json\CombatConfigJson.h" />
+    <ClInclude Include="Src\Application\Factories\Json\GraphicsConfigJson.h" />
+    <ClInclude Include="Src\Application\Factories\Json\PhysicsConfigJson.h" />
+    <ClInclude Include="Src\Application\Factories\Json\PlayerConfigJson.h" />
+    <ClInclude Include="Src\Application\Factories\Json\UIConfigJson.h" />
     <ClInclude Include="Src\Application\Factories\PrefabCatalog.h" />
     <ClInclude Include="Src\Application\Factories\PrefabFactory.h" />
     <ClInclude Include="Src\Application\Factories\Registrations\RegisterFunctions.h" />

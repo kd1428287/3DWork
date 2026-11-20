@@ -1,7 +1,5 @@
 ﻿#pragma once
 
-#include "Application/Definitions/Loaders/ComponentParamsOrderedJson.h"
-#include "Application/Definitions/Loaders/DefinitionJson.h"
 #include "Application/Components/Physics/Collision/ColliderComponent.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -29,9 +27,6 @@ struct ColliderShapeParams
 	bool isStatic = false;
 	bool wantsStayEvent = false;
 };
-COMPONENT_PARAMS_DEFINE_TYPE(ColliderShapeParams,
-	name, shape, offset, radius, capsuleEnd, halfExtents,
-	categoryMask, useDefaultCollideMask, collideMask, enabled, isTrigger, isStatic, wantsStayEvent)
 
 // wireFrameがtrueなら、デバッグ用のWireFrameも一緒に付ける(未追加の場合のみ)。
 // ignoreParentがtrueなら、親オブジェクトとの衝突を無視する(武器など)。
@@ -42,7 +37,6 @@ struct ColliderParams
 	bool                             wireFrame = false;
 	bool                             ignoreParent = false;
 };
-COMPONENT_PARAMS_DEFINE_TYPE(ColliderParams, shapes, bodyShapeName, wireFrame, ignoreParent)
 
 // shape名 → ColliderShape(未知の値はBox)
 inline ColliderShape ColliderShapeFromName(const std::string& name)

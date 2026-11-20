@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 
 #include "Application/Definitions/Prefab/Prefab.h"
@@ -94,7 +94,7 @@ public:
 
 	// 型のparamsの初期値。未登録ならnullptr。
 	//	表示順(挿入順)を保持したいのでordered_jsonで持つ(entry.params自体は
-	//	従来通りnlohmann::jsonのままでよい。詳細はComponentParamsOrderedJson.hの
+	//	従来通りnlohmann::jsonのままでよい。詳細はKdJson.hの
 	//	COMPONENT_PARAMS_DEFINE_TYPEマクロのコメントを参照)
 	const nlohmann::ordered_json* FindDefaultParams(const std::string& type) const;
 

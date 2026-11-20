@@ -3,11 +3,11 @@
 #include "Application/Factories/ComponentRegistry.h"
 #include "Application/Factories/Registrations/RegisterFunctions.h"
 #include "Application/Factories/Registrations/RegistrationHelpers.h"
-#include "Application/Definitions/Loaders/ComponentParamsOrderedJson.h"
+#include "Application/Factories/Json/PhysicsConfigJson.h"
 #include "Application/Definitions/Loaders/DefinitionJson.h"
 #include "Application/Definitions/Prefab/BitFlags.h"
 #include "Application/Definitions/Physics/ColliderCategoryNames.h"
-#include "Application/Definitions/Physics/ColliderParams.h"
+#include "Application/Definitions/Physics/ColliderParamsJson.h"
 
 #include "Application/Components/Physics/Collision/ColliderComponent.h"
 #include "Application/Components/Physics/Movement/GravityComponent.h"
@@ -18,10 +18,6 @@
 #include "Application/Components/GamePlay/Character/Player/PlayerInputComponent.h"
 
 using namespace Registration;
-
-COMPONENT_PARAMS_DEFINE_TYPE(VelocityConfig, dampingPerSecond)
-COMPONENT_PARAMS_DEFINE_TYPE(MovementConfig, speed)
-COMPONENT_PARAMS_DEFINE_TYPE(GroundSensorConfig, footOffset, checkDistance)
 
 // Colliderの組み立て(paramsの型はColliderParams.h)。
 namespace

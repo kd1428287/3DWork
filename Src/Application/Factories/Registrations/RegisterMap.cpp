@@ -1,8 +1,8 @@
-// マップ上に置くデータ専用コンポーネントの登録。
+﻿// マップ上に置くデータ専用コンポーネントの登録。
 
 #include "Application/Factories/ComponentRegistry.h"
 #include "Application/Factories/Registrations/RegisterFunctions.h"
-#include "Application/Definitions/Map/SpawnMarker.h"
+#include "Application/Definitions/Map/SpawnMarkerJson.h"
 
 void RegisterMapComponents(ComponentRegistry& registry)
 {

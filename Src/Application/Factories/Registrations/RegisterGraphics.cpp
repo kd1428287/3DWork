@@ -3,8 +3,9 @@
 #include "Application/Factories/ComponentRegistry.h"
 #include "Application/Factories/Registrations/RegisterFunctions.h"
 #include "Application/Factories/Registrations/RegistrationHelpers.h"
-#include "Application/Definitions/Loaders/ComponentParamsOrderedJson.h"
+#include "Application/Definitions/Json/KdJson.h"
 #include "Application/Definitions/Loaders/DefinitionJson.h"
+#include "Application/Factories/Json/GraphicsConfigJson.h"
 #include "Application/Definitions/Prefab/BitFlags.h"
 
 #include "Application/Components/Core/BoneSocketComponent.h"
@@ -22,96 +23,13 @@
 #include "Application/Components/Graphics/Animation/ModelAnimatorComponent.h"
 #include "Application/Components/Graphics/Animation/RootMotionApplierComponent.h"
 #include "Application/Components/Graphics/Animation/FacingDirectionComponent.h"
+#include "Application/Components/Graphics/Effect/SlashTrailComponent.h"
 
 #include "Application/Components/Physics/Movement/FollowCameraComponent.h"
 #include "Application/Components/GamePlay/Camera/CameraTargetComponent.h"
 #include "Application/Components/GamePlay/Character/Common/FootstepEventComponent.h"
 
 using namespace Registration;
-
-template <>
-struct EnumFlagStringMap<RenderLayer> {
-	static constexpr std::pair<const char*, RenderLayer> entries[] = {
-		{ "PreDraw", RenderLayer::PreDraw },
-		{ "GenerateDepthMapFromLight", RenderLayer::GenerateDepthMapFromLight },
-		{ "DrawUnLit", RenderLayer::DrawUnLit },
-		{ "DrawLit", RenderLayer::DrawLit },
-		{ "DrawEffect", RenderLayer::DrawEffect },
-		{ "DrawBright", RenderLayer::DrawBright },
-		{ "DrawSprite", RenderLayer::DrawSprite },
-		{ "DrawDebug", RenderLayer::DrawDebug },
-		{ "DrawCharaShadow", RenderLayer::DrawCharaShadow },
-	};
-};
-
-// ConfigのJSON変換。キー名はメンバ名と同じで、未指定のキーは初期値になる(マクロの説明はComponentParamsOrderedJson.h)。
-
-// 未知の軸名は先頭のYになる。
-NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
-	{ RootMotionAxis::Y, "Y" },
-	{ RootMotionAxis::X, "X" },
-	{ RootMotionAxis::Z, "Z" },
-	})
-
-// FootSide: JSONでは"Left"/"Right"の文字列で指定する。未知の値はLeftになる。
-NLOHMANN_JSON_SERIALIZE_ENUM(FootSide, {
-	{ FootSide::Left, "Left" },
-	{ FootSide::Right, "Right" },
-	})
-
-	// KdRasterizerState: JSONではenum名の文字列で指定する。未知の値はCullNoneになる。
-NLOHMANN_JSON_SERIALIZE_ENUM(KdRasterizerState, {
-	{ KdRasterizerState::CullNone, "CullNone" },
-	{ KdRasterizerState::CullFront, "CullFront" },
-	{ KdRasterizerState::CullBack, "CullBack" },
-	{ KdRasterizerState::WireFrame, "WireFrame" },
-	})
-
-	// KdInkPreset: JSONではプリセット名の文字列で指定する。未知の値はNoneになる。
-NLOHMANN_JSON_SERIALIZE_ENUM(KdInkPreset, {
-	{ KdInkPreset::None, "None" },
-	{ KdInkPreset::Bright, "Bright" },
-	{ KdInkPreset::Dark, "Dark" },
-	})
-
-	// KdAuraKind: JSONでは"Rim"/"Flame"の文字列で指定する。未知の値はRimになる。
-NLOHMANN_JSON_SERIALIZE_ENUM(KdAuraKind, {
-	{ KdAuraKind::Rim, "Rim" },
-	{ KdAuraKind::Flame, "Flame" },
-	{ KdAuraKind::Ink, "Ink" },
-	})
-
-NLOHMANN_JSON_SERIALIZE_ENUM(RenderLayer, {
-	{ RenderLayer::PreDraw, "PreDraw" },
-	{ RenderLayer::GenerateDepthMapFromLight, "GenerateDepthMapFromLight" },
-	{ RenderLayer::DrawUnLit, "DrawUnLit" },
-	{ RenderLayer::DrawLit, "DrawLit" },
-	{ RenderLayer::DrawEffect, "DrawEffect" },
-	{ RenderLayer::DrawBright, "DrawBright" },
-	{ RenderLayer::DrawSprite, "DrawSprite" },
-	{ RenderLayer::DrawDebug, "DrawDebug" },
-	{ RenderLayer::DrawCharaShadow, "DrawCharaShadow" },
-	})
-
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(KdInkStyle,
-	Black, Amount, Paper, Bias, Contrast, Steps, LumaScale, NoiseAmount, NoiseScale)
-
-COMPONENT_PARAMS_DEFINE_TYPE(SkeletonConfig, model, animations)
-COMPONENT_PARAMS_DEFINE_TYPE(RootMotionConfig,
-	boneName, unitScale, forwardAxis, forwardSign, rightAxis, rightSign, extractRotation, yawSign)
-COMPONENT_PARAMS_DEFINE_TYPE(ModelAnimatorConfig, fps, speedScale, blendDuration, rootMotion)
-COMPONENT_PARAMS_DEFINE_TYPE(FollowCameraConfig, offset, followPosition, followRotation)
-COMPONENT_PARAMS_DEFINE_TYPE(CameraTargetConfig, offset)
-COMPONENT_PARAMS_DEFINE_TYPE(SlashTrailShape, base, tip)
-COMPONENT_PARAMS_DEFINE_TYPE(SlashTrailConfig, trailName, emitOnStart, shapes)
-COMPONENT_PARAMS_DEFINE_TYPE(OutlineConfig, width)
-COMPONENT_PARAMS_DEFINE_TYPE(AuraConfig,
-	kind, color, coreColor, intensity, width, rise, height, softness,
-	fresnelPower, noiseScale, scrollSpeed, layers, noiseTexturePath)
-COMPONENT_PARAMS_DEFINE_TYPE(FacingDirectionConfig, rotationSpeed, moveThreshold)
-COMPONENT_PARAMS_DEFINE_TYPE(WindShellConfig,
-	preset, localAxis, axisOffset, useVelocity, speedThreshold, axisFollow, autoPlay)
-COMPONENT_PARAMS_DEFINE_TYPE(FootstepTrigger, phase, foot)
 
 	// 接続を伴う型のparams。ODR違反を避けるため、マクロも含めて無名名前空間に入れる。
 	namespace
@@ -207,13 +125,14 @@ void RegisterGraphicsComponents(ComponentRegistry& registry)
 		scaled.offset *= ctx.OwnerScale();
 		ctx.Add<CameraTargetComponent>()->SetConfig(scaled);
 		});
+	registry.Add<SlashTrailComponent>("SlashTrail");
 	registry.AddWithParams<SlashTrailConfig>("SlashTrail", [](BuildContext& ctx, const SlashTrailConfig& p) {
-		SlashTrailConfig config = p;
+		SlashTrailConfig params = p;
 		SlashTrailShape shape;
 		shape.base = { 0,0,0 };
 		shape.tip = { 1,1,1 };
-		config.shapes.insert({ "Default",shape });
-		ctx.Add<SlashTrailComponent>()->SetConfig(config);
+		params.shapes.insert({ "default", shape });
+		ctx.Add<SlashTrailComponent>()->SetConfig(params);
 		});
 	registry.Add<OutlineRenderComponent>("Outline");
 	registry.Add<AuraRenderComponent>("Aura");

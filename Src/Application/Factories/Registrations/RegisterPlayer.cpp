@@ -3,8 +3,9 @@
 #include "Application/Factories/ComponentRegistry.h"
 #include "Application/Factories/Registrations/RegisterFunctions.h"
 #include "Application/Factories/Registrations/RegistrationHelpers.h"
-#include "Application/Definitions/Loaders/ComponentParamsOrderedJson.h"
+#include "Application/Definitions/Json/KdJson.h"
 #include "Application/Definitions/Loaders/DefinitionJson.h"
+#include "Application/Factories/Json/PlayerConfigJson.h"
 #include "Application/Definitions/Loaders/PlayerAttackTableLoader.h"
 #include "Application/Definitions/Character/Player/PlayerDefinitionJson.h"
 
@@ -19,10 +20,6 @@
 #include "Application/Components/GamePlay/Character/Player/PlayerInkGaugeComponent.h"
 
 using namespace Registration;
-
-COMPONENT_PARAMS_DEFINE_TYPE(PlayerCombatMovementConfig, walkSpeed, runSpeed)
-COMPONENT_PARAMS_DEFINE_TYPE(PlayerStatusControllerConfig, evade, guard, charge, stagger)
-COMPONENT_PARAMS_DEFINE_TYPE(InkGaugeConfig, max, regenPerSecond, gainOnParry, chargeLine);
 
 // 接続を伴う型のparams。ODR違反を避けるため、マクロも含めて無名名前空間に入れる。
 namespace

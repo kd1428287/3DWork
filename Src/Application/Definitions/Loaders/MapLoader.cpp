@@ -1,6 +1,7 @@
-#include "MapLoader.h"
+﻿#include "MapLoader.h"
 #include "Application/Factories/GamePlay/Map/TerrainFactory.h"
 #include "../Map/MapData.h"
+#include "Application/Definitions/Map/SpawnMarkerJson.h"
 
 namespace
 {

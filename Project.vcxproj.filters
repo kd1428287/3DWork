@@ -292,6 +292,12 @@
     <Filter Include="Src\Application\Effect\Shell">
       <UniqueIdentifier>{be42bd4c-e305-447c-a8a6-8892d7f93f88}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\Factories\Json">
+      <UniqueIdentifier>{a939309a-8c48-4d38-80aa-e2bd1f631890}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Definitions\Json">
+      <UniqueIdentifier>{92017ca1-6643-4f3b-b6c1-f02db00d770a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -1238,6 +1244,36 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Systems\LoadList.h">
       <Filter>Src\Application\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Factories\Json\CombatConfigJson.h">
+      <Filter>Src\Application\Factories\Json</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Factories\Json\GraphicsConfigJson.h">
+      <Filter>Src\Application\Factories\Json</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Factories\Json\PhysicsConfigJson.h">
+      <Filter>Src\Application\Factories\Json</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Factories\Json\PlayerConfigJson.h">
+      <Filter>Src\Application\Factories\Json</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Factories\Json\UIConfigJson.h">
+      <Filter>Src\Application\Factories\Json</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Character\Common\FootstepTypesJson.h">
+      <Filter>Src\Application\Definitions\Character\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Json\CoreJson.h">
+      <Filter>Src\Application\Definitions\Json</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Json\KdJson.h">
+      <Filter>Src\Application\Definitions\Json</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Map\SpawnMarkerJson.h">
+      <Filter>Src\Application\Definitions\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Definitions\Physics\ColliderParamsJson.h">
+      <Filter>Src\Application\Definitions\Physics</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

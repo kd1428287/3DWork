@@ -23,7 +23,11 @@ public:
 
 		if (!newData->Load(fileName))
 		{
-			assert(0 && "KdDataStorage::LoadData ファイルが存在しません。ファイルパスを確認してください");
+			// エラーログにファイルパスも出力(assertは文字列を組み立てられないため先に出す)
+			std::string errorLog = "KdDataStorage::LoadData ファイルが存在しません: " + std::string(fileName) + "\n";
+			OutputDebugStringA(errorLog.c_str());
+
+			assert(0 && "KdDataStorage::LoadData ファイルが存在しません。出力ウィンドウのファイルパスを確認してください");
 
 			return nullptr;
 		}

@@ -1,9 +1,9 @@
-// Enemy専用のコンポーネント登録。
+﻿// Enemy専用のコンポーネント登録。
 
 #include "Application/Factories/ComponentRegistry.h"
 #include "Application/Factories/Registrations/RegisterFunctions.h"
 #include "Application/Factories/Registrations/RegistrationHelpers.h"
-#include "Application/Definitions/Loaders/ComponentParamsOrderedJson.h"
+#include "Application/Definitions/Json/KdJson.h"
 #include "Application/Definitions/Loaders/DefinitionJson.h"
 #include "Application/Definitions/Loaders/EnemyAttackTableLoader.h"
 #include "Application/Definitions/Character/Enemy/EnemyDefinitionJson.h"
