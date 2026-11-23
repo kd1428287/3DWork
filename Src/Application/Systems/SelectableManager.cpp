@@ -1,4 +1,4 @@
-﻿#include "Framework/KdFramework.h"
+#include "Framework/KdFramework.h"
 
 #include "SelectableManager.h"
 #include "Application/Components/Graphics/UI/UITransformComponent.h"
@@ -25,6 +25,14 @@ void SelectableManager::RegisterAction(const std::string& id, ActionPublisher pu
 void SelectableManager::UnregisterAction(const std::string& id)
 {
 	publishers_.erase(id);
+}
+
+std::vector<std::string> SelectableManager::GetActionIds() const
+{
+	std::vector<std::string> ids;
+	for (const auto& kv : publishers_) ids.push_back(kv.first);
+	std::sort(ids.begin(), ids.end());
+	return ids;
 }
 
 void SelectableManager::Post(UITrigger trigger, const UIAction& action)
@@ -97,6 +105,23 @@ SelectableComponent* SelectableManager::FindFirstActive() const
 		if (IsActive(sel)) return sel;
 	}
 	return nullptr;
+}
+
+void SelectableManager::AutoLinkVertical(int group)
+{
+	std::vector<std::pair<float, SelectableComponent*>> items;
+	for (auto* sel : list_)
+	{
+		Math::Vector2 c;
+		if (!sel->IsInteractable() || (group >= 0 && sel->GetGroup() != group) || !sel->GetCenter(c)) continue;
+		items.push_back({ c.y, sel });
+	}
+
+	// 描画座標はY上向きなので、yが大きい方を上とみなす
+	std::stable_sort(items.begin(), items.end(),
+		[](const auto& a, const auto& b) { return a.first > b.first; });
+
+	for (size_t i = 1; i < items.size(); ++i) SelectableComponent::LinkVertical(items[i - 1].second, items[i].second);
 }
 
 void SelectableManager::SetHover(SelectableComponent* next)

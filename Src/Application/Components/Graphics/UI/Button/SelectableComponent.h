@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Application/Systems/SelectableManager.h"
 
@@ -24,6 +24,9 @@ public:
 
 	// 2D描画座標の点が矩形内か(回転は考慮しない)
 	bool HitTest(const Math::Vector2& point) const;
+
+	// 矩形の中心(2D描画座標)。UITransformが無い・解決できなければfalse
+	bool GetCenter(Math::Vector2& out) const;
 
 	//===========================================
 	// 入力の受け取り(マウス・キー・パッド共通)

@@ -1,4 +1,4 @@
-﻿#include "Framework/KdFramework.h"
+#include "Framework/KdFramework.h"
 
 #include "SelectableComponent.h"
 #include "Application/Systems/SelectableManager.h"
@@ -32,6 +32,15 @@ bool SelectableComponent::HitTest(const Math::Vector2& point) const
 
 	return point.x >= min.x && point.x <= min.x + size.x
 		&& point.y >= min.y && point.y <= min.y + size.y;
+}
+
+bool SelectableComponent::GetCenter(Math::Vector2& out) const
+{
+	Math::Vector2 min, size;
+	if (!ui_ || !ui_->ResolveRect(min, size)) return false;
+
+	out = min + size * 0.5f;
+	return true;
 }
 
 SelectableComponent::~SelectableComponent()

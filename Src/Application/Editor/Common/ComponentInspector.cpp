@@ -1,8 +1,9 @@
-﻿#include "Application/main.h"
+#include "Application/main.h"
 
 #include "ComponentInspector.h"
 
 #include "Application/Factories/ComponentRegistry.h"
+#include "Application/Systems/SelectableManager.h"
 #include "Application/Definitions/Physics/ColliderCategoryNames.h"
 #include "nlohmann/json.hpp"
 
@@ -124,13 +125,32 @@ namespace
 			else if (def.is_string())
 			{
 				const std::string s = current.is_string() ? current.get<std::string>() : def.get<std::string>();
-				char buf[256];
+				char buf[1024];
 				strncpy_s(buf, s.c_str(), _TRUNCATE);
-				ImGui::InputText(key.c_str(), buf, sizeof(buf));
+				// Textの文字だけ改行できる複数行入力にする
+				if (componentType == "Text" && key == "text") { ImGui::InputTextMultiline(key.c_str(), buf, sizeof(buf), ImVec2(0, 60)); }
+				else { ImGui::InputText(key.c_str(), buf, sizeof(buf)); }
 				if (ImGui::IsItemActivated()) { pushUndo(); }
 				if (ImGui::IsItemEdited()) { params[key] = std::string(buf); }
 				// モデルの再読み込み等を入力のたびに走らせないよう、確定時にだけ「編集された」とする
 				if (ImGui::IsItemDeactivatedAfterEdit()) { edited = true; }
+
+				// Selectableのon*は、登録済みのアクションIDから選べる(手入力も可)
+				if (componentType == "Selectable" && key.rfind("on", 0) == 0)
+				{
+					ImGui::SameLine();
+					if (ImGui::SmallButton("v")) { ImGui::OpenPopup("##actionIds"); }
+					if (ImGui::BeginPopup("##actionIds"))
+					{
+						const auto ids = SelectableManager::Instance().GetActionIds();
+						if (ids.empty()) { ImGui::TextDisabled("登録済みのIDがありません(手入力してください)"); }
+						for (const auto& id : ids)
+						{
+							if (ImGui::Selectable(id.c_str())) { pushUndo(); params[key] = id; edited = true; }
+						}
+						ImGui::EndPopup();
+					}
+				}
 			}
 			else if (IsNumberArray(def, 3))
 			{

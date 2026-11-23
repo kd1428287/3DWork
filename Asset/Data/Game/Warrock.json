@@ -583,7 +583,7 @@
     },
     {
       "params": {
-        "maxHealth": 500.0,
+        "maxHealth": 100.0,
         "maxLife": 2
       },
       "type": "HP"

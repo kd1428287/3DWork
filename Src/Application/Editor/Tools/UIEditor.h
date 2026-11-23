@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 // ※ ImGui / DirectXTK(SimpleMath) は既存のPCH等で読み込まれている前提です。
 #include <functional>
@@ -88,6 +88,7 @@ private:
 	// presetは"Image" / "Text" / "Button"。それぞれのコンポーネント構成で要素を追加する
 	void AddElement(const std::string& preset);
 	void RemoveSelected();
+	void DuplicateSelected();	// Ctrl+D。選択中の要素を直後へ複製する
 	void Reparent(UIId id, UIId newParentId);
 	void MoveSibling(UIId id, int dir);	// dir: -1=前へ(奥へ) / +1=後ろへ(手前へ)
 

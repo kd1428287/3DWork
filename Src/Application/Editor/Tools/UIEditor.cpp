@@ -323,6 +323,7 @@ void UIEditor::Update()
 		if (ctrl && ImGui::IsKeyPressed(ImGuiKey_Y, false)) { Redo(); }
 		if (ctrl && ImGui::IsKeyPressed(ImGuiKey_S, false) && m_currentScreen >= 0) { Save(CurrentPath()); }
 
+		if (ctrl && ImGui::IsKeyPressed(ImGuiKey_D, false)) { DuplicateSelected(); }
 		if (ImGui::IsKeyPressed(ImGuiKey_Delete, false)) { RemoveSelected(); }
 	}
 }
@@ -613,6 +614,8 @@ void UIEditor::DrawHierarchy()
 
 	ImGui::BeginDisabled(FindSelected() == nullptr);
 	if (ImGui::Button("- Remove")) { RemoveSelected(); }
+	ImGui::SameLine();
+	if (ImGui::Button("Duplicate")) { DuplicateSelected(); }
 	ImGui::SameLine();
 	if (ImGui::Button("Up")) { MoveSibling(m_selectedId, -1); }
 	ImGui::SameLine();
@@ -1029,6 +1032,33 @@ void UIEditor::RemoveSelected()
 		m_elements.end());
 
 	m_selectedId = kInvalidUIId;
+}
+
+// 選択中の要素を同じ親の直後へ複製する(子は複製しない)
+void UIEditor::DuplicateSelected()
+{
+	const UIElement* src = FindSelected();
+	if (!src) return;
+
+	PushUndo();
+
+	UIElement copy = *src;
+	copy.id = m_nextId++;
+	copy.name = src->name + "_copy";
+
+	// 重なって見えなくならないよう少しずらす
+	UILayout l;
+	if (ReadUILayout(copy, l))
+	{
+		l.position += DirectX::SimpleMath::Vector2(20.0f, -20.0f);
+		WriteUILayout(copy, l);
+	}
+
+	int idx = 0;
+	for (int i = 0; i < (int)m_elements.size(); ++i) { if (m_elements[i].id == src->id) { idx = i; break; } }
+
+	m_selectedId = copy.id;
+	m_elements.insert(m_elements.begin() + idx + 1, std::move(copy));
 }
 
 void UIEditor::Reparent(UIId id, UIId newParentId)

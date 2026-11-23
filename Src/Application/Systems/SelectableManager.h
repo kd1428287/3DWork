@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 class SelectableComponent;
 
@@ -46,6 +46,9 @@ public:
 	void RegisterAction(const std::string& id, ActionPublisher publisher);
 	void UnregisterAction(const std::string& id);
 
+	// 登録済みのアクションID(エディタの候補表示用。名前順)
+	std::vector<std::string> GetActionIds() const;
+
 	// Selectableからの通知。キューに積み、Update末尾でまとめて配信する
 	void Post(UITrigger trigger, const UIAction& action);
 
@@ -56,6 +59,9 @@ public:
 	// KdInputManagerに登録済みのボタン名
 	void SetButtonNames(const std::string& confirm, const std::string& up, const std::string& down,
 		const std::string& left, const std::string& right);
+
+	// 指定グループ(-1で全て)の操作可能なUIを、画面上の上から下の順に上下リンクする。画面の生成後に呼ぶ
+	void AutoLinkVertical(int group);
 
 	// trueならマウスが乗ったUIをそのまま選択状態にする
 	void SetHoverSelects(bool enable) { hoverSelects_ = enable; }
