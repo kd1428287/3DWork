@@ -28,15 +28,18 @@ public:
 	}
 
 	void Update(float deltaTime) override {
+		// 崩れ中などで回復をロックされている間は何もしない
+		if (regenLocked_) return;
+
 		// 被弾直後はしばらく回復を止める
 		if (regenDelayTimer_ > 0.0f) {
 			regenDelayTimer_ = std::max(0.0f, regenDelayTimer_ - deltaTime);
 			return;
 		}
 
-		if (current_ <= 0.0f) return;
+		if (current_ <= lowerLimit_) return;
 
-		current_ = std::max(0.0f, current_ - regenPerSecond_ * deltaTime);
+		current_ = std::max(lowerLimit_, current_ - regenPerSecond_ * deltaTime);
 		PublishChanged();
 	}
 
@@ -50,13 +53,19 @@ public:
 
 	void DelayRegenPosture(float amount)
 	{
-		if (!isEnabled_)isEnabled_ = true;
 		regenDelayTimer_ = std::max(amount, regenDelaySeconds_);
 	}
 
+	// 自然回復をロックする(崩れ中など)。被弾(AddPostureDamage)では解除されない。
 	void StopRegenPosture()
 	{
-		isEnabled_ = false;
+		regenLocked_ = true;
+	}
+
+	// ロックを解除して自然回復を再開する。
+	void ResumeRegenPosture()
+	{
+		regenLocked_ = false;
 	}
 
 	// 最大まで溜まっているか(=崩し発生条件)。
@@ -88,7 +97,8 @@ private:
 	float max_;
 	float current_;
 
-	bool isEnabled_ = true;
+	// trueの間は自然回復しない(StopRegenPosture/ResumeRegenPostureで切り替える)
+	bool regenLocked_ = false;
 
 	// 回復できる下限
 	float lowerLimit_ = PostureConfig{}.lowerLimit;

@@ -1,1002 +1,1144 @@
 {
-	"attacks": [
-		{
-			"id": "Attack02_1",
-			"attack": {
-				"chargeData": {
-					"isEnabled": false,
-					"chargeTime": 1.0,
-					"clip": {
-						"animationName": "",
-						"loop": false,
-						"duration": -1.0,
-						"useRootMotion": false,
-						"blendDuration": 0.5,
-						"startFrame": 0,
-						"endFrame": 0,
-						"isForce": true,
-						"segments": []
-					},
-					"failedAttackId": ""
-				},
-				"damageData": {
-					"damage": 10.0,
-					"postureDamage": 15.0,
-					"guardDamageRatio": 0.10000000149011612,
-					"guardPostureDamageRatio": 0.10000000149011612,
-					"parryPostureDamage": 30.0,
-					"isParryable": true,
-					"isReboundable": true
-				},
-				"visualData": {
-					"hit": {
-						"enableCameraShake": false,
-						"enableHitStop": true,
-						"enableEffect": true,
-						"enableDistortion": false,
-						"effectName": "InkHitEffect",
-						"SEName": "Asset/Sounds/Game/SwordHit.wav",
-						"sePitchRandom": 0.0,
-						"useReflectDirection": false,
-						"normalBlendRatio": 0.5,
-						"cameraShakeIntensity": 1.0,
-						"hitStopDurationSeconds": 0.10000000149011612,
-						"recoilChain": "",
-						"recoilStrength": 1.0
-					},
-					"block": {
-						"enableCameraShake": false,
-						"enableHitStop": true,
-						"enableEffect": true,
-						"enableDistortion": false,
-						"effectName": "InkHitEffect",
-						"SEName": "Asset/Sounds/Game/SwordHit.wav",
-						"sePitchRandom": 0.0,
-						"useReflectDirection": false,
-						"normalBlendRatio": 0.5,
-						"cameraShakeIntensity": 1.0,
-						"hitStopDurationSeconds": 0.10000000149011612,
-						"recoilChain": "",
-						"recoilStrength": 1.0
-					},
-					"parry": {
-						"enableCameraShake": false,
-						"enableHitStop": true,
-						"enableEffect": true,
-						"enableDistortion": false,
-						"effectName": "ParryEffect",
-						"SEName": "Asset/Sounds/Game/Hit.wav",
-						"sePitchRandom": 0.0,
-						"useReflectDirection": true,
-						"normalBlendRatio": 0.5,
-						"cameraShakeIntensity": 1.0,
-						"hitStopDurationSeconds": 0.10000000149011612,
-						"recoilChain": "",
-						"recoilStrength": 1.0
-					},
-					"hitStopDelaySeconds": 0.0,
-					"trailName": "InkTrail_1",
-					"windPreset": ""
-				},
-				"moveData": {
-					"stepDistance": 3.0,
-					"stepDuration": 0.10000000149011612,
-					"engageDistance": 1.2000000476837158,
-					"stepDirection": [
-						0.0,
-						0.0,
-						0.0
-					]
-				},
-				"phaseData": {
-					"windup": {
-						"animationName": "Attack02_1_Root",
-						"loop": false,
-						"duration": 0.18000000715255737,
-						"useRootMotion": true,
-						"blendDuration": 0.10000000149011612,
-						"startFrame": 0,
-						"endFrame": 20,
-						"isForce": true,
-						"segments": []
-					},
-					"active": {
-						"animationName": "Attack02_1_Root",
-						"loop": false,
-						"duration": 0.3499999940395355,
-						"useRootMotion": true,
-						"blendDuration": 0.0,
-						"startFrame": 20,
-						"endFrame": 60,
-						"isForce": true,
-						"segments": []
-					},
-					"recovery": {
-						"animationName": "Attack02_1_Root",
-						"loop": false,
-						"duration": 1.0499999523162842,
-						"useRootMotion": true,
-						"blendDuration": 0.0,
-						"startFrame": 60,
-						"endFrame": 180,
-						"isForce": true,
-						"segments": []
-					}
-				},
-				"cancelData": {
-					"recoveryMoveCancelStart": 0.15000000596046448,
-					"recoveryEvadeCancelStart": 0.10000000149011612,
-					"recoveryAttackCancelStart": 0.11999999731779099,
-					"comboWindowAfterRecovery": 0.20000000298023224
-				},
-				"weaponSlots": [
-					"Main"
-				]
-			},
-			"comboLinks": [
-				{
-					"requiredCommand": "Attack",
-					"priority": 0,
-					"nextAttackId": "Attack02_2"
-				}
-			],
-			"entryCommand": "Attack"
-		},
-		{
-			"id": "Attack02_2",
-			"attack": {
-				"chargeData": {
-					"isEnabled": false,
-					"chargeTime": 1.0,
-					"clip": {
-						"animationName": "",
-						"loop": false,
-						"duration": -1.0,
-						"useRootMotion": false,
-						"blendDuration": 0.5,
-						"startFrame": 0,
-						"endFrame": 0,
-						"isForce": true,
-						"segments": []
-					},
-					"failedAttackId": ""
-				},
-				"damageData": {
-					"damage": 10.0,
-					"postureDamage": 15.0,
-					"guardDamageRatio": 0.10000000149011612,
-					"guardPostureDamageRatio": 0.10000000149011612,
-					"parryPostureDamage": 30.0,
-					"isParryable": true,
-					"isReboundable": true
-				},
-				"visualData": {
-					"hit": {
-						"enableCameraShake": false,
-						"enableHitStop": true,
-						"enableEffect": true,
-						"enableDistortion": false,
-						"effectName": "InkHitEffect",
-						"SEName": "Asset/Sounds/Game/SwordHit.wav",
-						"sePitchRandom": 0.0,
-						"useReflectDirection": false,
-						"normalBlendRatio": 0.5,
-						"cameraShakeIntensity": 1.0,
-						"hitStopDurationSeconds": 0.10000000149011612,
-						"recoilChain": "",
-						"recoilStrength": 1.0
-					},
-					"block": {
-						"enableCameraShake": false,
-						"enableHitStop": true,
-						"enableEffect": true,
-						"enableDistortion": false,
-						"effectName": "InkHitEffect",
-						"SEName": "Asset/Sounds/Game/SwordHit.wav",
-						"sePitchRandom": 0.0,
-						"useReflectDirection": false,
-						"normalBlendRatio": 0.5,
-						"cameraShakeIntensity": 1.0,
-						"hitStopDurationSeconds": 0.10000000149011612,
-						"recoilChain": "",
-						"recoilStrength": 1.0
-					},
-					"parry": {
-						"enableCameraShake": false,
-						"enableHitStop": true,
-						"enableEffect": true,
-						"enableDistortion": false,
-						"effectName": "ParryEffect",
-						"SEName": "Asset/Sounds/Game/Hit.wav",
-						"sePitchRandom": 0.0,
-						"useReflectDirection": true,
-						"normalBlendRatio": 0.5,
-						"cameraShakeIntensity": 1.0,
-						"hitStopDurationSeconds": 0.10000000149011612,
-						"recoilChain": "",
-						"recoilStrength": 1.0
-					},
-					"hitStopDelaySeconds": 0.0,
-					"trailName": "InkTrail_1",
-					"windPreset": ""
-				},
-				"moveData": {
-					"stepDistance": 3.0,
-					"stepDuration": 0.10000000149011612,
-					"engageDistance": 1.2000000476837158,
-					"stepDirection": [
-						0.0,
-						0.0,
-						0.0
-					]
-				},
-				"phaseData": {
-					"windup": {
-						"animationName": "Attack02_2_Root",
-						"loop": false,
-						"duration": 0.30000001192092896,
-						"useRootMotion": true,
-						"blendDuration": 0.10000000149011612,
-						"startFrame": 0,
-						"endFrame": 35,
-						"isForce": true,
-						"segments": []
-					},
-					"active": {
-						"animationName": "Attack02_2_Root",
-						"loop": false,
-						"duration": 0.20000000298023224,
-						"useRootMotion": true,
-						"blendDuration": 0.0,
-						"startFrame": 35,
-						"endFrame": 65,
-						"isForce": true,
-						"segments": []
-					},
-					"recovery": {
-						"animationName": "Attack02_2_Root",
-						"loop": false,
-						"duration": 1.0,
-						"useRootMotion": true,
-						"blendDuration": 0.0,
-						"startFrame": 65,
-						"endFrame": 180,
-						"isForce": true,
-						"segments": []
-					}
-				},
-				"cancelData": {
-					"recoveryMoveCancelStart": 0.15000000596046448,
-					"recoveryEvadeCancelStart": 0.15000000596046448,
-					"recoveryAttackCancelStart": 0.18000000715255737,
-					"comboWindowAfterRecovery": 0.20000000298023224
-				},
-				"weaponSlots": [
-					"Main"
-				]
-			},
-			"comboLinks": [
-				{
-					"requiredCommand": "Attack",
-					"priority": 0,
-					"nextAttackId": "Attack02_3"
-				}
-			],
-			"entryCommand": null
-		},
-		{
-			"id": "Attack02_3",
-			"attack": {
-				"chargeData": {
-					"isEnabled": false,
-					"chargeTime": 1.0,
-					"clip": {
-						"animationName": "",
-						"loop": false,
-						"duration": -1.0,
-						"useRootMotion": false,
-						"blendDuration": 0.5,
-						"startFrame": 0,
-						"endFrame": 0,
-						"isForce": true,
-						"segments": []
-					},
-					"failedAttackId": ""
-				},
-				"damageData": {
-					"damage": 12.0,
-					"postureDamage": 18.0,
-					"guardDamageRatio": 0.10000000149011612,
-					"guardPostureDamageRatio": 0.10000000149011612,
-					"parryPostureDamage": 35.0,
-					"isParryable": true,
-					"isReboundable": true
-				},
-				"visualData": {
-					"hit": {
-						"enableCameraShake": false,
-						"enableHitStop": true,
-						"enableEffect": true,
-						"enableDistortion": false,
-						"effectName": "InkHitEffect",
-						"SEName": "Asset/Sounds/Game/SwordHit.wav",
-						"sePitchRandom": 0.0,
-						"useReflectDirection": false,
-						"normalBlendRatio": 0.5,
-						"cameraShakeIntensity": 1.0,
-						"hitStopDurationSeconds": 0.10000000149011612,
-						"recoilChain": "",
-						"recoilStrength": 1.0
-					},
-					"block": {
-						"enableCameraShake": false,
-						"enableHitStop": true,
-						"enableEffect": true,
-						"enableDistortion": false,
-						"effectName": "InkHitEffect",
-						"SEName": "Asset/Sounds/Game/SwordHit.wav",
-						"sePitchRandom": 0.0,
-						"useReflectDirection": false,
-						"normalBlendRatio": 0.5,
-						"cameraShakeIntensity": 1.0,
-						"hitStopDurationSeconds": 0.10000000149011612,
-						"recoilChain": "",
-						"recoilStrength": 1.0
-					},
-					"parry": {
-						"enableCameraShake": false,
-						"enableHitStop": true,
-						"enableEffect": true,
-						"enableDistortion": false,
-						"effectName": "ParryEffect",
-						"SEName": "Asset/Sounds/Game/Hit.wav",
-						"sePitchRandom": 0.0,
-						"useReflectDirection": true,
-						"normalBlendRatio": 0.5,
-						"cameraShakeIntensity": 1.0,
-						"hitStopDurationSeconds": 0.10000000149011612,
-						"recoilChain": "",
-						"recoilStrength": 1.0
-					},
-					"hitStopDelaySeconds": 0.0,
-					"trailName": "InkTrail_1",
-					"windPreset": ""
-				},
-				"moveData": {
-					"stepDistance": 3.0,
-					"stepDuration": 0.10000000149011612,
-					"engageDistance": 1.2000000476837158,
-					"stepDirection": [
-						0.0,
-						0.0,
-						0.0
-					]
-				},
-				"phaseData": {
-					"windup": {
-						"animationName": "Attack02_3_Root",
-						"loop": false,
-						"duration": 0.23999999463558197,
-						"useRootMotion": true,
-						"blendDuration": 0.10000000149011612,
-						"startFrame": 0,
-						"endFrame": 45,
-						"isForce": true,
-						"segments": []
-					},
-					"active": {
-						"animationName": "Attack02_3_Root",
-						"loop": false,
-						"duration": 0.18000000715255737,
-						"useRootMotion": true,
-						"blendDuration": 0.10000000149011612,
-						"startFrame": 45,
-						"endFrame": 70,
-						"isForce": true,
-						"segments": []
-					},
-					"recovery": {
-						"animationName": "Attack02_3_Root",
-						"loop": false,
-						"duration": 1.0800000429153442,
-						"useRootMotion": true,
-						"blendDuration": 0.10000000149011612,
-						"startFrame": 70,
-						"endFrame": 250,
-						"isForce": true,
-						"segments": []
-					}
-				},
-				"cancelData": {
-					"recoveryMoveCancelStart": 0.15000000596046448,
-					"recoveryEvadeCancelStart": 0.1599999964237213,
-					"recoveryAttackCancelStart": 0.10000000149011612,
-					"comboWindowAfterRecovery": 0.20000000298023224
-				},
-				"weaponSlots": [
-					"Main"
-				]
-			},
-			"comboLinks": [
-				{
-					"requiredCommand": "Attack",
-					"priority": 0,
-					"nextAttackId": "Attack02_4"
-				}
-			],
-			"entryCommand": null
-		},
-		{
-			"id": "Attack02_4",
-			"attack": {
-				"chargeData": {
-					"isEnabled": false,
-					"chargeTime": 1.0,
-					"clip": {
-						"animationName": "",
-						"loop": false,
-						"duration": -1.0,
-						"useRootMotion": false,
-						"blendDuration": 0.5,
-						"startFrame": 0,
-						"endFrame": 0,
-						"isForce": true,
-						"segments": []
-					},
-					"failedAttackId": ""
-				},
-				"damageData": {
-					"damage": 12.0,
-					"postureDamage": 18.0,
-					"guardDamageRatio": 0.10000000149011612,
-					"guardPostureDamageRatio": 0.10000000149011612,
-					"parryPostureDamage": 35.0,
-					"isParryable": true,
-					"isReboundable": true
-				},
-				"visualData": {
-					"hit": {
-						"enableCameraShake": false,
-						"enableHitStop": true,
-						"enableEffect": true,
-						"enableDistortion": false,
-						"effectName": "InkHitEffect",
-						"SEName": "Asset/Sounds/Game/SwordHit.wav",
-						"sePitchRandom": 0.0,
-						"useReflectDirection": false,
-						"normalBlendRatio": 0.5,
-						"cameraShakeIntensity": 1.0,
-						"hitStopDurationSeconds": 0.10000000149011612,
-						"recoilChain": "",
-						"recoilStrength": 1.0
-					},
-					"block": {
-						"enableCameraShake": false,
-						"enableHitStop": true,
-						"enableEffect": true,
-						"enableDistortion": false,
-						"effectName": "InkHitEffect",
-						"SEName": "Asset/Sounds/Game/SwordHit.wav",
-						"sePitchRandom": 0.0,
-						"useReflectDirection": false,
-						"normalBlendRatio": 0.5,
-						"cameraShakeIntensity": 1.0,
-						"hitStopDurationSeconds": 0.10000000149011612,
-						"recoilChain": "",
-						"recoilStrength": 1.0
-					},
-					"parry": {
-						"enableCameraShake": false,
-						"enableHitStop": true,
-						"enableEffect": true,
-						"enableDistortion": false,
-						"effectName": "ParryEffect",
-						"SEName": "Asset/Sounds/Game/Hit.wav",
-						"sePitchRandom": 0.0,
-						"useReflectDirection": true,
-						"normalBlendRatio": 0.5,
-						"cameraShakeIntensity": 1.0,
-						"hitStopDurationSeconds": 0.10000000149011612,
-						"recoilChain": "",
-						"recoilStrength": 1.0
-					},
-					"hitStopDelaySeconds": 0.0,
-					"trailName": "InkTrail_1",
-					"windPreset": ""
-				},
-				"moveData": {
-					"stepDistance": 3.0,
-					"stepDuration": 0.10000000149011612,
-					"engageDistance": 1.2000000476837158,
-					"stepDirection": [
-						0.0,
-						0.0,
-						0.0
-					]
-				},
-				"phaseData": {
-					"windup": {
-						"animationName": "Attack02_4_Root",
-						"loop": false,
-						"duration": 0.23999999463558197,
-						"useRootMotion": true,
-						"blendDuration": 0.10000000149011612,
-						"startFrame": 0,
-						"endFrame": 45,
-						"isForce": true,
-						"segments": []
-					},
-					"active": {
-						"animationName": "Attack02_4_Root",
-						"loop": false,
-						"duration": 0.18000000715255737,
-						"useRootMotion": true,
-						"blendDuration": 0.10000000149011612,
-						"startFrame": 45,
-						"endFrame": 70,
-						"isForce": true,
-						"segments": []
-					},
-					"recovery": {
-						"animationName": "Attack02_4_Root",
-						"loop": false,
-						"duration": 1.0800000429153442,
-						"useRootMotion": true,
-						"blendDuration": 0.10000000149011612,
-						"startFrame": 70,
-						"endFrame": 260,
-						"isForce": true,
-						"segments": []
-					}
-				},
-				"cancelData": {
-					"recoveryMoveCancelStart": 0.15000000596046448,
-					"recoveryEvadeCancelStart": 0.18000000715255737,
-					"recoveryAttackCancelStart": 0.2199999988079071,
-					"comboWindowAfterRecovery": 0.20000000298023224
-				},
-				"weaponSlots": [
-					"Main"
-				]
-			},
-			"comboLinks": [
-				{
-					"requiredCommand": "Attack",
-					"priority": 0,
-					"nextAttackId": "Attack02_5"
-				}
-			],
-			"entryCommand": null
-		},
-		{
-			"id": "Attack02_5",
-			"attack": {
-				"chargeData": {
-					"isEnabled": false,
-					"chargeTime": 1.0,
-					"clip": {
-						"animationName": "",
-						"loop": false,
-						"duration": -1.0,
-						"useRootMotion": false,
-						"blendDuration": 0.5,
-						"startFrame": 0,
-						"endFrame": 0,
-						"isForce": true,
-						"segments": []
-					},
-					"failedAttackId": ""
-				},
-				"damageData": {
-					"damage": 14.0,
-					"postureDamage": 20.0,
-					"guardDamageRatio": 0.10000000149011612,
-					"guardPostureDamageRatio": 0.10000000149011612,
-					"parryPostureDamage": 40.0,
-					"isParryable": true,
-					"isReboundable": true
-				},
-				"visualData": {
-					"hit": {
-						"enableCameraShake": false,
-						"enableHitStop": true,
-						"enableEffect": true,
-						"enableDistortion": false,
-						"effectName": "InkHitEffect",
-						"SEName": "Asset/Sounds/Game/SwordHit.wav",
-						"sePitchRandom": 0.0,
-						"useReflectDirection": false,
-						"normalBlendRatio": 0.5,
-						"cameraShakeIntensity": 1.0,
-						"hitStopDurationSeconds": 0.10000000149011612,
-						"recoilChain": "",
-						"recoilStrength": 1.0
-					},
-					"block": {
-						"enableCameraShake": false,
-						"enableHitStop": true,
-						"enableEffect": true,
-						"enableDistortion": false,
-						"effectName": "InkHitEffect",
-						"SEName": "Asset/Sounds/Game/SwordHit.wav",
-						"sePitchRandom": 0.0,
-						"useReflectDirection": false,
-						"normalBlendRatio": 0.5,
-						"cameraShakeIntensity": 1.0,
-						"hitStopDurationSeconds": 0.10000000149011612,
-						"recoilChain": "",
-						"recoilStrength": 1.0
-					},
-					"parry": {
-						"enableCameraShake": false,
-						"enableHitStop": true,
-						"enableEffect": true,
-						"enableDistortion": false,
-						"effectName": "ParryEffect",
-						"SEName": "Asset/Sounds/Game/Hit.wav",
-						"sePitchRandom": 0.0,
-						"useReflectDirection": true,
-						"normalBlendRatio": 0.5,
-						"cameraShakeIntensity": 1.0,
-						"hitStopDurationSeconds": 0.10000000149011612,
-						"recoilChain": "",
-						"recoilStrength": 1.0
-					},
-					"hitStopDelaySeconds": 0.0,
-					"trailName": "InkTrail_1",
-					"windPreset": ""
-				},
-				"moveData": {
-					"stepDistance": 3.0,
-					"stepDuration": 0.10000000149011612,
-					"engageDistance": 1.2000000476837158,
-					"stepDirection": [
-						0.0,
-						0.0,
-						0.0
-					]
-				},
-				"phaseData": {
-					"windup": {
-						"animationName": "Attack02_5_Root",
-						"loop": false,
-						"duration": 0.20000000298023224,
-						"useRootMotion": true,
-						"blendDuration": 0.10000000149011612,
-						"startFrame": 0,
-						"endFrame": 30,
-						"isForce": true,
-						"segments": []
-					},
-					"active": {
-						"animationName": "Attack02_5_Root",
-						"loop": false,
-						"duration": 0.23999999463558197,
-						"useRootMotion": true,
-						"blendDuration": 0.10000000149011612,
-						"startFrame": 30,
-						"endFrame": 65,
-						"isForce": true,
-						"segments": []
-					},
-					"recovery": {
-						"animationName": "Attack02_5_Root",
-						"loop": false,
-						"duration": 1.059999942779541,
-						"useRootMotion": true,
-						"blendDuration": 0.10000000149011612,
-						"startFrame": 65,
-						"endFrame": 220,
-						"isForce": true,
-						"segments": []
-					}
-				},
-				"cancelData": {
-					"recoveryMoveCancelStart": 0.15000000596046448,
-					"recoveryEvadeCancelStart": 0.30000001192092896,
-					"recoveryAttackCancelStart": 0.009999999776482582,
-					"comboWindowAfterRecovery": 0.20000000298023224
-				},
-				"weaponSlots": [
-					"Main"
-				]
-			},
-			"comboLinks": [
-				{
-					"requiredCommand": "Attack",
-					"priority": 0,
-					"nextAttackId": "Attack02_6"
-				}
-			],
-			"entryCommand": null
-		},
-		{
-			"id": "ChargeAttack",
-			"attack": {
-				"chargeData": {
-					"isEnabled": true,
-					"chargeTime": 1.5,
-					"clip": {
-						"animationName": "SPAttack04_Root",
-						"loop": false,
-						"duration": 1.5,
-						"useRootMotion": true,
-						"blendDuration": 0.5,
-						"startFrame": 0,
-						"endFrame": 115,
-						"isForce": true,
-						"segments": [
-							{
-								"from": 0.0,
-								"to": 1.0,
-								"weight": 1.0,
-								"ease": "EaseInOut"
-							}
-						]
-					},
-					"failedAttackId": "Attack02_2"
-				},
-				"damageData": {
-					"damage": 55.0,
-					"postureDamage": 60.0,
-					"guardDamageRatio": 0.5,
-					"guardPostureDamageRatio": 0.5,
-					"parryPostureDamage": 60.0,
-					"isParryable": true,
-					"isReboundable": true
-				},
-				"visualData": {
-					"hit": {
-						"enableCameraShake": false,
-						"enableHitStop": true,
-						"enableEffect": true,
-						"enableDistortion": false,
-						"effectName": "InkHitEffect",
-						"SEName": "Asset/Sounds/Game/SwordHit.wav",
-						"sePitchRandom": 0.0,
-						"useReflectDirection": false,
-						"normalBlendRatio": 0.5,
-						"cameraShakeIntensity": 1.0,
-						"hitStopDurationSeconds": 0.10000000149011612,
-						"recoilChain": "",
-						"recoilStrength": 1.0
-					},
-					"block": {
-						"enableCameraShake": false,
-						"enableHitStop": true,
-						"enableEffect": true,
-						"enableDistortion": false,
-						"effectName": "InkHitEffect",
-						"SEName": "Asset/Sounds/Game/SwordHit.wav",
-						"sePitchRandom": 0.0,
-						"useReflectDirection": false,
-						"normalBlendRatio": 0.5,
-						"cameraShakeIntensity": 1.0,
-						"hitStopDurationSeconds": 0.10000000149011612,
-						"recoilChain": "",
-						"recoilStrength": 1.0
-					},
-					"parry": {
-						"enableCameraShake": false,
-						"enableHitStop": true,
-						"enableEffect": true,
-						"enableDistortion": false,
-						"effectName": "ParryEffect",
-						"SEName": "Asset/Sounds/Game/Hit.wav",
-						"sePitchRandom": 0.0,
-						"useReflectDirection": true,
-						"normalBlendRatio": 0.5,
-						"cameraShakeIntensity": 1.0,
-						"hitStopDurationSeconds": 0.10000000149011612,
-						"recoilChain": "",
-						"recoilStrength": 1.0
-					},
-					"hitStopDelaySeconds": 0.0,
-					"trailName": "InkTrail_2",
-					"trailShape": "Wide",
-					"windPreset": ""
-				},
-				"moveData": {
-					"stepDistance": 3.0,
-					"stepDuration": 0.10000000149011612,
-					"engageDistance": 1.2000000476837158,
-					"stepDirection": [
-						0.0,
-						0.0,
-						0.0
-					]
-				},
-				"phaseData": {
-					"windup": {
-						"animationName": "SPAttack04_Root",
-						"loop": false,
-						"duration": 0.5,
-						"useRootMotion": true,
-						"blendDuration": 0.05000000074505806,
-						"startFrame": 115,
-						"endFrame": 135,
-						"isForce": true,
-						"segments": [
-							{
-								"from": 0.0,
-								"to": 1.0,
-								"weight": 1.0,
-								"ease": "EaseIn"
-							}
-						]
-					},
-					"active": {
-						"animationName": "SPAttack04_Root",
-						"loop": false,
-						"duration": 0.20000000298023224,
-						"useRootMotion": true,
-						"blendDuration": 0.0,
-						"startFrame": 135,
-						"endFrame": 175,
-						"isForce": true,
-						"segments": []
-					},
-					"recovery": {
-						"animationName": "SPAttack04_Root",
-						"loop": false,
-						"duration": 1.2000000476837158,
-						"useRootMotion": true,
-						"blendDuration": 0.10000000149011612,
-						"startFrame": 175,
-						"endFrame": 400,
-						"isForce": true,
-						"segments": []
-					}
-				},
-				"cancelData": {
-					"recoveryMoveCancelStart": 0.4000000059604645,
-					"recoveryEvadeCancelStart": 0.3499999940395355,
-					"recoveryAttackCancelStart": 0.5,
-					"comboWindowAfterRecovery": 0.0
-				},
-				"weaponSlots": [
-					"Main"
-				]
-			},
-			"comboLinks": [],
-			"entryCommand": "ChargeAttack"
-		},
-		{
-			"id": "Attack02_6",
-			"attack": {
-				"chargeData": {
-					"isEnabled": false,
-					"chargeTime": 1.0,
-					"clip": {
-						"animationName": "",
-						"loop": false,
-						"duration": -1.0,
-						"useRootMotion": false,
-						"blendDuration": 0.5,
-						"startFrame": 0,
-						"endFrame": 0,
-						"isForce": true,
-						"segments": []
-					},
-					"failedAttackId": ""
-				},
-				"damageData": {
-					"damage": 20.0,
-					"postureDamage": 25.0,
-					"guardDamageRatio": 0.10000000149011612,
-					"guardPostureDamageRatio": 0.10000000149011612,
-					"parryPostureDamage": 50.0,
-					"isParryable": true,
-					"isReboundable": true
-				},
-				"visualData": {
-					"hit": {
-						"enableCameraShake": false,
-						"enableHitStop": true,
-						"enableEffect": true,
-						"enableDistortion": false,
-						"effectName": "InkHitEffect",
-						"SEName": "Asset/Sounds/Game/SwordHit.wav",
-						"sePitchRandom": 0.0,
-						"useReflectDirection": false,
-						"normalBlendRatio": 0.5,
-						"cameraShakeIntensity": 1.0,
-						"hitStopDurationSeconds": 0.10000000149011612,
-						"recoilChain": "",
-						"recoilStrength": 1.0
-					},
-					"block": {
-						"enableCameraShake": false,
-						"enableHitStop": true,
-						"enableEffect": true,
-						"enableDistortion": false,
-						"effectName": "InkHitEffect",
-						"SEName": "Asset/Sounds/Game/SwordHit.wav",
-						"sePitchRandom": 0.0,
-						"useReflectDirection": false,
-						"normalBlendRatio": 0.5,
-						"cameraShakeIntensity": 1.0,
-						"hitStopDurationSeconds": 0.10000000149011612,
-						"recoilChain": "",
-						"recoilStrength": 1.0
-					},
-					"parry": {
-						"enableCameraShake": false,
-						"enableHitStop": true,
-						"enableEffect": true,
-						"enableDistortion": false,
-						"effectName": "ParryEffect",
-						"SEName": "Asset/Sounds/Game/Hit.wav",
-						"sePitchRandom": 0.0,
-						"useReflectDirection": true,
-						"normalBlendRatio": 0.5,
-						"cameraShakeIntensity": 1.0,
-						"hitStopDurationSeconds": 0.10000000149011612,
-						"recoilChain": "",
-						"recoilStrength": 1.0
-					},
-					"hitStopDelaySeconds": 0.0,
-					"trailName": "InkTrail_2",
-					"trailShape":  "Wide",
-					"windPreset": ""
-				},
-				"moveData": {
-					"stepDistance": 3.0,
-					"stepDuration": 0.10000000149011612,
-					"engageDistance": 1.2000000476837158,
-					"stepDirection": [
-						0.0,
-						0.0,
-						0.0
-					]
-				},
-				"phaseData": {
-					"windup": {
-						"animationName": "Attack02_6_Root",
-						"loop": false,
-						"duration": 0.2199999988079071,
-						"useRootMotion": true,
-						"blendDuration": 0.10000000149011612,
-						"startFrame": 0,
-						"endFrame": 30,
-						"isForce": true,
-						"segments": []
-					},
-					"active": {
-						"animationName": "Attack02_6_Root",
-						"loop": false,
-						"duration": 0.4399999976158142,
-						"useRootMotion": true,
-						"blendDuration": 0.10000000149011612,
-						"startFrame": 30,
-						"endFrame": 90,
-						"isForce": true,
-						"segments": []
-					},
-					"recovery": {
-						"animationName": "Attack02_6_Root",
-						"loop": false,
-						"duration": 1.3300000429153442,
-						"useRootMotion": true,
-						"blendDuration": 0.10000000149011612,
-						"startFrame": 90,
-						"endFrame": 270,
-						"isForce": true,
-						"segments": []
-					}
-				},
-				"cancelData": {
-					"recoveryMoveCancelStart": 0.3499999940395355,
-					"recoveryEvadeCancelStart": 0.30000001192092896,
-					"recoveryAttackCancelStart": 0.5,
-					"comboWindowAfterRecovery": 0.20000000298023224
-				},
-				"weaponSlots": [
-					"Main"
-				]
-			},
-			"comboLinks": [],
-			"entryCommand": null
-		}
-	]
+  "attacks": [
+    {
+      "id": "Attack02_1",
+      "attack": {
+        "chargeData": {
+          "isEnabled": false,
+          "chargeTime": 1.0,
+          "clip": {
+            "animationName": "",
+            "loop": false,
+            "duration": -1.0,
+            "useRootMotion": false,
+            "blendDuration": 0.5,
+            "startFrame": 0,
+            "endFrame": 0,
+            "isForce": true,
+            "segments": []
+          },
+          "failedAttackId": ""
+        },
+        "damageData": {
+          "damage": 10.0,
+          "postureDamage": 15.0,
+          "guardDamageRatio": 0.10000000149011612,
+          "guardPostureDamageRatio": 0.10000000149011612,
+          "parryPostureDamage": 30.0,
+          "isParryable": true,
+          "isReboundable": true
+        },
+        "visualData": {
+          "hit": {
+            "enableCameraShake": false,
+            "enableHitStop": true,
+            "enableEffect": true,
+            "enableDistortion": false,
+            "effectName": "InkHitEffect",
+            "SEName": "Asset/Sounds/Game/SwordHit.wav",
+            "sePitchRandom": 0.0,
+            "useReflectDirection": false,
+            "normalBlendRatio": 0.5,
+            "cameraShakeIntensity": 1.0,
+            "hitStopDurationSeconds": 0.10000000149011612,
+            "recoilChain": "",
+            "recoilStrength": 1.0
+          },
+          "block": {
+            "enableCameraShake": false,
+            "enableHitStop": true,
+            "enableEffect": true,
+            "enableDistortion": false,
+            "effectName": "InkHitEffect",
+            "SEName": "Asset/Sounds/Game/SwordHit.wav",
+            "sePitchRandom": 0.0,
+            "useReflectDirection": false,
+            "normalBlendRatio": 0.5,
+            "cameraShakeIntensity": 1.0,
+            "hitStopDurationSeconds": 0.10000000149011612,
+            "recoilChain": "",
+            "recoilStrength": 1.0
+          },
+          "parry": {
+            "enableCameraShake": false,
+            "enableHitStop": true,
+            "enableEffect": true,
+            "enableDistortion": false,
+            "effectName": "ParryEffect",
+            "SEName": "Asset/Sounds/Game/Hit.wav",
+            "sePitchRandom": 0.0,
+            "useReflectDirection": true,
+            "normalBlendRatio": 0.5,
+            "cameraShakeIntensity": 1.0,
+            "hitStopDurationSeconds": 0.10000000149011612,
+            "recoilChain": "",
+            "recoilStrength": 1.0
+          },
+          "hitStopDelaySeconds": 0.0,
+          "trailName": "InkTrail_1",
+          "trailShape": "",
+          "windPreset": ""
+        },
+        "moveData": {
+          "stepDistance": 3.0,
+          "stepDuration": 0.10000000149011612,
+          "engageDistance": 1.2000000476837158,
+          "stepDirection": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "phaseData": {
+          "windup": {
+            "animationName": "Attack02_1_Root",
+            "loop": false,
+            "duration": 0.18000000715255737,
+            "useRootMotion": true,
+            "blendDuration": 0.10000000149011612,
+            "startFrame": 0,
+            "endFrame": 20,
+            "isForce": true,
+            "segments": []
+          },
+          "active": {
+            "animationName": "Attack02_1_Root",
+            "loop": false,
+            "duration": 0.3499999940395355,
+            "useRootMotion": true,
+            "blendDuration": 0.0,
+            "startFrame": 20,
+            "endFrame": 60,
+            "isForce": true,
+            "segments": []
+          },
+          "recovery": {
+            "animationName": "Attack02_1_Root",
+            "loop": false,
+            "duration": 1.0499999523162842,
+            "useRootMotion": true,
+            "blendDuration": 0.0,
+            "startFrame": 60,
+            "endFrame": 180,
+            "isForce": true,
+            "segments": []
+          }
+        },
+        "cancelData": {
+          "recoveryMoveCancelStart": 0.15000000596046448,
+          "recoveryEvadeCancelStart": 0.10000000149011612,
+          "recoveryAttackCancelStart": 0.11999999731779099,
+          "comboWindowAfterRecovery": 0.20000000298023224
+        },
+        "weaponSlots": [
+          "Main"
+        ]
+      },
+      "comboLinks": [
+        {
+          "requiredCommand": "Attack",
+          "priority": 0,
+          "nextAttackId": "Attack02_2"
+        }
+      ],
+      "entryCommand": "Attack"
+    },
+    {
+      "id": "Attack02_2",
+      "attack": {
+        "chargeData": {
+          "isEnabled": false,
+          "chargeTime": 1.0,
+          "clip": {
+            "animationName": "",
+            "loop": false,
+            "duration": -1.0,
+            "useRootMotion": false,
+            "blendDuration": 0.5,
+            "startFrame": 0,
+            "endFrame": 0,
+            "isForce": true,
+            "segments": []
+          },
+          "failedAttackId": ""
+        },
+        "damageData": {
+          "damage": 10.0,
+          "postureDamage": 15.0,
+          "guardDamageRatio": 0.10000000149011612,
+          "guardPostureDamageRatio": 0.10000000149011612,
+          "parryPostureDamage": 30.0,
+          "isParryable": true,
+          "isReboundable": true
+        },
+        "visualData": {
+          "hit": {
+            "enableCameraShake": false,
+            "enableHitStop": true,
+            "enableEffect": true,
+            "enableDistortion": false,
+            "effectName": "InkHitEffect",
+            "SEName": "Asset/Sounds/Game/SwordHit.wav",
+            "sePitchRandom": 0.0,
+            "useReflectDirection": false,
+            "normalBlendRatio": 0.5,
+            "cameraShakeIntensity": 1.0,
+            "hitStopDurationSeconds": 0.10000000149011612,
+            "recoilChain": "",
+            "recoilStrength": 1.0
+          },
+          "block": {
+            "enableCameraShake": false,
+            "enableHitStop": true,
+            "enableEffect": true,
+            "enableDistortion": false,
+            "effectName": "InkHitEffect",
+            "SEName": "Asset/Sounds/Game/SwordHit.wav",
+            "sePitchRandom": 0.0,
+            "useReflectDirection": false,
+            "normalBlendRatio": 0.5,
+            "cameraShakeIntensity": 1.0,
+            "hitStopDurationSeconds": 0.10000000149011612,
+            "recoilChain": "",
+            "recoilStrength": 1.0
+          },
+          "parry": {
+            "enableCameraShake": false,
+            "enableHitStop": true,
+            "enableEffect": true,
+            "enableDistortion": false,
+            "effectName": "ParryEffect",
+            "SEName": "Asset/Sounds/Game/Hit.wav",
+            "sePitchRandom": 0.0,
+            "useReflectDirection": true,
+            "normalBlendRatio": 0.5,
+            "cameraShakeIntensity": 1.0,
+            "hitStopDurationSeconds": 0.10000000149011612,
+            "recoilChain": "",
+            "recoilStrength": 1.0
+          },
+          "hitStopDelaySeconds": 0.0,
+          "trailName": "InkTrail_1",
+          "trailShape": "",
+          "windPreset": ""
+        },
+        "moveData": {
+          "stepDistance": 3.0,
+          "stepDuration": 0.10000000149011612,
+          "engageDistance": 1.2000000476837158,
+          "stepDirection": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "phaseData": {
+          "windup": {
+            "animationName": "Attack02_2_Root",
+            "loop": false,
+            "duration": 0.30000001192092896,
+            "useRootMotion": true,
+            "blendDuration": 0.10000000149011612,
+            "startFrame": 0,
+            "endFrame": 35,
+            "isForce": true,
+            "segments": []
+          },
+          "active": {
+            "animationName": "Attack02_2_Root",
+            "loop": false,
+            "duration": 0.20000000298023224,
+            "useRootMotion": true,
+            "blendDuration": 0.0,
+            "startFrame": 35,
+            "endFrame": 65,
+            "isForce": true,
+            "segments": []
+          },
+          "recovery": {
+            "animationName": "Attack02_2_Root",
+            "loop": false,
+            "duration": 1.0,
+            "useRootMotion": true,
+            "blendDuration": 0.0,
+            "startFrame": 65,
+            "endFrame": 180,
+            "isForce": true,
+            "segments": []
+          }
+        },
+        "cancelData": {
+          "recoveryMoveCancelStart": 0.15000000596046448,
+          "recoveryEvadeCancelStart": 0.15000000596046448,
+          "recoveryAttackCancelStart": 0.18000000715255737,
+          "comboWindowAfterRecovery": 0.20000000298023224
+        },
+        "weaponSlots": [
+          "Main"
+        ]
+      },
+      "comboLinks": [
+        {
+          "requiredCommand": "Attack",
+          "priority": 0,
+          "nextAttackId": "Attack02_3"
+        }
+      ],
+      "entryCommand": null
+    },
+    {
+      "id": "Attack02_3",
+      "attack": {
+        "chargeData": {
+          "isEnabled": false,
+          "chargeTime": 1.0,
+          "clip": {
+            "animationName": "",
+            "loop": false,
+            "duration": -1.0,
+            "useRootMotion": false,
+            "blendDuration": 0.5,
+            "startFrame": 0,
+            "endFrame": 0,
+            "isForce": true,
+            "segments": []
+          },
+          "failedAttackId": ""
+        },
+        "damageData": {
+          "damage": 12.0,
+          "postureDamage": 18.0,
+          "guardDamageRatio": 0.10000000149011612,
+          "guardPostureDamageRatio": 0.10000000149011612,
+          "parryPostureDamage": 35.0,
+          "isParryable": true,
+          "isReboundable": true
+        },
+        "visualData": {
+          "hit": {
+            "enableCameraShake": false,
+            "enableHitStop": true,
+            "enableEffect": true,
+            "enableDistortion": false,
+            "effectName": "InkHitEffect",
+            "SEName": "Asset/Sounds/Game/SwordHit.wav",
+            "sePitchRandom": 0.0,
+            "useReflectDirection": false,
+            "normalBlendRatio": 0.5,
+            "cameraShakeIntensity": 1.0,
+            "hitStopDurationSeconds": 0.10000000149011612,
+            "recoilChain": "",
+            "recoilStrength": 1.0
+          },
+          "block": {
+            "enableCameraShake": false,
+            "enableHitStop": true,
+            "enableEffect": true,
+            "enableDistortion": false,
+            "effectName": "InkHitEffect",
+            "SEName": "Asset/Sounds/Game/SwordHit.wav",
+            "sePitchRandom": 0.0,
+            "useReflectDirection": false,
+            "normalBlendRatio": 0.5,
+            "cameraShakeIntensity": 1.0,
+            "hitStopDurationSeconds": 0.10000000149011612,
+            "recoilChain": "",
+            "recoilStrength": 1.0
+          },
+          "parry": {
+            "enableCameraShake": false,
+            "enableHitStop": true,
+            "enableEffect": true,
+            "enableDistortion": false,
+            "effectName": "ParryEffect",
+            "SEName": "Asset/Sounds/Game/Hit.wav",
+            "sePitchRandom": 0.0,
+            "useReflectDirection": true,
+            "normalBlendRatio": 0.5,
+            "cameraShakeIntensity": 1.0,
+            "hitStopDurationSeconds": 0.10000000149011612,
+            "recoilChain": "",
+            "recoilStrength": 1.0
+          },
+          "hitStopDelaySeconds": 0.0,
+          "trailName": "InkTrail_1",
+          "trailShape": "",
+          "windPreset": ""
+        },
+        "moveData": {
+          "stepDistance": 3.0,
+          "stepDuration": 0.10000000149011612,
+          "engageDistance": 1.2000000476837158,
+          "stepDirection": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "phaseData": {
+          "windup": {
+            "animationName": "Attack02_3_Root",
+            "loop": false,
+            "duration": 0.23999999463558197,
+            "useRootMotion": true,
+            "blendDuration": 0.10000000149011612,
+            "startFrame": 0,
+            "endFrame": 45,
+            "isForce": true,
+            "segments": []
+          },
+          "active": {
+            "animationName": "Attack02_3_Root",
+            "loop": false,
+            "duration": 0.18000000715255737,
+            "useRootMotion": true,
+            "blendDuration": 0.10000000149011612,
+            "startFrame": 45,
+            "endFrame": 70,
+            "isForce": true,
+            "segments": []
+          },
+          "recovery": {
+            "animationName": "Attack02_3_Root",
+            "loop": false,
+            "duration": 1.0800000429153442,
+            "useRootMotion": true,
+            "blendDuration": 0.10000000149011612,
+            "startFrame": 70,
+            "endFrame": 250,
+            "isForce": true,
+            "segments": []
+          }
+        },
+        "cancelData": {
+          "recoveryMoveCancelStart": 0.15000000596046448,
+          "recoveryEvadeCancelStart": 0.1599999964237213,
+          "recoveryAttackCancelStart": 0.10000000149011612,
+          "comboWindowAfterRecovery": 0.20000000298023224
+        },
+        "weaponSlots": [
+          "Main"
+        ]
+      },
+      "comboLinks": [
+        {
+          "requiredCommand": "Attack",
+          "priority": 0,
+          "nextAttackId": "Attack02_4"
+        }
+      ],
+      "entryCommand": null
+    },
+    {
+      "id": "Attack02_4",
+      "attack": {
+        "chargeData": {
+          "isEnabled": false,
+          "chargeTime": 1.0,
+          "clip": {
+            "animationName": "",
+            "loop": false,
+            "duration": -1.0,
+            "useRootMotion": false,
+            "blendDuration": 0.5,
+            "startFrame": 0,
+            "endFrame": 0,
+            "isForce": true,
+            "segments": []
+          },
+          "failedAttackId": ""
+        },
+        "damageData": {
+          "damage": 12.0,
+          "postureDamage": 18.0,
+          "guardDamageRatio": 0.10000000149011612,
+          "guardPostureDamageRatio": 0.10000000149011612,
+          "parryPostureDamage": 35.0,
+          "isParryable": true,
+          "isReboundable": true
+        },
+        "visualData": {
+          "hit": {
+            "enableCameraShake": false,
+            "enableHitStop": true,
+            "enableEffect": true,
+            "enableDistortion": false,
+            "effectName": "InkHitEffect",
+            "SEName": "Asset/Sounds/Game/SwordHit.wav",
+            "sePitchRandom": 0.0,
+            "useReflectDirection": false,
+            "normalBlendRatio": 0.5,
+            "cameraShakeIntensity": 1.0,
+            "hitStopDurationSeconds": 0.10000000149011612,
+            "recoilChain": "",
+            "recoilStrength": 1.0
+          },
+          "block": {
+            "enableCameraShake": false,
+            "enableHitStop": true,
+            "enableEffect": true,
+            "enableDistortion": false,
+            "effectName": "InkHitEffect",
+            "SEName": "Asset/Sounds/Game/SwordHit.wav",
+            "sePitchRandom": 0.0,
+            "useReflectDirection": false,
+            "normalBlendRatio": 0.5,
+            "cameraShakeIntensity": 1.0,
+            "hitStopDurationSeconds": 0.10000000149011612,
+            "recoilChain": "",
+            "recoilStrength": 1.0
+          },
+          "parry": {
+            "enableCameraShake": false,
+            "enableHitStop": true,
+            "enableEffect": true,
+            "enableDistortion": false,
+            "effectName": "ParryEffect",
+            "SEName": "Asset/Sounds/Game/Hit.wav",
+            "sePitchRandom": 0.0,
+            "useReflectDirection": true,
+            "normalBlendRatio": 0.5,
+            "cameraShakeIntensity": 1.0,
+            "hitStopDurationSeconds": 0.10000000149011612,
+            "recoilChain": "",
+            "recoilStrength": 1.0
+          },
+          "hitStopDelaySeconds": 0.0,
+          "trailName": "InkTrail_1",
+          "trailShape": "",
+          "windPreset": ""
+        },
+        "moveData": {
+          "stepDistance": 3.0,
+          "stepDuration": 0.10000000149011612,
+          "engageDistance": 1.2000000476837158,
+          "stepDirection": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "phaseData": {
+          "windup": {
+            "animationName": "Attack02_4_Root",
+            "loop": false,
+            "duration": 0.23999999463558197,
+            "useRootMotion": true,
+            "blendDuration": 0.10000000149011612,
+            "startFrame": 0,
+            "endFrame": 45,
+            "isForce": true,
+            "segments": []
+          },
+          "active": {
+            "animationName": "Attack02_4_Root",
+            "loop": false,
+            "duration": 0.18000000715255737,
+            "useRootMotion": true,
+            "blendDuration": 0.10000000149011612,
+            "startFrame": 45,
+            "endFrame": 70,
+            "isForce": true,
+            "segments": []
+          },
+          "recovery": {
+            "animationName": "Attack02_4_Root",
+            "loop": false,
+            "duration": 1.0800000429153442,
+            "useRootMotion": true,
+            "blendDuration": 0.10000000149011612,
+            "startFrame": 70,
+            "endFrame": 260,
+            "isForce": true,
+            "segments": []
+          }
+        },
+        "cancelData": {
+          "recoveryMoveCancelStart": 0.15000000596046448,
+          "recoveryEvadeCancelStart": 0.18000000715255737,
+          "recoveryAttackCancelStart": 0.2199999988079071,
+          "comboWindowAfterRecovery": 0.20000000298023224
+        },
+        "weaponSlots": [
+          "Main"
+        ]
+      },
+      "comboLinks": [
+        {
+          "requiredCommand": "Attack",
+          "priority": 0,
+          "nextAttackId": "Attack02_5"
+        }
+      ],
+      "entryCommand": null
+    },
+    {
+      "id": "Attack02_5",
+      "attack": {
+        "chargeData": {
+          "isEnabled": false,
+          "chargeTime": 1.0,
+          "clip": {
+            "animationName": "",
+            "loop": false,
+            "duration": -1.0,
+            "useRootMotion": false,
+            "blendDuration": 0.5,
+            "startFrame": 0,
+            "endFrame": 0,
+            "isForce": true,
+            "segments": []
+          },
+          "failedAttackId": ""
+        },
+        "damageData": {
+          "damage": 14.0,
+          "postureDamage": 20.0,
+          "guardDamageRatio": 0.10000000149011612,
+          "guardPostureDamageRatio": 0.10000000149011612,
+          "parryPostureDamage": 40.0,
+          "isParryable": true,
+          "isReboundable": true
+        },
+        "visualData": {
+          "hit": {
+            "enableCameraShake": false,
+            "enableHitStop": true,
+            "enableEffect": true,
+            "enableDistortion": false,
+            "effectName": "InkHitEffect",
+            "SEName": "Asset/Sounds/Game/SwordHit.wav",
+            "sePitchRandom": 0.0,
+            "useReflectDirection": false,
+            "normalBlendRatio": 0.5,
+            "cameraShakeIntensity": 1.0,
+            "hitStopDurationSeconds": 0.10000000149011612,
+            "recoilChain": "",
+            "recoilStrength": 1.0
+          },
+          "block": {
+            "enableCameraShake": false,
+            "enableHitStop": true,
+            "enableEffect": true,
+            "enableDistortion": false,
+            "effectName": "InkHitEffect",
+            "SEName": "Asset/Sounds/Game/SwordHit.wav",
+            "sePitchRandom": 0.0,
+            "useReflectDirection": false,
+            "normalBlendRatio": 0.5,
+            "cameraShakeIntensity": 1.0,
+            "hitStopDurationSeconds": 0.10000000149011612,
+            "recoilChain": "",
+            "recoilStrength": 1.0
+          },
+          "parry": {
+            "enableCameraShake": false,
+            "enableHitStop": true,
+            "enableEffect": true,
+            "enableDistortion": false,
+            "effectName": "ParryEffect",
+            "SEName": "Asset/Sounds/Game/Hit.wav",
+            "sePitchRandom": 0.0,
+            "useReflectDirection": true,
+            "normalBlendRatio": 0.5,
+            "cameraShakeIntensity": 1.0,
+            "hitStopDurationSeconds": 0.10000000149011612,
+            "recoilChain": "",
+            "recoilStrength": 1.0
+          },
+          "hitStopDelaySeconds": 0.0,
+          "trailName": "InkTrail_1",
+          "trailShape": "",
+          "windPreset": ""
+        },
+        "moveData": {
+          "stepDistance": 3.0,
+          "stepDuration": 0.10000000149011612,
+          "engageDistance": 1.2000000476837158,
+          "stepDirection": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "phaseData": {
+          "windup": {
+            "animationName": "Attack02_5_Root",
+            "loop": false,
+            "duration": 0.20000000298023224,
+            "useRootMotion": true,
+            "blendDuration": 0.10000000149011612,
+            "startFrame": 0,
+            "endFrame": 30,
+            "isForce": true,
+            "segments": []
+          },
+          "active": {
+            "animationName": "Attack02_5_Root",
+            "loop": false,
+            "duration": 0.23999999463558197,
+            "useRootMotion": true,
+            "blendDuration": 0.10000000149011612,
+            "startFrame": 30,
+            "endFrame": 65,
+            "isForce": true,
+            "segments": []
+          },
+          "recovery": {
+            "animationName": "Attack02_5_Root",
+            "loop": false,
+            "duration": 1.059999942779541,
+            "useRootMotion": true,
+            "blendDuration": 0.10000000149011612,
+            "startFrame": 65,
+            "endFrame": 220,
+            "isForce": true,
+            "segments": []
+          }
+        },
+        "cancelData": {
+          "recoveryMoveCancelStart": 0.15000000596046448,
+          "recoveryEvadeCancelStart": 0.30000001192092896,
+          "recoveryAttackCancelStart": 0.009999999776482582,
+          "comboWindowAfterRecovery": 0.20000000298023224
+        },
+        "weaponSlots": [
+          "Main"
+        ]
+      },
+      "comboLinks": [
+        {
+          "requiredCommand": "Attack",
+          "priority": 0,
+          "nextAttackId": "Attack02_6"
+        }
+      ],
+      "entryCommand": null
+    },
+    {
+      "id": "ChargeAttack",
+      "attack": {
+        "chargeData": {
+          "isEnabled": true,
+          "chargeTime": 1.5,
+          "clip": {
+            "animationName": "SPAttack04_Root",
+            "loop": false,
+            "duration": 1.5,
+            "useRootMotion": true,
+            "blendDuration": 0.5,
+            "startFrame": 0,
+            "endFrame": 115,
+            "isForce": true,
+            "segments": [
+              {
+                "from": 0.0,
+                "to": 1.0,
+                "weight": 1.0,
+                "ease": "EaseInOut"
+              }
+            ]
+          },
+          "failedAttackId": "Attack02_2"
+        },
+        "damageData": {
+          "damage": 55.0,
+          "postureDamage": 60.0,
+          "guardDamageRatio": 0.5,
+          "guardPostureDamageRatio": 0.5,
+          "parryPostureDamage": 60.0,
+          "isParryable": true,
+          "isReboundable": true
+        },
+        "visualData": {
+          "hit": {
+            "enableCameraShake": false,
+            "enableHitStop": true,
+            "enableEffect": true,
+            "enableDistortion": false,
+            "effectName": "InkHitEffect",
+            "SEName": "Asset/Sounds/Game/SwordHit.wav",
+            "sePitchRandom": 0.0,
+            "useReflectDirection": false,
+            "normalBlendRatio": 0.5,
+            "cameraShakeIntensity": 1.0,
+            "hitStopDurationSeconds": 0.10000000149011612,
+            "recoilChain": "",
+            "recoilStrength": 1.0
+          },
+          "block": {
+            "enableCameraShake": false,
+            "enableHitStop": true,
+            "enableEffect": true,
+            "enableDistortion": false,
+            "effectName": "InkHitEffect",
+            "SEName": "Asset/Sounds/Game/SwordHit.wav",
+            "sePitchRandom": 0.0,
+            "useReflectDirection": false,
+            "normalBlendRatio": 0.5,
+            "cameraShakeIntensity": 1.0,
+            "hitStopDurationSeconds": 0.10000000149011612,
+            "recoilChain": "",
+            "recoilStrength": 1.0
+          },
+          "parry": {
+            "enableCameraShake": false,
+            "enableHitStop": true,
+            "enableEffect": true,
+            "enableDistortion": false,
+            "effectName": "ParryEffect",
+            "SEName": "Asset/Sounds/Game/Hit.wav",
+            "sePitchRandom": 0.0,
+            "useReflectDirection": true,
+            "normalBlendRatio": 0.5,
+            "cameraShakeIntensity": 1.0,
+            "hitStopDurationSeconds": 0.10000000149011612,
+            "recoilChain": "",
+            "recoilStrength": 1.0
+          },
+          "hitStopDelaySeconds": 0.0,
+          "trailName": "InkTrail_2",
+          "trailShape": "Wide",
+          "windPreset": ""
+        },
+        "moveData": {
+          "stepDistance": 3.0,
+          "stepDuration": 0.10000000149011612,
+          "engageDistance": 1.2000000476837158,
+          "stepDirection": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "phaseData": {
+          "windup": {
+            "animationName": "SPAttack04_Root",
+            "loop": false,
+            "duration": 0.5,
+            "useRootMotion": true,
+            "blendDuration": 0.05000000074505806,
+            "startFrame": 115,
+            "endFrame": 135,
+            "isForce": true,
+            "segments": [
+              {
+                "from": 0.0,
+                "to": 1.0,
+                "weight": 1.0,
+                "ease": "EaseIn"
+              }
+            ]
+          },
+          "active": {
+            "animationName": "SPAttack04_Root",
+            "loop": false,
+            "duration": 0.20000000298023224,
+            "useRootMotion": true,
+            "blendDuration": 0.0,
+            "startFrame": 135,
+            "endFrame": 175,
+            "isForce": true,
+            "segments": []
+          },
+          "recovery": {
+            "animationName": "SPAttack04_Root",
+            "loop": false,
+            "duration": 1.2000000476837158,
+            "useRootMotion": true,
+            "blendDuration": 0.10000000149011612,
+            "startFrame": 175,
+            "endFrame": 400,
+            "isForce": true,
+            "segments": []
+          }
+        },
+        "cancelData": {
+          "recoveryMoveCancelStart": 0.4000000059604645,
+          "recoveryEvadeCancelStart": 0.3499999940395355,
+          "recoveryAttackCancelStart": 0.5,
+          "comboWindowAfterRecovery": 0.0
+        },
+        "weaponSlots": [
+          "Main"
+        ]
+      },
+      "comboLinks": [],
+      "entryCommand": "ChargeAttack"
+    },
+    {
+      "id": "Attack02_6",
+      "attack": {
+        "chargeData": {
+          "isEnabled": false,
+          "chargeTime": 1.0,
+          "clip": {
+            "animationName": "",
+            "loop": false,
+            "duration": -1.0,
+            "useRootMotion": false,
+            "blendDuration": 0.5,
+            "startFrame": 0,
+            "endFrame": 0,
+            "isForce": true,
+            "segments": []
+          },
+          "failedAttackId": ""
+        },
+        "damageData": {
+          "damage": 20.0,
+          "postureDamage": 25.0,
+          "guardDamageRatio": 0.10000000149011612,
+          "guardPostureDamageRatio": 0.10000000149011612,
+          "parryPostureDamage": 50.0,
+          "isParryable": true,
+          "isReboundable": true
+        },
+        "visualData": {
+          "hit": {
+            "enableCameraShake": false,
+            "enableHitStop": true,
+            "enableEffect": true,
+            "enableDistortion": false,
+            "effectName": "InkHitEffect",
+            "SEName": "Asset/Sounds/Game/SwordHit.wav",
+            "sePitchRandom": 0.0,
+            "useReflectDirection": false,
+            "normalBlendRatio": 0.5,
+            "cameraShakeIntensity": 1.0,
+            "hitStopDurationSeconds": 0.10000000149011612,
+            "recoilChain": "",
+            "recoilStrength": 1.0
+          },
+          "block": {
+            "enableCameraShake": false,
+            "enableHitStop": true,
+            "enableEffect": true,
+            "enableDistortion": false,
+            "effectName": "InkHitEffect",
+            "SEName": "Asset/Sounds/Game/SwordHit.wav",
+            "sePitchRandom": 0.0,
+            "useReflectDirection": false,
+            "normalBlendRatio": 0.5,
+            "cameraShakeIntensity": 1.0,
+            "hitStopDurationSeconds": 0.10000000149011612,
+            "recoilChain": "",
+            "recoilStrength": 1.0
+          },
+          "parry": {
+            "enableCameraShake": false,
+            "enableHitStop": true,
+            "enableEffect": true,
+            "enableDistortion": false,
+            "effectName": "ParryEffect",
+            "SEName": "Asset/Sounds/Game/Hit.wav",
+            "sePitchRandom": 0.0,
+            "useReflectDirection": true,
+            "normalBlendRatio": 0.5,
+            "cameraShakeIntensity": 1.0,
+            "hitStopDurationSeconds": 0.10000000149011612,
+            "recoilChain": "",
+            "recoilStrength": 1.0
+          },
+          "hitStopDelaySeconds": 0.0,
+          "trailName": "InkTrail_2",
+          "trailShape": "Wide",
+          "windPreset": ""
+        },
+        "moveData": {
+          "stepDistance": 3.0,
+          "stepDuration": 0.10000000149011612,
+          "engageDistance": 1.2000000476837158,
+          "stepDirection": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "phaseData": {
+          "windup": {
+            "animationName": "Attack02_6_Root",
+            "loop": false,
+            "duration": 0.2199999988079071,
+            "useRootMotion": true,
+            "blendDuration": 0.10000000149011612,
+            "startFrame": 0,
+            "endFrame": 30,
+            "isForce": true,
+            "segments": []
+          },
+          "active": {
+            "animationName": "Attack02_6_Root",
+            "loop": false,
+            "duration": 0.4399999976158142,
+            "useRootMotion": true,
+            "blendDuration": 0.10000000149011612,
+            "startFrame": 30,
+            "endFrame": 90,
+            "isForce": true,
+            "segments": []
+          },
+          "recovery": {
+            "animationName": "Attack02_6_Root",
+            "loop": false,
+            "duration": 1.3300000429153442,
+            "useRootMotion": true,
+            "blendDuration": 0.10000000149011612,
+            "startFrame": 90,
+            "endFrame": 270,
+            "isForce": true,
+            "segments": []
+          }
+        },
+        "cancelData": {
+          "recoveryMoveCancelStart": 0.3499999940395355,
+          "recoveryEvadeCancelStart": 0.30000001192092896,
+          "recoveryAttackCancelStart": 0.5,
+          "comboWindowAfterRecovery": 0.20000000298023224
+        },
+        "weaponSlots": [
+          "Main"
+        ]
+      },
+      "comboLinks": [],
+      "entryCommand": null
+    },
+    {
+      "id": "Execute",
+      "attack": {
+        "chargeData": {
+          "isEnabled": false,
+          "chargeTime": 1.0,
+          "clip": {
+            "animationName": "",
+            "loop": false,
+            "duration": -1.0,
+            "useRootMotion": false,
+            "blendDuration": 0.5,
+            "startFrame": 0,
+            "endFrame": 0,
+            "isForce": true,
+            "segments": []
+          },
+          "failedAttackId": ""
+        },
+        "damageData": {
+          "damage": 20.0,
+          "postureDamage": 25.0,
+          "guardDamageRatio": 0.10000000149011612,
+          "guardPostureDamageRatio": 0.10000000149011612,
+          "parryPostureDamage": 50.0,
+          "isParryable": true,
+          "isReboundable": true
+        },
+        "visualData": {
+          "hit": {
+            "enableCameraShake": false,
+            "enableHitStop": true,
+            "enableEffect": true,
+            "enableDistortion": false,
+            "effectName": "InkHitEffect",
+            "SEName": "Asset/Sounds/Game/SwordHit.wav",
+            "sePitchRandom": 0.0,
+            "useReflectDirection": false,
+            "normalBlendRatio": 0.5,
+            "cameraShakeIntensity": 1.0,
+            "hitStopDurationSeconds": 0.10000000149011612,
+            "recoilChain": "",
+            "recoilStrength": 1.0
+          },
+          "block": {
+            "enableCameraShake": false,
+            "enableHitStop": true,
+            "enableEffect": true,
+            "enableDistortion": false,
+            "effectName": "InkHitEffect",
+            "SEName": "Asset/Sounds/Game/SwordHit.wav",
+            "sePitchRandom": 0.0,
+            "useReflectDirection": false,
+            "normalBlendRatio": 0.5,
+            "cameraShakeIntensity": 1.0,
+            "hitStopDurationSeconds": 0.10000000149011612,
+            "recoilChain": "",
+            "recoilStrength": 1.0
+          },
+          "parry": {
+            "enableCameraShake": false,
+            "enableHitStop": true,
+            "enableEffect": true,
+            "enableDistortion": false,
+            "effectName": "ParryEffect",
+            "SEName": "Asset/Sounds/Game/Hit.wav",
+            "sePitchRandom": 0.0,
+            "useReflectDirection": true,
+            "normalBlendRatio": 0.5,
+            "cameraShakeIntensity": 1.0,
+            "hitStopDurationSeconds": 0.10000000149011612,
+            "recoilChain": "",
+            "recoilStrength": 1.0
+          },
+          "hitStopDelaySeconds": 0.0,
+          "trailName": "InkTrail_2",
+          "trailShape": "Wide",
+          "windPreset": ""
+        },
+        "moveData": {
+          "stepDistance": 3.0,
+          "stepDuration": 0.10000000149011612,
+          "engageDistance": 1.2000000476837158,
+          "stepDirection": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "phaseData": {
+          "windup": {
+            "animationName": "Execution05_Root",
+            "loop": false,
+            "duration": 0.2199999988079071,
+            "useRootMotion": true,
+            "blendDuration": 0.10000000149011612,
+            "startFrame": 0,
+            "endFrame": 30,
+            "isForce": true,
+            "segments": []
+          },
+          "active": {
+            "animationName": "Execution05_Root",
+            "loop": false,
+            "duration": 0.4399999976158142,
+            "useRootMotion": true,
+            "blendDuration": 0.10000000149011612,
+            "startFrame": 30,
+            "endFrame": 90,
+            "isForce": true,
+            "segments": []
+          },
+          "recovery": {
+            "animationName": "Execution05_Root",
+            "loop": false,
+            "duration": 1.3300000429153442,
+            "useRootMotion": true,
+            "blendDuration": 0.10000000149011612,
+            "startFrame": 90,
+            "endFrame": 270,
+            "isForce": true,
+            "segments": []
+          }
+        },
+        "cancelData": {
+          "recoveryMoveCancelStart": 0.3499999940395355,
+          "recoveryEvadeCancelStart": 0.30000001192092896,
+          "recoveryAttackCancelStart": 0.5,
+          "comboWindowAfterRecovery": 0.20000000298023224
+        },
+        "weaponSlots": [
+          "Main"
+        ]
+      },
+      "comboLinks": [],
+      "entryCommand": null
+    }
+  ]
 }

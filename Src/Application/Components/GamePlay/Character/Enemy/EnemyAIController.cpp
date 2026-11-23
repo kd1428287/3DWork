@@ -77,6 +77,7 @@ void EnemyAIController::Awake()
 	modelAnimatorComponent_ = owner->GetComponent<ModelAnimatorComponent>();
 	postureComponent_ = owner->GetComponent<PostureComponent>();
 	healthComponent_ = owner->GetComponent<HealthComponent>();
+	lifeComponent_ = owner->GetComponent<LifeComponent>();	// 任意
 	weaponSet_ = owner->GetComponent<WeaponSetComponent>();
 	facingDirectionComponent_ = owner->GetComponent<FacingDirectionComponent>();	// 任意
 
@@ -112,9 +113,17 @@ void EnemyAIController::Awake()
 	parrySucceededSubscriber_ = localBus.SubscribeScoped<Events::AttackDeflected>(
 		[this](const Events::AttackDeflected& e) { OnAttackDeflected(e); });
 
+	// HP0(Down)で崩れへ入る。Life消費は致命完了(FatalityFinished)まで遅れる
+	downSubscriber_ = localBus.SubscribeScoped<Events::Down>(
+		[this](const Events::Down&) { EnterBroken(true); });
+	resurrectSubscriber_ = localBus.SubscribeScoped<Events::Resurrect>(
+		[this](const Events::Resurrect&) { OnResurrected(); });
+
+	// 演出を挟まず即死させる(残機も無視)
 	enemyKillSubscriber_ = GLOBALEVENT->SubscribeScoped<Events::EnemyKill>(
 		[this](const Events::EnemyKill&) {
-			if (healthComponent_ != nullptr) healthComponent_->SetCurrent(0);
+			if (lifeComponent_ != nullptr) lifeComponent_->ForceKill();
+			else if (healthComponent_ != nullptr) healthComponent_->SetCurrent(0);
 		});
 
 	root_ = behavior_->BuildTree(this);
@@ -126,6 +135,13 @@ void EnemyAIController::Update(float deltaTime)
 	if (isDead_) {
 		despawnTimer_ -= deltaTime;
 		if (despawnTimer_ <= 0.0f) RequestDespawn();
+		return;
+	}
+
+	// 崩れ/致命中はBTを止める(演出はBehavior側のOnBroken/OnFatalizedが再生する)
+	if (state_ != CombatState::Normal) {
+		UpdateCombatState(deltaTime);
+		ApplyRootMotion();	// 致命アニメがルートモーションを使う場合のため
 		return;
 	}
 
@@ -171,14 +187,31 @@ void EnemyAIController::NotifyGuardHit()
 
 void EnemyAIController::EnterStagger(bool isLarge)
 {
+	if (state_ != CombatState::Normal) return;
+
+	// 体幹崩壊は通常の怯みではなく崩れ(致命待ち)として扱う
+	if (isLarge) {
+		EnterBroken(false);
+		return;
+	}
+
 	// スタン時間はBehavior側で決めるためdurationは0を渡す
-	if (behavior_) behavior_->OnStaggered(this, isLarge, 0.0f);
+	if (behavior_) behavior_->OnStaggered(this, false, 0.0f);
 }
 
 // --- ISyncroAnimation -----------------------------------------------------
-void EnemyAIController::NotifyRethalAnimation()
+void EnemyAIController::NotifyLethalAnimation()
 {
+	if (!CanBeFatalized()) return;
+
+	state_ = CombatState::Fatalizing;
+	fatalityTimer_ = data_.fatalityTimeoutSeconds;
 	if (behavior_) behavior_->OnFatalized(this);
+}
+
+bool EnemyAIController::CanBeFatalized() const
+{
+	return !isDead_ && state_ == CombatState::Broken;
 }
 
 // --- データ/Blackboard ----------------------------------------------------
@@ -559,7 +592,86 @@ void EnemyAIController::RegisterOwnedObject(Handle<GameObject> obj)
 
 void EnemyAIController::OnAttackDeflected(const Events::AttackDeflected& e)
 {
-	// 現状パリィされても何もしない(Behaviorへの通知は未実装)
+	if (state_ != CombatState::Normal) return;
+
+	// 攻撃側の体幹はHitReactionComponent::NotifyAttackerで加算済み。MAXなら崩れへ
+	if (postureComponent_ != nullptr && postureComponent_->IsBroken()) {
+		EnterBroken(false);
+		return;
+	}
+
+	if (behavior_) behavior_->OnAttackDeflected(this, e);
+}
+
+// --- 崩れ(Broken) / 致命(Fatalizing) --------------------------------------
+void EnemyAIController::EnterBroken(bool byHealth)
+{
+	// 既にBroken/Fatalizingなら何もしない(HP0が重なってもLife消費は致命完了で1回だけ)
+	if (isDead_ || state_ != CombatState::Normal) return;
+
+	state_ = CombatState::Broken;
+	brokenTimer_ = data_.brokenDurationSeconds;
+
+	AbortCurrentAction();
+	if (postureComponent_ != nullptr) postureComponent_->StopRegenPosture();
+	blackboard_.SetBool(EnemyBlackboardKeys::IsBroken, true);
+
+	if (behavior_) behavior_->OnBroken(this, byHealth);
+}
+
+void EnemyAIController::AbortCurrentAction()
+{
+	StopMovement();
+	StopFacingTarget();
+	StopTelegraphEffect();
+	SetWeaponWindEmitting(std::vector<std::string>(windSlots_), false);
+	// TODO: 全スロットのHitBox/Trailも止める(WeaponSetComponentに全スロット版が無ければ追加)
+	isVulnerable_ = true;	// ハイパーアーマー解除
+}
+
+void EnemyAIController::UpdateCombatState(float deltaTime)
+{
+	if (state_ == CombatState::Broken) {
+		brokenTimer_ -= deltaTime;
+		if (brokenTimer_ <= 0.0f) RecoverFromBroken();
+	}
+	else if (state_ == CombatState::Fatalizing) {
+		// 保険: プレイヤー側がFatalityFinishedを送らなかった場合に自分で発行する
+		fatalityTimer_ -= deltaTime;
+		if (fatalityTimer_ <= 0.0f) {
+			GetOwner()->GetLocalEventBus().Publish(Events::FatalityFinished());
+		}
+	}
+}
+
+void EnemyAIController::RecoverFromBroken()
+{
+	// HP0のまま崩れていた場合は少し戻す(SetCurrentはdied_を解除し、復活側でDownは再発行しない)
+	if (healthComponent_ != nullptr && healthComponent_->IsDead()) {
+		healthComponent_->SetCurrent(healthComponent_->GetMax() * data_.brokenTimeoutHealRatio);
+	}
+	EnterNormal();
+}
+
+void EnemyAIController::OnResurrected()
+{
+	// 致命完了でLifeが消費され、Resurrectが来た(HealthComponent側で全回復済み)
+	EnterNormal();
+}
+
+void EnemyAIController::EnterNormal()
+{
+	state_ = CombatState::Normal;
+	blackboard_.SetBool(EnemyBlackboardKeys::IsBroken, false);
+
+	if (postureComponent_ != nullptr) {
+		postureComponent_->Reset();
+		postureComponent_->ResumeRegenPosture();
+	}
+	isVulnerable_ = false;
+
+	// 中断したBTノードの状態を引きずらないよう作り直す
+	if (behavior_) root_ = behavior_->BuildTree(this);
 }
 
 void EnemyAIController::OnDied()

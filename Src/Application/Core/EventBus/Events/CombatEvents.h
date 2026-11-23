@@ -72,6 +72,10 @@ namespace Events
 
 	};
 
+	// 致命演出が終わった(被致命側のLocalEventBusへ、プレイヤー側が発行する)。
+	// LifeComponent(SetDeferToFatality(true))がこれを受けてLifeを1つ消費する。
+	struct FatalityFinished : public Event {};
+
 	inline void PublishHealthChangeEvent(EventBus& bus, Handle<GameObject> obj, float ratio)
 	{
 		HealthChanged e;

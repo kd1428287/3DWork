@@ -76,13 +76,9 @@ void WarrockBehavior::OnAttackDeflected(EnemyAIController* owner, const Events::
 {
 	RequestReaction(owner, "AttackDeflected", ReactionPriority::Deflected);
 
+	// 体幹崩壊の判定(Broken遷移)はEnemyAIController::OnAttackDeflectedが先に行うため、ここでは加算のみ
 	if (PostureComponent* posture = owner->GetPostureComponent()) {
 		posture->AddPostureDamage(event.parryPostureDamage);
-		if (posture->IsBroken()) {
-			// 通常被弾はHitReactionComponentがResetするが、この経路には無いためここで行う
-			posture->Reset();
-			RequestReaction(owner, "BigStagger", ReactionPriority::BigStagger);
-		}
 	}
 }
 
@@ -97,10 +93,20 @@ void WarrockBehavior::OnDied(EnemyAIController* owner)
 	}
 }
 
+void WarrockBehavior::OnBroken(EnemyAIController* owner, bool /*byHealth*/)
+{
+	ClearPending(owner);	// 崩れ中は通常の割り込み演出を残さない
+	owner->StopMovement();
+
+	const auto& table = owner->GetData().oneShotAnimations;
+	const auto it = table.find("Broken");
+	if (it != table.end()) {
+		owner->PlayAnimation(it->second.animationName, true);	// 致命されるまでループ
+	}
+}
+
 void WarrockBehavior::OnFatalized(EnemyAIController* owner)
 {
-	return;	// 現在は無効化中。以下は有効化時の処理
-
 	owner->StopMovement();
 
 	const auto& table = owner->GetData().oneShotAnimations;

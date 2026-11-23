@@ -71,9 +71,9 @@ ApplyResult HitReactionComponent::Apply(const HitOutcome& outcome)
 	if (postureComponent_ != nullptr && outcome.postureDamage > 0.0f) {
 		postureComponent_->AddPostureDamage(outcome.postureDamage);
 		result.postureBroken = postureComponent_->IsBroken();
-		if (result.postureBroken) {
-			// TODO: 崩し状態(専用State)への遷移は別途実装。
-			// 【暫定】専用Stateができるまで、満タン固着を防ぐためResetだけ行う。
+		if (result.postureBroken && !query_->HandlesPostureBreak()) {
+			// 崩し状態を自前で扱わない相手(プレイヤー等)は、満タン固着を防ぐためResetだけ行う。
+			// HandlesPostureBreak()==trueの相手(敵)は、EnterStagger(true)後に自分でResetする。
 			postureComponent_->Reset();
 		}
 	}
@@ -105,6 +105,12 @@ void HitReactionComponent::NotifyAttacker(const HitOutcome& outcome, const HitRe
 
 void HitReactionComponent::Dispatch(const HitOutcome& outcome, const ApplyResult& result)
 {
+	// 体幹崩壊を自前で扱う相手には、攻撃種別を問わず崩れとして通知する(致死ならDown側で処理済み)
+	if (result.postureBroken && query_->HandlesPostureBreak() && !result.died) {
+		query_->EnterStagger(true);
+		return;
+	}
+
 	switch (outcome.type) {
 	case HitType::Parry:
 		query_->NotifyParrySuccess();

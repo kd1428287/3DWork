@@ -15,6 +15,7 @@
 #include "../Common/AttackSourceComponent.h"
 #include "../Common/PostureComponent.h"
 #include "../Common/HealthComponent.h"
+#include "../Common/LifeComponent.h"
 #include "../Common/WeaponSetComponent.h"
 #include "../Common/HitReactionComponent.h"
 #include "../Common/ISyncroAnimation.h"
@@ -59,9 +60,17 @@ public:
 	void NotifyParrySuccess() override;
 	void NotifyGuardHit() override;
 	void EnterStagger(bool isLarge) override;
+	// 体幹崩壊は自分(Broken状態)で扱うため、HitReactionComponentの暫定Resetを止める。
+	bool HandlesPostureBreak() const override { return true; }
 
 	// --- ISyncroAnimation ---
-	void NotifyRethalAnimation() override;
+	// 崩れ中(Broken)のみ有効。Fatalizingへ入り、被致命アニメを再生する。
+	void NotifyLethalAnimation() override;
+	bool CanBeFatalized() const override;
+
+	// --- 崩れ(Broken) ---
+	// 体幹MAX(byHealth=false)かHP0(byHealth=true)で崩れ状態へ入る。Normal以外では何もしない。
+	void EnterBroken(bool byHealth);
 
 	// --- データ/Blackboard ---
 	const EnemyAIData& GetData() const;
@@ -156,6 +165,17 @@ private:
 	void RequestDespawn();
 	void ApplyRootMotion();
 
+	// --- 崩れ/致命の状態管理 ---
+	enum class CombatState { Normal, Broken, Fatalizing };
+	void UpdateCombatState(float deltaTime);
+	// 実行中の攻撃などの副作用(移動/エフェクト/ハイパーアーマー)を止める
+	void AbortCurrentAction();
+	// 崩れのタイムアウト: 体幹Reset、HP0ならHPを少し戻してNormalへ
+	void RecoverFromBroken();
+	// 致命完了→Life消費→Resurrect
+	void OnResurrected();
+	void EnterNormal();
+
 	static constexpr const char* kMainWeaponSlot = "Main";
 
 	EnemyAIData data_;
@@ -171,6 +191,7 @@ private:
 	ModelAnimatorComponent* modelAnimatorComponent_ = nullptr;
 	PostureComponent* postureComponent_ = nullptr;
 	HealthComponent* healthComponent_ = nullptr;
+	LifeComponent* lifeComponent_ = nullptr;
 	FacingDirectionComponent* facingDirectionComponent_ = nullptr;
 	WeaponSetComponent* weaponSet_ = nullptr;
 
@@ -192,6 +213,10 @@ private:
 	// Blackboardに載せられない内部キャッシュ。
 	TransformComponent* targetTransform_ = nullptr;
 
+	CombatState state_ = CombatState::Normal;
+	float brokenTimer_ = 0.0f;
+	float fatalityTimer_ = 0.0f;
+
 	bool isDead_ = false;
 	float despawnTimer_ = 0.0f;
 
@@ -202,4 +227,6 @@ private:
 	ScopedSubscriber parrySucceededSubscriber_;
 	ScopedSubscriber diedSubscriber_;
 	ScopedSubscriber enemyKillSubscriber_;
+	ScopedSubscriber downSubscriber_;
+	ScopedSubscriber resurrectSubscriber_;
 };
