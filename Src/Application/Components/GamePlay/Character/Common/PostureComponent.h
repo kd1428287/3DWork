@@ -29,7 +29,7 @@ public:
 
 	void Update(float deltaTime) override {
 		// 崩れ中などで回復をロックされている間は何もしない
-		if (regenLocked_) return;
+		if (regenLocked_ || !IsEnabled()) return;
 
 		// 被弾直後はしばらく回復を止める
 		if (regenDelayTimer_ > 0.0f) {

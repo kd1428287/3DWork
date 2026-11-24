@@ -5,6 +5,7 @@
 #include "../ThirdParty/ImGuizmo.h"
 #include "Application/Definitions/Map/MapData.h"
 #include "../Common/EditorPreviewViewport.h"
+#include "../Common/EditorUtil.h"
 #include "../Common/UndoHistory.h"
 #include "../Common/FileWatcher.h"
 #include "../Common/ComponentInspector.h"
@@ -43,7 +44,7 @@ struct MapObject
 	void SyncPreviewModel()
 	{
 		const ComponentEntry* modelRender = data.FindComponent("ModelRender");
-		const std::string path = modelRender ? modelRender->params.value("model", std::string()) : std::string();
+		const std::string path = modelRender ? EditorUtil::ReadModelRef(modelRender->params).model : std::string();
 
 		if (path.empty())
 		{

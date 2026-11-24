@@ -25,6 +25,7 @@ public:
 		gainOnParry_ = config.gainOnParry;
 		chargeLine_ = config.chargeLine;
 		current_ = std::min(current_, max_);
+		current_ = max_ * 0.3f;
 	}
 
 	void Awake() override {

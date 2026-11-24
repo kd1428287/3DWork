@@ -23,4 +23,8 @@ public:
 	// パリィ成功ほど特別な演出ではないが、被弾の都度ヒットリアクションの
 	// アニメーションを再生してほしい合図として使う。
 	virtual void NotifyGuardHit() = 0;
+
+	// 体幹崩壊(満タン)の扱いを自前で行うか。trueなら体幹をResetせずEnterStagger(true)だけ通知し、
+	// 崩れ状態への遷移とResetは受け取った側が行う。既定は従来どおり(false)。
+	virtual bool HandlesPostureBreak() const { return false; }
 };

@@ -6,7 +6,8 @@
 #include "../Common/EditorUtil.h"
 #include "../EditorHost.h"
 #include "Application/Factories/ComponentRegistry.h"
-#include "Application/Definitions/Physics/ColliderParamsJson.h"
+#include "Application/Definitions/Physics/ColliderParams.h"
+#include "Application/Definitions/Physics/ColliderParamsJson.h"	// ColliderParamsのfrom_json/to_json
 
 #include "Application/Core/EventBus/Events/SceneEvents.h"
 
@@ -456,7 +457,7 @@ void MapEditor::DrawAssetPicker()
 					modelRender = &target->data.components.back();
 				}
 
-				modelRender->params["model"] = fullPath;
+				EditorUtil::WriteModelPath(modelRender->params, fullPath);
 				target->SyncPreviewModel();
 			}
 		}
@@ -475,7 +476,7 @@ void MapEditor::DrawAssetPicker()
 	std::string currentModel;
 	for (auto& c : selected->data.components)
 	{
-		if (c.type == "ModelRender") { currentModel = c.params.value("model", std::string()); break; }
+		if (c.type == "ModelRender") { currentModel = EditorUtil::ReadModelRef(c.params).model; break; }
 	}
 	ImGui::Text("Current : %s", currentModel.empty() ? "(None)" : currentModel.c_str());
 

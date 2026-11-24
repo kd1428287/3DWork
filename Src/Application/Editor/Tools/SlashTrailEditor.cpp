@@ -1,8 +1,10 @@
-#include "Application/main.h"
+﻿#include "Application/main.h"
 
 #include "SlashTrailEditor.h"
 #include "../Common/EditorUtil.h"
 #include "Application/Definitions/Loaders/SlashTrailDataLoader.h"
+
+#include "imgui_internal.h"
 
 static const std::string kTextureAssetRoot = "Asset/Textures/Game/Effect/";
 
@@ -52,6 +54,28 @@ namespace
 	}
 }
 
+// SlashTrailEditor専用ドックスペースの初期レイアウト
+//	左：List / 中央：Inspector / 右上：Preview / 右下：Playback
+static void SetupSlashTrailDockLayout(ImGuiID dockspaceId, const ImVec2& size)
+{
+	ImGui::DockBuilderRemoveNode(dockspaceId);
+	ImGui::DockBuilderAddNode(dockspaceId, ImGuiDockNodeFlags_DockSpace);
+	ImGui::DockBuilderSetNodeSize(dockspaceId, size);
+
+	ImGuiID center = dockspaceId;
+
+	ImGuiID left = ImGui::DockBuilderSplitNode(center, ImGuiDir_Left, 0.20f, nullptr, &center);
+	ImGuiID right = ImGui::DockBuilderSplitNode(center, ImGuiDir_Right, 0.50f, nullptr, &center);
+	ImGuiID rightBottom = ImGui::DockBuilderSplitNode(right, ImGuiDir_Down, 0.35f, nullptr, &right);
+
+	ImGui::DockBuilderDockWindow("SlashTrail List", left);
+	ImGui::DockBuilderDockWindow("SlashTrail Inspector", center);
+	ImGui::DockBuilderDockWindow("SlashTrail Preview", right);
+	ImGui::DockBuilderDockWindow("SlashTrail Playback", rightBottom);
+
+	ImGui::DockBuilderFinish(dockspaceId);
+}
+
 SlashTrailEditor::SlashTrailEditor()
 {
 	// Alphaブレンド用にMask RT、Bright描画用にBright RTが必要
@@ -70,9 +94,31 @@ void SlashTrailEditor::Update()
 	CheckHotReload();
 	UpdatePlayback(Application::Instance().GetDeltaTime());
 
-	DrawMainMenu();
-	DrawHierarchy();
-	DrawInspector();
+	// 専用のコンテナウィンドウ。メインビューポートの右外側へ初期配置することで、
+	// マルチビューポート機能により起動時から別ウィンドウとして分離表示される(EffectEditorと同じ)
+	ImGuiViewport* mainViewport = ImGui::GetMainViewport();
+
+	ImGui::SetNextWindowPos(
+		ImVec2(mainViewport->Pos.x + mainViewport->Size.x + 60.0f, mainViewport->Pos.y + 40.0f),
+		ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowSize(ImVec2(900.0f, 700.0f), ImGuiCond_FirstUseEver);
+
+	ImGui::Begin("SlashTrail Editor Window");
+	{
+		ImGuiID dockId = ImGui::GetID("SlashTrailDockSpace");
+
+		if (ImGui::DockBuilderGetNode(dockId) == nullptr)
+		{
+			SetupSlashTrailDockLayout(dockId, ImGui::GetContentRegionAvail());
+		}
+
+		ImGui::DockSpace(dockId, ImVec2(0, 0));
+	}
+	ImGui::End();
+
+	DrawListWindow();
+	DrawInspectorWindow();
+	DrawPlaybackWindow();
 	DrawPreviewWindow();
 }
 
@@ -80,6 +126,28 @@ SlashTrailObject* SlashTrailEditor::Selected()
 {
 	if (m_selected < 0 || m_selected >= static_cast<int>(m_objects.size())) { return nullptr; }
 	return &m_objects[m_selected];
+}
+
+bool SlashTrailEditor::IsNameDuplicated(const std::string& name) const
+{
+	int count = 0;
+	for (const auto& obj : m_objects) { if (obj.name == name) { ++count; } }
+	return count > 1;
+}
+
+std::string SlashTrailEditor::MakeUniqueName(const std::string& base) const
+{
+	return EditorUtil::MakeUniqueName(base, [this](const std::string& name)
+		{
+			for (const auto& obj : m_objects) { if (obj.name == name) { return true; } }
+			return false;
+		});
+}
+
+void SlashTrailEditor::RefreshTextureFileList()
+{
+	m_textureFileList = EditorUtil::ScanTextureFiles(kTextureAssetRoot);
+	m_textureListLoaded = true;
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -191,9 +259,9 @@ void SlashTrailEditor::UpdatePlayback(float deltaTime)
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // ウィンドウ
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void SlashTrailEditor::DrawMainMenu()
+void SlashTrailEditor::DrawListWindow()
 {
-	ImGui::Begin("SlashTrail Editor");
+	ImGui::Begin("SlashTrail List");
 
 	ImGui::InputText("Path", m_filePathBuf, sizeof(m_filePathBuf));
 
@@ -203,31 +271,10 @@ void SlashTrailEditor::DrawMainMenu()
 	ImGui::SameLine();
 	ImGui::Checkbox("Auto Reload", &m_watcher.autoReload);
 
-	ImGui::Separator();
-
-	if (ImGui::Button("Play")) { Play(); }
-	ImGui::SameLine();
-	if (ImGui::Button("Stop")) { Stop(); }
-	ImGui::SameLine();
-	ImGui::Checkbox("Loop", &m_loop);
-
-	ImGui::Text("Swing(プレビュー用。保存されない)");
-	ImGui::DragFloat("Duration(sec)", &m_swing.Duration, 0.01f, 0.05f, 5.0f);
-	ImGui::DragFloat("Arc Start(deg)", &m_swing.ArcStartDeg, 1.0f, -360.0f, 360.0f);
-	ImGui::DragFloat("Arc End(deg)", &m_swing.ArcEndDeg, 1.0f, -360.0f, 360.0f);
-	ImGui::DragFloat("Radius", &m_swing.Radius, 0.05f, 0.1f, 10.0f);
-	ImGui::DragFloat("Sword Length", &m_swing.SwordLength, 0.05f, 0.1f, 10.0f);
-	ImGui::SliderFloat("Plane Tilt(deg)", &m_swing.PlaneTiltDeg, 0.0f, 90.0f);
-
 	ImGui::Text("Trails : %d", static_cast<int>(m_objects.size()));
 	if (m_dirty) { ImGui::TextColored(ImVec4(1, 0.8f, 0.2f, 1), "* 未保存の変更あり"); }
 
-	ImGui::End();
-}
-
-void SlashTrailEditor::DrawHierarchy()
-{
-	ImGui::Begin("SlashTrail Hierarchy");
+	ImGui::Separator();
 
 	if (ImGui::Button("+ Add")) { AddObject(); }
 	ImGui::SameLine();
@@ -251,6 +298,29 @@ void SlashTrailEditor::DrawHierarchy()
 	ImGui::End();
 }
 
+void SlashTrailEditor::DrawPlaybackWindow()
+{
+	ImGui::Begin("SlashTrail Playback");
+
+	if (ImGui::Button("Play")) { Play(); }
+	ImGui::SameLine();
+	if (ImGui::Button("Stop")) { Stop(); }
+	ImGui::SameLine();
+	ImGui::Checkbox("Loop", &m_loop);
+
+	ImGui::Separator();
+
+	ImGui::Text("Swing(プレビュー用。保存されない)");
+	ImGui::DragFloat("Duration(sec)", &m_swing.Duration, 0.01f, 0.05f, 5.0f);
+	ImGui::DragFloat("Arc Start(deg)", &m_swing.ArcStartDeg, 1.0f, -360.0f, 360.0f);
+	ImGui::DragFloat("Arc End(deg)", &m_swing.ArcEndDeg, 1.0f, -360.0f, 360.0f);
+	ImGui::DragFloat("Radius", &m_swing.Radius, 0.05f, 0.1f, 10.0f);
+	ImGui::DragFloat("Sword Length", &m_swing.SwordLength, 0.05f, 0.1f, 10.0f);
+	ImGui::SliderFloat("Plane Tilt(deg)", &m_swing.PlaneTiltDeg, 0.0f, 90.0f);
+
+	ImGui::End();
+}
+
 bool SlashTrailEditor::TextureCombo(const char* label, std::string& path)
 {
 	bool changed = false;
@@ -268,7 +338,7 @@ bool SlashTrailEditor::TextureCombo(const char* label, std::string& path)
 	return changed;
 }
 
-void SlashTrailEditor::DrawInspector()
+void SlashTrailEditor::DrawInspectorWindow()
 {
 	ImGui::Begin("SlashTrail Inspector");
 
@@ -280,12 +350,8 @@ void SlashTrailEditor::DrawInspector()
 		return;
 	}
 
-	if (!m_textureListLoaded)
-	{
-		m_textureFileList = EditorUtil::ScanTextureFiles(kTextureAssetRoot);
-		m_textureListLoaded = true;
-	}
-	if (ImGui::Button("Refresh Textures")) { m_textureFileList = EditorUtil::ScanTextureFiles(kTextureAssetRoot); }
+	if (!m_textureListLoaded) { RefreshTextureFileList(); }
+	if (ImGui::Button("Refresh Textures")) { RefreshTextureFileList(); }
 
 	SlashTrailParams& p = obj->params;
 	bool edited = false;
@@ -293,6 +359,10 @@ void SlashTrailEditor::DrawInspector()
 	char nameBuf[128];
 	strcpy_s(nameBuf, obj->name.c_str());
 	if (ImGui::InputText("Name", nameBuf, sizeof(nameBuf))) { obj->name = nameBuf; edited = true; }
+	if (IsNameDuplicated(obj->name))
+	{
+		ImGui::TextColored(ImVec4(1, 0.4f, 0.4f, 1), "名前が重複しています(保存・参照の対象が曖昧になります)");
+	}
 
 	edited |= TextureCombo("Texture", p.TexturePath);
 
@@ -375,7 +445,7 @@ void SlashTrailEditor::DrawInspector()
 void SlashTrailEditor::AddObject()
 {
 	SlashTrailObject obj;
-	obj.name = "SlashTrail" + std::to_string(m_objects.size());
+	obj.name = MakeUniqueName("SlashTrail");
 	m_objects.push_back(std::move(obj));
 
 	Stop();
@@ -399,7 +469,7 @@ void SlashTrailEditor::CopySelected()
 	if (!src) { return; }
 
 	SlashTrailObject obj;
-	obj.name = src->name + "_copy";
+	obj.name = MakeUniqueName(src->name + "_copy");
 	obj.params = src->params;
 	m_objects.push_back(std::move(obj));
 

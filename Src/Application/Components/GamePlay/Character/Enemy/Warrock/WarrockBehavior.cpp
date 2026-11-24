@@ -72,14 +72,10 @@ void WarrockBehavior::OnStaggered(EnemyAIController* owner, bool isLarge, float 
 		isLarge ? ReactionPriority::BigStagger : ReactionPriority::HitReaction);
 }
 
-void WarrockBehavior::OnAttackDeflected(EnemyAIController* owner, const Events::AttackDeflected& event)
+void WarrockBehavior::OnAttackDeflected(EnemyAIController* owner, const Events::AttackDeflected& /*event*/)
 {
+	// 体幹の加算はNotifyAttacker、崩しの判定はHitReactionComponentが行うため、ここでは演出の要求だけ
 	RequestReaction(owner, "AttackDeflected", ReactionPriority::Deflected);
-
-	// 体幹崩壊の判定(Broken遷移)はEnemyAIController::OnAttackDeflectedが先に行うため、ここでは加算のみ
-	if (PostureComponent* posture = owner->GetPostureComponent()) {
-		posture->AddPostureDamage(event.parryPostureDamage);
-	}
 }
 
 void WarrockBehavior::OnDied(EnemyAIController* owner)

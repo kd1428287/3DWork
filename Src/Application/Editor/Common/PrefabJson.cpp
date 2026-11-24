@@ -1,7 +1,8 @@
-﻿#include "Application/main.h"
+#include "Application/main.h"
 
 #include "PrefabJson.h"
-#include "Application/Definitions/Loaders/DefinitionJson.h"	
+#include "EditorUtil.h"
+#include "Application/Definitions/Loaders/DefinitionJson.h"	// Math::Vector3等のfrom_json
 
 namespace PrefabJson
 {
@@ -35,7 +36,7 @@ namespace PrefabJson
 	{
 		if (nlohmann::ordered_json* mr = FindComponent(node, "ModelRender"))
 		{
-			if (mr->contains("params")) { return (*mr)["params"].value("model", std::string()); }
+			if (mr->contains("params")) { return EditorUtil::ReadModelRef((*mr)["params"]).model; }
 		}
 		return std::string();
 	}

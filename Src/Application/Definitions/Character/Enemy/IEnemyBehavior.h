@@ -35,6 +35,9 @@ public:
 	// 共通の死亡処理(移動停止・当たり判定無効化等)の直後に呼ばれる。Dyingアニメ再生などをここで行う。
 	virtual void OnDied(EnemyAIController* owner) {}
 
+	// 崩れ(体幹崩壊/HP0)に入った時に呼ばれる。byHealthはHP0が原因か。崩れ中の姿勢の再生などをここで行う。
+	virtual void OnBroken(EnemyAIController* owner, bool byHealth) {}
+
 	virtual void OnFatalized(EnemyAIController* owner) {}
 
 	// 死亡から消滅までの猶予秒数。Dying尺+余白をowner->GetData()から算出するためownerを受け取る。

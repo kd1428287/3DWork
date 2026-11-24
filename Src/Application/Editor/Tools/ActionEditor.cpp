@@ -1654,14 +1654,9 @@ bool ActionEditor::LoadPrefab(const std::string& path)
 	{
 		if (mr->contains("params"))
 		{
-			const auto& params = (*mr)["params"];
-			// skeleton オブジェクトが存在するか確認して直接取得する
-			if (params.contains("skeleton"))
-			{
-				const auto& skeleton = params["skeleton"];
-				modelPath = skeleton.value("model", std::string());
-				animDir = skeleton.value("animations", std::string());
-			}
+			const EditorUtil::ModelRef ref = EditorUtil::ReadModelRef((*mr)["params"]);
+			modelPath = ref.model;
+			animDir = ref.animations;
 		}
 	}
 

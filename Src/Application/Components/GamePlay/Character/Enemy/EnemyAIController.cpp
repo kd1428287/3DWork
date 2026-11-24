@@ -594,12 +594,7 @@ void EnemyAIController::OnAttackDeflected(const Events::AttackDeflected& e)
 {
 	if (state_ != CombatState::Normal) return;
 
-	// 攻撃側の体幹はHitReactionComponent::NotifyAttackerで加算済み。MAXなら崩れへ
-	if (postureComponent_ != nullptr && postureComponent_->IsBroken()) {
-		EnterBroken(false);
-		return;
-	}
-
+	// 体幹の加算(NotifyAttacker)と崩しの判定(HitReactionComponent::OnDeflected)は向こうが行う
 	if (behavior_) behavior_->OnAttackDeflected(this, e);
 }
 
@@ -625,7 +620,7 @@ void EnemyAIController::AbortCurrentAction()
 	StopFacingTarget();
 	StopTelegraphEffect();
 	SetWeaponWindEmitting(std::vector<std::string>(windSlots_), false);
-	// TODO: 全スロットのHitBox/Trailも止める(WeaponSetComponentに全スロット版が無ければ追加)
+	if (weaponSet_ != nullptr) weaponSet_->StopAllAttacks();	// 判定とTrailが残らないように
 	isVulnerable_ = true;	// ハイパーアーマー解除
 }
 

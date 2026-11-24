@@ -34,11 +34,17 @@ private:
 	// 攻撃側(WeaponComponent)から再通知されるヒット情報の受け口
 	void OnHit(const Events::AttackHit& ctx);
 
+	// 攻撃を弾かれた時(自分が攻撃側)の受け口。体幹が満タンなら崩しとして通知する
+	void OnDeflected(const Events::AttackDeflected& e);
+
 	// 受付判定(Query未設定/死亡済み/多段ヒットの重複を弾く)。通れば被弾済みとして記録する。
 	bool Accept(const Events::AttackHit& ctx);
 
 	// 自分のHealth/Postureへ適用する。体幹崩壊は暫定でReset。
 	ApplyResult Apply(const HitOutcome& outcome);
+
+	// 体幹が満タンかを返す(被弾/弾かれの両経路で共用)。崩しを自前で扱わない相手はここでResetする。
+	bool ResolvePostureBreak();
 
 	// パリィ時の攻撃側への体幹ダメージとAttackDeflected通知
 	void NotifyAttacker(const HitOutcome& outcome, const HitResolved& resolved);
@@ -58,6 +64,7 @@ private:
 	TransformComponent* transform_ = nullptr;
 
 	ScopedSubscriber subscriber_;
+	ScopedSubscriber deflectedSubscriber_;
 
 	// ===== 演出(HitResolvedだけを入力にする) =====
 

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <imgui.h>
 
@@ -15,9 +15,9 @@ struct SlashTrailObject
 };
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// トレイル定義エディタ(EffectEditorと同じ構成)
-//	Update()    ：KdDebugGUI::GuiProcess()内(EffectEditor::Update()と同じ場所)から毎フレーム
-//	RenderPreviewViewport()：3D描画パス側から毎フレーム1回(EffectEditorと同じ場所)
+// トレイル定義エディタ(ShapeEffectEditorと同じ構成: 専用ドックスペースにList/Inspector/Playback/Previewを並べる)
+//	Update()    ：EditorHost::Draw()から毎フレーム
+//	RenderPreviewViewport()：EditorHost::RenderPreviewViewports()から毎フレーム1回
 // プレビューは円弧状にTip/Baseを動かしてSlashTrailRecorderへ流し、専用Dispatcherで描画する。
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 class SlashTrailEditor
@@ -44,14 +44,17 @@ private:
 		float	PlaneTiltDeg = 0.0f;	// 0=縦(XY平面) 90=横(XZ平面)
 	};
 
-	void DrawMainMenu();
-	void DrawHierarchy();
-	void DrawInspector();
+	void DrawListWindow();
+	void DrawInspectorWindow();
+	void DrawPlaybackWindow();
 	void DrawPreviewWindow();
 
 	bool TextureCombo(const char* label, std::string& path);
+	void RefreshTextureFileList();
 
 	SlashTrailObject* Selected();
+	std::string MakeUniqueName(const std::string& base) const;
+	bool IsNameDuplicated(const std::string& name) const;
 
 	void AddObject();
 	void RemoveSelected();

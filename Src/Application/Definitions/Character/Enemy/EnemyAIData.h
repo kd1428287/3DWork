@@ -225,6 +225,15 @@ struct EnemyAIData
 	// 持っていた値をこちらへ移した。
 	float postDeathLingerSeconds = 1.0f;
 
+	// 致命されない時の崩れ継続秒数。この時間で崩れから復帰する。
+	float brokenDurationSeconds = 5.0f;
+
+	// HP0の崩れがタイムアウトした時に戻すHPの割合(0〜1)。
+	float brokenTimeoutHealRatio = 0.3f;
+
+	// 致命演出の終了通知(FatalityFinished)が来ない時の保険タイムアウト(秒)。
+	float fatalityTimeoutSeconds = 10.0f;
+
 	// ルートモーション抽出に使うボーン名。
 	// 【経緯】以前はEnemyAIController::kRootMotionBoneNameという
 	// C++定数として持っていたが、実際にはどこからも参照されておらず

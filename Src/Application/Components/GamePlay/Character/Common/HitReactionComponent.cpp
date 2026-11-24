@@ -28,6 +28,8 @@ void HitReactionComponent::Awake()
 	transform_ = GetOwner()->GetComponent<TransformComponent>();
 
 	subscriber_ = GetOwner()->GetLocalEventBus().SubscribeScoped<Events::AttackHit>([this](const Events::AttackHit& e) {OnHit(e); });
+	deflectedSubscriber_ = GetOwner()->GetLocalEventBus().SubscribeScoped<Events::AttackDeflected>(
+		[this](const Events::AttackDeflected& e) { OnDeflected(e); });
 }
 
 // ============================================================
@@ -46,6 +48,15 @@ void HitReactionComponent::OnHit(const Events::AttackHit& ctx)
 	NotifyAttacker(outcome, resolved);
 	PlayFeedback(resolved);
 	Dispatch(outcome, result);
+}
+
+void HitReactionComponent::OnDeflected(const Events::AttackDeflected& /*e*/)
+{
+	if (query_ == nullptr) return;
+	if (healthComponent_ != nullptr && healthComponent_->IsDead()) return;
+
+	// 体幹はパリィした側が加算済み。満タンなら崩しとして通知する
+	if (ResolvePostureBreak()) query_->EnterStagger(true);
 }
 
 bool HitReactionComponent::Accept(const Events::AttackHit& ctx)
@@ -70,12 +81,7 @@ ApplyResult HitReactionComponent::Apply(const HitOutcome& outcome)
 
 	if (postureComponent_ != nullptr && outcome.postureDamage > 0.0f) {
 		postureComponent_->AddPostureDamage(outcome.postureDamage);
-		result.postureBroken = postureComponent_->IsBroken();
-		if (result.postureBroken && !query_->HandlesPostureBreak()) {
-			// 崩し状態を自前で扱わない相手(プレイヤー等)は、満タン固着を防ぐためResetだけ行う。
-			// HandlesPostureBreak()==trueの相手(敵)は、EnterStagger(true)後に自分でResetする。
-			postureComponent_->Reset();
-		}
+		result.postureBroken = ResolvePostureBreak();
 	}
 
 	if (healthComponent_ != nullptr && outcome.healthDamage > 0.0f) {
@@ -84,6 +90,16 @@ ApplyResult HitReactionComponent::Apply(const HitOutcome& outcome)
 	result.died = (healthComponent_ != nullptr) && healthComponent_->IsDead();
 
 	return result;
+}
+
+bool HitReactionComponent::ResolvePostureBreak()
+{
+	if (postureComponent_ == nullptr || !postureComponent_->IsBroken()) return false;
+
+	// 崩しを自前で扱う相手(敵)はEnterStagger(true)後に自分でResetする。
+	// 扱わない相手(プレイヤー等)は、満タン固着を防ぐためここでResetする。
+	if (!query_->HandlesPostureBreak()) postureComponent_->Reset();
+	return true;
 }
 
 void HitReactionComponent::NotifyAttacker(const HitOutcome& outcome, const HitResolved& resolved)

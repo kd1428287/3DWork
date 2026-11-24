@@ -10,10 +10,10 @@ struct WindShellPreset
 	std::string	StreakTexturePath = "Asset/Textures/Game/Effect/WindStreakInk.png";	// 筋(縦に伸ばして使う)
 	std::string	NoiseTexturePath = "Asset/Textures/Game/Effect/WindNoiseInk.png";	// 消去ディゾルブ用
 
-	float	Length0 = 1.8f,		Length1 = 1.8f;		// 円筒部の長さ(0で球)
-	float	Radius0 = 1.0f,	Radius1 = 01.0f;
-	float	Twist0 = 8.0f,		Twist1 = 14.0f;
-	float	SpinSpeed0 = 5.0f,	SpinSpeed1 = 5.0f;	// ラジアン/秒
+	float	Length0 = 1.8f, Length1 = 1.8f;		// 円筒部の長さ(0で球)
+	float	Radius0 = 1.0f, Radius1 = 1.0f;
+	float	Twist0 = 8.0f, Twist1 = 14.0f;
+	float	SpinSpeed0 = 5.0f, SpinSpeed1 = 5.0f;	// ラジアン/秒
 
 	float	Taper = 0.6f;			// 後方のすぼまり(0-1)
 	float	NoiseAmp = 0.5f;		// 頂点ノイズによる半径の揺らぎ
@@ -28,10 +28,10 @@ struct WindShellPreset
 	float	SpinJitter = 0.6f;	// 位置ごとの回転角のゆらぎ(ラジアン)
 	float	NoiseSpeed = 0.5f;	// 半径ノイズの時間変化の速さ
 
-	// 墨(Alpha)と芯(Add)の2層
+	// 墨(Alpha)と芯(Add)の2層。芯は黒い体でも見えるよう灰色のインク
 	Math::Vector4	InkColor = { 0.05f, 0.05f, 0.06f, 1.0f };
 	float			InkAlpha = 0.6f;
-	Math::Vector4	CoreColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+	Math::Vector4	CoreColor = { 0.55f, 0.55f, 0.58f, 1.0f };
 	float			CoreAlpha = 0.5f;
 	float			CoreRadiusScale = 0.8f;
 	float			CoreLengthScale = 0.9f;
@@ -74,6 +74,25 @@ struct WindShellPreset
 		p.SpinSpeed0 = 3.0f;	p.SpinSpeed1 = 10.0f;
 		p.Taper = 0.0f;
 		p.NoiseAmp = 0.2f;
+		return p;
+	}
+
+	// 腕にまとわりつくインク(細い円筒。Progressで緩い渦から腕に絞られる)
+	static WindShellPreset ArmInk()
+	{
+		WindShellPreset p;
+		p.Length0 = p.Length1 = 0.6f;
+		p.Radius0 = 0.14f;	p.Radius1 = 0.09f;
+		p.Twist0 = 10.0f;	p.Twist1 = 18.0f;
+		p.SpinSpeed0 = p.SpinSpeed1 = 6.0f;
+		p.Taper = 0.3f;
+		p.NoiseAmp = 0.3f;
+		p.StreakCount = 3.0f;
+		p.FlowSpeed = 2.0f;
+		p.Scatter = 0.8f;
+		p.InkAlpha = 0.7f;
+		p.CoreAlpha = 0.45f;
+		p.CoreRadiusScale = 0.85f;
 		return p;
 	}
 };

@@ -69,8 +69,8 @@ void AuraRenderComponent::DrawEffect()
 
 	//manager.ChangeBlendState(effectLayer ? KdBlendState::EffectAdd : KdBlendState::Add);
 	manager.ChangeBlendState(KdBlendState::Alpha);
-	// シルエットの外側だけに描く(深度は読み取りのみ)
-	manager.ChangeDepthStencilState(KdDepthStencilState::StencilOutline, stencilRef_);
+	// シルエットの外側だけに描き、深度も書く(輪郭と同じ。DoF等で背景扱いにならないようにする)
+	manager.ChangeDepthStencilState(KdDepthStencilState::StencilOutlineZWrite, stencilRef_);
 	const bool isInk = (config_.kind == KdAuraKind::Ink);
 
 	// 墨型は体の後ろに回り込む背面だけを描く
@@ -81,7 +81,8 @@ void AuraRenderComponent::DrawEffect()
 
 	const bool lifts = (config_.kind != KdAuraKind::Rim);
 
-	for (int i = 0; i < config_.layers; ++i)
+	// 深度を書くので、奥になる外側の層から描く(内側の層が深度テストで落ちないように)
+	for (int i = config_.layers - 1; i >= 0; --i)
 	{
 		KdAuraStyle style;
 		style.Kind = (int)config_.kind;

@@ -41,6 +41,17 @@ public:
 		}
 	}
 
+	// 全スロットのHitBoxとTrailを止める(攻撃の強制中断用)
+	void StopAllAttacks()
+	{
+		for (const auto& entry : weapons_) {
+			if (WeaponComponent* weapon = entry.second.Resolve()) {
+				weapon->SetHitBoxEnabled(false);
+				weapon->SetTrailEmitting(false);
+			}
+		}
+	}
+
 	WeaponComponent* GetWeapon(const std::string& slot) const { return Resolve(slot); }
 
 private:
