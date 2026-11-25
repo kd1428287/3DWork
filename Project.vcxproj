@@ -304,6 +304,7 @@
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Enemy\EnemyActions.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Enemy\EnemyAIController.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Enemy\LockOnTargetComponent.h" />
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Enemy\StandardEnemyBehavior.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Enemy\Tutorial\TutorialEnemyBehavior.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Enemy\Warrock\WarrockBehavior.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\KdPlayerInputDevice.h" />
@@ -454,6 +455,7 @@
     <ClInclude Include="Src\Application\Definitions\UI\GaugeBarStyle.h" />
     <ClInclude Include="Src\Application\Definitions\UI\UIData.h" />
     <ClInclude Include="Src\Application\Editor\Common\ComponentInspector.h" />
+    <ClInclude Include="Src\Application\Editor\Common\EditorFileUI.h" />
     <ClInclude Include="Src\Application\Editor\Common\EditorPreviewViewport.h" />
     <ClInclude Include="Src\Application\Editor\Common\EditorUtil.h" />
     <ClInclude Include="Src\Application\Editor\Common\EditorViewport.h" />
@@ -505,6 +507,7 @@
     <ClInclude Include="Src\Application\Factories\ComponentRegistry.h" />
     <ClInclude Include="Src\Application\Factories\GameObjectFactory.h" />
     <ClInclude Include="Src\Application\Factories\GamePlay\Character\EnemyFactory.h" />
+    <ClInclude Include="Src\Application\Factories\GamePlay\Character\EnemySpawner.h" />
     <ClInclude Include="Src\Application\Factories\GamePlay\Character\PlayerFactory.h" />
     <ClInclude Include="Src\Application\Factories\GamePlay\Map\TerrainFactory.h" />
     <ClInclude Include="Src\Application\Factories\Json\CombatConfigJson.h" />
@@ -521,6 +524,7 @@
     <ClInclude Include="Src\Application\Scene\GameScene\GameScene.h" />
     <ClInclude Include="Src\Application\Scene\ResultScene\ResultScene.h" />
     <ClInclude Include="Src\Application\Scene\TitleScene\TitleScene.h" />
+    <ClInclude Include="Src\Application\Scene\TutorialScene\TutorialScene.h" />
     <ClInclude Include="Src\Application\Systems\Collision\ColliderRegistry.h" />
     <ClInclude Include="Src\Application\Systems\Collision\CollisionEventPublisher.h" />
     <ClInclude Include="Src\Application\Systems\Collision\CollisionMath.h" />
@@ -534,6 +538,11 @@
     <ClInclude Include="Src\Application\Systems\GamePlay\ResultView.h" />
     <ClInclude Include="Src\Application\Systems\GamePlay\RethalSynchronizationSystem.h" />
     <ClInclude Include="Src\Application\Systems\GamePlay\TimeScaleSystem.h" />
+    <ClInclude Include="Src\Application\Systems\GamePlay\Tutorial\TutorialContext.h" />
+    <ClInclude Include="Src\Application\Systems\GamePlay\Tutorial\TutorialDataTable.h" />
+    <ClInclude Include="Src\Application\Systems\GamePlay\Tutorial\TutorialManager.h" />
+    <ClInclude Include="Src\Application\Systems\GamePlay\Tutorial\TutorialState.h" />
+    <ClInclude Include="Src\Application\Systems\GamePlay\Tutorial\TutorialTypes.h" />
     <ClInclude Include="Src\Application\Systems\InputSystem.h" />
     <ClInclude Include="Src\Application\Systems\LoadList.h" />
     <ClInclude Include="Src\Application\Systems\SelectableManager.h" />
@@ -599,6 +608,7 @@
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Common\HitReactionComponent.cpp" />
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Enemy\EnemyActions.cpp" />
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Enemy\EnemyAIController.cpp" />
+    <ClCompile Include="Src\Application\Components\GamePlay\Character\Enemy\StandardEnemyBehavior.cpp" />
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Enemy\Tutorial\TutorialEnemyBehavior.cpp" />
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Enemy\Warrock\WarrockBehavior.cpp" />
     <ClCompile Include="Src\Application\Components\GamePlay\Character\Player\PlayerActionDispatcher.cpp" />
@@ -639,6 +649,7 @@
     <ClCompile Include="Src\Application\Definitions\Prefab\PrefabIO.cpp" />
     <ClCompile Include="Src\Application\Definitions\UI\UIData.cpp" />
     <ClCompile Include="Src\Application\Editor\Common\ComponentInspector.cpp" />
+    <ClCompile Include="Src\Application\Editor\Common\EditorFileUI.cpp" />
     <ClCompile Include="Src\Application\Editor\Common\EditorPreviewViewport.cpp" />
     <ClCompile Include="Src\Application\Editor\Common\EditorUtil.cpp" />
     <ClCompile Include="Src\Application\Editor\Common\EditorViewport.cpp" />
@@ -676,6 +687,7 @@
     <ClCompile Include="Src\Application\Factories\Common\CameraFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\ComponentRegistrations.cpp" />
     <ClCompile Include="Src\Application\Factories\ComponentRegistry.cpp" />
+    <ClCompile Include="Src\Application\Factories\GamePlay\Character\EnemySpawner.cpp" />
     <ClCompile Include="Src\Application\Factories\GamePlay\Character\PlayerFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\GamePlay\Map\TerrainFactory.cpp" />
     <ClCompile Include="Src\Application\Factories\PrefabCatalog.cpp" />
@@ -693,9 +705,13 @@
     <ClCompile Include="Src\Application\Scene\GameScene\GameScene.cpp" />
     <ClCompile Include="Src\Application\Scene\ResultScene\ResultScene.cpp" />
     <ClCompile Include="Src\Application\Scene\TitleScene\TitleScene.cpp" />
+    <ClCompile Include="Src\Application\Scene\TutorialScene\TutorialScene.cpp" />
     <ClCompile Include="Src\Application\Systems\GamePlay\ResultView.cpp" />
     <ClCompile Include="Src\Application\Systems\GamePlay\RethalSynchronizationSystem.cpp" />
     <ClCompile Include="Src\Application\Systems\GamePlay\RethalSyncronizationSystem.cpp" />
+    <ClCompile Include="Src\Application\Systems\GamePlay\Tutorial\TutorialDataTable.cpp" />
+    <ClCompile Include="Src\Application\Systems\GamePlay\Tutorial\TutorialManager.cpp" />
+    <ClCompile Include="Src\Application\Systems\GamePlay\Tutorial\TutorialState.cpp" />
     <ClCompile Include="Src\Application\Systems\SelectableManager.cpp" />
     <ClCompile Include="Src\Framework\Audio\KdSoundDef.cpp" />
     <ClCompile Include="Src\Framework\Direct3D\KdMaterial.cpp">

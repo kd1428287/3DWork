@@ -634,7 +634,7 @@
     },
     {
       "params": {
-        "attackTablePath": "Asset/Data/Game/PlayerAttackTable.json"
+        "attackTablePath": "Asset/Data/Game/Attack/PlayerAttackTable.json"
       },
       "type": "PlayerAttackSelector"
     },
@@ -654,12 +654,6 @@
     },
     {
       "params": {
-        "preset": "Bright"
-      },
-      "type": "InkStyle"
-    },
-    {
-      "params": {
         "chargeLine": 1.7999999523162842,
         "gainOnParry": 10.0,
         "regenPerSecond": 0.5
@@ -672,6 +666,12 @@
         "maxLife": 1
       },
       "type": "HP"
+    },
+    {
+      "params": {
+        "preset": "Bright"
+      },
+      "type": "InkStyle"
     }
   ],
   "name": "player",

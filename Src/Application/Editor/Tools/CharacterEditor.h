@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CharacterDocument.h"
+#include "../Common/EditorFileUI.h"
 
 // キャラクター(Prefab JSON)エディタ。MapEditorと同じくKdDebugGUI::GuiProcess()内からUpdate()を呼ぶ
 class CharacterEditor
@@ -25,8 +26,8 @@ private:
 	void RequestNew();
 	void OpenFile(const std::string& path);
 	void NewFile();
-	void Save(const std::string& path);
-	void RefreshList();
+	bool Save();
+	std::string MakeSavePath() const;
 
 	// ノード操作(Idで探す)。データは共有のCharacterDocumentが持つ
 	CharacterNode* FindSelected() { return m_doc.Selected(); }
@@ -43,15 +44,13 @@ private:
 
 	CharacterDocument&	m_doc = CharacterDocument::Instance();
 
-	// Path欄の編集用バッファ。ドキュメント側のパスが変わった時だけ上書きする
-	char		m_filePathBuf[260] = "";
+	// ファイル名欄の編集用バッファ。ドキュメント側のパスが変わった時だけ上書きする
+	char		m_nameBuf[128] = "";
 	std::string	m_lastDocPath;
 
 	// キャラクター一覧(フォルダ走査)
-	struct ListEntry { std::string name; std::string path; };
-	std::vector<ListEntry>	m_list;
-	bool					m_listLoaded = false;
-	char					m_listDirBuf[260] = "Asset/Data/Game/";
+	JsonFileList	m_list{ "Asset/Data/Game/Character/",
+		[](const nlohmann::json& j) { return j.is_object() && j.contains("components") && j["components"].is_array(); } };
 
 	// 未保存変更の確認ダイアログ用
 	std::string	m_pendingPath;

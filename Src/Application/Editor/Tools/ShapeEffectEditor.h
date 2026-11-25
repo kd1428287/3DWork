@@ -77,7 +77,7 @@ private:
 	KdAssetsTextureProvider			m_textureProvider;
 	EditorPreviewViewport			m_preview;
 
-	char	m_filePathBuf[260] = "Asset/Data/Game/shapeeffectmap.json";
+	char	m_filePathBuf[260] = "Asset/Data/Game/Effect/shapeeffectmap.json";
 
 	std::vector<std::string>		m_textureFileList;
 	bool							m_textureListLoaded = false;

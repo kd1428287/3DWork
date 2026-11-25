@@ -47,7 +47,7 @@ void CharacterEditor::Update()
 			if (io.KeyShift) { Redo(); } else { Undo(); }
 		}
 		if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Y, false)) { Redo(); }
-		if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_S, false)) { Save(m_filePathBuf); }
+		if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_S, false)) { Save(); }
 	}
 
 	ImGuiViewport* mainViewport = ImGui::GetMainViewport();
@@ -86,13 +86,15 @@ void CharacterEditor::DrawMainMenu()
 	if (m_doc.Path() != m_lastDocPath)
 	{
 		m_lastDocPath = m_doc.Path();
-		strncpy_s(m_filePathBuf, m_lastDocPath.c_str(), _TRUNCATE);
+		strncpy_s(m_nameBuf, std::filesystem::path(m_lastDocPath).stem().string().c_str(), _TRUNCATE);
 	}
-	ImGui::InputText("Path", m_filePathBuf, sizeof(m_filePathBuf));
+	ImGui::InputText("File Name", m_nameBuf, sizeof(m_nameBuf));
+	const std::string savePath = MakeSavePath();
+	ImGui::TextDisabled("保存先: %s", savePath.empty() ? "(ファイル名を入力してください)" : savePath.c_str());
 
-	if (ImGui::Button("Save (Ctrl+S)")) { Save(m_filePathBuf); }
-	ImGui::SameLine();
-	if (ImGui::Button("Load")) { RequestOpen(m_filePathBuf); }
+	ImGui::BeginDisabled(savePath.empty());
+	if (ImGui::Button("Save (Ctrl+S)")) { Save(); }
+	ImGui::EndDisabled();
 	ImGui::SameLine();
 	if (ImGui::Button("New")) { RequestNew(); }
 	ImGui::SameLine();
@@ -108,81 +110,26 @@ void CharacterEditor::DrawMainMenu()
 	ImGui::SameLine();
 	if (m_doc.IsDirty()) { ImGui::TextColored(ImVec4(1, 0.8f, 0.2f, 1), "* 未保存の変更あり"); }
 
-	// 未保存変更の確認
-	if (m_openPopupRequested)
+	// 未保存変更の確認(保存に失敗したら続行しない)
+	const auto choice = EditorFileUI::DrawUnsavedPopup(m_openPopupRequested, !savePath.empty());
+	if (choice == EditorFileUI::UnsavedChoice::Discard || (choice == EditorFileUI::UnsavedChoice::Save && Save()))
 	{
-		ImGui::OpenPopup("Unsaved Changes");
-		m_openPopupRequested = false;
-	}
-	if (ImGui::BeginPopupModal("Unsaved Changes", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
-	{
-		ImGui::Text("未保存の変更があります。破棄して続行しますか？");
-
-		auto proceed = [this]()
-		{
-			if (m_pendingIsNew) { NewFile(); } else { OpenFile(m_pendingPath); }
-			ImGui::CloseCurrentPopup();
-		};
-
-		if (ImGui::Button("Save & Continue"))
-		{
-			Save(m_filePathBuf);
-			proceed();
-		}
-		ImGui::SameLine();
-		if (ImGui::Button("Discard & Continue")) { proceed(); }
-		ImGui::SameLine();
-		if (ImGui::Button("Cancel")) { ImGui::CloseCurrentPopup(); }
-		ImGui::EndPopup();
+		if (m_pendingIsNew) { NewFile(); } else { OpenFile(m_pendingPath); }
 	}
 
 	ImGui::End();
 }
 
 //=====================================================
-// キャラクター一覧(フォルダ内で "components" 配列を持つJSON)
+// キャラクター一覧(フォルダ以下の "components" 配列を持つJSON)
 //=====================================================
-void CharacterEditor::RefreshList()
-{
-	namespace fs = std::filesystem;
-
-	m_list.clear();
-	m_listLoaded = true;
-
-	std::error_code ec;
-	for (fs::directory_iterator it(m_listDirBuf, ec), end; !ec && it != end; it.increment(ec))
-	{
-		if (!it->is_regular_file() || it->path().extension() != ".json") continue;
-
-		const std::string path = it->path().generic_string();
-		nlohmann::json j;
-		if (!JsonLoader::Load(path, j)) continue;
-		if (!j.is_object() || !j.contains("components") || !j["components"].is_array()) continue;
-
-		m_list.push_back({ it->path().stem().string(), path });
-	}
-
-	std::sort(m_list.begin(), m_list.end(),
-		[](const ListEntry& a, const ListEntry& b) { return a.name < b.name; });
-}
-
 void CharacterEditor::DrawCharacterList()
 {
 	ImGui::Begin("Characters");
 	m_focusedNow |= ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
 
-	ImGui::InputText("Dir", m_listDirBuf, sizeof(m_listDirBuf));
-	if (ImGui::Button("Refresh") || !m_listLoaded) { RefreshList(); }
-
-	ImGui::Separator();
-
-	if (m_list.empty()) { ImGui::TextDisabled("キャラクターJSONが見つかりません"); }
-
-	for (const ListEntry& e : m_list)
-	{
-		const bool isCurrent = (e.path == m_doc.Path());
-		if (ImGui::Selectable(e.name.c_str(), isCurrent)) { RequestOpen(e.path); }
-	}
+	std::string path;
+	if (m_list.Draw(m_doc.Path(), path)) { RequestOpen(path); }
 
 	ImGui::End();
 }
@@ -431,11 +378,24 @@ void CharacterEditor::NewFile()
 	m_doc.New();
 }
 
-void CharacterEditor::Save(const std::string& path)
+// 開いているファイルと同じフォルダ(新規なら一覧のフォルダ)に "ファイル名.json" で保存する
+std::string CharacterEditor::MakeSavePath() const
 {
-	if (!m_doc.SaveAs(path)) return;
+	namespace fs = std::filesystem;
 
-	m_listLoaded = false;	// 新規ファイルを一覧へ反映する
+	if (m_nameBuf[0] == '\0') return {};
+
+	const fs::path dir = m_doc.Path().empty() ? fs::path(m_list.Dir()) : fs::path(m_doc.Path()).parent_path();
+	return (dir / (std::string(m_nameBuf) + ".json")).generic_string();
+}
+
+bool CharacterEditor::Save()
+{
+	const std::string path = MakeSavePath();
+	if (path.empty() || !m_doc.SaveAs(path)) return false;
+
+	m_list.Invalidate();	// 新規ファイルを一覧へ反映する
+	return true;
 }
 
 CharacterEditor::CharacterEditor()

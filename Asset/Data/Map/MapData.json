@@ -379,7 +379,7 @@
       "components": [
         {
           "params": {
-            "prefab": "",
+            "prefab": "Asset/Data/Game/Character/Player.json",
             "role": "Player"
           },
           "type": "SpawnMarker"
@@ -408,7 +408,7 @@
       "components": [
         {
           "params": {
-            "prefab": "Asset/Data/Game/Warrock.json",
+            "prefab": "Asset/Data/Game/Character/Warrock.json",
             "role": "Enemy"
           },
           "type": "SpawnMarker"

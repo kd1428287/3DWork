@@ -41,7 +41,7 @@ public:
 	ShapeEffectDispatcher& operator=(const ShapeEffectDispatcher&) = delete;
 
 	// dataPathのJSONから定義を読み込む(無い・壊れている場合も、コードからのRegisterDefinitionだけで動ける)
-	bool Init(EventBus& bus, const std::string& dataPath = "Asset/Data/Game/shapeeffectmap.json");
+	bool Init(EventBus& bus, const std::string& dataPath = "Asset/Data/Game/Effect/shapeeffectmap.json");
 	void Release();
 
 	// Attachで使う名前の定義を登録する(同名は上書き)

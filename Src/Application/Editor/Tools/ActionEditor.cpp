@@ -1,4 +1,4 @@
-﻿#include "Application/main.h"
+#include "Application/main.h"
 
 #include "ActionEditor.h"
 #include "Application/Definitions/Character/Enemy/EnemyDefinitionJson.h"
@@ -253,13 +253,15 @@ void ActionEditor::DrawTargets()
 	ImGui::Begin("Action Targets");
 	if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows)) { m_focused = true; }
 
-	ImGui::InputText("Prefab", m_prefabPathBuf, sizeof(m_prefabPathBuf));
-	if (ImGui::Button("Load")) { LoadPrefab(m_prefabPathBuf); }
+	if (ImGui::CollapsingHeader("Characters", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		std::string path;
+		if (m_prefabList.Draw(m_prefabPath, path, 160.0f)) { RequestLoad(path); }
+	}
 
 	// 整合性エラーのまま保存するとゲーム側のassertで落ちるため、直るまでSaveを止める
 	const bool tableValid = !m_loaded || ((m_target == Target::Player) ? m_playerTable.Validate() : m_table.Validate());
 
-	ImGui::SameLine();
 	ImGui::BeginDisabled(!m_loaded || !m_dirty || !tableValid);
 	if (ImGui::Button("Save")) { Save(); }
 	ImGui::EndDisabled();
@@ -276,7 +278,8 @@ void ActionEditor::DrawTargets()
 
 	if (!m_loaded)
 	{
-		ImGui::TextDisabled("Prefabを読み込んでください");
+		ImGui::TextDisabled("一覧からキャラクターを選んでください");
+		DrawUnsavedConfirm(tableValid);
 		ImGui::End();
 		return;
 	}
@@ -294,6 +297,9 @@ void ActionEditor::DrawTargets()
 		DrawPoolList("Attacks", Pool::Attacks);
 		DrawPoolList("Gap Closers", Pool::GapClosers);
 	}
+
+	// 読み込みでテーブルが差し替わるため、一覧を描き終えてから処理する
+	DrawUnsavedConfirm(tableValid);
 
 	ImGui::End();
 }
@@ -1605,6 +1611,39 @@ void ActionEditor::DrawHitboxWires()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // Prefab・攻撃テーブルの読み込みと保存
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+bool ActionEditor::HasAttackTable(const nlohmann::json& prefab)
+{
+	if (!prefab.is_object() || !prefab.contains("components") || !prefab["components"].is_array()) return false;
+
+	for (const auto& c : prefab["components"])
+	{
+		if (!c.is_object()) continue;
+
+		const std::string type = c.value("type", std::string());
+		if (type != "EnemyAIController" && type != "PlayerAttackSelector") continue;
+		if (c.contains("params") && c["params"].contains("attackTablePath")) return true;
+	}
+	return false;
+}
+
+void ActionEditor::RequestLoad(const std::string& path)
+{
+	if (!m_dirty) { LoadPrefab(path); return; }
+
+	m_pendingPath = path;
+	m_openPopupRequested = true;
+}
+
+// 保存に失敗したら読み込まない
+void ActionEditor::DrawUnsavedConfirm(bool canSave)
+{
+	const auto choice = EditorFileUI::DrawUnsavedPopup(m_openPopupRequested, canSave);
+	if (choice == EditorFileUI::UnsavedChoice::Discard || (choice == EditorFileUI::UnsavedChoice::Save && Save()))
+	{
+		LoadPrefab(m_pendingPath);
+	}
+}
+
 bool ActionEditor::LoadPrefab(const std::string& path)
 {
 	nlohmann::ordered_json root;
@@ -1737,6 +1776,7 @@ bool ActionEditor::LoadPrefab(const std::string& path)
 		}
 	}
 
+	m_prefabPath = path;
 	m_target = target;
 	m_table = std::move(table);
 	m_playerTable = std::move(playerTable);
@@ -1776,9 +1816,9 @@ bool ActionEditor::LoadPrefab(const std::string& path)
 	return true;
 }
 
-void ActionEditor::Save()
+bool ActionEditor::Save()
 {
-	if (!m_loaded) { return; }
+	if (!m_loaded) { return false; }
 
 	bool saved = false;
 	if (m_target == Target::Player)
@@ -1797,7 +1837,7 @@ void ActionEditor::Save()
 	if (!saved)
 	{
 		KdDebugGUI::Instance().AddLog("ActionEditor: 保存失敗 %s\n", m_tablePath.c_str());
-		return;
+		return false;
 	}
 
 	m_dirty = false;
@@ -1805,6 +1845,7 @@ void ActionEditor::Save()
 
 	// シーンの再読み込みはエディタを閉じた時に行う
 	EditorHost::Instance().MarkSceneDirty();
+	return true;
 }
 
 // テーブル内で使われているクリップ名を、重複なしで集める(Inspectorの選択候補)

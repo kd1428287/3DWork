@@ -171,7 +171,7 @@ private:
 	bool	m_useSnap = false;
 	float	m_snapValue[3] = { 1.0f, 1.0f, 1.0f };
 
-	char	m_filePathBuf[260] = "Asset/Data/Game/effectmap.json";
+	char	m_filePathBuf[260] = "Asset/Data/Game/Effect/effectmap.json";
 
 	// テクスチャアセット一覧
 	std::vector<std::string>	m_textureFileList;

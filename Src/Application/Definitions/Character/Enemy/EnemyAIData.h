@@ -190,6 +190,9 @@ struct EnemyAIData
 	// 制限されない(攻撃Sequenceの入り口だけで判定するため)。
 	float attackIntervalDuration = 0.0f;
 
+	// 攻撃中(Recovery以外)のハイパーアーマー。falseなら攻撃中も被弾で怯む(雑魚向け)。
+	bool hyperArmor = true;
+
 	// 攻撃パターン。近接プール(間合い内で重み付き抽選)。
 	std::vector<EnemyAttackDefinition> attacks;
 
@@ -202,7 +205,7 @@ struct EnemyAIData
 
 	// 単発の割り込み演出(被弾リアクション/大スタン/パリィされた時の
 	// リアクション/咆哮/死亡等)を論理名で引けるテーブル。
-	// キー例: "HitReaction", "BigStagger", "Parried", "Roar", "Dying"
+	// キー例: "HitReaction", "BigStagger", "AttackDeflected", "Roar", "Dying", "Broken", "Fatalized"
 	//
 	// 【mapにした理由】演出の種類は敵種ごとに増減する(Warrockには
 	// Roarがあるが他の敵には無い、等)。EnemyAIDataに毎回専用フィールドを

@@ -74,7 +74,7 @@ private:
 	std::vector<SlashTrailObject>	m_objects;
 	int								m_selected = -1;
 
-	char	m_filePathBuf[260] = "Asset/Data/Game/slashtrail.json";
+	char	m_filePathBuf[260] = "Asset/Data/Game/Effect/slashtrail.json";
 
 	FileWatcher	m_watcher;
 	bool		m_dirty = false;

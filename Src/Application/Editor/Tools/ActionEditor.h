@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "nlohmann/json.hpp"
 #include "Application/Definitions/Loaders/EnemyAttackTableLoader.h"
@@ -7,12 +7,13 @@
 #include "Application/Components/Graphics/Animation/RootMotionExtractor.h"
 #include "../Common/EditorPreviewViewport.h"
 #include "../Common/UndoHistory.h"
+#include "../Common/EditorFileUI.h"
 #include "Application/Components/Graphics/Render/WireFrameComponent.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 敵・プレイヤーの攻撃テーブル(EnemyAttackTable/PlayerAttackTable)を、アニメーションと判定ワイヤーを見ながら調整するエディタ
 //	Prefabのコンポーネント(EnemyAIController/PlayerAttackSelector)で敵かプレイヤーかを自動判定する
-//	Prefab(Warrock.json等)からモデル・武器スロット・攻撃テーブルのパスを読み、
+//	一覧で選んだPrefab(Warrock.json等)からモデル・武器スロット・攻撃テーブルのパスを読み、
 //	攻撃テーブルJSONを編集・保存する。時間はゲームと同じ秒、区間はクリップのフレームで扱う。
 //	EditorHost::Draw() から Update()、EditorHost::RenderPreviewViewports() から
 //	RenderPreviewViewport() を呼ぶ
@@ -54,6 +55,7 @@ private:
 	void DrawTargets();
 	void DrawPoolList(const char* title, Pool pool);
 	void DrawPlayerList();
+	void DrawUnsavedConfirm(bool canSave);
 	void DrawInspector();
 	void DrawSegments(MotionClipData& clip, float markerSec);
 	void DrawTimeline();
@@ -62,8 +64,10 @@ private:
 	void DrawPreviewWindow();
 
 	// ---- データ ----
+	void RequestLoad(const std::string& path);	// 未保存変更があれば確認を挟む
 	bool LoadPrefab(const std::string& path);
-	void Save();
+	bool Save();
+	static bool HasAttackTable(const nlohmann::json& prefab);	// 一覧に出すPrefabの条件
 	void CollectAnimNames();
 
 	std::vector<EnemyAttackDefinition>& PoolVec(Pool pool);
@@ -89,7 +93,10 @@ private:
 	void DrawHitboxWires();
 
 	// 読み込み状態
-	char			m_prefabPathBuf[260] = "Asset/Data/Prefab/Warrock.json";	// ※実際の置き場所に合わせる
+	JsonFileList	m_prefabList{ "Asset/Data/Game/Character/", &ActionEditor::HasAttackTable };
+	std::string		m_prefabPath;			// 読み込み中のPrefab
+	std::string		m_pendingPath;			// 確認ダイアログ後に読み込むPrefab
+	bool			m_openPopupRequested = false;
 	bool			m_loaded = false;
 	bool			m_dirty = false;
 	bool			m_focused = false;

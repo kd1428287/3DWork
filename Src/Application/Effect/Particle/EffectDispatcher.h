@@ -77,7 +77,7 @@ public:
 	EffectDispatcher(const EffectDispatcher&) = delete;
 	EffectDispatcher& operator=(const EffectDispatcher&) = delete;
 
-	bool Init(EventBus& bus, const std::string& effectDataPath = "Asset/Data/Game/effectmap.json");
+	bool Init(EventBus& bus, const std::string& effectDataPath = "Asset/Data/Game/Effect/effectmap.json");
 
 	void Release();
 

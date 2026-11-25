@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <atomic>
 #include <cstdint>
@@ -56,7 +56,7 @@ public:
 	SlashTrailDispatcher& operator=(const SlashTrailDispatcher&) = delete;
 
 	// JSONから定義を読み込む(ファイルが無くても成功扱い。コードからのRegisterDefinition()も併用できる)
-	bool Init(const std::string& dataPath = "Asset/Data/Game/slashtrail.json");
+	bool Init(const std::string& dataPath = "Asset/Data/Game/Effect/slashtrail.json");
 
 	// 定義・スロットを全て破棄する(発行済みのハンドルは全て無効になる)
 	void Release();

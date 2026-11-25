@@ -10,6 +10,7 @@
 
 #include "Application/Components/GamePlay/Character/Enemy/EnemyAIController.h"
 #include "Application/Components/GamePlay/Character/Enemy/Warrock/WarrockBehavior.h"
+//#include "Application/Components/GamePlay/Character/Enemy/Grunt/GruntBehavior.h"
 #include "Application/Components/GamePlay/Character/Enemy/LockOnTargetComponent.h"
 
 using namespace Registration;
@@ -34,6 +35,7 @@ namespace
 	std::unique_ptr<IEnemyBehavior> CreateEnemyBehavior(const std::string& behavior)
 	{
 		if (behavior == "Warrock") return std::make_unique<WarrockBehavior>();
+	//	if (behavior == "Grunt") return std::make_unique<GruntBehavior>();
 		throw std::runtime_error("EnemyAIController: unknown behavior \"" + behavior + "\"");
 	}
 

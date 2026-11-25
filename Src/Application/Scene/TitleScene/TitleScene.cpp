@@ -1,4 +1,4 @@
-#include "TitleScene.h"
+﻿#include "TitleScene.h"
 #include "Application/main.h"
 
 #include "Application/Components/Core/TransformComponent.h"
@@ -13,7 +13,6 @@ namespace
 	constexpr float kSplatRadius = 0.05f;	// 画面の高さに対する比率
 	constexpr float kSplatDensity = 0.6f;
 
-	// 仮のアセット名(実ファイルに合わせて変更する)
 	constexpr const char* kTitleBgm = "Asset/Sounds/Title/tenkai-yashiro.wav";
 	constexpr const char* kClickSe = "Asset/Sounds/Title/wadaiko.wav";
 
@@ -25,8 +24,8 @@ namespace
 
 void TitleScene::OnEnter()
 {
-	GameObject* logo = objManager_->Instantiate("TitleLogo");
-	logo->AddComponent<TransformComponent>()->SetScale({ 1.4f,1.4f,1.4f });
+	//GameObject* logo = objManager_->Instantiate("TitleLogo");
+	//logo->AddComponent<TransformComponent>()->SetScale({ 1.4f,1.4f,1.4f });
 
 	LoadUI("Asset/Data/UI/TitleUI.json");
 
@@ -39,6 +38,7 @@ void TitleScene::OnEnter()
 		[this](float dt) { objManager_->Flush(); }
 	);
 
+	leaving_ = false;
 	bgm_ = Events::PublishSoundPlayEvent(*GLOBALEVENT, kTitleBgm, true, 1.0f, 0.0f, kBgmFadeIn);
 }
 

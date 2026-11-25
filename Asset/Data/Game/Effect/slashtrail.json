@@ -26,8 +26,8 @@
                 "Dissolve": {
                     "Time": 0.75,
                     "NoiseTexturePath": "Noise/ink_noise__.png",
-                    "NoiseScaleU": 0.30000001192092896,
-                    "NoiseScaleV": 3.0,
+                    "NoiseScaleU": 0.10000000149011612,
+                    "NoiseScaleV": 1.0,
                     "ScrollU": 0.0,
                     "ScrollV": 0.0,
                     "Softness": 1.0,
@@ -98,8 +98,8 @@
                 "Dissolve": {
                     "Time": 1.2000000476837158,
                     "NoiseTexturePath": "Noise/ink_noise.png",
-                    "NoiseScaleU": 0.30000001192092896,
-                    "NoiseScaleV": 3.0,
+                    "NoiseScaleU": 0.10000000149011612,
+                    "NoiseScaleV": 1.0,
                     "ScrollU": 0.0,
                     "ScrollV": 0.0,
                     "Softness": 0.10000000149011612,

@@ -298,6 +298,12 @@
     <Filter Include="Src\Application\Definitions\Json">
       <UniqueIdentifier>{92017ca1-6643-4f3b-b6c1-f02db00d770a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\Systems\GamePlay\Tutorial">
+      <UniqueIdentifier>{66875380-a35c-4ba8-9cf0-97bd36972f86}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Scene\TutorialScene">
+      <UniqueIdentifier>{7dc83d1e-46de-4054-a764-9f96074f8c27}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -1275,6 +1281,33 @@
     <ClInclude Include="Src\Application\Definitions\Physics\ColliderParamsJson.h">
       <Filter>Src\Application\Definitions\Physics</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Components\GamePlay\Character\Enemy\StandardEnemyBehavior.h">
+      <Filter>Src\Application\Components\GamePlay\Character\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Editor\Common\EditorFileUI.h">
+      <Filter>Src\Application\Editor\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Systems\GamePlay\Tutorial\TutorialManager.h">
+      <Filter>Src\Application\Systems\GamePlay\Tutorial</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Systems\GamePlay\Tutorial\TutorialContext.h">
+      <Filter>Src\Application\Systems\GamePlay\Tutorial</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Systems\GamePlay\Tutorial\TutorialState.h">
+      <Filter>Src\Application\Systems\GamePlay\Tutorial</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Systems\GamePlay\Tutorial\TutorialDataTable.h">
+      <Filter>Src\Application\Systems\GamePlay\Tutorial</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Systems\GamePlay\Tutorial\TutorialTypes.h">
+      <Filter>Src\Application\Systems\GamePlay\Tutorial</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Factories\GamePlay\Character\EnemySpawner.h">
+      <Filter>Src\Application\Factories\GamePlay\Character</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Scene\TutorialScene\TutorialScene.h">
+      <Filter>Src\Application\Scene\TutorialScene</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -1735,6 +1768,27 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Editor\Tools\SlashTrailEditor.cpp">
       <Filter>Src\Application\Editor\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Components\GamePlay\Character\Enemy\StandardEnemyBehavior.cpp">
+      <Filter>Src\Application\Components\GamePlay\Character\Enemy</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Editor\Common\EditorFileUI.cpp">
+      <Filter>Src\Application\Editor\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Systems\GamePlay\Tutorial\TutorialManager.cpp">
+      <Filter>Src\Application\Systems\GamePlay\Tutorial</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Systems\GamePlay\Tutorial\TutorialDataTable.cpp">
+      <Filter>Src\Application\Systems\GamePlay\Tutorial</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Systems\GamePlay\Tutorial\TutorialState.cpp">
+      <Filter>Src\Application\Systems\GamePlay\Tutorial</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Factories\GamePlay\Character\EnemySpawner.cpp">
+      <Filter>Src\Application\Factories\GamePlay\Character</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Scene\TutorialScene\TutorialScene.cpp">
+      <Filter>Src\Application\Scene\TutorialScene</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

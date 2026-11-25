@@ -171,7 +171,8 @@ Math::Vector3 EnemyAIController::GetDesiredVelocity()
 // --- IHitReactionQuery ----------------------------------------------------
 bool EnemyAIController::IsGuarding() const
 {
-	return !isVulnerable_;
+	// ハイパーアーマー無しの敵は、攻撃中も常に被弾で怯む
+	return data_.hyperArmor && !isVulnerable_;
 }
 
 bool EnemyAIController::IsInParryWindow() const

@@ -58,6 +58,17 @@
         }
       ],
       "name": "Main",
+      "pos": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
       "scale": [
         0.5,
         0.5,
@@ -122,6 +133,17 @@
         }
       ],
       "name": "Body",
+      "pos": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
       "scale": [
         0.5,
         0.5,
@@ -189,6 +211,17 @@
         }
       ],
       "name": "Off",
+      "pos": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
       "scale": [
         0.5,
         0.5,
@@ -256,6 +289,17 @@
         }
       ],
       "name": "Foot",
+      "pos": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
       "scale": [
         0.5,
         0.5,
@@ -286,7 +330,23 @@
           "type": "EnemyHudGauge"
         }
       ],
-      "name": "HudGauge"
+      "name": "HudGauge",
+      "pos": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
     }
   ],
   "components": [
@@ -484,7 +544,7 @@
     },
     {
       "params": {
-        "attackTablePath": "Asset/Data/Game/WarrockAttackTable.json",
+        "attackTablePath": "Asset/Data/Game/Attack/WarrockAttackTable.json",
         "behavior": "Warrock",
         "data": {
           "attackIntervalDuration": 0.5,
@@ -590,9 +650,20 @@
     }
   ],
   "name": "enemy_warrock",
+  "pos": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "rotation": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+  ],
   "scale": [
-    2,
-    2,
-    2
+    2.0,
+    2.0,
+    2.0
   ]
 }
