@@ -1,5 +1,6 @@
 ﻿#include "EnemySpawner.h"
 #include <cassert>
+#include "Application/Components/GamePlay/Character/Enemy/EnemyAIController.h"
 
 GameObject* EnemySpawner::Spawn(const std::string& enemyId, const Math::Vector3& position)
 {
@@ -7,13 +8,18 @@ GameObject* EnemySpawner::Spawn(const std::string& enemyId, const Math::Vector3&
 		assert(false && "unknown enemyId");
 		return nullptr;
 	}
-	GameObject* enemy = catalog_.Spawn(objectManager_, enemyId, position);
-	// TODO: ターゲット設定など、生成後の初期化を行う
-	return enemy;
+	// ターゲットは敵自身がSceneContext::player経由で探すため、生成後の設定は不要
+	return catalog_.Spawn(objectManager_, enemyId, position);
 }
 
 void EnemySpawner::Despawn(GameObject* enemy)
 {
 	if (enemy == nullptr) return;
-	// TODO: ObjectManagerの削除処理を呼ぶ
+
+	// 道連れオブジェクトや演出の後始末はEnemyAIControllerにまとまっているので、それを使う
+	if (EnemyAIController* ai = enemy->GetComponent<EnemyAIController>()) {
+		ai->RequestDespawn();
+		return;
+	}
+	objectManager_.Destroy(enemy);
 }

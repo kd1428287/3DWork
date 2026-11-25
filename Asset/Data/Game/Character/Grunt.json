@@ -1,0 +1,470 @@
+{
+  "children": [
+    {
+      "components": [
+        {
+          "params": {
+            "bone": "mixamorig:RightHand"
+          },
+          "type": "AttachToBone"
+        },
+        {
+          "params": {
+            "bodyShapeName": "",
+            "ignoreParent": true,
+            "shapes": [
+              {
+                "capsuleEnd": [
+                  0.0,
+                  1.0,
+                  0.0
+                ],
+                "categoryMask": [
+                  "HitBox"
+                ],
+                "collideMask": [],
+                "enabled": true,
+                "halfExtents": [
+                  0.4099999964237213,
+                  1.250000238418579,
+                  0.3901168406009674
+                ],
+                "isStatic": false,
+                "isTrigger": true,
+                "name": "HitBox",
+                "offset": [
+                  0.0065651871263980865,
+                  -0.5,
+                  1.4958359315642156e-05
+                ],
+                "radius": 0.5,
+                "shape": "Box",
+                "useDefaultCollideMask": true,
+                "wantsStayEvent": false
+              }
+            ],
+            "wireFrame": false
+          },
+          "type": "Collider"
+        },
+        {
+          "type": "AttackSource"
+        },
+        {
+          "type": "Weapon"
+        },
+        {
+          "type": "WindShell"
+        }
+      ],
+      "name": "Main",
+      "pos": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "scale": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "components": [
+        {
+          "params": {
+            "bone": "mixamorig:RightFoot"
+          },
+          "type": "AttachToBone"
+        },
+        {
+          "params": {
+            "bodyShapeName": "",
+            "ignoreParent": true,
+            "shapes": [
+              {
+                "capsuleEnd": [
+                  0.0,
+                  1.0,
+                  0.0
+                ],
+                "categoryMask": [
+                  "HitBox"
+                ],
+                "collideMask": [],
+                "enabled": true,
+                "halfExtents": [
+                  0.75,
+                  0.75,
+                  0.75
+                ],
+                "isStatic": false,
+                "isTrigger": true,
+                "name": "HitBox",
+                "offset": [
+                  -9.596346899343189e-06,
+                  0.6412903666496277,
+                  -0.36084112524986267
+                ],
+                "radius": 0.5,
+                "shape": "Box",
+                "useDefaultCollideMask": true,
+                "wantsStayEvent": false
+              }
+            ],
+            "wireFrame": false
+          },
+          "type": "Collider"
+        },
+        {
+          "type": "AttackSource"
+        },
+        {
+          "params": {
+            "slot": "Foot"
+          },
+          "type": "Weapon"
+        },
+        {
+          "type": "WindShell"
+        }
+      ],
+      "name": "Foot",
+      "pos": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "scale": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    }
+  ],
+  "components": [
+    {
+      "params": {
+        "layer": [
+          "GenerateDepthMapFromLight",
+          "DrawLit",
+          "DrawCharaShadow"
+        ],
+        "skeleton": {
+          "animations": "Asset/Animations/Character/Warrock",
+          "model": "Asset/Models/Character/Warrock/Warrock.gltf"
+        }
+      },
+      "type": "ModelRender"
+    },
+    {
+      "params": {
+        "width": 0.10000000149011612
+      },
+      "type": "Outline"
+    },
+    {
+      "params": {
+        "blendDuration": 0.15,
+        "fps": 60,
+        "rootMotion": {
+          "boneName": "mixamorig:Hips",
+          "extractRotation": false,
+          "forwardAxis": "Y",
+          "forwardSign": -1.0,
+          "rightAxis": "X",
+          "rightSign": 1.0,
+          "unitScale": 0.01,
+          "yawSign": 1.0
+        },
+        "speedScale": 1.0
+      },
+      "type": "ModelAnimator"
+    },
+    {
+      "params": {
+        "chains": [
+          {
+            "bones": [
+              "mixamorig:RightArm",
+              "mixamorig:RightForeArm",
+              "mixamorig:RightHand"
+            ],
+            "damping": 8.0,
+            "impulse": 12.0,
+            "maxAngle": 1.2,
+            "name": "RightArm",
+            "stiffness": 180.0,
+            "weights": [
+              0.3,
+              0.6,
+              1.0
+            ]
+          },
+          {
+            "bones": [
+              "mixamorig:LeftArm",
+              "mixamorig:LeftForeArm",
+              "mixamorig:LeftHand"
+            ],
+            "damping": 8.0,
+            "impulse": 12.0,
+            "maxAngle": 1.2,
+            "name": "LeftArm",
+            "stiffness": 180.0,
+            "weights": [
+              0.3,
+              0.6,
+              1.0
+            ]
+          },
+          {
+            "bones": [
+              "mixamorig:RightUpLeg",
+              "mixamorig:RightLeg",
+              "mixamorig:RightFoot"
+            ],
+            "damping": 10.0,
+            "impulse": 8.0,
+            "maxAngle": 0.8,
+            "name": "RightLeg",
+            "stiffness": 220.0,
+            "weights": [
+              0.3,
+              0.6,
+              1.0
+            ]
+          }
+        ]
+      },
+      "type": "BoneOffset"
+    },
+    {
+      "type": "RootMotionApplier"
+    },
+    {
+      "type": "Gravity"
+    },
+    {
+      "type": "Velocity"
+    },
+    {
+      "params": {
+        "bodyShapeName": "Body",
+        "shapes": [
+          {
+            "capsuleEnd": [
+              0.0,
+              1.5,
+              0.0
+            ],
+            "categoryMask": [
+              "HurtBox"
+            ],
+            "collideMask": [
+              "HitBox"
+            ],
+            "isTrigger": true,
+            "name": "HurtBox",
+            "offset": [
+              0.0,
+              0.5,
+              0.0
+            ],
+            "radius": 0.5,
+            "shape": "Capsule",
+            "useDefaultCollideMask": false
+          },
+          {
+            "capsuleEnd": [
+              0.0,
+              1.5,
+              0.0
+            ],
+            "categoryMask": [
+              "Bump"
+            ],
+            "name": "Body",
+            "offset": [
+              0.0,
+              0.5,
+              0.0
+            ],
+            "radius": 0.5,
+            "shape": "Capsule"
+          }
+        ],
+        "wireFrame": false
+      },
+      "type": "Collider"
+    },
+    {
+      "type": "GroundSensor"
+    },
+    {
+      "params": {
+        "rotationSpeed": 3.0
+      },
+      "type": "FacingDirection"
+    },
+    {
+      "params": {
+        "max": 100.0
+      },
+      "type": "Posture"
+    },
+    {
+      "params": {
+        "hitStopDelaySeconds": 0.0,
+        "largeStaggerDuration": 0.6
+      },
+      "type": "HitReaction"
+    },
+    {
+      "type": "LockOnTarget"
+    },
+    {
+      "type": "WeaponSet"
+    },
+    {
+      "params": {
+        "speed": 2.0
+      },
+      "type": "Movement"
+    },
+    {
+      "type": "MovementResolver"
+    },
+    {
+      "params": {
+        "attackTablePath": "Asset/Data/Game/Attack/GruntAttackTable.json",
+        "behavior": "Grunt",
+        "data": {
+          "attackIntervalDuration": 0.5,
+          "chaseSpeed": 2.0,
+          "detectionRange": 10.0,
+          "hyperArmor": false,
+          "loseTargetRange": 14.0,
+          "movementAnimations": {
+            "idle": {
+              "animationName": "Idle",
+              "blendDuration": 0.1,
+              "isForce": false,
+              "loop": true,
+              "useRootMotion": false
+            },
+            "run": {
+              "animationName": "Run",
+              "blendDuration": 0.1,
+              "isForce": false,
+              "loop": true,
+              "useRootMotion": false
+            },
+            "walk": {
+              "animationName": "Walk",
+              "blendDuration": 0.1,
+              "isForce": false,
+              "loop": true,
+              "useRootMotion": false
+            }
+          },
+          "oneShotAnimations": {
+            "AttackDeflected": {
+              "animationName": "Hit_High",
+              "duration": 0.4
+            },
+            "BigStagger": {
+              "animationName": "Knockback",
+              "duration": 3.0,
+              "useRootMotion": true
+            },
+            "Dying": {
+              "animationName": "Died",
+              "duration": 2.0
+            },
+            "HitReaction": {
+              "animationName": "Hit_Middle",
+              "duration": 0.4
+            }
+          },
+          "postDeathLingerSeconds": 1.0,
+          "rootMotionBoneName": "mixamorig:Hips"
+        },
+        "sound": {
+          "attackSwing": "",
+          "death": "",
+          "roar": ""
+        }
+      },
+      "type": "EnemyAIController"
+    },
+    {
+      "params": {
+        "color": [
+          0.11999999731779099,
+          0.11999999731779099,
+          0.11999999731779099
+        ],
+        "coreColor": [
+          0.10000000149011612,
+          0.10000000149011612,
+          0.10000000149011612
+        ],
+        "fresnelPower": 1.5,
+        "height": 2.0,
+        "intensity": 1.0,
+        "kind": "Ink",
+        "layers": 2,
+        "noiseScale": 1.2000000476837158,
+        "noiseTexturePath": "Asset/Textures/Game/Effect/Noise/ink_noise.png",
+        "rise": 0.25,
+        "scrollSpeed": 0.4000000059604645,
+        "softness": 1.0,
+        "width": 0.15000000596046448
+      },
+      "type": "Aura"
+    },
+    {
+      "params": {
+        "preset": "Bright"
+      },
+      "type": "InkStyle"
+    },
+    {
+      "params": {
+        "maxHealth": 30.0,
+        "maxLife": 1
+      },
+      "type": "HP"
+    }
+  ],
+  "name": "enemy_grunt",
+  "pos": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "rotation": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+  ],
+  "scale": [
+    2.0,
+    2.0,
+    2.0
+  ]
+}
