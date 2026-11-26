@@ -3,6 +3,7 @@
 
 #include "Application/Scene/BaseScene/BaseScene.h"
 #include "Application/Scene/TitleScene/TitleScene.h"
+#include "Application/Scene/TutorialScene/TutorialScene.h"
 #include "Application/Scene/GameScene/GameScene.h"
 #include "Application/Scene/ResultScene/ResultScene.h"
 #include "Application/Core/EventBus/Events/SceneEvents.h"
@@ -24,6 +25,7 @@ SceneManager::~SceneManager()
 void SceneManager::Init()
 {
 	factories_[SceneType::Title] = [] { return std::make_unique<TitleScene>(); };
+	factories_[SceneType::Tutorial] = [] { return std::make_unique<TutorialScene>(); };
 	factories_[SceneType::Game] = [] { return std::make_unique<GameScene>(); };
 	factories_[SceneType::Result] = [] { return std::make_unique<ResultScene>(); };
 

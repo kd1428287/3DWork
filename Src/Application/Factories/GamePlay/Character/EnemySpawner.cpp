@@ -2,24 +2,24 @@
 #include <cassert>
 #include "Application/Components/GamePlay/Character/Enemy/EnemyAIController.h"
 
-GameObject* EnemySpawner::Spawn(const std::string& enemyId, const Math::Vector3& position)
+Handle<GameObject> EnemySpawner::Spawn(const std::string& enemyId, const Math::Vector3& position)
 {
 	if (!catalog_.Contains(enemyId)) {
 		assert(false && "unknown enemyId");
-		return nullptr;
+		return Handle<GameObject>();
 	}
 	// ターゲットは敵自身がSceneContext::player経由で探すため、生成後の設定は不要
-	return catalog_.Spawn(objectManager_, enemyId, position);
+	return catalog_.SpawnHandle(objectManager_, enemyId, position);
 }
 
-void EnemySpawner::Despawn(GameObject* enemy)
+void EnemySpawner::Despawn(Handle<GameObject> enemy)
 {
-	if (enemy == nullptr) return;
+	if (!enemy.IsValid()) return;
 
 	// 道連れオブジェクトや演出の後始末はEnemyAIControllerにまとまっているので、それを使う
-	if (EnemyAIController* ai = enemy->GetComponent<EnemyAIController>()) {
+	if (EnemyAIController* ai = enemy.Resolve()->GetComponent<EnemyAIController>()) {
 		ai->RequestDespawn();
 		return;
 	}
-	objectManager_.Destroy(enemy);
+	objectManager_.Destroy(enemy.Resolve());
 }

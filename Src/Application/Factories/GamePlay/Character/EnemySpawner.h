@@ -10,8 +10,8 @@ public:
 		: catalog_(catalog), objectManager_(objectManager) {}
 
 	// 未登録のidならnullptrを返す
-	GameObject* Spawn(const std::string& enemyId, const Math::Vector3& position);
-	void Despawn(GameObject* enemy);
+	Handle<GameObject> Spawn(const std::string& enemyId, const Math::Vector3& position);
+	void Despawn(Handle<GameObject> enemy);
 
 private:
 	const PrefabCatalog& catalog_;

@@ -304,6 +304,9 @@
     <Filter Include="Src\Application\Scene\TutorialScene">
       <UniqueIdentifier>{7dc83d1e-46de-4054-a764-9f96074f8c27}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\Components\GamePlay\Trigger">
+      <UniqueIdentifier>{c2752d4a-4a72-4189-8bd0-98337e02f879}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -1307,6 +1310,15 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Scene\TutorialScene\TutorialScene.h">
       <Filter>Src\Application\Scene\TutorialScene</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\GamePlay\Trigger\PlayerReachedTrigger.h">
+      <Filter>Src\Application\Components\GamePlay\Trigger</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Core\EventBus\Events\TriggerEvents.h">
+      <Filter>Src\Application\Core\EventBus\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Physics\Movement\CursolFollowingComponent.h">
+      <Filter>Src\Application\Components\Physics\Movement</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

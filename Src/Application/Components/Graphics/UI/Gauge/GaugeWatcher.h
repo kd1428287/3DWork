@@ -2,6 +2,7 @@
 #include "Application/Core/EventBus/Events/CombatEvents.h"
 #include "../../../GamePlay/Character/Common/HealthComponent.h"
 #include "../../../GamePlay/Character/Common/PostureComponent.h"
+#include "../../../GamePlay/Character/Player/PlayerInkGaugeComponent.h"
 
 // 対象のHP/体幹イベントをSceneContext::eventBus経由で購読し、最新値を保持するだけのヘルパー
 // (対象のローカルバスだと破棄時にダングリングになるため、シーン全体のバスを使う)
@@ -29,6 +30,11 @@ public:
 			{
 				postureRatio_ = ToRatio(posture->GetCurrent(), posture->GetMax());
 			}
+			// インクを持たない対象(敵)は0のまま
+			if (auto* ink = obj->GetComponent<PlayerInkGaugeComponent>())
+			{
+				inkRatio_ = ToRatio(ink->GetCurrent(), ink->GetMax());
+			}
 		}
 
 		healthSub_ = bus->SubscribeScoped<Events::HealthChanged>(
@@ -41,6 +47,11 @@ public:
 				if (e.source != target_) return;
 				postureRatio_ = e.ratio; });
 
+		inkSub_ = bus->SubscribeScoped<Events::InkGaugeChanged>(
+			[this](const Events::InkGaugeChanged& e) {
+				if (e.source != target_) return;
+				inkRatio_ = e.ratio; });
+
 		diedSub_ = bus->SubscribeScoped<Events::Died>(
 			[this](const Events::Died& e) {
 				if (e.source != target_) return;
@@ -49,6 +60,7 @@ public:
 
 	float GetHealthRatio() const { return healthRatio_; }
 	float GetPostureRatio() const { return postureRatio_; }
+	float GetInkRatio() const { return inkRatio_; }
 	Handle<GameObject> GetTarget() const { return target_; }
 
 private:
@@ -61,10 +73,12 @@ private:
 	Handle<GameObject> target_;
 	float healthRatio_ = 1.0f;
 	float postureRatio_ = 0.0f;
+	float inkRatio_ = 0.0f;
 
 	std::function<void()> onDied_;
 
 	ScopedSubscriber healthSub_;
 	ScopedSubscriber postureSub_;
+	ScopedSubscriber inkSub_;
 	ScopedSubscriber diedSub_;
 };

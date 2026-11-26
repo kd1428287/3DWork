@@ -38,9 +38,11 @@ public:
 	bool IsCompleted() const override { return isCleared_; }
 
 private:
+	static bool IsEnemyDead(const Handle<GameObject>& enemy);
+
 	DefeatEnemiesData data_;
 	bool isCleared_ = false;
-	std::vector<GameObject*> enemies_; // TODO: Handleでの保持を検討する
+	std::vector<Handle<GameObject>> enemies_; // 生存中の敵のみ保持
 };
 
 // パリィを規定回数成功させると完了
@@ -66,6 +68,6 @@ private:
 	Phase phase_ = Phase::WaitAttack;
 	int successCount_ = 0;
 	bool isCompleted_ = false;
-	GameObject* enemy_ = nullptr;
-	// TODO: パリィ成功の購読(ScopedSubscriber)を保持する
+	Handle<GameObject> enemy_ = Handle<GameObject>();
+	ScopedSubscriber parrySuccessedSub;
 };

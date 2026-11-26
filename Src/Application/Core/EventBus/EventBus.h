@@ -56,7 +56,7 @@ public:
 		return id;
 	}
 
-	// 【追加】RAII管理された ScopedSubscriber を直接受け取る便利なヘルパー関数
+	// RAII管理された ScopedSubscriber を直接受け取る便利なヘルパー関数
 	template <typename T>
 	[[nodiscard]] ScopedSubscriber SubscribeScoped(std::function<void(const T&)> callback);
 

@@ -28,7 +28,7 @@ void TutorialManager::Finalize()
 
 void TutorialManager::BuildStates(const TutorialConfig& config)
 {
-	states_.push_back(std::make_unique<StateReachArea>(config.move));
+	//states_.push_back(std::make_unique<StateReachArea>(config.move));
 	states_.push_back(std::make_unique<StateDefeatEnemies>(config.attack));
 	states_.push_back(std::make_unique<StateParry>(config.parry));
 	states_.push_back(std::make_unique<StateDefeatEnemies>(config.finalBattle));

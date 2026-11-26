@@ -24,6 +24,7 @@
 
 // tutorial
 #include "Application/Systems/GamePlay/Tutorial/TutorialManager.h"
+#include "Application/Systems/GamePlay/Tutorial/TutorialDataTable.h"
 
 // event
 #include "Application/Core/EventBus/Events/SceneEvents.h"
@@ -189,6 +190,7 @@ void TutorialScene::BuildSystems()
 	windShellDispatcher_->Init(*localBus_);
 	windShellDispatcher_->RegisterPreset("EnemyAura", WindShellPreset::EnemyAura());
 	windShellDispatcher_->RegisterPreset("Charge", WindShellPreset::Charge());
+	windShellDispatcher_->RegisterPreset("ArmInk", WindShellPreset::ArmInk());
 
 	timeScaleSystem_ = std::make_unique<TimeScaleSystem>(*localBus_, *objManager_);
 
@@ -243,7 +245,9 @@ void TutorialScene::SetupEnvironment()
 void TutorialScene::SetupTutorial()
 {
 	TutorialContext context{};	// TODO: Stateが使う依存(ObjectManager、EventBus、プレイヤー等)を設定する
-	TutorialConfig config{};	// TODO: 各フェーズの設定値(到達位置、敵の配置など)を設定する
+	TutorialConfig config = TutorialDataTable::Create();	// TODO: 各フェーズの設定値(到達位置、敵の配置など)を設定する
+
+
 
 	tutorialManager_ = std::make_unique<TutorialManager>();
 	tutorialManager_->Initialize(context, config);

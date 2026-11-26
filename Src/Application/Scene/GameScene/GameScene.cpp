@@ -284,6 +284,8 @@ void GameScene::BuildSystems()
 	windShellDispatcher_->Init(*localBus_);
 	windShellDispatcher_->RegisterPreset("EnemyAura", WindShellPreset::EnemyAura());
 	windShellDispatcher_->RegisterPreset("Charge", WindShellPreset::Charge());
+	windShellDispatcher_->RegisterPreset("ArmInk", WindShellPreset::ArmInk());
+
 
 	timeScaleSystem_ = std::make_unique<TimeScaleSystem>(*localBus_, *objManager_);
 
@@ -388,9 +390,5 @@ void GameScene::OnEnemyDied()
 
 bool GameScene::PollConfirm()
 {
-	// 押した瞬間だけtrue。入力アクションを登録したらIsPress("名前")へ差し替える
-	const bool now = (GetAsyncKeyState(VK_RETURN) & 0x8000) != 0;
-	const bool pressed = now && !prevConfirm_;
-	prevConfirm_ = now;
-	return pressed;
+	return KdInputManager::Instance().IsPress("Attack");
 }

@@ -1,8 +1,8 @@
-﻿#pragma once
+#pragma once
 #include "GaugeBar.h"
 #include "GaugeWatcher.h"
 
-// Prefabの子オブジェクトに付ける、スクリーン固定のプレイヤーHP/体幹バー表示コンポーネント
+// Prefabの子オブジェクトに付ける、スクリーン固定のプレイヤーHP/体幹/インクバー表示コンポーネント
 // 対象はSceneContext::player。Player生成後、最初のStartまでに設定されていること
 class PlayerHudGaugeComponent : public ComponentBase, public IRenderable
 {
@@ -15,6 +15,7 @@ public:
 		healthBar_.Preset().fillColor = { 1.0f, 0.4f, 0.4f, 1.0f };
 		healthBar_.Load();
 		postureBar_.Load();
+		inkBar_.Load();
 	}
 
 	// Player生成順に依存しないよう、購読はStartで行う
@@ -32,6 +33,7 @@ public:
 		const float dt = GetOwner()->GetContext()->unscaledDeltaTime;
 		healthBar_.Update(dt, watcher_.GetHealthRatio());
 		postureBar_.Update(dt, watcher_.GetPostureRatio());
+		inkBar_.Update(dt, watcher_.GetInkRatio());
 	}
 
 	void DrawSprite() override
@@ -41,6 +43,7 @@ public:
 
 		healthBar_.Draw(shader, healthBarPos_, healthBarSize_, pivot);
 		postureBar_.Draw(shader, postureBarPos_, postureBarSize_, pivot);
+		inkBar_.Draw(shader, inkBarPos_, inkBarSize_, pivot);
 	}
 
 private:
@@ -48,9 +51,14 @@ private:
 
 	GaugeBar healthBar_{ GaugeBarType::Health };
 	GaugeBar postureBar_{ GaugeBarType::Posture };
+	GaugeBar inkBar_{ GaugeBarType::Ink };
 
 	Math::Vector2 healthBarPos_ = { -600.0f, -300.0f };
 	Math::Vector2 healthBarSize_ = { 200.0f, 20.0f };
+
+	// HPバーの真上(y上向き)に4px空けて置く
+	Math::Vector2 inkBarSize_ = { 200.0f, 8.0f };
+	Math::Vector2 inkBarPos_ = { healthBarPos_.x, healthBarPos_.y + healthBarSize_.y + 4.0f };
 
 	Math::Vector2 postureBarPos_ = { -250.0f, -300.0f };
 	Math::Vector2 postureBarSize_ = { 500.0f, 10.0f };

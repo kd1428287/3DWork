@@ -1,4 +1,4 @@
-#include "Application/main.h"
+﻿#include "Application/main.h"
 
 #include "ComponentInspector.h"
 
@@ -65,6 +65,83 @@ namespace
 		if (changed && s_editingId != id) { pushUndo(); s_editingId = id; }
 		if (!ImGui::IsMouseDown(ImGuiMouseButton_Left)) { s_editingId = 0; }
 		return changed;
+	}
+
+	// 文字列1項目の入力欄。編集されたらtrue
+	bool DrawStringField(const char* key, nlohmann::json& item, const ComponentInspector::RequestUndoFn& pushUndo)
+	{
+		char buf[256];
+		strncpy_s(buf, item.value(key, std::string()).c_str(), _TRUNCATE);
+		ImGui::InputText(key, buf, sizeof(buf));
+		if (ImGui::IsItemActivated()) { pushUndo(); }
+		if (!ImGui::IsItemEdited()) return false;
+		item[key] = std::string(buf);
+		return true;
+	}
+
+	// Selectableのactions配列。並び順がそのまま発行順になる
+	bool DrawActionList(nlohmann::json& list, const ComponentInspector::RequestUndoFn& pushUndo)
+	{
+		// UITriggerの定義順に合わせる
+		static const char* kTriggers[] = { "HoverEnter", "HoverExit", "Select", "Deselect", "Click" };
+		static_assert(IM_ARRAYSIZE(kTriggers) == (int)UITrigger::Count);
+
+		bool edited = false;
+		int removeIndex = -1;
+		int upIndex = -1;
+
+		for (int i = 0; i < (int)list.size(); i++)
+		{
+			nlohmann::json& item = list[i];
+			if (!item.is_object()) item = nlohmann::json::object();
+
+			ImGui::PushID(i);
+			ImGui::Separator();
+
+			const std::string trigger = item.value("trigger", std::string("Click"));
+			int idx = (int)UITrigger::Click;
+			for (int k = 0; k < IM_ARRAYSIZE(kTriggers); k++) { if (trigger == kTriggers[k]) { idx = k; break; } }
+			if (ImGui::Combo("trigger", &idx, kTriggers, IM_ARRAYSIZE(kTriggers)))
+			{
+				pushUndo();
+				item["trigger"] = std::string(kTriggers[idx]);
+				edited = true;
+			}
+
+			// idは登録済みのアクションIDから選べる(手入力も可)
+			edited |= DrawStringField("id", item, pushUndo);
+			ImGui::SameLine();
+			if (ImGui::SmallButton("v")) { ImGui::OpenPopup("##actionIds"); }
+			if (ImGui::BeginPopup("##actionIds"))
+			{
+				const auto ids = SelectableManager::Instance().GetActionIds();
+				if (ids.empty()) { ImGui::TextDisabled("登録済みのIDがありません(手入力してください)"); }
+				for (const auto& id : ids)
+				{
+					if (ImGui::Selectable(id.c_str())) { pushUndo(); item["id"] = id; edited = true; }
+				}
+				ImGui::EndPopup();
+			}
+
+			edited |= DrawStringField("param", item, pushUndo);
+
+			if (ImGui::SmallButton("Up") && i > 0) { upIndex = i; }
+			ImGui::SameLine();
+			if (ImGui::SmallButton("Remove")) { removeIndex = i; }
+
+			ImGui::PopID();
+		}
+
+		if (upIndex > 0) { pushUndo(); std::swap(list[upIndex], list[upIndex - 1]); edited = true; }
+		if (removeIndex >= 0) { pushUndo(); list.erase(list.begin() + removeIndex); edited = true; }
+		if (ImGui::SmallButton("+ Add Action"))
+		{
+			pushUndo();
+			list.push_back({ { "trigger", "Click" }, { "id", "" }, { "param", "" } });
+			edited = true;
+		}
+
+		return edited;
 	}
 
 	bool DrawParamsJson(nlohmann::json& params, const nlohmann::ordered_json& defaults,
@@ -134,23 +211,6 @@ namespace
 				if (ImGui::IsItemEdited()) { params[key] = std::string(buf); }
 				// モデルの再読み込み等を入力のたびに走らせないよう、確定時にだけ「編集された」とする
 				if (ImGui::IsItemDeactivatedAfterEdit()) { edited = true; }
-
-				// Selectableのon*は、登録済みのアクションIDから選べる(手入力も可)
-				if (componentType == "Selectable" && key.rfind("on", 0) == 0)
-				{
-					ImGui::SameLine();
-					if (ImGui::SmallButton("v")) { ImGui::OpenPopup("##actionIds"); }
-					if (ImGui::BeginPopup("##actionIds"))
-					{
-						const auto ids = SelectableManager::Instance().GetActionIds();
-						if (ids.empty()) { ImGui::TextDisabled("登録済みのIDがありません(手入力してください)"); }
-						for (const auto& id : ids)
-						{
-							if (ImGui::Selectable(id.c_str())) { pushUndo(); params[key] = id; edited = true; }
-						}
-						ImGui::EndPopup();
-					}
-				}
 			}
 			else if (IsNumberArray(def, 3))
 			{
@@ -187,6 +247,16 @@ namespace
 					changed = ImGui::IsItemEdited();
 				}
 				if (changed) { params[key] = json::array({ v[0], v[1], v[2], v[3] }); edited = true; }
+			}
+			else if (componentType == "Selectable" && key == "actions")
+			{
+				// 空配列は文字列リストと判定されるため、それより先に分岐する
+				if (ImGui::TreeNodeEx(key.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+				{
+					json list = current.is_array() ? current : json::array();
+					if (DrawActionList(list, pushUndo)) { params[key] = list; edited = true; }
+					ImGui::TreePop();
+				}
 			}
 			else if (IsStringArray(def) && (!params.contains(key) || IsStringArray(params[key])))
 			{

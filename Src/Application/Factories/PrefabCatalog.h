@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Application/Definitions/Prefab/Prefab.h"
 
@@ -21,6 +21,12 @@ public:
 	GameObject* Spawn(ObjectManager& objectManager, const std::string& id) const;
 	GameObject* Spawn(ObjectManager& objectManager, const std::string& id, const Math::Vector3& position) const;
 
+	// Handle<GameObject> で返す版（既存Spawnを壊さず段階移行・安全参照用に追加）
+	Handle<GameObject> SpawnHandle(ObjectManager& objectManager, const std::string& id) const;
+	Handle<GameObject> SpawnHandle(ObjectManager& objectManager, const std::string& id, const Math::Vector3& position) const;
+
 private:
+	static Handle<GameObject> ToHandle(GameObject* obj);
+
 	std::unordered_map<std::string, PrefabDefinition> definitions_;
 };

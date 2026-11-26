@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "GaugeBarRenderer.h"
 #include "GaugeBarWorldRenderer.h"
 
@@ -14,6 +14,7 @@ enum class GaugeBarType
 {
 	Health,
 	Posture,
+	Ink,
 };
 
 struct GaugeBarPreset
@@ -66,6 +67,17 @@ inline GaugeBarPreset MakeGaugeBarPreset(GaugeBarType type)
 		p.pulseThreshold = 0.85f;
 		p.flashAmount = 0.7f;
 		
+		return p;
+	}
+	case GaugeBarType::Ink:
+	{
+		GaugeBarPreset p{ GaugeBarStyle{ "Asset/Textures/UI/hp_back.png", "Asset/Textures/UI/hp_fill.png", 0 } };
+		p.capsule = true;
+		p.fillColor = { 0.25f, 0.3f, 0.85f, 1.0f };
+		p.smoothSpeed = 10.0f;
+		// 必殺技が使える割合(chargeLine)以上で脈動、パリィ加算で一瞬光る
+		p.pulseThreshold = 0.8f;
+		p.flashAmount = 0.6f;
 		return p;
 	}
 	case GaugeBarType::Health:

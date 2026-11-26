@@ -1,11 +1,19 @@
 ﻿// UI(HUD・ワールドゲージ・テキスト・画像・ボタン)のコンポーネント登録。
 
+#include <sstream>
+
 #include "Application/Factories/ComponentRegistry.h"
 #include "Application/Factories/Registrations/RegisterFunctions.h"
 #include "Application/Factories/Registrations/RegistrationHelpers.h"
 #include "Application/Definitions/Json/KdJson.h"
 #include "Application/Definitions/Loaders/DefinitionJson.h"
 #include "Application/Factories/Json/UIConfigJson.h"
+#include "Application/main.h"
+#include "Application/Core/EventBus/EventBus.h"
+#include "Application/Core/EventBus/Events/SceneEvents.h"
+#include "Application/Core/EventBus/Events/AudioEvents.h"
+#include "Application/Core/EventBus/Events/EffectEvents.h"
+#include "Application/Systems/SelectableManager.h"
 
 // UI(配置フォルダは実際の場所に合わせて調整)
 #include "Application/Components/Graphics/UI/Gauge/PlayerHudGaugeComponent.h"
@@ -19,7 +27,16 @@
 
 using namespace Registration;
 
-		// 接続を伴う型のparams。ODR違反を避けるため、マクロも含めて無名名前空間に入れる。
+// 不明な文字列は先頭のClickになる
+NLOHMANN_JSON_SERIALIZE_ENUM(UITrigger, {
+	{ UITrigger::Click, "Click" },
+	{ UITrigger::HoverEnter, "HoverEnter" },
+	{ UITrigger::HoverExit, "HoverExit" },
+	{ UITrigger::Select, "Select" },
+	{ UITrigger::Deselect, "Deselect" },
+	})
+
+	// 接続を伴う型のparams。ODR違反を避けるため、マクロも含めて無名名前空間に入れる。
 	namespace
 {
 	// UTF-8をShift-JIS(CP932)へ変換する。変換できない文字は'?'になる。
@@ -113,9 +130,18 @@ using namespace Registration;
 		image->SetTexture(JsonUtf8ToSjis(p.texture));
 	}
 
-	// 選択できるUI(ボタンなど)。当たり判定は、同じオブジェクトのUITransformの矩形(必須)。
-	// onXxxは各タイミングで発行するアクションID(空なら何もしない)。clickParamはonClickに添えるparam。
-	struct SelectableParams
+	// Selectableのアクション1件。idは登録済みのアクションID、paramはその引数
+	struct SelectableActionParams
+	{
+		UITrigger   trigger = UITrigger::Click;
+		std::string id;
+		std::string param;
+	};
+	COMPONENT_PARAMS_DEFINE_TYPE(SelectableActionParams, trigger, id, param)
+
+		// 選択できるUI(ボタンなど)。当たり判定は、同じオブジェクトのUITransformの矩形(必須)。
+		// actionsは配列の順に発行する。
+		struct SelectableParams
 	{
 		bool        interactable = true;
 		int         layer = 0;
@@ -125,15 +151,9 @@ using namespace Registration;
 		float       hoverScale = 1.0f;
 		float       hoverSpeed = 12.0f;
 
-		std::string onHoverEnter;
-		std::string onHoverExit;
-		std::string onSelect;
-		std::string onDeselect;
-		std::string onClick;
-		std::string clickParam;
+		std::vector<SelectableActionParams> actions;
 	};
-	COMPONENT_PARAMS_DEFINE_TYPE(SelectableParams, interactable, layer, group, hoverScale, hoverSpeed,
-		onHoverEnter, onHoverExit, onSelect, onDeselect, onClick, clickParam)
+	COMPONENT_PARAMS_DEFINE_TYPE(SelectableParams, interactable, layer, group, hoverScale, hoverSpeed, actions)
 
 		void BuildSelectable(BuildContext& ctx, const SelectableParams& p)
 	{
@@ -143,11 +163,10 @@ using namespace Registration;
 		selectable->SetGroup(p.group);
 		selectable->SetHoverScale(p.hoverScale, p.hoverSpeed);
 
-		if (!p.onHoverEnter.empty()) selectable->AddAction(UITrigger::HoverEnter, p.onHoverEnter);
-		if (!p.onHoverExit.empty())  selectable->AddAction(UITrigger::HoverExit, p.onHoverExit);
-		if (!p.onSelect.empty())     selectable->AddAction(UITrigger::Select, p.onSelect);
-		if (!p.onDeselect.empty())   selectable->AddAction(UITrigger::Deselect, p.onDeselect);
-		if (!p.onClick.empty())      selectable->AddAction(UITrigger::Click, p.onClick, p.clickParam);
+		for (const auto& action : p.actions)
+		{
+			if (!action.id.empty()) selectable->AddAction(action.trigger, action.id, action.param);
+		}
 	}
 
 	// 敵Prefabへ直接付け、自分のHP/体幹ゲージをworldOffsetだけずらした位置に描く。
@@ -194,6 +213,67 @@ using namespace Registration;
 	{
 		ctx.Add<EnemyWorldGaugeComponent>()->SetTarget(Handle<GameObject>(RequireParent(ctx, "EnemyWorldGauge")));
 	}
+
+	// paramは遷移先のシーン名(Title / Tutorial / Game / Result)
+	void RegisterSceneActions(SelectableManager& manager)
+	{
+		manager.RegisterAction("ChangeScene", [](const std::string& param)
+			{
+				static const std::unordered_map<std::string, SceneType> kScenes = {
+					{ "Title",    SceneType::Title },
+					{ "Tutorial", SceneType::Tutorial },
+					{ "Game",     SceneType::Game },
+					{ "Result",   SceneType::Result },
+				};
+
+				const auto it = kScenes.find(param);
+				if (it == kScenes.end())
+				{
+					KdDebugGUI::Instance().AddLog("ChangeScene: 不明なシーン %s\n", param.c_str());
+					return;
+				}
+				GLOBALEVENT->Publish(Events::SceneChangeRequest{ it->second });
+			});
+	}
+
+	// paramはサウンドID
+	void RegisterAudioActions(SelectableManager& manager)
+	{
+		manager.RegisterAction("PlaySE", [](const std::string& param)
+			{
+				if (param.empty()) return;
+				Events::PublishSoundPlayEvent(*GLOBALEVENT, param);
+			});
+	}
+
+	// paramは "エフェクトID" または "エフェクトID,x,y,z"(座標省略時は原点)
+	void RegisterEffectActions(SelectableManager& manager)
+	{
+		manager.RegisterAction("PlayEffect", [](const std::string& param)
+			{
+				std::istringstream stream(param);
+				std::string id;
+				if (!std::getline(stream, id, ',') || id.empty()) return;
+
+				Math::Vector3 pos;
+				std::string value;
+				for (float* axis : { &pos.x, &pos.y, &pos.z })
+				{
+					if (!std::getline(stream, value, ',')) break;
+					*axis = std::strtof(value.c_str(), nullptr);
+				}
+				Events::PublishGenericEffect(*GLOBALEVENT, id, pos);
+			});
+	}
+
+	// UIから発行するアクションの登録
+	void RegisterUIActions()
+	{
+		auto& manager = SelectableManager::Instance();
+		RegisterSceneActions(manager);
+		RegisterAudioActions(manager);
+		RegisterEffectActions(manager);
+	}
 }  // namespace
 
 void RegisterUIComponents(ComponentRegistry& registry)
@@ -207,4 +287,6 @@ void RegisterUIComponents(ComponentRegistry& registry)
 	registry.AddWithParams<TextParams>("Text", BuildText);
 	registry.AddWithParams<UIImageParams>("UIImage", BuildUIImage);
 	registry.AddWithParams<SelectableParams>("Selectable", BuildSelectable);
+
+	RegisterUIActions();
 }

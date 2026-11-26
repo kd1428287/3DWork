@@ -91,6 +91,7 @@ struct WindShellPreset
 		p.FlowSpeed = 2.0f;
 		p.Scatter = 0.8f;
 		p.InkAlpha = 0.7f;
+		p.CoreColor = { 0.05f, 0.05f, 0.05f, 1.0f };
 		p.CoreAlpha = 0.45f;
 		p.CoreRadiusScale = 0.85f;
 		return p;

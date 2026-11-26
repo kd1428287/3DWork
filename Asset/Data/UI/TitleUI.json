@@ -1,348 +1,349 @@
 {
-  "elements": [
-    {
-      "components": [
-        {
-          "params": {
-            "anchor": [
-              0.5,
-              0.5
-            ],
-            "pivot": [
-              0.5,
-              0.5
-            ],
-            "position": [
-              0.0,
-              -200.0
-            ],
-            "rotation": 0.0,
-            "scale": [
-              1.0,
-              1.0
-            ],
-            "size": [
-              200.0,
-              60.0
-            ],
-            "space": "Screen",
-            "worldOffset": [
-              0.0,
-              0.0,
-              0.0
-            ]
-          },
-          "type": "UITransform"
-        },
-        {
-          "params": {
-            "clickParam": "",
-            "group": 0,
-            "hoverScale": 1.1,
-            "hoverSpeed": 12.0,
-            "interactable": true,
-            "layer": 0,
-            "onClick": "SceneChangeRequest",
-            "onDeselect": "",
-            "onHoverEnter": "",
-            "onHoverExit": "",
-            "onSelect": ""
-          },
-          "type": "Selectable"
-        },
-        {
-          "params": {
-            "align": "Center",
-            "antiAliasing": 3,
-            "color": [
-              0.0,
-              0.0,
-              0.0,
-              1.0
-            ],
-            "fontNo": 0,
-            "outlineColor": [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ],
-            "outlineWidth": 2,
-            "text": "調伏開始"
-          },
-          "type": "Text"
-        }
-      ],
-      "id": 6,
-      "name": "StartButton",
-      "parent": 0,
-      "visible": true
-    },
-    {
-      "components": [
-        {
-          "params": {
-            "anchor": [
-              0.5,
-              0.5
-            ],
-            "pivot": [
-              0.5,
-              0.5
-            ],
-            "position": [
-              12.321990966796875,
-              84.70658874511719
-            ],
-            "rotation": 0.0,
-            "scale": [
-              1.0,
-              1.0
-            ],
-            "size": [
-              850.5721435546875,
-              324.4578552246094
-            ],
-            "space": "Screen",
-            "worldOffset": [
-              0.0,
-              0.0,
-              0.0
-            ]
-          },
-          "type": "UITransform"
-        },
-        {
-          "params": {
-            "color": [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ],
-            "texture": "Asset/Textures/UI/Title.png"
-          },
-          "type": "UIImage"
-        }
-      ],
-      "id": 11,
-      "name": "Image11",
-      "parent": 0,
-      "visible": true
-    },
-    {
-      "components": [
-        {
-          "params": {
-            "anchor": [
-              0.5,
-              0.5
-            ],
-            "pivot": [
-              0.5,
-              0.5
-            ],
-            "position": [
-              -33.6776123046875,
-              -52.99566650390625
-            ],
-            "rotation": 0.0,
-            "scale": [
-              1.0,
-              1.0
-            ],
-            "size": [
-              135.2359619140625,
-              70.6373291015625
-            ],
-            "space": "Screen",
-            "worldOffset": [
-              0.0,
-              0.0,
-              0.0
-            ]
-          },
-          "type": "UITransform"
-        },
-        {
-          "params": {
-            "color": [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ],
-            "texture": "Asset/Textures/Title/fude_Cho.png"
-          },
-          "type": "UIImage"
-        }
-      ],
-      "id": 8,
-      "name": "Image8",
-      "parent": 7,
-      "visible": true
-    },
-    {
-      "components": [
-        {
-          "params": {
-            "anchor": [
-              0.5,
-              0.5
-            ],
-            "pivot": [
-              0.5,
-              0.5
-            ],
-            "position": [
-              92.123291015625,
-              -50.93132019042969
-            ],
-            "rotation": 0.0,
-            "scale": [
-              1.0,
-              1.0
-            ],
-            "size": [
-              181.0518798828125,
-              79.16580200195313
-            ],
-            "space": "Screen",
-            "worldOffset": [
-              0.0,
-              0.0,
-              0.0
-            ]
-          },
-          "type": "UITransform"
-        },
-        {
-          "params": {
-            "color": [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ],
-            "texture": "Asset/Textures/Title/fude_buku.png"
-          },
-          "type": "UIImage"
-        }
-      ],
-      "id": 9,
-      "name": "Image9",
-      "parent": 7,
-      "visible": true
-    },
-    {
-      "components": [
-        {
-          "params": {
-            "anchor": [
-              0.5,
-              0.5
-            ],
-            "pivot": [
-              0.5,
-              0.5
-            ],
-            "position": [
-              215.45559692382813,
-              -50.020294189453125
-            ],
-            "rotation": 0.0,
-            "scale": [
-              1.0,
-              1.0
-            ],
-            "size": [
-              147.55157470703125,
-              97.3504638671875
-            ],
-            "space": "Screen",
-            "worldOffset": [
-              0.0,
-              0.0,
-              0.0
-            ]
-          },
-          "type": "UITransform"
-        },
-        {
-          "params": {
-            "color": [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ],
-            "texture": "Asset/Textures/Title/fude_Den.png"
-          },
-          "type": "UIImage"
-        }
-      ],
-      "id": 10,
-      "name": "Image10",
-      "parent": 7,
-      "visible": true
-    },
-    {
-      "components": [
-        {
-          "params": {
-            "anchor": [
-              0.5,
-              0.5
-            ],
-            "pivot": [
-              0.5,
-              0.5
-            ],
-            "position": [
-              -181.77366638183594,
-              -52.78570556640625
-            ],
-            "rotation": 0.0,
-            "scale": [
-              1.0,
-              1.0
-            ],
-            "size": [
-              234.86679077148438,
-              73.22906494140625
-            ],
-            "space": "Screen",
-            "worldOffset": [
-              0.0,
-              0.0,
-              0.0
-            ]
-          },
-          "type": "UITransform"
-        },
-        {
-          "params": {
-            "color": [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ],
-            "texture": "Asset/Textures/Title/fude_YuGen.png"
-          },
-          "type": "UIImage"
-        }
-      ],
-      "id": 7,
-      "name": "Image7",
-      "parent": 0,
-      "visible": true
-    }
-  ],
-  "nextId": 12,
-  "refSize": [
-    1280.0,
-    720.0
-  ],
-  "version": 2
+	"elements": [
+		{
+			"components": [
+				{
+					"params": {
+						"anchor": [
+							0.5,
+							0.5
+						],
+						"pivot": [
+							0.5,
+							0.5
+						],
+						"position": [
+							0.0,
+							-200.0
+						],
+						"rotation": 0.0,
+						"scale": [
+							1.0,
+							1.0
+						],
+						"size": [
+							200.0,
+							60.0
+						],
+						"space": "Screen",
+						"worldOffset": [
+							0.0,
+							0.0,
+							0.0
+						]
+					},
+					"type": "UITransform"
+				},
+				{
+					"params": {
+						"actions": [
+							{
+								"id": "ChangeScene",
+								"param": "Game",
+								"trigger": "Click"
+							}
+						],
+						"group": 0,
+						"hoverScale": 1.1,
+						"hoverSpeed": 12.0,
+						"interactable": true,
+						"layer": 0
+					},
+					"type": "Selectable"
+				},
+				{
+					"params": {
+						"align": "Center",
+						"antiAliasing": 3,
+						"color": [
+							0.0,
+							0.0,
+							0.0,
+							1.0
+						],
+						"fontNo": 0,
+						"outlineColor": [
+							1.0,
+							1.0,
+							1.0,
+							1.0
+						],
+						"outlineWidth": 2,
+						"text": "調伏開始"
+					},
+					"type": "Text"
+				}
+			],
+			"id": 6,
+			"name": "StartButton",
+			"parent": 0,
+			"visible": true
+		},
+		{
+			"components": [
+				{
+					"params": {
+						"anchor": [
+							0.5,
+							0.5
+						],
+						"pivot": [
+							0.5,
+							0.5
+						],
+						"position": [
+							12.321990966796875,
+							84.70658874511719
+						],
+						"rotation": 0.0,
+						"scale": [
+							1.0,
+							1.0
+						],
+						"size": [
+							850.5721435546875,
+							324.4578552246094
+						],
+						"space": "Screen",
+						"worldOffset": [
+							0.0,
+							0.0,
+							0.0
+						]
+					},
+					"type": "UITransform"
+				},
+				{
+					"params": {
+						"color": [
+							1.0,
+							1.0,
+							1.0,
+							1.0
+						],
+						"texture": "Asset/Textures/UI/Title.png"
+					},
+					"type": "UIImage"
+				}
+			],
+			"id": 11,
+			"name": "Image11",
+			"parent": 0,
+			"visible": true
+		},
+		{
+			"components": [
+				{
+					"params": {
+						"anchor": [
+							0.5,
+							0.5
+						],
+						"pivot": [
+							0.5,
+							0.5
+						],
+						"position": [
+							-33.6776123046875,
+							-52.99566650390625
+						],
+						"rotation": 0.0,
+						"scale": [
+							1.0,
+							1.0
+						],
+						"size": [
+							135.2359619140625,
+							70.6373291015625
+						],
+						"space": "Screen",
+						"worldOffset": [
+							0.0,
+							0.0,
+							0.0
+						]
+					},
+					"type": "UITransform"
+				},
+				{
+					"params": {
+						"color": [
+							1.0,
+							1.0,
+							1.0,
+							1.0
+						],
+						"texture": "Asset/Textures/Title/fude_Cho.png"
+					},
+					"type": "UIImage"
+				}
+			],
+			"id": 8,
+			"name": "Image8",
+			"parent": 7,
+			"visible": true
+		},
+		{
+			"components": [
+				{
+					"params": {
+						"anchor": [
+							0.5,
+							0.5
+						],
+						"pivot": [
+							0.5,
+							0.5
+						],
+						"position": [
+							92.123291015625,
+							-50.93132019042969
+						],
+						"rotation": 0.0,
+						"scale": [
+							1.0,
+							1.0
+						],
+						"size": [
+							181.0518798828125,
+							79.16580200195313
+						],
+						"space": "Screen",
+						"worldOffset": [
+							0.0,
+							0.0,
+							0.0
+						]
+					},
+					"type": "UITransform"
+				},
+				{
+					"params": {
+						"color": [
+							1.0,
+							1.0,
+							1.0,
+							1.0
+						],
+						"texture": "Asset/Textures/Title/fude_buku.png"
+					},
+					"type": "UIImage"
+				}
+			],
+			"id": 9,
+			"name": "Image9",
+			"parent": 7,
+			"visible": true
+		},
+		{
+			"components": [
+				{
+					"params": {
+						"anchor": [
+							0.5,
+							0.5
+						],
+						"pivot": [
+							0.5,
+							0.5
+						],
+						"position": [
+							215.45559692382813,
+							-50.020294189453125
+						],
+						"rotation": 0.0,
+						"scale": [
+							1.0,
+							1.0
+						],
+						"size": [
+							147.55157470703125,
+							97.3504638671875
+						],
+						"space": "Screen",
+						"worldOffset": [
+							0.0,
+							0.0,
+							0.0
+						]
+					},
+					"type": "UITransform"
+				},
+				{
+					"params": {
+						"color": [
+							1.0,
+							1.0,
+							1.0,
+							1.0
+						],
+						"texture": "Asset/Textures/Title/fude_Den.png"
+					},
+					"type": "UIImage"
+				}
+			],
+			"id": 10,
+			"name": "Image10",
+			"parent": 7,
+			"visible": true
+		},
+		{
+			"components": [
+				{
+					"params": {
+						"anchor": [
+							0.5,
+							0.5
+						],
+						"pivot": [
+							0.5,
+							0.5
+						],
+						"position": [
+							-181.77366638183594,
+							-52.78570556640625
+						],
+						"rotation": 0.0,
+						"scale": [
+							1.0,
+							1.0
+						],
+						"size": [
+							234.86679077148438,
+							73.22906494140625
+						],
+						"space": "Screen",
+						"worldOffset": [
+							0.0,
+							0.0,
+							0.0
+						]
+					},
+					"type": "UITransform"
+				},
+				{
+					"params": {
+						"color": [
+							1.0,
+							1.0,
+							1.0,
+							1.0
+						],
+						"texture": "Asset/Textures/Title/fude_YuGen.png"
+					},
+					"type": "UIImage"
+				}
+			],
+			"id": 7,
+			"name": "Image7",
+			"parent": 0,
+			"visible": true
+		}
+	],
+	"nextId": 12,
+	"refSize": [
+		1280.0,
+		720.0
+	],
+	"version": 2
 }

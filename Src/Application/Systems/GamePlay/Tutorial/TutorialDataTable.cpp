@@ -6,8 +6,8 @@ namespace TutorialDataTable
 	{
 		TutorialConfig config;
 		// TODO: Prefab名、座標、範囲、回数は仮の値なので調整する
-		const std::string passive = "TutorialEnemyPassive"; // 攻撃データなし
-		const std::string attacker = "TutorialEnemy";
+		const std::string passive = "Assets/Data/Game/Character/Warrock.json"; // 攻撃データなし
+		const std::string attacker = "Assets/Data/Game/Character/Warrock.json";
 
 		config.move.messageId = "TutorialMove";
 		config.move.targetPosition = Math::Vector3(0.0f, 0.0f, 10.0f);

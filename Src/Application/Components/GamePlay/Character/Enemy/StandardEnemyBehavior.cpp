@@ -75,6 +75,9 @@ float StandardEnemyBehavior::GetDespawnDelay(const EnemyAIController* owner) con
 // --- 割り込み演出 ---------------------------------------------------------
 void StandardEnemyBehavior::RequestReaction(EnemyAIController* owner, const std::string& oneShotAnimationKey, ReactionPriority priority)
 {
+	// 演出が定義されていない敵種は要求自体を捨てる(未再生の要求が、低優先の要求や攻撃を邪魔しないように)
+	if (owner != nullptr && owner->GetData().oneShotAnimations.count(oneShotAnimationKey) == 0) return;
+
 	if (pending_.oneShotAnimationKey.empty() || priority < pending_.priority) {
 		pending_ = { oneShotAnimationKey, priority };
 		if (owner != nullptr) {

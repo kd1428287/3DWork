@@ -323,6 +323,7 @@
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerState.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerStateContext.h" />
     <ClInclude Include="Src\Application\Components\GamePlay\Character\Player\PlayerStatusController.h" />
+    <ClInclude Include="Src\Application\Components\GamePlay\Trigger\PlayerReachedTrigger.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Animation\ArmIKComponents.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Animation\BoneOffsetComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Animation\FacingDirectionComponent.h" />
@@ -360,6 +361,7 @@
     <ClInclude Include="Src\Application\Components\Graphics\UI\UITransformComponent.h" />
     <ClInclude Include="Src\Application\Components\Physics\Collision\BodySurfaceQuery.h" />
     <ClInclude Include="Src\Application\Components\Physics\Collision\ColliderComponent.h" />
+    <ClInclude Include="Src\Application\Components\Physics\Movement\CursolFollowingComponent.h" />
     <ClInclude Include="Src\Application\Components\Physics\Movement\DirectionTransformSource.h" />
     <ClInclude Include="Src\Application\Components\Physics\Movement\FollowCameraComponent.h" />
     <ClInclude Include="Src\Application\Components\Physics\Movement\GravityComponent.h" />
@@ -392,6 +394,7 @@
     <ClInclude Include="Src\Application\Core\EventBus\Events\SlashTrailEvents.h" />
     <ClInclude Include="Src\Application\Core\EventBus\Events\TimeScaleEvents.h" />
     <ClInclude Include="Src\Application\Core\EventBus\Events\TransitionEvents.h" />
+    <ClInclude Include="Src\Application\Core\EventBus\Events\TriggerEvents.h" />
     <ClInclude Include="Src\Application\Core\EventBus\Events\WindShellEvents.h" />
     <ClInclude Include="Src\Application\Core\Math\PerlinNoise.h" />
     <ClInclude Include="Src\Application\Core\Scene\SceneManager.h" />

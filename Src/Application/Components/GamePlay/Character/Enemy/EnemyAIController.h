@@ -152,7 +152,9 @@ public:
 	// --- 体幹 ---
 	PostureComponent* GetPostureComponent() const;
 
-	// --- 死亡時に道連れで破棄するオブジェクト ---
+	// --- 死亡 ---
+	bool IsDead() { return isDead_; }
+	void RequestDespawn();
 	void RegisterOwnedObject(Handle<GameObject> obj);
 
 private:
@@ -162,7 +164,6 @@ private:
 	TransformComponent* FindPlayerTransform() const;
 	void OnAttackDeflected(const Events::AttackDeflected& e);
 	void OnDied();
-	void RequestDespawn();
 	void ApplyRootMotion();
 
 	// --- 崩れ/致命の状態管理 ---

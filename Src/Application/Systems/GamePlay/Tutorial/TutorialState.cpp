@@ -1,5 +1,7 @@
 ﻿#include "TutorialState.h"
 #include "Application/Factories/GamePlay/Character/EnemySpawner.h"
+#include "Application/Core/EventBus/Events/CombatEvents.h"
+#include "Application/Components/GamePlay/Character/Enemy/EnemyAIController.h"
 
 // --- ReachArea State ---
 void StateReachArea::Enter(TutorialContext* ctx) {
@@ -24,14 +26,25 @@ void StateDefeatEnemies::Enter(TutorialContext* ctx) {
 	}
 }
 
-void StateDefeatEnemies::Update(TutorialContext* ctx, float deltaTime) {
-	// TODO: 生成した敵が全滅したらisCleared_をtrueにする
+void StateDefeatEnemies::Update(TutorialContext* ctx, float deltaTime)
+{
+	if (isCleared_) return;
+
+	// 死亡・破棄された敵を除去し、空になれば全滅
+	std::erase_if(enemies_, [](const Handle<GameObject>& e) { return IsEnemyDead(e); });
+	isCleared_ = enemies_.empty();
 }
 
 void StateDefeatEnemies::Exit(TutorialContext* ctx) {
 	// TODO: 説明UIとロックオンを片付ける
-	for (GameObject* enemy : enemies_) ctx->enemySpawner->Despawn(enemy);
+	for (Handle<GameObject> enemy : enemies_) ctx->enemySpawner->Despawn(enemy);
 	enemies_.clear();
+}
+
+bool StateDefeatEnemies::IsEnemyDead(const Handle<GameObject>& enemy)
+{
+	if (!enemy.IsValid()) return true;
+	return enemy.Resolve()->GetComponent<EnemyAIController>()->IsDead();
 }
 
 // --- Parry State ---
@@ -55,7 +68,7 @@ void StateParry::Update(TutorialContext* ctx, float deltaTime) {
 void StateParry::Exit(TutorialContext* ctx) {
 	// TODO: 時間速度を戻し、購読解除、UIとロックオンを片付ける
 	ctx->enemySpawner->Despawn(enemy_);
-	enemy_ = nullptr;
+	enemy_ = Handle<GameObject>();
 }
 
 void StateParry::UpdateWaitAttack(TutorialContext* ctx) {

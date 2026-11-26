@@ -1,4 +1,4 @@
-#include "PrefabCatalog.h"
+﻿#include "PrefabCatalog.h"
 #include "Application/Factories/PrefabFactory.h"
 
 PrefabCatalog::PrefabCatalog(const std::unordered_map<std::string, std::string>& paths)
@@ -31,4 +31,22 @@ GameObject* PrefabCatalog::Spawn(ObjectManager& objectManager, const std::string
 	const auto it = definitions_.find(id);
 	if (it == definitions_.end()) return nullptr;
 	return PrefabFactory::Create(objectManager, it->second, position);
+}
+
+Handle<GameObject> PrefabCatalog::SpawnHandle(ObjectManager& objectManager, const std::string& id) const
+{
+	return ToHandle(Spawn(objectManager, id));
+}
+
+Handle<GameObject> PrefabCatalog::SpawnHandle(ObjectManager& objectManager, const std::string& id, const Math::Vector3& position) const
+{
+	return ToHandle(Spawn(objectManager, id, position));
+}
+
+Handle<GameObject> PrefabCatalog::ToHandle(GameObject* obj)
+{
+	if (!obj) {
+		return Handle<GameObject>{};
+	}
+	return Handle<GameObject>(obj);
 }

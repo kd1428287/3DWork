@@ -381,10 +381,6 @@
             }
           },
           "oneShotAnimations": {
-            "AttackDeflected": {
-              "animationName": "Hit_High",
-              "duration": 0.4
-            },
             "BigStagger": {
               "animationName": "Knockback",
               "duration": 3.0,

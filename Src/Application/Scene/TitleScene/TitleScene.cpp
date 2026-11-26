@@ -58,10 +58,10 @@ void TitleScene::OnUpdate(float /*deltaTime*/)
 		leaving_ = true;
 
 		// 暗転に合わせてBGMを絞る(シーン破棄後もマネージャ側で継続する)
-		Events::PublishSoundPlayEvent(*GLOBALEVENT, kClickSe);
-		Events::PublishSoundFadeOutEvent(*GLOBALEVENT, bgm_, kBgmFadeOut);
+		//Events::PublishSoundPlayEvent(*GLOBALEVENT, kClickSe);
+		//Events::PublishSoundFadeOutEvent(*GLOBALEVENT, bgm_, kBgmFadeOut);
 
-		GLOBALEVENT->Publish(Events::SceneChangeRequest{ SceneType::Game });
+		//GLOBALEVENT->Publish(Events::SceneChangeRequest{ SceneType::Game });
 	}
 
 	AddCursorSplat();
