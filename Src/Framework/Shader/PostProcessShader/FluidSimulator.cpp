@@ -56,7 +56,7 @@ namespace
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // シェーダーとRTの生成
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-bool FluidSimulator::Init(int simWidth)
+bool FluidSimulator::Init(int simWidth, float aspect)
 {
 	// 全画面描画用のVSとInputLayout(KdPostProcessShaderと同じVSを使う)
 	{
@@ -96,9 +96,12 @@ bool FluidSimulator::Init(int simWidth)
 
 	m_cb.Create();
 
-	// 格子を画面の縦横比に合わせる(テクセルが正方形になり、速度をtexel単位で等方に扱える)
-	const std::shared_ptr<KdTexture>& backBuffer = KdDirect3D::Instance().GetBackBuffer();
-	float aspect = static_cast<float>(backBuffer->GetWidth()) / backBuffer->GetHeight();
+	// 格子を指定の縦横比(未指定なら画面)に合わせる。テクセルが正方形になり、速度をtexel単位で等方に扱える
+	if (aspect <= 0.0f)
+	{
+		const std::shared_ptr<KdTexture>& backBuffer = KdDirect3D::Instance().GetBackBuffer();
+		aspect = static_cast<float>(backBuffer->GetWidth()) / backBuffer->GetHeight();
+	}
 
 	m_simWidth = simWidth;
 	m_simHeight = (std::max)(1, static_cast<int>(simWidth / aspect + 0.5f));

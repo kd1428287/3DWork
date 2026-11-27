@@ -340,6 +340,7 @@
     <ClInclude Include="Src\Application\Components\Graphics\Render\AuraRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\GroundRenderComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\ModelRenderComponent.h" />
+    <ClInclude Include="Src\Application\Components\Graphics\Render\Mod\FluidFloorComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\Mod\ForceMaxDepthComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\Mod\InkStyleComponent.h" />
     <ClInclude Include="Src\Application\Components\Graphics\Render\Mod\RasterizerStateComponent.h" />
@@ -781,6 +782,7 @@
     <None Include="Src\Framework\Shader\ShellShader\inc_WindShell.hlsli" />
     <None Include="Src\Framework\Shader\SpriteShader\inc_KdSpriteShader.hlsli" />
     <None Include="Src\Framework\Shader\StandardShader\inc_KdAura.hlsli" />
+    <None Include="Src\Framework\Shader\StandardShader\inc_KdFluidFloor.hlsli" />
     <None Include="Src\Framework\Shader\StandardShader\inc_KdInkTone.hlsli" />
     <None Include="Src\Framework\Shader\StandardShader\inc_KdMotionVector.hlsli" />
     <None Include="Src\Framework\Shader\StandardShader\inc_KdSkyDomeShader.hlsli" />
@@ -928,6 +930,10 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\StandardShader\KdStandardShader_PS_LitFluid.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\StandardShader\KdStandardShader_PS_UnLit.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>

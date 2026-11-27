@@ -162,6 +162,18 @@ public:
 		Math::Matrix mPrevBones[300];
 	};
 
+	// 定数バッファ(床の墨。HLSL側inc_KdFluidFloor.hlsliのcbFluidFloorと並びを一致させること)
+	struct cbFluidFloor
+	{
+		Math::Vector2	MapOrigin = { 0.0f, 0.0f };	// 流体マップのワールドXZ最小値
+		Math::Vector2	MapSize = { 1.0f, 1.0f };	// 流体マップのワールドXZの大きさ
+
+		float			Absorb = 3.5f;				// 墨の濃さ
+		float			FloorY = 2.0f;				// 床の高さ
+		float			FloorBand = 0.15f;			// 床とみなす高さの幅
+		float			_blank = 0.0f;
+	};
+
 	// HLSL側のregister(bN)と一致させること(他のcbufferと重ならない番号にする)
 	static const int kMotionCBSlot = 5;
 	static const int kPrevBoneCBSlot = 6;
@@ -172,6 +184,10 @@ public:
 
 	// キャラクター専用シャドウマップのスロット(HLSL側PS_Litのt13と一致させること)
 	static const int kCharaShadowSlot = 13;
+
+	// 床の墨のテクスチャ/定数バッファのスロット(HLSL側inc_KdFluidFloor.hlsliのt14/b12と一致させること)
+	static const int kFluidTexSlot = 14;
+	static const int kFluidCBSlot = 12;
 
 
 
@@ -235,6 +251,10 @@ public:
 	{
 		KdDirect3D::Instance().WorkDevContext()->PSSetShaderResources(kAuraNoiseSlot, 1, noise.WorkSRViewAddress());
 	}
+
+	// 床の墨(Litパス中のみ有効)。ステージ描画の前後でSet/Clearを対にして呼ぶ
+	void SetFluidFloor(KdTexture& density, const cbFluidFloor& params);
+	void ClearFluidFloor();
 
 	// ディゾルブ設定
 	void SetDissolve(float threshold, const float* range = nullptr, const Math::Vector3* edgeColor = nullptr)
@@ -433,6 +453,11 @@ private:
 	KdConstantBuffer<cbSkyDome>		m_cb4_SkyDome;			// スカイドーム用
 	KdConstantBuffer<cbMotion>		m_cb5_Motion;			// 速度バッファ用(前フレームのVP・ワールド)
 	KdConstantBuffer<cbPrevBone>	m_cb6_PrevBone;			// 速度バッファ用(前フレームのボーン)
+	KdConstantBuffer<cbFluidFloor>	m_cb12_FluidFloor;		// 床の墨用
+
+	ID3D11PixelShader* m_PS_LitFluid = nullptr;	// 陰影あり+床の墨
+	bool		m_litActive = false;			// Litパス中のみtrue
+	bool		m_fluidFloorActive = false;		// 墨入りPSへ切り替え中
 
 	KdRenderTargetPack	m_depthMapFromLightRTPack;
 	KdRenderTargetPack	m_charaDepthMapRTPack;		// キャラクター専用の光からの深度

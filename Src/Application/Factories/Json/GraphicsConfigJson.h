@@ -5,6 +5,7 @@
 #include "Application/Components/Graphics/Render/AuraRenderComponent.h"
 #include "Application/Components/Graphics/Render/Mod/RasterizerStateComponent.h"
 #include "Application/Components/Graphics/Render/Mod/InkStyleComponent.h"
+#include "Application/Components/Graphics/Render/Mod/FluidFloorComponent.h"
 #include "Application/Components/Graphics/Effect/WindShellComponent.h"
 #include "Application/Components/Graphics/Animation/SkeletonComponent.h"
 #include "Application/Components/Graphics/Animation/ModelAnimatorComponent.h"
@@ -45,56 +46,57 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootMotionAxis, {
 	{ RootMotionAxis::Z, "Z" },
 	})
 
-// KdRasterizerState: JSONではenum名の文字列で指定する。未知の値はCullNoneになる。
-NLOHMANN_JSON_SERIALIZE_ENUM(KdRasterizerState, {
-	{ KdRasterizerState::CullNone, "CullNone" },
-	{ KdRasterizerState::CullFront, "CullFront" },
-	{ KdRasterizerState::CullBack, "CullBack" },
-	{ KdRasterizerState::WireFrame, "WireFrame" },
-	})
+	// KdRasterizerState: JSONではenum名の文字列で指定する。未知の値はCullNoneになる。
+	NLOHMANN_JSON_SERIALIZE_ENUM(KdRasterizerState, {
+		{ KdRasterizerState::CullNone, "CullNone" },
+		{ KdRasterizerState::CullFront, "CullFront" },
+		{ KdRasterizerState::CullBack, "CullBack" },
+		{ KdRasterizerState::WireFrame, "WireFrame" },
+		})
 
-// KdInkPreset: JSONではプリセット名の文字列で指定する。未知の値はNoneになる。
-NLOHMANN_JSON_SERIALIZE_ENUM(KdInkPreset, {
-	{ KdInkPreset::None, "None" },
-	{ KdInkPreset::Bright, "Bright" },
-	{ KdInkPreset::Dark, "Dark" },
-	})
+		// KdInkPreset: JSONではプリセット名の文字列で指定する。未知の値はNoneになる。
+	NLOHMANN_JSON_SERIALIZE_ENUM(KdInkPreset, {
+		{ KdInkPreset::None, "None" },
+		{ KdInkPreset::Bright, "Bright" },
+		{ KdInkPreset::Dark, "Dark" },
+		})
 
-// KdAuraKind: JSONでは"Rim"/"Flame"/"Ink"の文字列で指定する。未知の値はRimになる。
-NLOHMANN_JSON_SERIALIZE_ENUM(KdAuraKind, {
-	{ KdAuraKind::Rim, "Rim" },
-	{ KdAuraKind::Flame, "Flame" },
-	{ KdAuraKind::Ink, "Ink" },
-	})
+		// KdAuraKind: JSONでは"Rim"/"Flame"/"Ink"の文字列で指定する。未知の値はRimになる。
+	NLOHMANN_JSON_SERIALIZE_ENUM(KdAuraKind, {
+		{ KdAuraKind::Rim, "Rim" },
+		{ KdAuraKind::Flame, "Flame" },
+		{ KdAuraKind::Ink, "Ink" },
+		})
 
-// RenderLayer単体を名前の文字列で読み書きする。
-NLOHMANN_JSON_SERIALIZE_ENUM(RenderLayer, {
-	{ RenderLayer::PreDraw, "PreDraw" },
-	{ RenderLayer::GenerateDepthMapFromLight, "GenerateDepthMapFromLight" },
-	{ RenderLayer::DrawUnLit, "DrawUnLit" },
-	{ RenderLayer::DrawLit, "DrawLit" },
-	{ RenderLayer::DrawEffect, "DrawEffect" },
-	{ RenderLayer::DrawBright, "DrawBright" },
-	{ RenderLayer::DrawSprite, "DrawSprite" },
-	{ RenderLayer::DrawDebug, "DrawDebug" },
-	{ RenderLayer::DrawCharaShadow, "DrawCharaShadow" },
-	})
+		// RenderLayer単体を名前の文字列で読み書きする。
+	NLOHMANN_JSON_SERIALIZE_ENUM(RenderLayer, {
+		{ RenderLayer::PreDraw, "PreDraw" },
+		{ RenderLayer::GenerateDepthMapFromLight, "GenerateDepthMapFromLight" },
+		{ RenderLayer::DrawUnLit, "DrawUnLit" },
+		{ RenderLayer::DrawLit, "DrawLit" },
+		{ RenderLayer::DrawEffect, "DrawEffect" },
+		{ RenderLayer::DrawBright, "DrawBright" },
+		{ RenderLayer::DrawSprite, "DrawSprite" },
+		{ RenderLayer::DrawDebug, "DrawDebug" },
+		{ RenderLayer::DrawCharaShadow, "DrawCharaShadow" },
+		})
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(KdInkStyle,
-	Black, Amount, Paper, Bias, Contrast, Steps, LumaScale, NoiseAmount, NoiseScale)
-
-COMPONENT_PARAMS_DEFINE_TYPE(SkeletonConfig, model, animations)
-COMPONENT_PARAMS_DEFINE_TYPE(RootMotionConfig,
-	boneName, unitScale, forwardAxis, forwardSign, rightAxis, rightSign, extractRotation, yawSign)
-COMPONENT_PARAMS_DEFINE_TYPE(ModelAnimatorConfig, fps, speedScale, blendDuration, rootMotion)
-COMPONENT_PARAMS_DEFINE_TYPE(FollowCameraConfig, offset, followPosition, followRotation)
-COMPONENT_PARAMS_DEFINE_TYPE(CameraTargetConfig, offset)
-COMPONENT_PARAMS_DEFINE_TYPE(OutlineConfig, width)
-COMPONENT_PARAMS_DEFINE_TYPE(AuraConfig,
-	kind, color, coreColor, intensity, width, rise, height, softness,
-	fresnelPower, noiseScale, scrollSpeed, layers, noiseTexturePath)
-COMPONENT_PARAMS_DEFINE_TYPE(FacingDirectionConfig, rotationSpeed, moveThreshold)
-COMPONENT_PARAMS_DEFINE_TYPE(WindShellConfig,
-	preset, localAxis, axisOffset, useVelocity, speedThreshold, axisFollow, autoPlay)
-COMPONENT_PARAMS_DEFINE_TYPE(SlashTrailShape, base, tip)
-COMPONENT_PARAMS_DEFINE_TYPE(SlashTrailConfig, trailName, emitOnStart, shapes)
+		NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(KdInkStyle,
+			Black, Amount, Paper, Bias, Contrast, Steps, LumaScale, NoiseAmount, NoiseScale)
+	COMPONENT_PARAMS_DEFINE_TYPE(SkeletonConfig, model, animations)
+	COMPONENT_PARAMS_DEFINE_TYPE(RootMotionConfig,
+		boneName, unitScale, forwardAxis, forwardSign, rightAxis, rightSign, extractRotation, yawSign)
+	COMPONENT_PARAMS_DEFINE_TYPE(ModelAnimatorConfig, fps, speedScale, blendDuration, rootMotion)
+	COMPONENT_PARAMS_DEFINE_TYPE(FollowCameraConfig, offset, followPosition, followRotation)
+	COMPONENT_PARAMS_DEFINE_TYPE(CameraTargetConfig, offset)
+	COMPONENT_PARAMS_DEFINE_TYPE(OutlineConfig, width)
+	COMPONENT_PARAMS_DEFINE_TYPE(AuraConfig,
+		kind, color, coreColor, intensity, width, rise, height, softness,
+		fresnelPower, noiseScale, scrollSpeed, layers, noiseTexturePath)
+	COMPONENT_PARAMS_DEFINE_TYPE(FacingDirectionConfig, rotationSpeed, moveThreshold)
+	COMPONENT_PARAMS_DEFINE_TYPE(WindShellConfig,
+		preset, localAxis, axisOffset, useVelocity, speedThreshold, axisFollow, autoPlay)
+	COMPONENT_PARAMS_DEFINE_TYPE(SlashTrailShape, base, tip)
+	COMPONENT_PARAMS_DEFINE_TYPE(SlashTrailConfig, trailName, emitOnStart, shapes)
+	COMPONENT_PARAMS_DEFINE_TYPE(FluidFloorConfig,
+		originX, originZ, sizeX, sizeZ, floorY, floorBand, absorb, simWidth)

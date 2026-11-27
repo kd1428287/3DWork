@@ -31,8 +31,8 @@
 
 using namespace Registration;
 
-	// 接続を伴う型のparams。ODR違反を避けるため、マクロも含めて無名名前空間に入れる。
-	namespace
+// 接続を伴う型のparams。ODR違反を避けるため、マクロも含めて無名名前空間に入れる。
+namespace
 {
 	// 描画中だけラスタライザステートを切り替えるMod。
 	struct RasterizerStateParams
@@ -41,25 +41,25 @@ using namespace Registration;
 	};
 	COMPONENT_PARAMS_DEFINE_TYPE(RasterizerStateParams, state)
 
-	// 墨の濃淡変換のMod。JSONではプリセット名("Bright"/"Dark")を指定する。
-	struct InkStyleParams
+		// 墨の濃淡変換のMod。JSONではプリセット名("Bright"/"Dark")を指定する。
+		struct InkStyleParams
 	{
 		KdInkPreset preset = KdInkPreset::None;
 	};
 	COMPONENT_PARAMS_DEFINE_TYPE(InkStyleParams, preset)
 
-	// 1クリップ分の接地phase定義。clipはアニメーションクリップ名
-	// (ModelAnimatorComponentが再生する名前と一致させる)。
-	struct FootstepClipParams
+		// 1クリップ分の接地phase定義。clipはアニメーションクリップ名
+		// (ModelAnimatorComponentが再生する名前と一致させる)。
+		struct FootstepClipParams
 	{
 		std::string clip;
 		std::vector<FootstepTrigger> triggers;
 	};
 	COMPONENT_PARAMS_DEFINE_TYPE(FootstepClipParams, clip, triggers)
 
-	// 足音ダスト用のパラメータ。左右の足ボーンにBoneSocketComponentを生成し、
-	// FootstepEventComponent(接地検知)とFootDustComponent(エフェクト発行)を組み立てる。
-	struct FootDustParams
+		// 足音ダスト用のパラメータ。左右の足ボーンにBoneSocketComponentを生成し、
+		// FootstepEventComponent(接地検知)とFootDustComponent(エフェクト発行)を組み立てる。
+		struct FootDustParams
 	{
 		std::string leftFootBone = "mixamorig:LeftFoot";
 		std::string rightFootBone = "mixamorig:RightFoot";
@@ -77,13 +77,13 @@ using namespace Registration;
 			f.add(RenderLayer::GenerateDepthMapFromLight);
 			//f.add(RenderLayer::DrawCharaShadow);
 			return f;
-			}(); 
+			}();
 	};
 	COMPONENT_PARAMS_DEFINE_TYPE(ModelRenderConfig, skeleton, layer)
 
-	// 左右の足ボーンにBoneSocketComponentを生成し、FootstepEventComponent(クリップごとの
-	// 接地phase監視)とFootDustComponent(GenericEffectSpawnEvent発行)を組み立てる。
-	void BuildFootDust(BuildContext& ctx, const FootDustParams& p)
+		// 左右の足ボーンにBoneSocketComponentを生成し、FootstepEventComponent(クリップごとの
+		// 接地phase監視)とFootDustComponent(GenericEffectSpawnEvent発行)を組み立てる。
+		void BuildFootDust(BuildContext& ctx, const FootDustParams& p)
 	{
 		SkeletonComponent* skeleton = RequireSkeleton(&ctx.self, "FootDust");
 
@@ -147,5 +147,8 @@ void RegisterGraphicsComponents(ComponentRegistry& registry)
 	registry.Add<GroundRenderComponent>("GroundRender");
 	registry.AddWithParams<WindShellConfig>("WindShell", [](BuildContext& ctx, const WindShellConfig& config) {
 		ctx.Add<WindShellComponent>()->SetConfig(config);
+		});
+	registry.AddWithParams<FluidFloorConfig>("FluidFloor", [](BuildContext& ctx, const FluidFloorConfig& config) {
+		ctx.Add<FluidFloorComponent>(config);
 		});
 }

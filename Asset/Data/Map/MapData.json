@@ -390,7 +390,7 @@
       "pos": [
         0.0,
         2.8842222690582275,
-        11.325716018676758
+        30.80292510986328
       ],
       "rotation": [
         -0.0,
@@ -436,8 +436,17 @@
     {
       "components": [
         {
-          "params": {},
-          "type": "GroundRender"
+          "params": {
+            "absorb": 3.5,
+            "floorBand": 0.05000000074505806,
+            "floorY": 0.0,
+            "originX": 0.0,
+            "originZ": 0.0,
+            "simWidth": 256,
+            "sizeX": 100.0,
+            "sizeZ": 100.0
+          },
+          "type": "FluidFloor"
         }
       ],
       "id": 16,

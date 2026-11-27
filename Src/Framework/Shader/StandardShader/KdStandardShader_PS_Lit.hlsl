@@ -19,6 +19,10 @@ Texture2D g_charaShadowMap : register(t13);	// キャラクター専用シャド
 SamplerState g_ss : register(s0);				// 通常のテクスチャ描画用
 SamplerComparisonState g_ssCmp : register(s1);	// 補間用比較機能付き
 
+#ifdef USE_FLUID_FLOOR
+#include "inc_KdFluidFloor.hlsli"
+#endif
+
 float BlinnPhong(float3 lightDir, float3 vCam, float3 normal, float specPower)
 {
 	float3 H = normalize(-lightDir + vCam);
@@ -267,6 +271,11 @@ float4 main(VSOutputLit InLit, out float4 outVelocity : SV_Target2) : SV_Target0
 	
 	// 墨の濃淡変換(フォグ・明度の前に行う)
 	if (g_InkAmount > 0) { outColor = ApplyInkTone(outColor, In.wPos); }
+
+#ifdef USE_FLUID_FLOOR
+	// 床の墨(輪郭パスは墨一色のため除く)
+	if (g_OutlineWidth <= 0) { outColor = ApplyFluidFloor(outColor, In.wPos, In.wN); }
+#endif
 
 	// 輪郭パスは墨一色(以降のフォグで遠景ほど霞む)
 	if (g_OutlineWidth > 0)

@@ -1320,6 +1320,9 @@
     <ClInclude Include="Src\Application\Entity\HandleTable.h">
       <Filter>Src\Application\Entity</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Components\Graphics\Render\Mod\FluidFloorComponent.h">
+      <Filter>Src\Application\Components\Graphics\Render\Mod</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -1852,6 +1855,9 @@
     <None Include="Src\Framework\Shader\StandardShader\inc_KdAura.hlsli">
       <Filter>Src\Framework\Shader\StandardShader</Filter>
     </None>
+    <None Include="Src\Framework\Shader\StandardShader\inc_KdFluidFloor.hlsli">
+      <Filter>Src\Framework\Shader\StandardShader</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Src\Framework\Shader\SpriteShader\KdSpriteShader_PS.hlsl">
@@ -1960,6 +1966,9 @@
       <Filter>Src\Framework\Shader\StandardShader</Filter>
     </FxCompile>
     <FxCompile Include="Src\Framework\Shader\StandardShader\KdStandardShader_VS_Aura.hlsl">
+      <Filter>Src\Framework\Shader\StandardShader</Filter>
+    </FxCompile>
+    <FxCompile Include="Src\Framework\Shader\StandardShader\KdStandardShader_PS_LitFluid.hlsl">
       <Filter>Src\Framework\Shader\StandardShader</Filter>
     </FxCompile>
   </ItemGroup>

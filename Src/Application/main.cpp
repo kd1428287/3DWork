@@ -28,7 +28,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_  HINSTANCE, _In_ LPSTR, _In_ int)
 	setlocale(LC_ALL, "japanese");
 
 	//===================================================================
-	// 実行]
+	// 実行
 	//===================================================================
 	Application::Instance().Execute();
 

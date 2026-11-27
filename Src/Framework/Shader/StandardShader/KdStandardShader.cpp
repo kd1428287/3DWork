@@ -38,6 +38,7 @@ void KdStandardShader::BeginLit()
 	KdShaderManager::Instance().SetVSConstantBuffer(kMotionCBSlot, m_cb5_Motion.GetAddress());
 	KdShaderManager::Instance().SetVSConstantBuffer(kPrevBoneCBSlot, m_cb6_PrevBone.GetAddress());
 	m_motionActive = true;
+	m_litActive = true;
 
 	// シャドウマップのテクスチャをセット
 	KdDirect3D::Instance().WorkDevContext()->PSSetShaderResources(10, 1, m_depthMapFromLightRTPack.m_RTTexture->WorkSRViewAddress());
@@ -59,11 +60,40 @@ void KdStandardShader::BeginLit()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void KdStandardShader::EndLit()
 {
+	ClearFluidFloor();
+	m_litActive = false;
 	m_motionActive = false;
 
 	ID3D11ShaderResourceView* pNullSRV = nullptr;
 	KdDirect3D::Instance().WorkDevContext()->PSSetShaderResources(10, 1, &pNullSRV);
 	KdDirect3D::Instance().WorkDevContext()->PSSetShaderResources(kCharaShadowSlot, 1, &pNullSRV);
+}
+
+// 床の墨：Lit以外(影の深度パス等)では何もしない。専用PSへ切り替えて濃度とパラメータを渡す
+void KdStandardShader::SetFluidFloor(KdTexture& density, const cbFluidFloor& params)
+{
+	if (!m_litActive) { return; }
+
+	m_cb12_FluidFloor.Work() = params;
+	m_cb12_FluidFloor.Write();
+
+	KdShaderManager::Instance().SetPixelShader(m_PS_LitFluid);
+	KdShaderManager::Instance().SetPSConstantBuffer(kFluidCBSlot, m_cb12_FluidFloor.GetAddress());
+	KdDirect3D::Instance().WorkDevContext()->PSSetShaderResources(kFluidTexSlot, 1, density.WorkSRViewAddress());
+
+	m_fluidFloorActive = true;
+}
+
+// 通常のPSへ戻す。濃度RTは次のStepで書き込み先になるため、SRVも外す
+void KdStandardShader::ClearFluidFloor()
+{
+	if (!m_fluidFloorActive) { return; }
+	m_fluidFloorActive = false;
+
+	KdShaderManager::Instance().SetPixelShader(m_PS_Lit);
+
+	ID3D11ShaderResourceView* pNullSRV = nullptr;
+	KdDirect3D::Instance().WorkDevContext()->PSSetShaderResources(kFluidTexSlot, 1, &pNullSRV);
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -673,6 +703,15 @@ bool KdStandardShader::Init()
 			return false;
 		}
 	}
+	{
+#include "KdStandardShader_PS_LitFluid.shaderInc"
+
+		if (FAILED(KdDirect3D::Instance().WorkDev()->CreatePixelShader(compiledBuffer, sizeof(compiledBuffer), nullptr, &m_PS_LitFluid))) {
+			assert(0 && "ピクセルシェーダー作成失敗(LitFluid)");
+			Release();
+			return false;
+		}
+	}
 
 	//-------------------------------------
 	// 定数バッファ作成
@@ -684,6 +723,7 @@ bool KdStandardShader::Init()
 	m_cb4_SkyDome.Create();
 	m_cb5_Motion.Create();
 	m_cb6_PrevBone.Create();
+	m_cb12_FluidFloor.Create();
 	m_cb5_Motion.Write();	// Enable=0の初期状態
 
 	std::shared_ptr<KdTexture> ds = std::make_shared<KdTexture>();
@@ -723,6 +763,7 @@ void KdStandardShader::Release()
 	KdSafeRelease(m_PS_GenDepthFromLight);
 	KdSafeRelease(m_PS_UnLit);
 	KdSafeRelease(m_PS_Aura);
+	KdSafeRelease(m_PS_LitFluid);
 
 	m_cb0_Obj.Release();
 	m_cb1_Mesh.Release();
@@ -732,6 +773,7 @@ void KdStandardShader::Release()
 
 	m_cb5_Motion.Release();
 	m_cb6_PrevBone.Release();
+	m_cb12_FluidFloor.Release();
 	m_motionHistory.clear();
 }
 

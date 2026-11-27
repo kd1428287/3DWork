@@ -35,8 +35,8 @@ class FluidSimulator
 public:
 	~FluidSimulator() { Release(); }
 
-	// simWidth：シミュレーション格子の幅(高さは画面の縦横比から決める)
-	bool Init(int simWidth = 384);
+	// simWidth：シミュレーション格子の幅 / aspect：格子の幅÷高さ(0以下なら画面の縦横比)
+	bool Init(int simWidth = 384, float aspect = 0.0f);
 	void Release();
 
 	// 描画フェーズから毎フレーム1回呼ぶ(GPUへ描画するのでUpdateスレッド側からは呼ばない)
