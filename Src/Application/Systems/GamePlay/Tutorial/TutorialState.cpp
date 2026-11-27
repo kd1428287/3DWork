@@ -1,5 +1,5 @@
 ﻿#include "TutorialState.h"
-#include "Application/Factories/GamePlay/Character/EnemySpawner.h"
+#include "Application/Factories/Prefab/PrefabSpawner.h"
 #include "Application/Core/EventBus/Events/CombatEvents.h"
 #include "Application/Components/GamePlay/Character/Enemy/EnemyAIController.h"
 
@@ -22,7 +22,9 @@ void StateDefeatEnemies::Enter(TutorialContext* ctx) {
 	isCleared_ = false;
 	// TODO: 説明UIを表示する
 	for (const EnemySpawnData& spawn : data_.enemies) {
-		enemies_.push_back(ctx->enemySpawner->Spawn(spawn.prefabName, spawn.position));
+		// 生成に失敗した敵(未登録id)は追跡対象に入れない
+		Handle<GameObject> enemy = ctx->prefabSpawner->Spawn(spawn.prefabName, spawn.position);
+		if (enemy.IsValid()) enemies_.push_back(enemy);
 	}
 }
 
@@ -37,14 +39,22 @@ void StateDefeatEnemies::Update(TutorialContext* ctx, float deltaTime)
 
 void StateDefeatEnemies::Exit(TutorialContext* ctx) {
 	// TODO: 説明UIとロックオンを片付ける
-	for (Handle<GameObject> enemy : enemies_) ctx->enemySpawner->Despawn(enemy);
+	for (Handle<GameObject> enemy : enemies_) ctx->prefabSpawner->Despawn(enemy);
 	enemies_.clear();
 }
 
 bool StateDefeatEnemies::IsEnemyDead(const Handle<GameObject>& enemy)
 {
-	if (!enemy.IsValid()) return true;
-	return enemy.Resolve()->GetComponent<EnemyAIController>()->IsDead();
+	GameObject* obj = enemy.Resolve();
+	if (!obj) return true;
+
+	// AIコントローラーが無い敵は戦えないので、撃破済み扱いにする
+	EnemyAIController* ai = obj->GetComponent<EnemyAIController>();
+	if (!ai) {
+		OutputDebugStringA(("Tutorial: EnemyAIController not found on " + obj->GetName() + "\n").c_str());
+		return true;
+	}
+	return ai->IsDead();
 }
 
 // --- Parry State ---
@@ -52,7 +62,7 @@ void StateParry::Enter(TutorialContext* ctx) {
 	phase_ = Phase::WaitAttack;
 	successCount_ = 0;
 	isCompleted_ = false;
-	enemy_ = ctx->enemySpawner->Spawn(data_.enemy.prefabName, data_.enemy.position);
+	enemy_ = ctx->prefabSpawner->Spawn(data_.enemy.prefabName, data_.enemy.position);
 	// TODO: 説明UIを表示する
 	// TODO: HitReaction(Parry)を購読し、NotifyParrySuccess()を呼ぶ
 }
@@ -67,7 +77,7 @@ void StateParry::Update(TutorialContext* ctx, float deltaTime) {
 
 void StateParry::Exit(TutorialContext* ctx) {
 	// TODO: 時間速度を戻し、購読解除、UIとロックオンを片付ける
-	ctx->enemySpawner->Despawn(enemy_);
+	ctx->prefabSpawner->Despawn(enemy_);
 	enemy_ = Handle<GameObject>();
 }
 

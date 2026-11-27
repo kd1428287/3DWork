@@ -1,4 +1,6 @@
 ﻿#pragma once
+#include <cstdint>
+#include "HandleTable.h"
 
 class GameObject;
 
@@ -6,8 +8,9 @@ class GameObject;
 class ComponentBase {
 public:
 	explicit ComponentBase(GameObject* owner)
-		: owner_(owner), generation_(s_nextGeneration++) {}
-	virtual ~ComponentBase() = default;
+		: owner_(owner), handleId_(HandleTable<ComponentBase>::Allocate(this)) {}
+	// 破棄時に先にスロットを解放し、以前のHandleをすべて無効にする
+	virtual ~ComponentBase() { HandleTable<ComponentBase>::Free(handleId_); }
 
 	// コピー・ムーブは基本的に禁止(GameObjectが所有権を管理するため)
 	ComponentBase(const ComponentBase&) = delete;
@@ -33,16 +36,14 @@ public:
 	bool IsEnabled() const { return enabled_; }
 	void SetEnabled(bool enabled) { enabled_ = enabled; }
 
-	// このコンポーネントインスタンス固有の世代番号
-	uint64_t GetGeneration() const { return generation_; }
+	// Handle<T>用のid(HandleTableのスロット番号+世代)。生存判定はHandle側が行う。
+	using HandleRoot = ComponentBase;
+	uint64_t GetHandleId() const { return handleId_; }
 
 private:
 	GameObject* owner_ = nullptr;
 	bool enabled_ = true;
-	uint64_t generation_ = 0;
-
-	// 全ComponentBase派生インスタンスで共有される、生成順の通し番号カウンタ
-	static inline uint64_t s_nextGeneration = 1;
+	uint64_t handleId_ = 0;
 
 	friend class GameObject;  // started_ 管理のためGameObjectからのみ触れる
 };

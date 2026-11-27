@@ -1,4 +1,4 @@
-﻿#include "CameraFactory.h"
+#include "CameraFactory.h"
 #include "Application/Components/GamePlay/Camera/CameraComponent.h"
 #include "Application/Components/GamePlay/Camera/CameraFollowComponent.h"
 #include "Application/Components/GamePlay/Camera/CameraViewComponent.h"
@@ -11,8 +11,8 @@
 
 GameObject* CameraFactory::CreateCamera(ObjectManager& objectManager, GameObject* target, int ownerCameraId)
 {
-	auto targets = objectManager.FindComponents<CameraTargetComponent>();
-	return CreateCamera(objectManager, target->GetComponent<CameraTargetComponent>(), ownerCameraId);
+	CameraTargetComponent* targetComponent = target ? target->GetComponent<CameraTargetComponent>() : nullptr;
+	return CreateCamera(objectManager, targetComponent, ownerCameraId);
 }
 
 GameObject* CameraFactory::CreateCamera(ObjectManager& objectManager, CameraTargetComponent* target, int ownerCameraId)
@@ -27,7 +27,7 @@ GameObject* CameraFactory::CreateCamera(ObjectManager& objectManager, CameraTarg
 	follow->SetDistance(5.0f);
 	auto* collision = camera->AddComponent<CameraCollisionComponent>(); // Followより後
 	collision->SetPivotTarget(Handle<CameraTargetComponent>(target));
-	collision->SetPivotOffset(Math::Vector3(0.f, 0.f, 0.f));;
+	collision->SetPivotOffset(Math::Vector3(0.f, 0.f, 0.f));
 	collision->SetSweepRadius(0.3f);
 	objectManager.SetActiveCamera(cameraC);
 	auto* shake = camera->AddComponent<CameraShakeComponent>();
@@ -36,4 +36,3 @@ GameObject* CameraFactory::CreateCamera(ObjectManager& objectManager, CameraTarg
 
 	return camera;
 }
-

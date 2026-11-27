@@ -184,9 +184,6 @@
     <Filter Include="Src\Application\Factories\GamePlay">
       <UniqueIdentifier>{8ec3fc00-5331-4006-95f9-60ecab92fd60}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Src\Application\Factories\GamePlay\Character">
-      <UniqueIdentifier>{f42b6773-efe9-4c4d-b15a-48eab030ff04}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Src\Application\Factories\GamePlay\Map">
       <UniqueIdentifier>{c60a9f43-5608-4e74-beba-ef669b2d4944}</UniqueIdentifier>
     </Filter>
@@ -306,6 +303,9 @@
     </Filter>
     <Filter Include="Src\Application\Components\GamePlay\Trigger">
       <UniqueIdentifier>{c2752d4a-4a72-4189-8bd0-98337e02f879}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Factories\Prefab">
+      <UniqueIdentifier>{fe64c7c5-f7eb-485b-8e27-9f6b00b1e109}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -681,12 +681,6 @@
     <ClInclude Include="Src\Application\Editor\Tools\ShaderTuningEditor.h">
       <Filter>Src\Application\Editor\Tools</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Factories\GamePlay\Character\EnemyFactory.h">
-      <Filter>Src\Application\Factories\GamePlay\Character</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Factories\GamePlay\Character\PlayerFactory.h">
-      <Filter>Src\Application\Factories\GamePlay\Character</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Factories\GamePlay\Map\TerrainFactory.h">
       <Filter>Src\Application\Factories\GamePlay\Map</Filter>
     </ClInclude>
@@ -921,9 +915,6 @@
     <ClInclude Include="Src\Application\Definitions\Prefab\Prefab.h">
       <Filter>Src\Application\Definitions\Prefab</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Factories\PrefabFactory.h">
-      <Filter>Src\Application\Factories</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Definitions\Physics\ColliderCategoryNames.h">
       <Filter>Src\Application\Definitions\Physics</Filter>
     </ClInclude>
@@ -1028,9 +1019,6 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Core\EventBus\Events\CombatEvents.h">
       <Filter>Src\Application\Core\EventBus\Events</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Application\Factories\PrefabCatalog.h">
-      <Filter>Src\Application\Factories</Filter>
     </ClInclude>
     <ClInclude Include="Src\Framework\Shader\PostProcessShader\FluidSimulator.h">
       <Filter>Src\Framework\Shader\PostProcessShader</Filter>
@@ -1305,9 +1293,6 @@
     <ClInclude Include="Src\Application\Systems\GamePlay\Tutorial\TutorialTypes.h">
       <Filter>Src\Application\Systems\GamePlay\Tutorial</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Application\Factories\GamePlay\Character\EnemySpawner.h">
-      <Filter>Src\Application\Factories\GamePlay\Character</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Application\Scene\TutorialScene\TutorialScene.h">
       <Filter>Src\Application\Scene\TutorialScene</Filter>
     </ClInclude>
@@ -1319,6 +1304,21 @@
     </ClInclude>
     <ClInclude Include="Src\Application\Components\Physics\Movement\CursolFollowingComponent.h">
       <Filter>Src\Application\Components\Physics\Movement</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Components\Tags\IDespawnHandler.h">
+      <Filter>Src\Application\Components\Tags</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Factories\Prefab\PrefabCatalog.h">
+      <Filter>Src\Application\Factories\Prefab</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Factories\Prefab\PrefabFactory.h">
+      <Filter>Src\Application\Factories\Prefab</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Factories\Prefab\PrefabSpawner.h">
+      <Filter>Src\Application\Factories\Prefab</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Entity\HandleTable.h">
+      <Filter>Src\Application\Entity</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1505,9 +1505,6 @@
     <ClCompile Include="Src\Application\Editor\Tools\ShaderTuningEditor.cpp">
       <Filter>Src\Application\Editor\Tools</Filter>
     </ClCompile>
-    <ClCompile Include="Src\Application\Factories\GamePlay\Character\PlayerFactory.cpp">
-      <Filter>Src\Application\Factories\GamePlay\Character</Filter>
-    </ClCompile>
     <ClCompile Include="Src\Application\Factories\GamePlay\Map\TerrainFactory.cpp">
       <Filter>Src\Application\Factories\GamePlay\Map</Filter>
     </ClCompile>
@@ -1583,9 +1580,6 @@
     <ClCompile Include="Src\Application\Definitions\Loaders\PlayerAttackTableLoader.cpp">
       <Filter>Src\Application\Definitions\Loaders</Filter>
     </ClCompile>
-    <ClCompile Include="Src\Application\Factories\PrefabFactory.cpp">
-      <Filter>Src\Application\Factories</Filter>
-    </ClCompile>
     <ClCompile Include="Src\Framework\Shader\GPUParticle\GPUParticleShader.cpp">
       <Filter>Src\Framework\Shader\GPUParticle</Filter>
     </ClCompile>
@@ -1633,9 +1627,6 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Components\Graphics\UI\Image\UIImageComponent.cpp">
       <Filter>Src\Application\Components\Graphics\UI\Image</Filter>
-    </ClCompile>
-    <ClCompile Include="Src\Application\Factories\PrefabCatalog.cpp">
-      <Filter>Src\Application\Factories</Filter>
     </ClCompile>
     <ClCompile Include="Src\Framework\Shader\PostProcessShader\FluidSimulator.cpp">
       <Filter>Src\Framework\Shader\PostProcessShader</Filter>
@@ -1796,11 +1787,17 @@
     <ClCompile Include="Src\Application\Systems\GamePlay\Tutorial\TutorialState.cpp">
       <Filter>Src\Application\Systems\GamePlay\Tutorial</Filter>
     </ClCompile>
-    <ClCompile Include="Src\Application\Factories\GamePlay\Character\EnemySpawner.cpp">
-      <Filter>Src\Application\Factories\GamePlay\Character</Filter>
-    </ClCompile>
     <ClCompile Include="Src\Application\Scene\TutorialScene\TutorialScene.cpp">
       <Filter>Src\Application\Scene\TutorialScene</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Factories\Prefab\PrefabCatalog.cpp">
+      <Filter>Src\Application\Factories\Prefab</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Factories\Prefab\PrefabFactory.cpp">
+      <Filter>Src\Application\Factories\Prefab</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Factories\Prefab\PrefabSpawner.cpp">
+      <Filter>Src\Application\Factories\Prefab</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -1,5 +1,5 @@
-﻿#include "PrefabFactory.h"
-#include "ComponentRegistry.h"
+#include "PrefabFactory.h"
+#include "Application/Factories/ComponentRegistry.h"
 
 #include "Application/Definitions/Prefab/PrefabIO.h"
 #include "Application/Components/Core/TransformComponent.h"

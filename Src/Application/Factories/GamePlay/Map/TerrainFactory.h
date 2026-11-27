@@ -1,5 +1,4 @@
-﻿#pragma once
-#include "../../GameObjectFactory.h"
+#pragma once
 #include "Application/Definitions/Map/MapData.h" // MapEntityをインクルード
 
 class GameObject;
@@ -23,7 +22,4 @@ public:
 	 *        登録されていない種類はログを出してスキップする(オブジェクト自体は生成する)
 	 */
 	GameObject* CreateFromData(ObjectManager& objectManager, const MapEntity& data);
-
-private:
-	GameObjectFactory<int> registry_;
 };

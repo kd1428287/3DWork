@@ -37,32 +37,37 @@ public:
 	}
 
 	void RequestAwake(ComponentBase* component) {
-		pendingAwakeComponents_.push_back(component);
+		pendingAwakeComponents_.push_back(Handle<ComponentBase>(component));
 	}
 
 	// 破棄予約。実際の削除は明示的にFlush()を呼んだタイミングで行う。
+	// 解放済みのポインタは渡さないこと(Handle版ならResolveで弾かれる)。
 	void Destroy(GameObject* target) {
-		pendingDestroy_.push_back(target);
+		if (!target) return;
+		target->MarkDestroyRequested();
+		hasPendingDestroy_ = true;
 	}
+	void Destroy(Handle<GameObject> target) { Destroy(target.Resolve()); }
 
 	// --- 各フェーズ(それぞれ独立して呼び出し可能) --------------------
 
 	// 追加待ちのコンポーネントにAwake/Startを1回ずつ呼ぶ。処理中に追加された分も同フレーム内で同様に処理する。
+	// 待っている間に破棄されたコンポーネントは、Resolveがnullを返すので飛ばされる。
 	void UpdateAwake()
 	{
 		while (!pendingAwakeComponents_.empty())
 		{
-			std::vector<ComponentBase*> processingList;
+			std::vector<Handle<ComponentBase>> processingList;
 			processingList.swap(pendingAwakeComponents_);
 
 			// 全Awake→全Startの順。Startでは他コンポーネントのAwake済みを前提にできる
-			for (auto* component : processingList)
+			for (const auto& handle : processingList)
 			{
-				if (component) { component->Awake(); }
+				if (ComponentBase* component = handle.Resolve()) { component->Awake(); }
 			}
-			for (auto* component : processingList)
+			for (const auto& handle : processingList)
 			{
-				if (component) { component->Start(); }
+				if (ComponentBase* component = handle.Resolve()) { component->Start(); }
 			}
 		}
 	}
@@ -117,17 +122,13 @@ public:
 	// Scene側が「このフレームの処理は全部終わった」と判断した
 	// タイミング(例: PostUpdateの最後)で明示的に呼ぶ。
 	void Flush() {
-		if (!pendingDestroy_.empty()) {
+		if (hasPendingDestroy_) {
+			// 削除中のデストラクタがDestroy()を呼んでも次回のFlushで拾えるよう、先に下ろす
+			hasPendingDestroy_ = false;
 			objects_.erase(
 				std::remove_if(objects_.begin(), objects_.end(),
-					[this](const std::unique_ptr<GameObject>& obj) {
-						return std::find(pendingDestroy_.begin(),
-							pendingDestroy_.end(),
-							obj.get()) != pendingDestroy_.end();
-					}),
+					[](const std::unique_ptr<GameObject>& obj) { return obj->IsDestroyRequested(); }),
 				objects_.end());
-
-			pendingDestroy_.clear();
 		}
 
 		// GameObject単位の破棄とは独立して、各GameObject内で予約された
@@ -194,8 +195,8 @@ public:
 
 private:
 	std::vector<std::unique_ptr<GameObject>> objects_;
-	std::vector<GameObject*> pendingDestroy_;
-	std::vector<ComponentBase*> pendingAwakeComponents_;
+	bool hasPendingDestroy_ = false;
+	std::vector<Handle<ComponentBase>> pendingAwakeComponents_;
 	SceneContext context_;
 	float timeScale_ = 1.0f;
 	uint8_t currentUpdateMask_ =

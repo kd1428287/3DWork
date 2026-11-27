@@ -1,0 +1,147 @@
+{
+  "entities": [
+    {
+      "components": [
+        {
+          "params": {
+            "bodyShapeName": "",
+            "ignoreParent": false,
+            "shapes": [
+              {
+                "capsuleEnd": [
+                  0.0,
+                  1.0,
+                  0.0
+                ],
+                "categoryMask": [
+                  "Ground"
+                ],
+                "collideMask": [],
+                "enabled": true,
+                "halfExtents": [
+                  500.0,
+                  0.5,
+                  500.0
+                ],
+                "isStatic": true,
+                "isTrigger": false,
+                "name": "Ground",
+                "offset": [
+                  0.0,
+                  -0.5,
+                  -3.5323691368103027
+                ],
+                "radius": 0.5,
+                "shape": "Box",
+                "useDefaultCollideMask": true,
+                "wantsStayEvent": false
+              }
+            ],
+            "wireFrame": false
+          },
+          "type": "Collider"
+        }
+      ],
+      "id": 1,
+      "name": "Ground",
+      "pos": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "components": [
+        {
+          "params": {
+            "prefab": "Asset/Data/Game/Character/Player.json",
+            "role": "Player"
+          },
+          "type": "SpawnMarker"
+        }
+      ],
+      "id": 14,
+      "name": "PlayerStart",
+      "pos": [
+        0.0,
+        2.8842222690582275,
+        11.325716018676758
+      ],
+      "rotation": [
+        -0.0,
+        0.0,
+        -0.0,
+        1.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "components": [
+        {
+          "params": {},
+          "type": "GroundRender"
+        }
+      ],
+      "id": 16,
+      "name": "GroundTexture",
+      "pos": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "components": [
+        {
+          "params": {},
+          "type": "PlayerHudGauge"
+        }
+      ],
+      "id": 17,
+      "name": "HUD",
+      "pos": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    }
+  ],
+  "version": 2
+}

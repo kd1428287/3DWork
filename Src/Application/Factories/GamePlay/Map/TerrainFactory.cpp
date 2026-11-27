@@ -1,5 +1,5 @@
 ﻿#include "TerrainFactory.h"
-#include "../../PrefabFactory.h"
+#include "../../Prefab/PrefabFactory.h"
 
 #include "Application/Components/Graphics/Render/ModelRenderComponent.h"
 #include "Application/Components/Graphics/Render/Mod/ForceMaxDepthComponent.h"

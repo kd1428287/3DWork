@@ -6,7 +6,7 @@
 #include "Application/Core/EventBus/Events/SceneEvents.h"
 #include "Application/Core/EventBus/Events/TransitionEvents.h"
 
-#include "Application/Factories/PrefabFactory.h"
+#include "Application/Factories/Prefab/PrefabFactory.h"
 
 namespace
 {
@@ -18,15 +18,10 @@ namespace
 
 	constexpr float kBgmFadeIn = 1.5f;
 	constexpr float kBgmFadeOut = 0.8f;
-
-	constexpr int kClickToggleKey = '8';	// クリック反応の切り替えキー
 }
 
 void TitleScene::OnEnter()
 {
-	//GameObject* logo = objManager_->Instantiate("TitleLogo");
-	//logo->AddComponent<TransformComponent>()->SetScale({ 1.4f,1.4f,1.4f });
-
 	LoadUI("Asset/Data/UI/TitleUI.json");
 
 	fluid_.Init();
@@ -38,7 +33,6 @@ void TitleScene::OnEnter()
 		[this](float dt) { objManager_->Flush(); }
 	);
 
-	leaving_ = false;
 	bgm_ = Events::PublishSoundPlayEvent(*GLOBALEVENT, kTitleBgm, true, 1.0f, 0.0f, kBgmFadeIn);
 }
 
@@ -49,36 +43,7 @@ void TitleScene::OnExit()
 
 void TitleScene::OnUpdate(float /*deltaTime*/)
 {
-	UpdateClickToggle();
-
-	// クリック(Attack)でGameSceneへの遷移をリクエストする。
-	// SceneManagerを直接知らなくてよくなった(疎結合)。
-	if (clickEnabled_ && !leaving_ && KdInputManager::Instance().IsPress("Attack"))
-	{
-		leaving_ = true;
-
-		// 暗転に合わせてBGMを絞る(シーン破棄後もマネージャ側で継続する)
-		//Events::PublishSoundPlayEvent(*GLOBALEVENT, kClickSe);
-		//Events::PublishSoundFadeOutEvent(*GLOBALEVENT, bgm_, kBgmFadeOut);
-
-		//GLOBALEVENT->Publish(Events::SceneChangeRequest{ SceneType::Game });
-	}
-
 	AddCursorSplat();
-}
-
-void TitleScene::UpdateClickToggle()
-{
-	// 非アクティブ時はキー入力を拾わない
-	HWND hwnd = Application::Instance().GetWindowHandle();
-	bool down = GetForegroundWindow() == hwnd && (GetAsyncKeyState(kClickToggleKey) & 0x8000) != 0;
-
-	if (down && !prevToggleDown_)
-	{
-		clickEnabled_ = !clickEnabled_;
-	}
-
-	prevToggleDown_ = down;
 }
 
 void TitleScene::AddCursorSplat()

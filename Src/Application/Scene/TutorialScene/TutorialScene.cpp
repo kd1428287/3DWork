@@ -15,7 +15,7 @@
 #include "Application/Effect/Shell/WindShellDispatcher.h"
 
 // factory
-#include "Application/Factories/PrefabFactory.h"
+#include "Application/Factories/Prefab/PrefabFactory.h"
 #include "Application/Factories/GamePlay/Map/TerrainFactory.h"
 #include "Application/Factories/Common/CameraFactory.h"
 

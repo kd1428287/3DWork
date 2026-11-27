@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-class EnemySpawner;
+class PrefabSpawner;
 class GameObject;
 class PlayerStatusController;
 
@@ -9,6 +9,6 @@ struct TutorialContext
 {
 	GameObject* player = nullptr;
 	PlayerStatusController* playerStatus = nullptr;
-	EnemySpawner* enemySpawner = nullptr;
+	PrefabSpawner* prefabSpawner = nullptr;
 	// TODO: UI表示、時間速度の制御の窓口を追加する
 };
